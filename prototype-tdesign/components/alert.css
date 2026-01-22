@@ -1,0 +1,293 @@
+/**
+ * TDesign Alert 警告提示组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-alert {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  border-radius: var(--td-radius-default);
+  border: 1px solid transparent;
+  background-color: var(--td-bg-color-container-hover);
+  margin-bottom: var(--td-card-spacing);
+}
+
+.t-alert__icon {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.t-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-alert__title {
+  font-size: var(--td-font-size-base);
+  font-weight: var(--td-font-weight-medium);
+  color: var(--td-text-color-primary);
+  line-height: var(--td-line-height-base);
+  margin-bottom: 4px;
+}
+
+.t-alert__message {
+  font-size: var(--td-font-size-base);
+  color: var(--td-text-color-secondary);
+  line-height: var(--td-line-height-base);
+}
+
+.t-alert__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+  cursor: pointer;
+  border-radius: var(--td-radius-default);
+  transition: all var(--td-transition-duration-base);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.t-alert__close:hover {
+  color: var(--td-text-color-primary);
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.t-alert__operation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ==================== 主题 - Info ==================== */
+
+.t-alert--theme-info {
+  background-color: var(--td-info-color-light);
+  border-color: var(--td-info-color-light);
+}
+
+.t-alert--theme-info .t-alert__icon {
+  color: var(--td-info-color);
+}
+
+.t-alert--theme-info .t-alert__title {
+  color: var(--td-info-color);
+}
+
+/* ==================== 主题 - Success ==================== */
+
+.t-alert--theme-success {
+  background-color: var(--td-success-color-light);
+  border-color: var(--td-success-color-light);
+}
+
+.t-alert--theme-success .t-alert__icon {
+  color: var(--td-success-color);
+}
+
+.t-alert--theme-success .t-alert__title {
+  color: var(--td-success-color);
+}
+
+/* ==================== 主题 - Warning ==================== */
+
+.t-alert--theme-warning {
+  background-color: var(--td-warning-color-light);
+  border-color: var(--td-warning-color-light);
+}
+
+.t-alert--theme-warning .t-alert__icon {
+  color: var(--td-warning-color);
+}
+
+.t-alert--theme-warning .t-alert__title {
+  color: var(--td-warning-color);
+}
+
+/* ==================== 主题 - Error ==================== */
+
+.t-alert--theme-error {
+  background-color: var(--td-error-color-light);
+  border-color: var(--td-error-color-light);
+}
+
+.t-alert--theme-error .t-alert__icon {
+  color: var(--td-error-color);
+}
+
+.t-alert--theme-error .t-alert__title {
+  color: var(--td-error-color);
+}
+
+/* ==================== 主题 - Default ==================== */
+
+.t-alert--theme-default {
+  background-color: var(--td-bg-color-container-hover);
+  border-color: var(--td-border-level-1);
+}
+
+/* ==================== 变体 - 描边 ==================== */
+
+.t-alert--variant-outline {
+  background-color: transparent;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.t-alert--variant-outline.t-alert--theme-info {
+  border-color: var(--td-info-color);
+}
+
+.t-alert--variant-outline.t-alert--theme-success {
+  border-color: var(--td-success-color);
+}
+
+.t-alert--variant-outline.t-alert--theme-warning {
+  border-color: var(--td-warning-color);
+}
+
+.t-alert--variant-outline.t-alert--theme-error {
+  border-color: var(--td-error-color);
+}
+
+/* ==================== 可关闭 ==================== */
+
+.t-alert--closable {
+  padding-right: 40px;
+}
+
+/* ==================== 简洁模式 ==================== */
+
+.t-alert--compact {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+}
+
+.t-alert--compact .t-alert__icon {
+  font-size: 14px;
+}
+
+.t-alert--compact .t-alert__title,
+.t-alert--compact .t-alert__message {
+  font-size: var(--td-font-size-s);
+}
+
+/* ==================== 左侧边框强调 ==================== */
+
+.t-alert--accent-border {
+  border-left-width: 3px;
+}
+
+/* ==================== 折叠内容 ==================== */
+
+.t-alert__collapse {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.t-alert__collapse--hidden {
+  display: none;
+}
+
+.t-alert__collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-brand);
+  cursor: pointer;
+  user-select: none;
+}
+
+.t-alert__collapse-toggle:hover {
+  color: var(--td-brand-color-light);
+}
+
+.t-alert__collapse-icon {
+  transition: transform var(--td-transition-duration-base);
+}
+
+.t-alert__collapse-icon--expanded {
+  transform: rotate(180deg);
+}
+
+/* ==================== 动画 ==================== */
+
+.t-alert--fade-in {
+  animation: alert-fade-in var(--td-transition-duration-base);
+}
+
+@keyframes alert-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.t-alert--fade-out {
+  animation: alert-fade-out var(--td-transition-duration-base);
+}
+
+@keyframes alert-fade-out {
+  from {
+    opacity: 1;
+    max-height: 200px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* ==================== 横幅样式 ==================== */
+
+.t-alert--banner {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+/* ==================== 无图标 ==================== */
+
+.t-alert--no-icon .t-alert__icon {
+  display: none;
+}
+
+/* ==================== 紧凑列表间距 ==================== */
+
+.t-alert + .t-alert {
+  margin-top: var(--td-card-spacing);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

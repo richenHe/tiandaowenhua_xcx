@@ -1,0 +1,314 @@
+/**
+ * TDesign Tabs 标签页组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-tabs {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==================== 标签头部 ==================== */
+
+.t-tabs__header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.t-tabs__header.t-is-top {
+  border-bottom: 1px solid var(--td-border-level-1);
+}
+
+.t-tabs__header.t-is-bottom {
+  border-top: 1px solid var(--td-border-level-1);
+}
+
+/* ==================== 导航容器 ==================== */
+
+.t-tabs__nav {
+  position: relative;
+  overflow: hidden;
+}
+
+.t-tabs__nav-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.t-tabs__nav-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.t-tabs__nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.t-tabs__nav-wrap {
+  position: relative;
+  display: inline-flex;
+  min-width: 100%;
+  transition: transform var(--td-transition-duration-base) var(--td-transition-timing-function);
+}
+
+.t-tabs__nav-wrap.t-is-smooth {
+  scroll-behavior: smooth;
+}
+
+/* ==================== 标签项 ==================== */
+
+.t-tabs__nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  font-size: var(--td-font-size-base);
+  font-weight: var(--td-font-weight-regular);
+  color: var(--td-text-color-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all var(--td-transition-duration-base) var(--td-transition-timing-function);
+}
+
+.t-tabs__nav-item:hover {
+  color: var(--td-text-color-primary);
+}
+
+.t-tabs__nav-item.t-is-active {
+  color: var(--td-brand-color);
+  font-weight: var(--td-font-weight-medium);
+}
+
+.t-tabs__nav-item.t-is-disabled {
+  color: var(--td-text-color-disabled);
+  cursor: not-allowed;
+}
+
+.t-tabs__nav-item.t-is-disabled:hover {
+  color: var(--td-text-color-disabled);
+}
+
+.t-tabs__nav-item-text-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==================== 活动指示条 ==================== */
+
+.t-tabs__bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: var(--td-brand-color);
+  transition: all var(--td-transition-duration-base) var(--td-transition-timing-function);
+}
+
+.t-tabs__header.t-is-bottom .t-tabs__bar {
+  bottom: auto;
+  top: 0;
+}
+
+/* ==================== 标签内容 ==================== */
+
+.t-tabs__content {
+  padding: var(--td-comp-paddingTB-xl) 0;
+}
+
+.t-tabs__panel {
+  display: none;
+}
+
+.t-tabs__panel.t-is-active {
+  display: block;
+}
+
+/* ==================== 主题 - 普通模式 ==================== */
+
+.t-tabs--theme-normal .t-tabs__nav-item {
+  min-width: 80px;
+}
+
+/* ==================== 主题 - 卡片模式 ==================== */
+
+.t-tabs--theme-card {
+  background-color: var(--td-bg-color-container-hover);
+  border-radius: var(--td-radius-default);
+  padding: 2px;
+}
+
+.t-tabs--theme-card .t-tabs__header {
+  border-bottom: none;
+}
+
+.t-tabs--theme-card .t-tabs__nav-item {
+  border-radius: var(--td-radius-default);
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-tabs--theme-card .t-tabs__nav-item.t-is-active {
+  background-color: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
+}
+
+.t-tabs--theme-card .t-tabs__bar {
+  display: none;
+}
+
+/* ==================== 主题 - 胶囊模式 (Pills) ==================== */
+
+.t-tabs--theme-pills {
+  background-color: var(--td-bg-color-container-hover);
+  border-radius: var(--td-radius-round);
+  padding: 2px;
+  display: inline-flex;
+}
+
+.t-tabs--theme-pills .t-tabs__header {
+  border-bottom: none;
+}
+
+.t-tabs--theme-pills .t-tabs__nav-item {
+  border-radius: var(--td-radius-round);
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-m);
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-tabs--theme-pills .t-tabs__nav-item.t-is-active {
+  background-color: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
+}
+
+.t-tabs--theme-pills .t-tabs__bar {
+  display: none;
+}
+
+/* ==================== 位置 - 左侧/右侧 ==================== */
+
+.t-tabs--position-left,
+.t-tabs--position-right {
+  flex-direction: row;
+}
+
+.t-tabs--position-left .t-tabs__header {
+  border-right: 1px solid var(--td-border-level-1);
+  border-bottom: none;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.t-tabs--position-right .t-tabs__header {
+  border-left: 1px solid var(--td-border-level-1);
+  border-bottom: none;
+  width: 120px;
+  flex-shrink: 0;
+  order: 2;
+}
+
+.t-tabs--position-left .t-tabs__nav-wrap,
+.t-tabs--position-right .t-tabs__nav-wrap {
+  flex-direction: column;
+}
+
+.t-tabs--position-left .t-tabs__nav-item,
+.t-tabs--position-right .t-tabs__nav-item {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.t-tabs--position-left .t-tabs__bar,
+.t-tabs--position-right .t-tabs__bar {
+  width: 2px;
+  height: auto;
+  right: 0;
+  left: auto;
+  bottom: auto;
+}
+
+.t-tabs--position-right .t-tabs__bar {
+  right: auto;
+  left: 0;
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-tabs--size-small .t-tabs__nav-item {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+  font-size: var(--td-font-size-s);
+}
+
+.t-tabs--size-medium .t-tabs__nav-item {
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  font-size: var(--td-font-size-base);
+}
+
+.t-tabs--size-large .t-tabs__nav-item {
+  padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-l);
+  font-size: var(--td-font-size-m);
+}
+
+/* ==================== 可滚动标签 ==================== */
+
+.t-tabs__nav--scrollable .t-tabs__nav-prev,
+.t-tabs__nav--scrollable .t-tabs__nav-next {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, var(--td-bg-color-container), transparent);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.t-tabs__nav--scrollable .t-tabs__nav-prev {
+  left: 0;
+}
+
+.t-tabs__nav--scrollable .t-tabs__nav-next {
+  right: 0;
+  background: linear-gradient(to left, var(--td-bg-color-container), transparent);
+}
+
+.t-tabs__nav--scrollable .t-tabs__nav-prev.t-is-disabled,
+.t-tabs__nav--scrollable .t-tabs__nav-next.t-is-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ==================== 图标 ==================== */
+
+.t-tabs__nav-item-icon {
+  font-size: 16px;
+}
+
+/* ==================== 角标 ==================== */
+
+.t-tabs__nav-item-badge {
+  margin-left: 4px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

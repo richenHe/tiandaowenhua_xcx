@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单确认 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <a href="../course/detail.html" class="page-header__back" style="text-decoration: none; color: inherit;">←</a>
+          <div class="page-header__title">确认订单</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header-footer">
+          <div class="page-content">
+            <!-- 课程信息 -->
+            <div class="section-title section-title--simple">📦 课程信息</div>
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__body">
+                <div style="display: flex; gap: 12px;">
+                  <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: var(--td-radius-default); display: flex; align-items: center; justify-content: center; font-size: 24px;">📚</div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 16px;">初探班</div>
+                    <div style="color: var(--td-text-color-secondary); font-size: 12px; margin: 4px 0;">系统学习天道文化基础课程</div>
+                    <div style="color: var(--td-warning-color); font-size: 18px; font-weight: 600; margin-top: 4px;">¥1688</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 个人信息 -->
+            <div class="section-title section-title--simple">👤 个人信息</div>
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="color: var(--td-text-color-secondary);">姓名</span>
+                  <span style="font-weight: 500;">张三</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--td-text-color-secondary);">手机</span>
+                  <span style="font-weight: 500;">138****8000</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 推荐人信息 -->
+            <div class="section-title section-title--simple">🎯 推荐人信息</div>
+            <a href="select-referee.html" style="text-decoration: none; color: inherit;">
+              <div class="t-card t-card--bordered t-card--hoverable mb-l">
+                <div class="t-card__body">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="t-avatar t-avatar--theme-primary">
+                        <span class="t-avatar__text">李</span>
+                      </div>
+                      <div>
+                        <div style="font-weight: 500;">李四</div>
+                        <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">青鸾大使</span>
+                      </div>
+                    </div>
+                    <span style="color: var(--td-text-color-placeholder);">›</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <!-- 订单金额 -->
+            <div class="section-title section-title--simple">💰 订单金额</div>
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="color: var(--td-text-color-secondary);">课程价格</span>
+                  <span>¥1688</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                  <span style="color: var(--td-text-color-secondary);">优惠</span>
+                  <span>-¥0</span>
+                </div>
+                <div class="t-divider t-divider--dashed"></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+                  <span style="font-weight: 600; font-size: 16px;">实付金额</span>
+                  <span style="color: var(--td-warning-color); font-size: 20px; font-weight: 600;">¥1688</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 固定底部 -->
+        <div class="fixed-bottom">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 12px; color: var(--td-text-color-secondary);">合计</div>
+              <span style="color: var(--td-warning-color); font-size: 24px; font-weight: 600;">¥1688</span>
+            </div>
+            <a href="payment.html" style="text-decoration: none;">
+              <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-large">
+                <span class="t-button__text">确认支付</span>
+              </button>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+</body>
+</html>

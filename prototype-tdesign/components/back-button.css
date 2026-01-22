@@ -1,0 +1,89 @@
+/**
+ * 返回按钮组件
+ * 提供统一的返回按钮样式和交互
+ */
+
+/* ==================== 返回按钮 ==================== */
+
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: background-color var(--td-transition-duration-base);
+  border-radius: var(--td-radius-default);
+  text-decoration: none;
+  color: inherit;
+  font-size: 18px;
+  user-select: none;
+}
+
+.back-button:hover {
+  background-color: var(--td-bg-color-container-hover);
+}
+
+.back-button:active {
+  background-color: var(--td-bg-color-container-active);
+  transform: scale(0.95);
+}
+
+/* 返回按钮图标 */
+.back-button::before {
+  content: '←';
+  display: block;
+}
+
+/* 禁用状态 */
+.back-button--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 不同尺寸 */
+.back-button--small {
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+}
+
+.back-button--large {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+
+/* ==================== 使用说明 ==================== */
+
+/**
+ * 使用方法：
+ * 
+ * 1. 基础用法（自动返回上一页）：
+ *    <div class="back-button" data-back="auto"></div>
+ * 
+ * 2. 指定返回页面（作为后备方案）：
+ *    <div class="back-button" data-back="../mine/index.html"></div>
+ * 
+ * 3. 禁用返回按钮：
+ *    <div class="back-button back-button--disabled"></div>
+ * 
+ * JavaScript 会自动处理：
+ * - 如果有浏览历史，使用 history.back()
+ * - 如果没有历史或指定了 data-back，跳转到指定页面
+ * - 主入口页面（首页、我的课程、个人中心）不显示返回按钮
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+

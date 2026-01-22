@@ -1,0 +1,359 @@
+/**
+ * iPhone 15 Pro 设备外壳组件
+ * 模拟真实移动设备的外观和尺寸
+ */
+
+/* ==================== 设备容器 ==================== */
+
+.device-iphone15pro {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  margin: 20px auto;
+  background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+  border-radius: 47.33px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  overflow: hidden;
+}
+
+/* ==================== 设备框架 ==================== */
+
+.device-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  border-radius: 47.33px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==================== 刘海屏 (Dynamic Island) ==================== */
+
+.device-notch {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  background-color: #000000;
+  border-radius: 19px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+}
+
+.device-notch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: #1a4d8f;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+.device-notch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background-color: #1a1a1a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== 状态栏 ==================== */
+
+.device-statusbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 24px;
+  padding-top: 8px;
+  background-color: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 999;
+}
+
+.statusbar-time {
+  flex: 1;
+  text-align: center;
+}
+
+.statusbar-signal,
+.statusbar-wifi,
+.statusbar-battery {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusbar-signal::before {
+  content: '●●●●';
+  letter-spacing: 1px;
+  font-size: 8px;
+}
+
+.statusbar-wifi::before {
+  content: '◐';
+  font-size: 14px;
+}
+
+.statusbar-battery::after {
+  content: '';
+  width: 22px;
+  height: 11px;
+  border: 1.5px solid #ffffff;
+  border-radius: 3px;
+  position: relative;
+  margin-left: 2px;
+}
+
+.statusbar-battery::before {
+  content: '';
+  position: absolute;
+  right: 18px;
+  width: 16px;
+  height: 7px;
+  background-color: #ffffff;
+  border-radius: 2px;
+  margin-top: 2px;
+}
+
+/* ==================== 小程序内容区域 ==================== */
+
+.device-screen {
+  flex: 1;
+  width: 375px;
+  margin: 0 auto;
+  background-color: var(--td-bg-color-page);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 自定义滚动条 */
+.device-screen::-webkit-scrollbar {
+  width: 4px;
+}
+
+.device-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.device-screen::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.device-screen::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== 底部安全区域 ==================== */
+
+.device-safe-area-bottom {
+  height: 34px;
+  background-color: #000000;
+  position: relative;
+}
+
+.device-safe-area-bottom::before {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* ==================== 物理按钮 ==================== */
+
+/* 音量按钮 */
+.device-iphone15pro::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 120px;
+  width: 2px;
+  height: 50px;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border-radius: 1px 0 0 1px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 静音按钮 */
+.device-iphone15pro::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 80px;
+  width: 2px;
+  height: 30px;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border-radius: 1px 0 0 1px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 电源按钮 */
+.device-frame::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 160px;
+  width: 2px;
+  height: 80px;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border-radius: 0 1px 1px 0;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  z-index: 10;
+}
+
+/* ==================== 屏幕内容辅助类 ==================== */
+
+.screen-content {
+  min-height: 100%;
+  background-color: var(--td-bg-color-page);
+}
+
+/* ==================== 适配底部安全区域 ==================== */
+
+.safe-area-bottom {
+  padding-bottom: 34px;
+}
+
+/* ==================== 设备阴影增强 ==================== */
+
+.device-iphone15pro:hover {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+/* ==================== 横屏模式 (可选) ==================== */
+
+.device-iphone15pro--landscape {
+  width: 852px;
+  height: 393px;
+  border-radius: 47.33px;
+}
+
+.device-iphone15pro--landscape .device-notch {
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  width: 37px;
+  height: 126px;
+}
+
+.device-iphone15pro--landscape .device-screen {
+  width: 808px;
+  height: 375px;
+}
+
+/* ==================== 页面预览模式 (无设备外壳) ==================== */
+
+.device-preview-only .device-iphone15pro {
+  box-shadow: none;
+  background: transparent;
+  border-radius: 0;
+  width: 375px;
+  height: auto;
+  margin: 0;
+}
+
+.device-preview-only .device-frame {
+  border-radius: 0;
+  background: transparent;
+}
+
+.device-preview-only .device-notch,
+.device-preview-only .device-statusbar,
+.device-preview-only .device-safe-area-bottom {
+  display: none;
+}
+
+.device-preview-only .device-screen {
+  width: 100%;
+  overflow: visible;
+}
+
+/* ==================== 设备展示动画 ==================== */
+
+@keyframes device-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.device-iphone15pro--animated {
+  animation: device-slide-in 0.6s ease-out;
+}
+
+/* ==================== 响应式 ==================== */
+
+@media (max-width: 450px) {
+  .device-iphone15pro {
+    transform: scale(0.9);
+    margin: 10px auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .device-iphone15pro {
+    transform: scale(0.8);
+    margin: 5px auto;
+  }
+}
+
+/* ==================== 设备颜色变体 ==================== */
+
+.device-iphone15pro--titanium-natural {
+  background: linear-gradient(135deg, #e8e8e8, #d0d0d0);
+}
+
+.device-iphone15pro--titanium-blue {
+  background: linear-gradient(135deg, #4a5d7c, #2d3e54);
+}
+
+.device-iphone15pro--titanium-white {
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+}
+
+.device-iphone15pro--titanium-black {
+  /* 默认黑色 */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

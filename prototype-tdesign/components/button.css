@@ -1,0 +1,355 @@
+/**
+ * TDesign Button 按钮组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 var(--td-comp-paddingLR-m);
+  height: var(--td-comp-size-m);
+  font-size: var(--td-font-size-base);
+  font-weight: var(--td-font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+  border: 1px solid transparent;
+  border-radius: var(--td-radius-default);
+  cursor: pointer;
+  transition: all var(--td-transition-duration-base) var(--td-transition-timing-function);
+  user-select: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.t-button__text {
+  display: inline-block;
+}
+
+.t-button__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-button--size-small {
+  height: var(--td-comp-size-s);
+  padding: 0 var(--td-comp-paddingLR-xs);
+  font-size: var(--td-font-size-s);
+}
+
+.t-button--size-medium {
+  height: var(--td-comp-size-m);
+  padding: 0 var(--td-comp-paddingLR-m);
+  font-size: var(--td-font-size-base);
+}
+
+.t-button--size-large {
+  height: var(--td-comp-size-l);
+  padding: 0 var(--td-comp-paddingLR-l);
+  font-size: var(--td-font-size-m);
+}
+
+/* ==================== 块级按钮 ==================== */
+
+.t-button--block {
+  display: flex;
+  width: 100%;
+}
+
+/* ==================== 主题 - Primary (品牌色) ==================== */
+
+/* 浅色填充按钮（主要样式） */
+.t-button--theme-primary.t-button--variant-base {
+  color: var(--td-brand-color);
+  background-color: var(--td-bg-color-container-select);
+  border-color: transparent;
+}
+
+.t-button--theme-primary.t-button--variant-base:hover {
+  background-color: #E0EBFF;
+  border-color: transparent;
+}
+
+.t-button--theme-primary.t-button--variant-base:active {
+  background-color: #D4E3FF;
+  border-color: transparent;
+}
+
+.t-button--theme-primary.t-button--variant-outline {
+  color: var(--td-brand-color);
+  background-color: transparent;
+  border-color: var(--td-brand-color);
+}
+
+.t-button--theme-primary.t-button--variant-outline:hover {
+  color: var(--td-brand-color-light);
+  background-color: var(--td-bg-color-container-select);
+  border-color: var(--td-brand-color-light);
+}
+
+.t-button--theme-primary.t-button--variant-dashed {
+  color: var(--td-brand-color);
+  background-color: transparent;
+  border-color: var(--td-brand-color);
+  border-style: dashed;
+}
+
+.t-button--theme-primary.t-button--variant-text {
+  color: var(--td-brand-color);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.t-button--theme-primary.t-button--variant-text:hover {
+  background-color: var(--td-bg-color-container-select);
+}
+
+/* ==================== 主题 - Default (默认) ==================== */
+
+.t-button--theme-default.t-button--variant-base {
+  color: var(--td-text-color-primary);
+  background-color: var(--td-bg-color-container);
+  border-color: var(--td-border-level-1);
+}
+
+.t-button--theme-default.t-button--variant-base:hover {
+  background-color: var(--td-bg-color-container-hover);
+  border-color: var(--td-border-level-2);
+}
+
+.t-button--theme-default.t-button--variant-outline {
+  color: var(--td-text-color-primary);
+  background-color: transparent;
+  border-color: var(--td-border-level-1);
+}
+
+.t-button--theme-default.t-button--variant-outline:hover {
+  background-color: var(--td-bg-color-container-hover);
+  border-color: var(--td-border-level-2);
+}
+
+.t-button--theme-default.t-button--variant-text {
+  color: var(--td-text-color-primary);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.t-button--theme-default.t-button--variant-text:hover {
+  background-color: var(--td-bg-color-container-hover);
+}
+
+/* ==================== 主题 - Success (成功) ==================== */
+
+.t-button--theme-success.t-button--variant-base {
+  color: var(--td-text-color-anti);
+  background-color: var(--td-success-color);
+  border-color: var(--td-success-color);
+}
+
+.t-button--theme-success.t-button--variant-base:hover {
+  opacity: 0.9;
+}
+
+.t-button--theme-success.t-button--variant-outline {
+  color: var(--td-success-color);
+  background-color: transparent;
+  border-color: var(--td-success-color);
+}
+
+.t-button--theme-success.t-button--variant-outline:hover {
+  background-color: var(--td-success-color-light);
+}
+
+.t-button--theme-success.t-button--variant-text {
+  color: var(--td-success-color);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.t-button--theme-success.t-button--variant-text:hover {
+  background-color: var(--td-success-color-light);
+}
+
+/* ==================== 主题 - Warning (金色) ==================== */
+
+.t-button--theme-warning.t-button--variant-base {
+  color: var(--td-text-color-anti);
+  background-color: var(--td-warning-color);
+  border-color: var(--td-warning-color);
+}
+
+.t-button--theme-warning.t-button--variant-base:hover {
+  opacity: 0.9;
+}
+
+.t-button--theme-warning.t-button--variant-outline {
+  color: var(--td-warning-color);
+  background-color: transparent;
+  border-color: var(--td-warning-color);
+}
+
+.t-button--theme-warning.t-button--variant-outline:hover {
+  background-color: var(--td-warning-color-light);
+}
+
+.t-button--theme-warning.t-button--variant-text {
+  color: var(--td-warning-color);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.t-button--theme-warning.t-button--variant-text:hover {
+  background-color: var(--td-warning-color-light);
+}
+
+/* ==================== 主题 - Danger (错误) ==================== */
+
+.t-button--theme-danger.t-button--variant-base {
+  color: var(--td-text-color-anti);
+  background-color: var(--td-error-color);
+  border-color: var(--td-error-color);
+}
+
+.t-button--theme-danger.t-button--variant-base:hover {
+  opacity: 0.9;
+}
+
+.t-button--theme-danger.t-button--variant-outline {
+  color: var(--td-error-color);
+  background-color: transparent;
+  border-color: var(--td-error-color);
+}
+
+.t-button--theme-danger.t-button--variant-outline:hover {
+  background-color: var(--td-error-color-light);
+}
+
+.t-button--theme-danger.t-button--variant-text {
+  color: var(--td-error-color);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.t-button--theme-danger.t-button--variant-text:hover {
+  background-color: var(--td-error-color-light);
+}
+
+/* ==================== 禁用状态 ==================== */
+
+.t-button:disabled,
+.t-button.t-is-disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.t-button:disabled:hover,
+.t-button.t-is-disabled:hover {
+  opacity: 0.4;
+}
+
+/* ==================== 加载状态 ==================== */
+
+.t-button.t-is-loading {
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.t-button.t-is-loading .t-button__text {
+  opacity: 0.6;
+}
+
+.t-button__loading {
+  display: inline-flex;
+  animation: button-loading-spin 0.8s linear infinite;
+}
+
+@keyframes button-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== 图标按钮 ==================== */
+
+.t-button--icon-only {
+  padding: 0;
+  width: var(--td-comp-size-m);
+}
+
+.t-button--icon-only.t-button--size-small {
+  width: var(--td-comp-size-s);
+}
+
+.t-button--icon-only.t-button--size-large {
+  width: var(--td-comp-size-l);
+}
+
+/* ==================== 形状 ==================== */
+
+.t-button--shape-round {
+  border-radius: var(--td-radius-round);
+}
+
+.t-button--shape-circle {
+  border-radius: var(--td-radius-circle);
+}
+
+.t-button--shape-square {
+  border-radius: 0;
+}
+
+/* ==================== 幽灵按钮 ==================== */
+
+.t-button--ghost {
+  background-color: transparent;
+  color: var(--td-text-color-anti);
+  border-color: var(--td-text-color-anti);
+}
+
+.t-button--ghost:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== 按钮组 ==================== */
+
+.t-button-group {
+  display: inline-flex;
+}
+
+.t-button-group .t-button {
+  border-radius: 0;
+}
+
+.t-button-group .t-button:first-child {
+  border-top-left-radius: var(--td-radius-default);
+  border-bottom-left-radius: var(--td-radius-default);
+}
+
+.t-button-group .t-button:last-child {
+  border-top-right-radius: var(--td-radius-default);
+  border-bottom-right-radius: var(--td-radius-default);
+}
+
+.t-button-group .t-button + .t-button {
+  margin-left: -1px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

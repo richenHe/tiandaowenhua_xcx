@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天道文化小程序原型 - TDesign 版本</title>
+  <link rel="stylesheet" href="./styles/tdesign-theme.css">
+  <link rel="stylesheet" href="./styles/reset.css">
+  <link rel="stylesheet" href="./styles/common.css">
+  <link rel="stylesheet" href="./components/all.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .index-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .index-header {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 60px;
+    }
+
+    .index-header h1 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 30px rgba(0,0,0,0.3);
+    }
+
+    .index-header p {
+      font-size: 20px;
+      opacity: 0.95;
+      line-height: 1.6;
+    }
+
+    .index-header__badges {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .index-header__badge {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .navigation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .nav-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--td-brand-color), var(--td-brand-color-light));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+
+    .nav-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .nav-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .nav-card__icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .nav-card__title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--td-text-color-primary);
+    }
+
+    .nav-card__desc {
+      font-size: 14px;
+      color: var(--td-text-color-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .nav-card__count {
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+    }
+
+    .footer {
+      text-align: center;
+      color: #fff;
+      margin-top: 60px;
+      opacity: 0.9;
+    }
+
+    .footer p {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="index-container">
+    <div class="index-header">
+      <h1>天道文化小程序原型</h1>
+      <p>基于 TDesign 设计规范 · 54 个完整页面 · iPhone 15 Pro 设备外壳</p>
+      <div class="index-header__badges">
+        <span class="index-header__badge">TDesign</span>
+        <span class="index-header__badge">HTML/CSS</span>
+        <span class="index-header__badge">微信小程序</span>
+        <span class="index-header__badge">iPhone 15 Pro</span>
+      </div>
+    </div>
+
+    <div class="navigation-grid">
+      <!-- Playground -->
+      <a href="./playground/index.html" class="nav-card">
+        <div class="nav-card__icon">🎨</div>
+        <div class="nav-card__title">组件展示</div>
+        <div class="nav-card__desc">查看所有 TDesign 组件的使用示例和效果演示</div>
+        <div class="nav-card__count">Playground</div>
+      </a>
+
+      <!-- 授权模块 -->
+      <a href="./pages/auth/login.html" class="nav-card">
+        <div class="nav-card__icon">🔐</div>
+        <div class="nav-card__title">授权登录</div>
+        <div class="nav-card__desc">微信一键登录、完善个人资料</div>
+        <div class="nav-card__count">2 个页面</div>
+      </a>
+
+      <!-- 首页 -->
+      <a href="./pages/index/home.html" class="nav-card">
+        <div class="nav-card__icon">🏠</div>
+        <div class="nav-card__title">首页</div>
+        <div class="nav-card__desc">课程展示、通知公告、快捷入口</div>
+        <div class="nav-card__count">主导航</div>
+      </a>
+
+      <!-- 商城模块 -->
+      <a href="./pages/mall/index.html" class="nav-card">
+        <div class="nav-card__icon">🛒</div>
+        <div class="nav-card__title">商城</div>
+        <div class="nav-card__desc">积分兑换 - 商品/课程一键切换</div>
+        <div class="nav-card__count">1 个页面</div>
+      </a>
+
+      <!-- 订单流程 -->
+      <a href="./pages/order/confirm.html" class="nav-card">
+        <div class="nav-card__icon">📋</div>
+        <div class="nav-card__title">订单流程</div>
+        <div class="nav-card__desc">订单确认、选择推荐人、支付、订单详情</div>
+        <div class="nav-card__count">4 个页面</div>
+      </a>
+
+      <!-- 个人中心 -->
+      <a href="./pages/mine/index.html" class="nav-card">
+        <div class="nav-card__icon">👤</div>
+        <div class="nav-card__title">我的</div>
+        <div class="nav-card__desc">个人资料、引荐人列表、订单记录、徽章等级等</div>
+        <div class="nav-card__count">11 个页面</div>
+      </a>
+
+      <!-- 大使系统 -->
+      <a href="./pages/ambassador/level.html" class="nav-card">
+        <div class="nav-card__icon">🎖️</div>
+        <div class="nav-card__title">传播大使</div>
+        <div class="nav-card__desc">大使等级、申请、升级、功德分、积分、推荐团队等</div>
+        <div class="nav-card__count">11 个页面</div>
+      </a>
+
+      <!-- 商学院 -->
+      <a href="./pages/academy/intro.html" class="nav-card">
+        <div class="nav-card__icon">🏫</div>
+        <div class="nav-card__title">商学院</div>
+        <div class="nav-card__desc">商学院介绍、朋友圈素材、学员案例</div>
+        <div class="nav-card__count">3 个页面</div>
+      </a>
+
+      <!-- 文档 -->
+      <a href="./DESIGN_GUIDE.md" class="nav-card">
+        <div class="nav-card__icon">📖</div>
+        <div class="nav-card__title">设计规范</div>
+        <div class="nav-card__desc">TDesign 设计规范文档和使用说明</div>
+        <div class="nav-card__count">文档</div>
+      </a>
+    </div>
+
+    <div class="footer">
+      <p>天道文化小程序原型设计方案 (TDesign 版本)</p>
+      <p>共 58 个页面 · 基于 TDesign 设计规范 · 白色主调 · iPhone 15 Pro 适配</p>
+      <p style="margin-top: 12px; font-size: 13px;">底部导航: 首页 | 商城 | 商学院 | 我的</p>
+    </div>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

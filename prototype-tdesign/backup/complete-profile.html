@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>完善资料 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <!-- 页面头部 -->
+        <div class="page-header">
+          <a href="../mine/index.html" class="page-header__back" style="text-decoration: none; color: inherit;">←</a>
+          <div class="page-header__title">完善个人资料</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <!-- 页面内容 -->
+        <div class="scroll-area scroll-area--with-header-footer">
+          <div class="page-content">
+            <!-- 提示信息 -->
+            <div class="t-alert t-alert--theme-info">
+              <div class="t-alert__icon">ℹ️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">请完善资料后使用小程序</div>
+              </div>
+            </div>
+
+            <!-- 表单 -->
+            <form class="t-form t-form--label-top">
+              <!-- 真实姓名 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label t-form-item__label--required">
+                  <span class="t-form-item__label-text">真实姓名</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-input__wrap">
+                    <div class="t-input t-align-left">
+                      <input class="t-input__inner" type="text" placeholder="请输入真实姓名" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 手机号 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label t-form-item__label--required">
+                  <span class="t-form-item__label-text">手机号</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-input__wrap">
+                    <div class="t-input t-align-left">
+                      <input class="t-input__inner" type="tel" placeholder="请输入手机号" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 性别 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">性别</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-radio-group">
+                    <label class="t-radio">
+                      <div class="t-radio__input t-radio__input--checked"></div>
+                      <span class="t-radio__label">男</span>
+                    </label>
+                    <label class="t-radio">
+                      <div class="t-radio__input"></div>
+                      <span class="t-radio__label">女</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 出生八字 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">出生八字 (选填)</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                    <div class="t-input__wrap">
+                      <div class="t-input t-align-center">
+                        <input class="t-input__inner" type="text" placeholder="年" />
+                      </div>
+                    </div>
+                    <div class="t-input__wrap">
+                      <div class="t-input t-align-center">
+                        <input class="t-input__inner" type="text" placeholder="月" />
+                      </div>
+                    </div>
+                    <div class="t-input__wrap">
+                      <div class="t-input t-align-center">
+                        <input class="t-input__inner" type="text" placeholder="日" />
+                      </div>
+                    </div>
+                    <div class="t-input__wrap">
+                      <div class="t-input t-align-center">
+                        <input class="t-input__inner" type="text" placeholder="时" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 从事行业 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">从事行业 (选填)</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-select">
+                    <div class="t-select__input">
+                      <span class="t-select__placeholder">请选择</span>
+                      <span class="t-select__arrow">▼</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 所在地区 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">所在地区 (选填)</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-select">
+                    <div class="t-select__input">
+                      <span class="t-select__placeholder">请选择</span>
+                      <span class="t-select__arrow">▼</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 固定底部 -->
+        <div class="fixed-bottom">
+          <a href="../index/home.html" style="display: block; text-decoration: none;">
+            <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+              <span class="t-button__text">提交</span>
+            </button>
+          </a>
+          <a href="../index/home.html" style="display: block; text-decoration: none;">
+            <button class="t-button t-button--theme-default t-button--variant-text t-button--block mt-s">
+              <span class="t-button__text">暂不填写，先预览</span>
+            </button>
+          </a>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+</body>
+</html>
+

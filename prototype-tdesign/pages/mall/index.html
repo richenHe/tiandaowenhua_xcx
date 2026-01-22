@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>积分兑换 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .points-banner {
+      background: linear-gradient(135deg, var(--td-warning-color), #f5a623);
+      padding: 16px;
+      margin: 16px;
+      border-radius: var(--td-radius-default);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    /* Tab切换样式 */
+    .main-tabs .t-tabs__nav-item {
+      cursor: pointer;
+    }
+    
+    /* 商品分类Tab样式 */
+    .category-tabs {
+      margin-bottom: 16px;
+    }
+    .category-tabs .t-tabs__nav-item {
+      cursor: pointer;
+    }
+    
+    /* 内容区域切换 */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 商品卡片 */
+    .product-card {
+      background: white;
+      border-radius: var(--td-radius-default);
+      overflow: hidden;
+      border: 1px solid var(--td-border-level-1);
+    }
+    .product-image {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .product-info {
+      padding: 12px;
+    }
+    .product-name {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--td-text-color-primary);
+    }
+    .product-stock {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 8px;
+    }
+    .product-points {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .product-points-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--td-warning-color);
+    }
+    
+    /* 课程卡片 */
+    .course-card {
+      background: white;
+      border-radius: var(--td-radius-default);
+      overflow: hidden;
+      border: 1px solid var(--td-border-level-1);
+      margin-bottom: 12px;
+    }
+    .course-image {
+      width: 100%;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .course-image--purple {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .course-image--blue {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .course-image--pink {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .course-info {
+      padding: 16px;
+    }
+    .course-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--td-text-color-primary);
+    }
+    .course-desc {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .course-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .course-points {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--td-warning-color);
+    }
+    .course-original {
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+      text-decoration: line-through;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">兑换课程</div>
+          <div class="page-header__action">📋</div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <!-- 积分横幅 -->
+          <div class="points-banner">
+            <div>
+              <div style="font-size: 12px; opacity: 0.9;">可用积分</div>
+              <div style="font-size: 24px; font-weight: 700;">2,580</div>
+            </div>
+            <a href="../ambassador/cash-points.html" style="text-decoration: none;">
+              <button class="t-button t-button--theme-default t-button--variant-base t-button--size-small" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white;">
+                <span class="t-button__text">积分明细</span>
+              </button>
+            </a>
+          </div>
+
+          <div class="page-content" style="padding-top: 0;">
+            <!-- 主Tab切换：兑换商品 / 兑换课程 -->
+            <div class="t-tabs t-tabs--theme-pills mb-l main-tabs">
+              <div class="t-tabs__header">
+                <div class="t-tabs__nav">
+                  <div class="t-tabs__nav-container">
+                    <div class="t-tabs__nav-wrap">
+                      <div class="t-tabs__nav-item t-is-active" data-tab="goods">
+                        <span class="t-tabs__nav-item-text-wrapper">兑换商品</span>
+                      </div>
+                      <div class="t-tabs__nav-item" data-tab="courses">
+                        <span class="t-tabs__nav-item-text-wrapper">兑换课程</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 兑换商品内容 -->
+            <div id="goods-content" class="tab-content active">
+              <!-- 商品分类Tab -->
+              <div class="t-tabs t-tabs--theme-pills mb-l category-tabs">
+                <div class="t-tabs__header">
+                  <div class="t-tabs__nav">
+                    <div class="t-tabs__nav-container">
+                      <div class="t-tabs__nav-wrap">
+                        <div class="t-tabs__nav-item t-is-active" data-category="all">
+                          <span class="t-tabs__nav-item-text-wrapper">全部</span>
+                        </div>
+                        <div class="t-tabs__nav-item" data-category="stationery">
+                          <span class="t-tabs__nav-item-text-wrapper">文具</span>
+                        </div>
+                        <div class="t-tabs__nav-item" data-category="life">
+                          <span class="t-tabs__nav-item-text-wrapper">生活</span>
+                        </div>
+                        <div class="t-tabs__nav-item" data-category="peripheral">
+                          <span class="t-tabs__nav-item-text-wrapper">周边</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 商品网格 -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <!-- 商品1 -->
+                <div class="product-card">
+                  <div class="product-image">📚</div>
+                  <div class="product-info">
+                    <div class="product-name">天道文化笔记本</div>
+                    <div class="product-stock">库存: 50件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">500积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品2 -->
+                <div class="product-card">
+                  <div class="product-image">🎁</div>
+                  <div class="product-info">
+                    <div class="product-name">精美书签套装</div>
+                    <div class="product-stock">库存: 100件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">300积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品3 -->
+                <div class="product-card">
+                  <div class="product-image">🏆</div>
+                  <div class="product-info">
+                    <div class="product-name">荣誉证书框</div>
+                    <div class="product-stock">库存: 30件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">800积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品4 -->
+                <div class="product-card">
+                  <div class="product-image">☕</div>
+                  <div class="product-info">
+                    <div class="product-name">定制保温杯</div>
+                    <div class="product-stock">库存: 20件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">1200积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品5 -->
+                <div class="product-card">
+                  <div class="product-image">🎒</div>
+                  <div class="product-info">
+                    <div class="product-name">文化帆布袋</div>
+                    <div class="product-stock">库存: 45件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">600积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品6 -->
+                <div class="product-card">
+                  <div class="product-image">🖼️</div>
+                  <div class="product-info">
+                    <div class="product-name">国学挂画</div>
+                    <div class="product-stock">库存: 15件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">2000积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品7 -->
+                <div class="product-card">
+                  <div class="product-image">🧘</div>
+                  <div class="product-info">
+                    <div class="product-name">冥想垫</div>
+                    <div class="product-stock">库存: 25件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">1500积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 商品8 -->
+                <div class="product-card">
+                  <div class="product-image">📖</div>
+                  <div class="product-info">
+                    <div class="product-name">经典书籍套装</div>
+                    <div class="product-stock">库存: 10件</div>
+                    <div class="product-points">
+                      <span class="product-points-value">3000积分</span>
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                        <span class="t-button__text">兑换</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 加载更多 -->
+              <div style="text-align: center; padding: 20px;">
+                <button class="t-button t-button--theme-default t-button--variant-text t-button--size-small">
+                  <span class="t-button__text">加载更多</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 兑换课程内容 -->
+            <div id="courses-content" class="tab-content">
+              <!-- 课程说明 -->
+              <div class="t-alert t-alert--theme-success mb-l">
+                <div class="t-alert__icon">🎁</div>
+                <div class="t-alert__content">
+                  <div class="t-alert__message" style="font-size: 12px;">
+                    使用积分兑换课程，开启智慧之旅！兑换后可在"我的课程"中查看。
+                  </div>
+                </div>
+              </div>
+
+              <!-- 课程列表 -->
+              <!-- 课程1 -->
+              <div class="course-card">
+                <div class="course-image course-image--purple">📚</div>
+                <div class="course-info">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="course-name" style="margin-bottom: 0;">天道文化入门精讲</div>
+                    <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">热门</span>
+                  </div>
+                  <div class="course-desc">
+                    系统讲解天道文化的核心理念，适合初学者入门学习。共10节课，时长约5小时。
+                  </div>
+                  <div class="course-footer">
+                    <div>
+                      <span class="course-points">5,000积分</span>
+                      <span class="course-original">原价¥299</span>
+                    </div>
+                    <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small" disabled style="opacity: 0.6;">
+                      <span class="t-button__text">积分不足</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 课程2 -->
+              <div class="course-card">
+                <div class="course-image course-image--blue">🎓</div>
+                <div class="course-info">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="course-name" style="margin-bottom: 0;">孙膑兵法精解</div>
+                    <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small">推荐</span>
+                  </div>
+                  <div class="course-desc">
+                    深入解读孙膑兵法的智慧精髓，将古代智慧应用于现代商业。共15节课。
+                  </div>
+                  <div class="course-footer">
+                    <div>
+                      <span class="course-points">8,000积分</span>
+                      <span class="course-original">原价¥499</span>
+                    </div>
+                    <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small" disabled style="opacity: 0.6;">
+                      <span class="t-button__text">积分不足</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 课程3 -->
+              <div class="course-card">
+                <div class="course-image course-image--pink">🧘</div>
+                <div class="course-info">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="course-name" style="margin-bottom: 0;">修身养性七日课</div>
+                  </div>
+                  <div class="course-desc">
+                    通过七天的系统学习，掌握修身养性的核心方法，提升身心状态。
+                  </div>
+                  <div class="course-footer">
+                    <div>
+                      <span class="course-points">2,000积分</span>
+                      <span class="course-original">原价¥99</span>
+                    </div>
+                    <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                      <span class="t-button__text">立即兑换</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 课程4 -->
+              <div class="course-card">
+                <div class="course-image" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">☯️</div>
+                <div class="course-info">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="course-name" style="margin-bottom: 0;">易经智慧入门</div>
+                  </div>
+                  <div class="course-desc">
+                    从零开始学习易经，掌握中华文化的智慧源头。共8节课。
+                  </div>
+                  <div class="course-footer">
+                    <div>
+                      <span class="course-points">3,500积分</span>
+                      <span class="course-original">原价¥199</span>
+                    </div>
+                    <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small" disabled style="opacity: 0.6;">
+                      <span class="t-button__text">积分不足</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 课程5 -->
+              <div class="course-card">
+                <div class="course-image" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">💼</div>
+                <div class="course-info">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="course-name" style="margin-bottom: 0;">商道智慧分享</div>
+                    <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">限时</span>
+                  </div>
+                  <div class="course-desc">
+                    成功企业家分享商业智慧，结合天道文化理念的实战经验。
+                  </div>
+                  <div class="course-footer">
+                    <div>
+                      <span class="course-points">1,500积分</span>
+                      <span class="course-original">原价¥79</span>
+                    </div>
+                    <button class="t-button t-button--theme-warning t-button--variant-base t-button--size-small">
+                      <span class="t-button__text">立即兑换</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 兑换说明 -->
+              <div class="t-alert t-alert--theme-info mt-l">
+                <div class="t-alert__icon">ℹ️</div>
+                <div class="t-alert__content">
+                  <div class="t-alert__title" style="font-weight: 500; margin-bottom: 4px;">兑换说明</div>
+                  <div class="t-alert__message" style="font-size: 12px; line-height: 1.6;">
+                    • 兑换的课程永久有效，可无限次观看<br>
+                    • 兑换成功后不支持退换<br>
+                    • 积分不足时可通过参与活动获取更多积分
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- Tab切换脚本 -->
+  <script>
+    // 主Tab切换（兑换商品/兑换课程）
+    document.querySelectorAll('.main-tabs .t-tabs__nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // 移除所有active状态
+        document.querySelectorAll('.main-tabs .t-tabs__nav-item').forEach(i => {
+          i.classList.remove('t-is-active');
+        });
+        
+        // 添加当前active状态
+        this.classList.add('t-is-active');
+        
+        // 切换内容
+        const tab = this.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tab + '-content').classList.add('active');
+        
+        // 更新页面标题
+        const title = this.querySelector('.t-tabs__nav-item-text-wrapper').textContent;
+        document.querySelector('.page-header__title').textContent = title;
+      });
+    });
+    
+    // 商品分类Tab切换
+    document.querySelectorAll('.category-tabs .t-tabs__nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // 移除所有active状态
+        document.querySelectorAll('.category-tabs .t-tabs__nav-item').forEach(i => {
+          i.classList.remove('t-is-active');
+        });
+        
+        // 添加当前active状态
+        this.classList.add('t-is-active');
+        
+        // 这里可以添加筛选商品的逻辑
+        const category = this.dataset.category;
+        console.log('切换到分类:', category);
+      });
+    });
+  </script>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功德分管理 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">功德分管理</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <div class="page-content">
+            
+            <!-- 功德分余额卡片 -->
+            <div class="t-card t-card--bordered mb-l" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
+              <div class="t-card__body" style="padding: 24px;">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">💎 功德分余额</div>
+                <div style="font-size: 48px; font-weight: 700; margin-bottom: 16px;">2,566.4</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+                  <div>
+                    <div style="opacity: 0.8;">累计获得</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">3,580.0</div>
+                  </div>
+                  <div>
+                    <div style="opacity: 0.8;">累计兑换</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">1,013.6</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 功德分说明 -->
+            <div class="t-alert t-alert--theme-info mb-l">
+              <div class="t-alert__icon">ℹ️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message" style="font-size: 12px; line-height: 1.6;">
+                  • 功德分无上限，持续获得<br>
+                  • 可兑换课程、复训、咨询服务、商城用品<br>
+                  • 青鸾大使推荐（第2次起）可获得功德分<br>
+                  • 所有大使担任辅导员/义工可获得功德分
+                </div>
+              </div>
+            </div>
+
+            <!-- 功能按钮 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+              <button class="t-button t-button--theme-primary t-button--variant-outline">
+                <span class="t-button__text">兑换商品</span>
+              </button>
+              <button class="t-button t-button--theme-primary t-button--variant-outline">
+                <span class="t-button__text">兑换课程</span>
+              </button>
+            </div>
+
+            <!-- 获得途径统计 -->
+            <div class="section-title section-title--simple">📊 获得途径统计</div>
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div style="text-align: center; padding: 12px;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--td-brand-color);">1,850.0</div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">推荐课程</div>
+                  </div>
+                  <div style="text-align: center; padding: 12px;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--td-success-color);">1,730.0</div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">辅导员/义工</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab切换 -->
+            <div class="t-tabs t-tabs--theme-pills mb-m">
+              <div class="t-tabs__header">
+                <div class="t-tabs__nav">
+                  <div class="t-tabs__nav-container">
+                    <div class="t-tabs__nav-wrap">
+                      <div class="t-tabs__nav-item t-is-active"><span>全部明细</span></div>
+                      <div class="t-tabs__nav-item"><span>推荐</span></div>
+                      <div class="t-tabs__nav-item"><span>活动</span></div>
+                      <div class="t-tabs__nav-item"><span>兑换</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 功德分明细列表 -->
+            <div class="section-title section-title--simple">💎 明细记录</div>
+
+            <!-- 推荐奖励记录 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__body">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    📚
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <div style="font-weight: 500; margin-bottom: 4px;">推荐初探班课程</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">学员：王五</div>
+                      </div>
+                      <div style="font-size: 20px; font-weight: 600; color: var(--td-success-color); flex-shrink: 0;">+506.4</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--td-text-color-placeholder);">
+                      <span>订单号: 202401150001</span>
+                      <span>2024-01-15</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 推荐密训班记录 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__body">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    🎓
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <div style="font-weight: 500; margin-bottom: 4px;">推荐密训班课程</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">学员：李四</div>
+                      </div>
+                      <div style="font-size: 20px; font-weight: 600; color: var(--td-success-color); flex-shrink: 0;">+7,777.6</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--td-text-color-placeholder);">
+                      <span>订单号: 202401120001</span>
+                      <span>2024-01-12</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 辅导员活动记录 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__body">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    👨‍🏫
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <div style="font-weight: 500; margin-bottom: 4px;">担任辅导员</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">初探班第11期</div>
+                      </div>
+                      <div style="font-size: 20px; font-weight: 600; color: var(--td-success-color); flex-shrink: 0;">+500.0</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--td-text-color-placeholder);">
+                      <span>活动地点：北京市</span>
+                      <span>2024-01-10</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 义工活动记录 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__body">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    🤝
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <div style="font-weight: 500; margin-bottom: 4px;">会务义工</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">商学院年度总结会</div>
+                      </div>
+                      <div style="font-size: 20px; font-weight: 600; color: var(--td-success-color); flex-shrink: 0;">+300.0</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--td-text-color-placeholder);">
+                      <span>活动地点：北京市</span>
+                      <span>2024-01-08</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 兑换记录 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__body">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    🎁
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <div style="font-weight: 500; margin-bottom: 4px;">兑换复训费</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">初探班第12期复训</div>
+                      </div>
+                      <div style="font-size: 20px; font-weight: 600; color: var(--td-error-color); flex-shrink: 0;">-500.0</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--td-text-color-placeholder);">
+                      <span>兑换单号: DH202401050001</span>
+                      <span>2024-01-05</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 加载更多 -->
+            <div style="text-align: center; padding: 20px;">
+              <button class="t-button t-button--theme-default t-button--variant-text t-button--size-small">
+                <span class="t-button__text">加载更多</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>

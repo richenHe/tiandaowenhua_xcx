@@ -1,0 +1,276 @@
+/**
+ * TDesign Avatar 头像组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: var(--td-font-size-base);
+  font-weight: var(--td-font-weight-medium);
+  color: var(--td-text-color-anti);
+  background-color: var(--td-border-level-2);
+  border-radius: var(--td-radius-circle);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.t-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.t-avatar__text {
+  transform: scale(0.8);
+}
+
+.t-avatar__icon {
+  font-size: 1.5em;
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-avatar--size-small {
+  width: 24px;
+  height: 24px;
+  font-size: var(--td-font-size-s);
+}
+
+.t-avatar--size-medium {
+  width: 40px;
+  height: 40px;
+  font-size: var(--td-font-size-base);
+}
+
+.t-avatar--size-large {
+  width: 48px;
+  height: 48px;
+  font-size: var(--td-font-size-m);
+}
+
+.t-avatar--size-xlarge {
+  width: 64px;
+  height: 64px;
+  font-size: var(--td-font-size-l);
+}
+
+.t-avatar--size-xxlarge {
+  width: 80px;
+  height: 80px;
+  font-size: var(--td-font-size-xl);
+}
+
+/* ==================== 形状变体 ==================== */
+
+.t-avatar--shape-circle {
+  border-radius: var(--td-radius-circle);
+}
+
+.t-avatar--shape-round {
+  border-radius: var(--td-radius-default);
+}
+
+.t-avatar--shape-square {
+  border-radius: 0;
+}
+
+/* ==================== 颜色主题 ==================== */
+
+.t-avatar--theme-primary {
+  background: linear-gradient(135deg, var(--td-brand-color), var(--td-brand-color-light));
+}
+
+.t-avatar--theme-success {
+  background: linear-gradient(135deg, var(--td-success-color), #00C178);
+}
+
+.t-avatar--theme-warning {
+  background: linear-gradient(135deg, var(--td-warning-color), #E8C547);
+}
+
+.t-avatar--theme-error {
+  background: linear-gradient(135deg, var(--td-error-color), #F16B6F);
+}
+
+.t-avatar--theme-default {
+  background-color: var(--td-border-level-2);
+  color: var(--td-text-color-secondary);
+}
+
+/* ==================== 头像组 ==================== */
+
+.t-avatar-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.t-avatar-group .t-avatar {
+  border: 2px solid var(--td-bg-color-container);
+}
+
+.t-avatar-group .t-avatar + .t-avatar {
+  margin-left: -12px;
+}
+
+.t-avatar-group--cascading .t-avatar {
+  transition: margin-left var(--td-transition-duration-base);
+}
+
+.t-avatar-group--cascading:hover .t-avatar {
+  margin-left: 0;
+}
+
+/* ==================== 头像组尺寸 ==================== */
+
+.t-avatar-group .t-avatar--size-small + .t-avatar--size-small {
+  margin-left: -8px;
+}
+
+.t-avatar-group .t-avatar--size-medium + .t-avatar--size-medium {
+  margin-left: -12px;
+}
+
+.t-avatar-group .t-avatar--size-large + .t-avatar--size-large {
+  margin-left: -16px;
+}
+
+/* ==================== 边框 ==================== */
+
+.t-avatar--bordered {
+  border: 2px solid var(--td-bg-color-container);
+  box-shadow: 0 0 0 1px var(--td-border-level-1);
+}
+
+/* ==================== 徽章状态 ==================== */
+
+.t-avatar__badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--td-bg-color-container);
+  border-radius: var(--td-radius-circle);
+  background-color: var(--td-border-level-2);
+}
+
+.t-avatar__badge--online {
+  background-color: var(--td-success-color);
+}
+
+.t-avatar__badge--offline {
+  background-color: var(--td-border-level-2);
+}
+
+.t-avatar__badge--busy {
+  background-color: var(--td-error-color);
+}
+
+.t-avatar__badge--away {
+  background-color: var(--td-warning-color);
+}
+
+/* ==================== 可点击 ==================== */
+
+.t-avatar--clickable {
+  cursor: pointer;
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-avatar--clickable:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.t-avatar--clickable:active {
+  transform: scale(0.95);
+}
+
+/* ==================== 上传头像 ==================== */
+
+.t-avatar--upload {
+  cursor: pointer;
+  background-color: var(--td-bg-color-container-hover);
+  border: 1px dashed var(--td-border-level-1);
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-avatar--upload:hover {
+  border-color: var(--td-brand-color);
+}
+
+.t-avatar--upload .t-avatar__icon {
+  color: var(--td-text-color-placeholder);
+}
+
+.t-avatar--upload:hover .t-avatar__icon {
+  color: var(--td-brand-color);
+}
+
+/* ==================== 加载状态 ==================== */
+
+.t-avatar--loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.t-avatar--loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: avatar-loading 1.5s infinite;
+}
+
+@keyframes avatar-loading {
+  to {
+    left: 100%;
+  }
+}
+
+/* ==================== 组合最大数量 ==================== */
+
+.t-avatar-group__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  margin-left: 8px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-secondary);
+  background-color: var(--td-bg-color-container-hover);
+  border-radius: var(--td-radius-default);
+  cursor: pointer;
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-avatar-group__more:hover {
+  background-color: var(--td-border-level-1);
+  color: var(--td-text-color-primary);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

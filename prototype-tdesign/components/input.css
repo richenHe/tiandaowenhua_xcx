@@ -1,0 +1,323 @@
+/**
+ * TDesign Input 输入框组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-input__wrap {
+  width: 100%;
+}
+
+.t-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  height: var(--td-comp-size-m);
+  padding: 0 var(--td-comp-paddingLR-s);
+  background-color: var(--td-bg-color-container);
+  border: 1px solid var(--td-border-level-1);
+  border-radius: var(--td-radius-default);
+  transition: all var(--td-transition-duration-base) var(--td-transition-timing-function);
+}
+
+.t-input__inner {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  font-size: var(--td-font-size-base);
+  color: var(--td-text-color-primary);
+  background-color: transparent;
+  border: none;
+  outline: none;
+}
+
+.t-input__inner::placeholder {
+  color: var(--td-text-color-placeholder);
+}
+
+/* ==================== 前缀和后缀 ==================== */
+
+.t-input__prefix {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  color: var(--td-text-color-secondary);
+  flex-shrink: 0;
+}
+
+.t-input__suffix {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  color: var(--td-text-color-secondary);
+  flex-shrink: 0;
+}
+
+.t-input__prefix-icon,
+.t-input__suffix-icon {
+  font-size: 16px;
+  cursor: pointer;
+  transition: color var(--td-transition-duration-base);
+}
+
+.t-input__prefix-icon:hover,
+.t-input__suffix-icon:hover {
+  color: var(--td-text-color-primary);
+}
+
+/* ==================== 清除按钮 ==================== */
+
+.t-input__clear {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  color: var(--td-text-color-placeholder);
+  background-color: var(--td-bg-color-container-hover);
+  border-radius: var(--td-radius-circle);
+  cursor: pointer;
+  transition: all var(--td-transition-duration-base);
+}
+
+.t-input:hover .t-input__clear {
+  display: flex;
+}
+
+.t-input__clear:hover {
+  color: var(--td-text-color-primary);
+  background-color: var(--td-border-level-2);
+}
+
+/* ==================== 提示文字 ==================== */
+
+.t-input__tips {
+  margin-top: 4px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-secondary);
+  line-height: var(--td-line-height-base);
+}
+
+/* ==================== 状态 - 聚焦 ==================== */
+
+.t-input.t-is-focused {
+  border-color: var(--td-brand-color);
+  box-shadow: 0 0 0 2px rgba(0, 82, 217, 0.1);
+}
+
+/* ==================== 状态 - 悬停 ==================== */
+
+.t-input:hover:not(.t-is-disabled):not(.t-is-focused) {
+  border-color: var(--td-border-level-2);
+}
+
+/* ==================== 状态 - 禁用 ==================== */
+
+.t-input.t-is-disabled {
+  background-color: var(--td-bg-color-container-hover);
+  border-color: var(--td-border-level-1);
+  cursor: not-allowed;
+}
+
+.t-input.t-is-disabled .t-input__inner {
+  color: var(--td-text-color-disabled);
+  cursor: not-allowed;
+}
+
+.t-input.t-is-disabled .t-input__inner::placeholder {
+  color: var(--td-text-color-disabled);
+}
+
+/* ==================== 状态 - 错误 ==================== */
+
+.t-input.t-is-error {
+  border-color: var(--td-error-color);
+}
+
+.t-input.t-is-error.t-is-focused {
+  box-shadow: 0 0 0 2px rgba(227, 77, 89, 0.1);
+}
+
+.t-input.t-is-error + .t-input__tips {
+  color: var(--td-error-color);
+}
+
+/* ==================== 状态 - 成功 ==================== */
+
+.t-input.t-is-success {
+  border-color: var(--td-success-color);
+}
+
+.t-input.t-is-success.t-is-focused {
+  box-shadow: 0 0 0 2px rgba(0, 168, 112, 0.1);
+}
+
+.t-input.t-is-success + .t-input__tips {
+  color: var(--td-success-color);
+}
+
+/* ==================== 状态 - 警告 ==================== */
+
+.t-input.t-is-warning {
+  border-color: var(--td-warning-color);
+}
+
+.t-input.t-is-warning.t-is-focused {
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+}
+
+.t-input.t-is-warning + .t-input__tips {
+  color: var(--td-warning-color);
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-input--size-small {
+  height: var(--td-comp-size-s);
+  padding: 0 var(--td-comp-paddingLR-xs);
+}
+
+.t-input--size-small .t-input__inner {
+  font-size: var(--td-font-size-s);
+}
+
+.t-input--size-medium {
+  height: var(--td-comp-size-m);
+  padding: 0 var(--td-comp-paddingLR-s);
+}
+
+.t-input--size-large {
+  height: var(--td-comp-size-l);
+  padding: 0 var(--td-comp-paddingLR-m);
+}
+
+.t-input--size-large .t-input__inner {
+  font-size: var(--td-font-size-m);
+}
+
+/* ==================== 文本对齐 ==================== */
+
+.t-input.t-align-left .t-input__inner {
+  text-align: left;
+}
+
+.t-input.t-align-center .t-input__inner {
+  text-align: center;
+}
+
+.t-input.t-align-right .t-input__inner {
+  text-align: right;
+}
+
+/* ==================== Textarea 多行文本 ==================== */
+
+.t-textarea {
+  width: 100%;
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+  min-height: 80px;
+  font-size: var(--td-font-size-base);
+  font-family: var(--td-font-family);
+  color: var(--td-text-color-primary);
+  background-color: var(--td-bg-color-container);
+  border: 1px solid var(--td-border-level-1);
+  border-radius: var(--td-radius-default);
+  outline: none;
+  resize: vertical;
+  transition: all var(--td-transition-duration-base) var(--td-transition-timing-function);
+}
+
+.t-textarea::placeholder {
+  color: var(--td-text-color-placeholder);
+}
+
+.t-textarea:hover {
+  border-color: var(--td-border-level-2);
+}
+
+.t-textarea:focus {
+  border-color: var(--td-brand-color);
+  box-shadow: 0 0 0 2px rgba(0, 82, 217, 0.1);
+}
+
+.t-textarea:disabled {
+  background-color: var(--td-bg-color-container-hover);
+  color: var(--td-text-color-disabled);
+  cursor: not-allowed;
+}
+
+/* ==================== 输入框组 ==================== */
+
+.t-input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.t-input-group .t-input {
+  border-radius: 0;
+}
+
+.t-input-group .t-input:first-child {
+  border-top-left-radius: var(--td-radius-default);
+  border-bottom-left-radius: var(--td-radius-default);
+}
+
+.t-input-group .t-input:last-child {
+  border-top-right-radius: var(--td-radius-default);
+  border-bottom-right-radius: var(--td-radius-default);
+}
+
+.t-input-group .t-input + .t-input {
+  margin-left: -1px;
+}
+
+.t-input-group__prepend,
+.t-input-group__append {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--td-comp-paddingLR-s);
+  background-color: var(--td-bg-color-container-hover);
+  border: 1px solid var(--td-border-level-1);
+  color: var(--td-text-color-secondary);
+  white-space: nowrap;
+}
+
+.t-input-group__prepend {
+  border-right: none;
+  border-top-left-radius: var(--td-radius-default);
+  border-bottom-left-radius: var(--td-radius-default);
+}
+
+.t-input-group__append {
+  border-left: none;
+  border-top-right-radius: var(--td-radius-default);
+  border-bottom-right-radius: var(--td-radius-default);
+}
+
+/* ==================== 搜索框 ==================== */
+
+.t-input--search .t-input__suffix-icon {
+  color: var(--td-brand-color);
+}
+
+/* ==================== 密码框 ==================== */
+
+.t-input--password .t-input__suffix-icon {
+  cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

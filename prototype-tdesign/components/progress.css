@@ -1,0 +1,331 @@
+/**
+ * TDesign Progress 进度条组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* ==================== 进度条容器 ==================== */
+
+.t-progress__bar {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  background-color: var(--td-bg-color-container-hover);
+  border-radius: var(--td-radius-round);
+  overflow: hidden;
+}
+
+/* ==================== 进度条填充 ==================== */
+
+.t-progress__inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--td-brand-color);
+  border-radius: var(--td-radius-round);
+  transition: width var(--td-transition-duration-slow) var(--td-transition-timing-function);
+}
+
+/* ==================== 进度文本 ==================== */
+
+.t-progress__text {
+  margin-left: 8px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ==================== 主题颜色 ==================== */
+
+.t-progress--theme-primary .t-progress__inner {
+  background-color: var(--td-brand-color);
+}
+
+.t-progress--theme-success .t-progress__inner {
+  background-color: var(--td-success-color);
+}
+
+.t-progress--theme-warning .t-progress__inner {
+  background-color: var(--td-warning-color);
+}
+
+.t-progress--theme-error .t-progress__inner {
+  background-color: var(--td-error-color);
+}
+
+/* ==================== 渐变主题 ==================== */
+
+.t-progress--theme-gradient .t-progress__inner {
+  background: linear-gradient(to right, var(--td-brand-color), var(--td-brand-color-light));
+}
+
+.t-progress--theme-gradient-success .t-progress__inner {
+  background: linear-gradient(to right, var(--td-success-color), #00C178);
+}
+
+.t-progress--theme-gradient-warning .t-progress__inner {
+  background: linear-gradient(to right, var(--td-warning-color), #E8C547);
+}
+
+.t-progress--theme-gradient-error .t-progress__inner {
+  background: linear-gradient(to right, var(--td-error-color), #F16B6F);
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-progress--size-small .t-progress__bar {
+  height: 4px;
+}
+
+.t-progress--size-medium .t-progress__bar {
+  height: 8px;
+}
+
+.t-progress--size-large .t-progress__bar {
+  height: 12px;
+}
+
+/* ==================== 圆形进度条 ==================== */
+
+.t-progress--circle {
+  display: inline-flex;
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+.t-progress__circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.t-progress__circle-bg {
+  fill: none;
+  stroke: var(--td-bg-color-container-hover);
+  stroke-width: 6;
+}
+
+.t-progress__circle-path {
+  fill: none;
+  stroke: var(--td-brand-color);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--td-transition-duration-slow) var(--td-transition-timing-function);
+}
+
+.t-progress__circle-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--td-font-size-m);
+  font-weight: var(--td-font-weight-semibold);
+  color: var(--td-text-color-primary);
+}
+
+/* ==================== 圆形进度条尺寸 ==================== */
+
+.t-progress--circle.t-progress--size-small {
+  width: 60px;
+  height: 60px;
+}
+
+.t-progress--circle.t-progress--size-small .t-progress__circle-bg,
+.t-progress--circle.t-progress--size-small .t-progress__circle-path {
+  stroke-width: 4;
+}
+
+.t-progress--circle.t-progress--size-small .t-progress__circle-text {
+  font-size: var(--td-font-size-s);
+}
+
+.t-progress--circle.t-progress--size-medium {
+  width: 100px;
+  height: 100px;
+}
+
+.t-progress--circle.t-progress--size-large {
+  width: 140px;
+  height: 140px;
+}
+
+.t-progress--circle.t-progress--size-large .t-progress__circle-bg,
+.t-progress--circle.t-progress--size-large .t-progress__circle-path {
+  stroke-width: 8;
+}
+
+.t-progress--circle.t-progress--size-large .t-progress__circle-text {
+  font-size: var(--td-font-size-l);
+}
+
+/* ==================== 仪表盘进度条 ==================== */
+
+.t-progress--dashboard {
+  display: inline-flex;
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+.t-progress--dashboard .t-progress__circle-svg {
+  transform: rotate(135deg);
+}
+
+/* ==================== 状态 - 激活 ==================== */
+
+.t-progress--active .t-progress__inner {
+  animation: progress-active 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-active {
+  0% {
+    opacity: 0.6;
+    width: 0;
+  }
+  20% {
+    opacity: 0.8;
+    width: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ==================== 状态 - 成功 ==================== */
+
+.t-progress--status-success .t-progress__inner {
+  background-color: var(--td-success-color);
+}
+
+.t-progress--status-success .t-progress__text {
+  color: var(--td-success-color);
+}
+
+.t-progress--status-success .t-progress__circle-path {
+  stroke: var(--td-success-color);
+}
+
+/* ==================== 状态 - 错误 ==================== */
+
+.t-progress--status-error .t-progress__inner {
+  background-color: var(--td-error-color);
+}
+
+.t-progress--status-error .t-progress__text {
+  color: var(--td-error-color);
+}
+
+.t-progress--status-error .t-progress__circle-path {
+  stroke: var(--td-error-color);
+}
+
+/* ==================== 状态 - 警告 ==================== */
+
+.t-progress--status-warning .t-progress__inner {
+  background-color: var(--td-warning-color);
+}
+
+.t-progress--status-warning .t-progress__text {
+  color: var(--td-warning-color);
+}
+
+.t-progress--status-warning .t-progress__circle-path {
+  stroke: var(--td-warning-color);
+}
+
+/* ==================== 条纹动画 ==================== */
+
+.t-progress--striped .t-progress__inner {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 20px 20px;
+}
+
+.t-progress--striped.t-progress--active .t-progress__inner {
+  animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+  from {
+    background-position: 20px 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* ==================== 标签位置 ==================== */
+
+.t-progress--label-inside .t-progress__bar {
+  height: 20px;
+}
+
+.t-progress--label-inside .t-progress__text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-left: 0;
+  color: var(--td-text-color-anti);
+  font-size: 11px;
+  z-index: 1;
+}
+
+/* ==================== 垂直进度条 ==================== */
+
+.t-progress--vertical {
+  flex-direction: column;
+  height: 200px;
+  width: auto;
+}
+
+.t-progress--vertical .t-progress__bar {
+  width: 8px;
+  height: 100%;
+  flex: none;
+}
+
+.t-progress--vertical .t-progress__inner {
+  width: 100%;
+  height: 0;
+  top: auto;
+  bottom: 0;
+  transition: height var(--td-transition-duration-slow) var(--td-transition-timing-function);
+}
+
+.t-progress--vertical .t-progress__text {
+  margin-left: 0;
+  margin-top: 8px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

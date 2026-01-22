@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程学习 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* 轮播图容器 */
+    .banner-swiper {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      overflow: hidden;
+    }
+
+    .banner-swiper-wrapper {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.3s ease;
+    }
+
+    .banner-slide {
+      flex-shrink: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    .banner-slide.blue {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .banner-slide.purple {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .banner-slide.pink {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .banner-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .banner-subtitle {
+      font-size: 16px;
+      opacity: 0.95;
+      line-height: 1.6;
+    }
+
+    /* 轮播指示器 - 左下角 */
+    .banner-pagination {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .banner-pagination-bullet {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      padding: 0;
+    }
+
+    .banner-pagination-bullet-active {
+      width: 24px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    /* 铃铛按钮 - 无背景 */
+    .notification-btn {
+      position: absolute;
+      top: 50px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 100;
+      text-decoration: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .course-image {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border-radius: var(--td-radius-default) var(--td-radius-default) 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <!-- 铃铛按钮 -->
+        <a href="../common/announcement.html" class="notification-btn">🔔</a>
+
+        <div class="scroll-area scroll-area--with-tabbar">
+          <!-- 轮播Banner -->
+          <div class="banner-swiper">
+            <div class="banner-swiper-wrapper">
+              <!-- 第一张 -->
+              <div class="banner-slide blue">
+                <div class="banner-title">天道文化课程平台</div>
+                <div class="banner-subtitle">传承国学智慧 · 弘扬天道文化</div>
+              </div>
+
+              <!-- 第二张 -->
+              <div class="banner-slide purple">
+                <div class="banner-title">初探班第12期</div>
+                <div class="banner-subtitle">即将开课 · 火热报名中<br/>2024年2月1日开班</div>
+              </div>
+
+              <!-- 第三张 -->
+              <div class="banner-slide pink">
+                <div class="banner-title">密训班招生</div>
+                <div class="banner-subtitle">深度学习 · 全面提升<br/>限额招生 · 名额有限</div>
+              </div>
+            </div>
+
+            <!-- 轮播指示器 -->
+            <div class="banner-pagination">
+              <button class="banner-pagination-bullet banner-pagination-bullet-active" data-index="0"></button>
+              <button class="banner-pagination-bullet" data-index="1"></button>
+              <button class="banner-pagination-bullet" data-index="2"></button>
+            </div>
+          </div>
+
+          <div class="page-content">
+            <!-- 通知 -->
+            <div class="t-alert t-alert--theme-info mb-l">
+              <div class="t-alert__icon">📢</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">【重要】初探班第12期即将开课</div>
+              </div>
+              <div class="t-alert__close">›</div>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="t-tabs t-tabs--theme-pills mb-l">
+              <div class="t-tabs__header">
+                <div class="t-tabs__nav">
+                  <div class="t-tabs__nav-container">
+                    <div class="t-tabs__nav-wrap">
+                      <div class="t-tabs__nav-item t-is-active">
+                        <span class="t-tabs__nav-item-text-wrapper">全部</span>
+                      </div>
+                      <div class="t-tabs__nav-item">
+                        <span class="t-tabs__nav-item-text-wrapper">初探班</span>
+                      </div>
+                      <div class="t-tabs__nav-item">
+                        <span class="t-tabs__nav-item-text-wrapper">密训班</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 课程列表 -->
+            <a href="../course/detail.html" class="t-card t-card--bordered t-card--hoverable mb-l" style="text-decoration: none; color: inherit;">
+              <div class="course-image">📚</div>
+              <div class="t-card__body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 style="font-size: 18px; font-weight: 600;">初探班</h3>
+                  <span class="t-badge--standalone t-badge--theme-success">已购买</span>
+                </div>
+                <div style="color: var(--td-warning-color); font-size: 20px; font-weight: 600; margin-bottom: 12px;">¥1688</div>
+                <button class="t-button t-button--theme-warning t-button--variant-base t-button--block" onclick="event.preventDefault(); window.location.href='../course/detail.html';">
+                  <span class="t-button__text">查看详情</span>
+                </button>
+              </div>
+            </a>
+
+            <a href="../course/detail.html" class="t-card t-card--bordered t-card--hoverable" style="text-decoration: none; color: inherit;">
+              <div class="course-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">🎓</div>
+              <div class="t-card__body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 style="font-size: 18px; font-weight: 600;">密训班</h3>
+                </div>
+                <div style="color: var(--td-warning-color); font-size: 20px; font-weight: 600; margin-bottom: 12px;">¥38888</div>
+                <button class="t-button t-button--theme-warning t-button--variant-base t-button--block" onclick="event.preventDefault(); window.location.href='../course/detail.html';">
+                  <span class="t-button__text">查看详情</span>
+                </button>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="tabbar">
+          <a href="home.html" class="tabbar__item tabbar__item--active" style="text-decoration: none;">
+            <div class="tabbar__icon">📚</div>
+            <div class="tabbar__label">课程学习</div>
+          </a>
+          <a href="../course/my-courses.html" class="tabbar__item" style="text-decoration: none;">
+            <div class="tabbar__icon">📖</div>
+            <div class="tabbar__label">我的课程</div>
+          </a>
+          <a href="../mine/index.html" class="tabbar__item" style="text-decoration: none;">
+            <div class="tabbar__icon">👤</div>
+            <div class="tabbar__label">我的</div>
+          </a>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <script>
+    // 轮播图逻辑
+    let currentSlide = 0;
+    const totalSlides = 3;
+    const wrapper = document.querySelector('.banner-swiper-wrapper');
+    const bullets = document.querySelectorAll('.banner-pagination-bullet');
+
+    function updateSlides() {
+      wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+      
+      // 更新指示器
+      bullets.forEach((bullet, index) => {
+        if (index === currentSlide) {
+          bullet.classList.add('banner-pagination-bullet-active');
+        } else {
+          bullet.classList.remove('banner-pagination-bullet-active');
+        }
+      });
+    }
+
+    // 点击指示器切换
+    bullets.forEach((bullet, index) => {
+      bullet.addEventListener('click', () => {
+        currentSlide = index;
+        updateSlides();
+      });
+    });
+
+    // 自动轮播
+    setInterval(() => {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      updateSlides();
+    }, 4000);
+  </script>
+</body>
+</html>

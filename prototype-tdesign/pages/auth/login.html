@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 40px 16px;
+    }
+
+    .login-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, var(--td-brand-color), var(--td-brand-color-light));
+      border-radius: var(--td-radius-large);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: white;
+      box-shadow: 0 4px 20px rgba(0, 82, 217, 0.3);
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--td-text-color-primary);
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      font-size: 14px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 40px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .login-tips {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .login-tips a {
+      color: var(--td-brand-color);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="login-container">
+          <div class="login-logo">
+            🏛️
+          </div>
+          
+          <div class="login-title">天道文化课程平台</div>
+          <div class="login-subtitle">传承国学智慧 · 弘扬天道文化</div>
+          
+          <div class="t-card t-card--bordered login-card">
+            <div class="t-card__body">
+              <a href="complete-profile.html" style="display: block; text-decoration: none;">
+                <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+                  <span class="t-button__icon">🔐</span>
+                  <span class="t-button__text">微信一键登录</span>
+                </button>
+              </a>
+              
+              <div class="login-tips">
+                登录即代表同意<a href="#">《用户协议》</a>和<a href="#">《隐私政策》</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>
+

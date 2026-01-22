@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的预约 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <a href="index.html" class="page-header__back" style="text-decoration: none; color: inherit;">←</a>
+          <div class="page-header__title">我的预约</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <div class="page-content">
+            <!-- 筛选标签 -->
+            <div class="t-tabs t-tabs--theme-pills mb-l">
+              <div class="t-tabs__header">
+                <div class="t-tabs__nav">
+                  <div class="t-tabs__nav-container">
+                    <div class="t-tabs__nav-wrap">
+                      <div class="t-tabs__nav-item t-is-active">
+                        <span class="t-tabs__nav-item-text-wrapper">全部</span>
+                      </div>
+                      <div class="t-tabs__nav-item">
+                        <span class="t-tabs__nav-item-text-wrapper">待上课</span>
+                      </div>
+                      <div class="t-tabs__nav-item">
+                        <span class="t-tabs__nav-item-text-wrapper">已完成</span>
+                      </div>
+                      <div class="t-tabs__nav-item">
+                        <span class="t-tabs__nav-item-text-wrapper">已取消</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 预约列表 -->
+            <a href="../course/appointment-confirm.html" style="text-decoration: none; color: inherit;">
+              <div class="t-card t-card--bordered t-card--hoverable mb-l">
+                <div class="t-card__body">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 16px; font-weight: 600;">初探班 第12期</h3>
+                    <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">待上课</span>
+                  </div>
+                  <div style="color: var(--td-text-color-secondary); font-size: 13px; line-height: 1.6;">
+                    <div style="margin-bottom: 6px;">📅 上课时间: 2024-02-01 09:00</div>
+                    <div style="margin-bottom: 6px;">📍 上课地点: 北京市朝阳区天道文化中心</div>
+                    <div style="margin-bottom: 6px;">👨‍🏫 授课老师: 张老师</div>
+                    <div>📞 联系电话: 010-12345678</div>
+                  </div>
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small" style="flex: 1;">
+                      <span class="t-button__text">取消预约</span>
+                    </button>
+                    <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-small" style="flex: 1;">
+                      <span class="t-button__text">查看详情</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="../course/schedule.html" style="text-decoration: none; color: inherit;">
+              <div class="t-card t-card--bordered t-card--hoverable mb-l">
+                <div class="t-card__body">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 16px; font-weight: 600;">初探班 第11期（复训）</h3>
+                    <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">已完成</span>
+                  </div>
+                  <div style="color: var(--td-text-color-secondary); font-size: 13px; line-height: 1.6;">
+                    <div style="margin-bottom: 6px;">📅 上课时间: 2024-01-15 09:00</div>
+                    <div style="margin-bottom: 6px;">📍 上课地点: 北京市朝阳区天道文化中心</div>
+                    <div style="margin-bottom: 6px;">👨‍🏫 授课老师: 张老师</div>
+                  </div>
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 12px; color: var(--td-text-color-placeholder);">评价: ⭐⭐⭐⭐⭐</span>
+                    <button class="t-button t-button--theme-primary t-button--variant-text t-button--size-small">
+                      <span class="t-button__text">再次预约</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <!-- 空状态提示 -->
+            <div class="t-alert t-alert--theme-info" style="margin-top: 24px;">
+              <div class="t-alert__icon">💡</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">可复训课程支持多次预约上课</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+</body>
+</html>

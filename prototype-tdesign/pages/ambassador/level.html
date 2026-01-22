@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大使等级 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* 奖励卡片hover效果 */
+    .t-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">大使等级</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <div class="page-content">
+            
+            <!-- 当前等级卡片 -->
+            <div class="t-card t-card--bordered mb-l" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+              <div class="t-card__body">
+                <h2 style="margin-bottom: 8px; font-size: 24px;">🎖️ 青鸾大使</h2>
+                <div style="opacity: 0.95; font-size: 14px;">当前等级 · 已推荐2人</div>
+                <div style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.2); border-radius: 6px;">
+                  <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">成为大使时间</div>
+                  <div style="font-size: 14px; font-weight: 500;">2024-01-15</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 功德分与积分 -->
+            <div class="section-title section-title--simple">💎 我的奖励</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+              <a href="merit-points.html" style="text-decoration: none;">
+                <div class="t-card t-card--bordered" style="cursor: pointer; transition: all 0.3s;">
+                  <div class="t-card__body" style="text-align: center; padding: 20px 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🙏</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--td-brand-color); margin-bottom: 4px;">1250.0</div>
+                    <div style="font-size: 13px; color: var(--td-text-color-secondary);">功德分</div>
+                  </div>
+                </div>
+              </a>
+              <a href="cash-points.html" style="text-decoration: none;">
+                <div class="t-card t-card--bordered" style="cursor: pointer; transition: all 0.3s;">
+                  <div class="t-card__body" style="text-align: center; padding: 20px 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--td-success-color); margin-bottom: 4px;">1250.0</div>
+                    <div style="font-size: 13px; color: var(--td-text-color-secondary);">可提现积分</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            <!-- 快捷入口 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+              <a href="upgrade-guide.html" style="text-decoration: none;">
+                <button class="t-button t-button--theme-primary t-button--variant-outline t-button--block">
+                  <span class="t-button__text">🚀 升级指南</span>
+                </button>
+              </a>
+              <a href="activity-records.html" style="text-decoration: none;">
+                <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+                  <span class="t-button__text">📋 活动记录</span>
+                </button>
+              </a>
+            </div>
+
+            <!-- 等级体系 -->
+            <div class="section-title section-title--simple">📊 等级体系</div>
+            
+            <!-- 准青鸾大使 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__header">
+                <div class="t-card__title">
+                  <span style="margin-right: 8px;">🥚</span>
+                  准青鸾大使
+                </div>
+                <span class="t-badge--standalone t-badge--theme-default t-badge--size-small">Level 1</span>
+              </div>
+              <div class="t-card__body">
+                <div style="font-size: 13px; line-height: 1.8; color: var(--td-text-color-secondary);">
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">成为条件：</div>
+                  <div>• 购买密训班课程</div>
+                  <div>• 提交大使申请</div>
+                  <div>• 通过面试审核</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">特殊说明：</div>
+                  <div>• <span style="color: var(--td-warning-color); font-weight: 500;">仅可推荐初探班学员</span></div>
+                  <div>• 可作为推荐人但暂无推广奖励</div>
+                  <div>• 无需签署协议</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">升级条件：</div>
+                  <div>• 成功推荐1位学员购买初探班</div>
+                  <div>• 自动升级为青鸾大使</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 青鸾大使 -->
+            <div class="t-card t-card--bordered mb-m" style="border: 2px solid var(--td-brand-color);">
+              <div class="t-card__header">
+                <div class="t-card__title">
+                  <span style="margin-right: 8px;">🐦</span>
+                  青鸾大使
+                </div>
+                <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small">Level 2</span>
+              </div>
+              <div class="t-card__body">
+                <div style="font-size: 13px; line-height: 1.8; color: var(--td-text-color-secondary);">
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">成为条件：</div>
+                  <div>• 准青鸾推荐1个初探班学员</div>
+                  <div>• 签署《传播大使合作协议》</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">权益说明：</div>
+                  <div>• 成为时获得1688冻结积分</div>
+                  <div>• 第1次推荐初探班解冻积分</div>
+                  <div>• 第2次起推荐获得功德分</div>
+                  <div>• 可推荐所有课程类型</div>
+                  <div>• 可担任辅导员获得功德分</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">合同期：</div>
+                  <div>• 1年，到期需续签</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 鸿鹄大使 -->
+            <div class="t-card t-card--bordered mb-m">
+              <div class="t-card__header">
+                <div class="t-card__title">
+                  <span style="margin-right: 8px;">🦅</span>
+                  鸿鹄大使
+                </div>
+                <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">Level 3</span>
+              </div>
+              <div class="t-card__body">
+                <div style="font-size: 13px; line-height: 1.8; color: var(--td-text-color-secondary);">
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">成为条件：</div>
+                  <div>• 已是青鸾大使</div>
+                  <div>• 支付9800元升级费用</div>
+                  <div>• 签署《鸿鹄大使补充协议》</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">权益说明：</div>
+                  <div>• 获得10个初探班名额</div>
+                  <div>• 获得16880冻结积分</div>
+                  <div>• 推荐只获得积分（可提现）</div>
+                  <div>• 可担任辅导员获得功德分</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">积分机制：</div>
+                  <div>• 推荐初探班：解冻1688积分</div>
+                  <div>• 推荐其他课程：直接发放20%积分</div>
+                  <div>• 解冻完毕后按比例持续获得</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 金凤大使 -->
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__header">
+                <div class="t-card__title">
+                  <span style="margin-right: 8px;">🦚</span>
+                  金凤大使
+                </div>
+                <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">Level 4</span>
+              </div>
+              <div class="t-card__body">
+                <div style="font-size: 13px; line-height: 1.8; color: var(--td-text-color-secondary);">
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">成为条件：</div>
+                  <div>• 感召到一定名额（具体待定）</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">权益说明：</div>
+                  <div>• 推荐初探班：50%积分</div>
+                  <div>• 推荐密训班：40%积分</div>
+                  <div>• 推荐咨询：30%积分</div>
+                  <div>• 推荐顾问：5%积分</div>
+                  
+                  <div class="t-divider" style="margin: 12px 0;"></div>
+                  
+                  <div style="font-weight: 500; color: var(--td-text-color-primary); margin-bottom: 8px;">班主任要求：</div>
+                  <div>• 积极配合商学院工作</div>
+                  <div>• 不传播负面信息</div>
+                  <div>• 每月组织不低于3次沙龙</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 升级引导 (根据用户状态动态显示) -->
+            <div id="action-button-area">
+              <!-- 非大使用户：显示申请按钮 -->
+              <a href="apply.html" id="apply-button" style="text-decoration: none; display: none;">
+                <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+                  <span class="t-button__text">申请成为大使</span>
+                </button>
+              </a>
+
+              <!-- 准青鸾大使：显示升级提示 -->
+              <div id="pre-qingluan-tip" style="display: none;">
+                <div class="t-alert t-alert--theme-info">
+                  <div class="t-alert__icon">💡</div>
+                  <div class="t-alert__content">
+                    <div class="t-alert__title" style="font-weight: 500; margin-bottom: 4px;">升级提示</div>
+                    <div class="t-alert__message" style="font-size: 13px;">
+                      推荐1位学员购买初探班后，即可自动升级为青鸾大使
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 青鸾大使：显示升级选项 -->
+              <div id="qingluan-upgrade" style="display: none;">
+                <div class="t-alert t-alert--theme-success mb-m">
+                  <div class="t-alert__icon">🎉</div>
+                  <div class="t-alert__content">
+                    <div class="t-alert__title" style="font-weight: 500; margin-bottom: 4px;">升级机会</div>
+                    <div class="t-alert__message" style="font-size: 13px;">
+                      您可以升级为鸿鹄大使，享受更多权益
+                    </div>
+                  </div>
+                </div>
+                <button class="t-button t-button--theme-success t-button--variant-base t-button--block t-button--size-large" onclick="alert('升级鸿鹄大使功能开发中...')">
+                  <span class="t-button__text">升级为鸿鹄大使</span>
+                </button>
+              </div>
+
+              <!-- 鸿鹄/金凤大使：显示当前等级满意度 -->
+              <div id="high-level-tip" style="display: none;">
+                <div class="t-alert t-alert--theme-success">
+                  <div class="t-alert__icon">✨</div>
+                  <div class="t-alert__content">
+                    <div class="t-alert__title" style="font-weight: 500; margin-bottom: 4px;">感谢您的支持</div>
+                    <div class="t-alert__message" style="font-size: 13px;">
+                      您已经是高级大使，继续为天道文化传播贡献力量！
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+  
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+  
+  <!-- 根据用户大使状态显示不同内容 -->
+  <script>
+    (function() {
+      // 从 localStorage 获取用户的大使状态
+      const userData = localStorage.getItem('userData');
+      let isAmbassador = false;
+      let ambassadorLevel = '';
+      
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          isAmbassador = user.isAmbassador || false;
+          ambassadorLevel = user.ambassadorLevel || '';
+        } catch (e) {
+          console.error('解析用户数据失败', e);
+        }
+      }
+
+      // 也可以从URL参数检测（用于演示）
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('isAmbassador') === 'true') {
+        isAmbassador = true;
+        ambassadorLevel = urlParams.get('level') || '青鸾大使';
+      }
+
+      // 获取各个区域的元素
+      const applyButton = document.getElementById('apply-button');
+      const preQingluanTip = document.getElementById('pre-qingluan-tip');
+      const qingluanUpgrade = document.getElementById('qingluan-upgrade');
+      const highLevelTip = document.getElementById('high-level-tip');
+      const currentLevelCard = document.querySelector('.t-card[style*="linear-gradient"]');
+
+      if (!isAmbassador) {
+        // 非大使用户：显示申请按钮
+        applyButton.style.display = 'block';
+        // 隐藏当前等级卡片（因为还不是大使）
+        if (currentLevelCard) {
+          currentLevelCard.style.display = 'none';
+        }
+      } else {
+        // 已是大使：根据等级显示不同内容
+        // 更新当前等级卡片
+        if (currentLevelCard) {
+          const levelIcon = {
+            '准青鸾大使': '🥚',
+            '青鸾大使': '🐦',
+            '鸿鹄大使': '🦅',
+            '金凤大使': '🦚'
+          };
+          const levelColor = {
+            '准青鸾大使': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            '青鸾大使': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            '鸿鹄大使': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            '金凤大使': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+          };
+          
+          currentLevelCard.style.background = levelColor[ambassadorLevel] || levelColor['青鸾大使'];
+          const levelTitle = currentLevelCard.querySelector('h2');
+          if (levelTitle) {
+            levelTitle.textContent = `${levelIcon[ambassadorLevel] || '🎖️'} ${ambassadorLevel}`;
+          }
+        }
+
+        // 根据等级显示相应的操作区域
+        if (ambassadorLevel === '准青鸾大使') {
+          preQingluanTip.style.display = 'block';
+        } else if (ambassadorLevel === '青鸾大使') {
+          qingluanUpgrade.style.display = 'block';
+        } else if (ambassadorLevel === '鸿鹄大使' || ambassadorLevel === '金凤大使') {
+          highLevelTip.style.display = 'block';
+        } else {
+          // 默认情况（未知等级的大使）
+          highLevelTip.style.display = 'block';
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

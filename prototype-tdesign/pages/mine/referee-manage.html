@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推荐人管理 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">推荐人管理</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <div class="page-content">
+            
+            <!-- 推荐人状态卡片 -->
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__header">
+                <div class="t-card__title">当前推荐人</div>
+                <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">未确认</span>
+              </div>
+              <div class="t-card__body">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                  <div class="t-avatar t-avatar--theme-primary t-avatar--size-large">
+                    <span class="t-avatar__text">李</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">李四</div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">手机: 138****8888</div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-primary t-badge--size-medium">青鸾大使</span>
+                </div>
+                
+                <div class="t-divider" style="margin: 12px 0;"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: var(--td-text-color-secondary);">
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">设置时间</div>
+                    <div style="margin-top: 4px;">2024-01-15</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">最后修改</div>
+                    <div style="margin-top: 4px;">2024-01-15</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">修改次数</div>
+                    <div style="margin-top: 4px;">0次</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">确认状态</div>
+                    <div style="margin-top: 4px; color: var(--td-warning-color); font-weight: 500;">待确认</div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 未确认状态：显示修改按钮 -->
+              <div class="t-card__footer">
+                <a href="../order/select-referee.html" style="text-decoration: none;">
+                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
+                    <span class="t-button__text">修改推荐人</span>
+                  </button>
+                </a>
+              </div>
+            </div>
+
+            <!-- 修改规则说明 -->
+            <div class="t-alert t-alert--theme-info mb-l">
+              <div class="t-alert__icon">ℹ️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__title" style="font-weight: 500; margin-bottom: 8px;">推荐人修改规则</div>
+                <div class="t-alert__message" style="font-size: 12px; line-height: 1.6;">
+                  • 支付前可多次修改推荐人<br>
+                  • 首次购买支付成功后推荐人永久锁定<br>
+                  • 7天内只能修改一次推荐人<br>
+                  • 不能选择自己或自己的下级为推荐人
+                </div>
+              </div>
+            </div>
+
+            <!-- 推荐人资格说明 -->
+            <div class="t-alert t-alert--theme-warning">
+              <div class="t-alert__icon">⚠️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__title" style="font-weight: 500; margin-bottom: 8px;">推荐人资格说明</div>
+                <div class="t-alert__message" style="font-size: 12px; line-height: 1.6;">
+                  • <strong>准青鸾大使</strong>：仅可推荐初探班课程<br>
+                  • <strong>青鸾及以上</strong>：可推荐所有课程<br>
+                  • 请根据购买课程类型选择合适的推荐人
+                </div>
+              </div>
+            </div>
+
+            <!-- 已确认状态示例（注释掉，实际使用时根据状态显示） -->
+            <!--
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__header">
+                <div class="t-card__title">当前推荐人</div>
+                <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">已确认</span>
+              </div>
+              <div class="t-card__body">
+                推荐人信息...
+              </div>
+            </div>
+            
+            <div class="t-alert t-alert--theme-success">
+              <div class="t-alert__icon">✅</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">
+                  推荐人已永久确认，不可再修改。确认时间：2024-01-20
+                </div>
+              </div>
+            </div>
+            -->
+
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+  
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>

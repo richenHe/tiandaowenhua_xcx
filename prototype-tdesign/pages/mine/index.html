@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人中心 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .profile-header {
+      background: linear-gradient(135deg, var(--td-brand-color), var(--td-brand-color-light));
+      padding: 24px 16px;
+      color: white;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: white;
+      border-bottom: 1px solid var(--td-border-level-1);
+      cursor: pointer;
+      transition: background 0.3s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .menu-item:hover {
+      background: var(--td-bg-color-secondarycontainer);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <!-- 用户信息头部 -->
+        <div class="profile-header">
+          <a href="profile.html" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div class="t-avatar t-avatar--size-large" style="background: white; color: var(--td-brand-color);">
+                <span class="t-avatar__text" style="font-size: 24px;">张</span>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 20px; font-weight: 600; margin-bottom: 4px;">张三 <span class="level-badge" id="user-level-badge">🌿</span></div>
+                <div style="font-size: 13px; opacity: 0.9;">138****8000</div>
+              </div>
+              <span style="opacity: 0.8;">›</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- 数据统计 -->
+        <div style="background: white; padding: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; border-bottom: 8px solid var(--td-bg-color-page);">
+          <a href="orders.html" style="text-decoration: none; color: inherit; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--td-brand-color);">3</div>
+            <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">我的订单</div>
+          </a>
+          <a href="appointments.html" style="text-decoration: none; color: inherit; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--td-success-color);">5</div>
+            <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">我的预约</div>
+          </a>
+          <a href="../course/my-courses.html" style="text-decoration: none; color: inherit; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--td-warning-color);">2</div>
+            <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">我的课程</div>
+          </a>
+          <a href="contracts.html" style="text-decoration: none; color: inherit; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--td-error-color);">1</div>
+            <div style="font-size: 12px; color: var(--td-text-color-secondary); margin-top: 4px;">我的合同</div>
+          </a>
+        </div>
+
+        <div class="scroll-area" style="height: calc(100% - 240px); overflow-y: auto;">
+          <!-- 推荐与设置 -->
+          <div class="section-title section-title--simple" style="padding: 12px 16px;">⚙️ 推荐与设置</div>
+          <a href="referral-list.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">🏇</span>
+              <span>引荐人列表</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small">5人</span>
+              <span style="color: var(--td-text-color-placeholder);">›</span>
+            </div>
+          </a>
+          <a href="referee-manage.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">👥</span>
+              <span>推荐人管理</span>
+            </div>
+            <span style="color: var(--td-text-color-placeholder);">›</span>
+          </a>
+          <a href="../ambassador/level.html" class="menu-item" id="ambassador-menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">🎖️</span>
+              <span id="ambassador-menu-text">传播大使</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="ambassador-badge" class="t-badge--standalone t-badge--theme-warning t-badge--size-small" style="display: none;">青鸾大使</span>
+              <span style="color: var(--td-text-color-placeholder);">›</span>
+            </div>
+          </a>
+          <a href="profile.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">👤</span>
+              <span>个人资料</span>
+            </div>
+            <span style="color: var(--td-text-color-placeholder);">›</span>
+          </a>
+
+          <!-- 帮助与反馈 -->
+          <div class="section-title section-title--simple" style="padding: 12px 16px;">💬 帮助与反馈</div>
+          <a href="consultation.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">💬</span>
+              <span>在线咨询</span>
+            </div>
+            <span style="color: var(--td-text-color-placeholder);">›</span>
+          </a>
+          <a href="feedback.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">📝</span>
+              <span>意见反馈</span>
+            </div>
+            <span style="color: var(--td-text-color-placeholder);">›</span>
+          </a>
+          <a href="../common/announcement.html" class="menu-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">📢</span>
+              <span>平台公告</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="t-badge t-badge--theme-error" style="padding: 2px 6px; font-size: 10px;">3</span>
+              <span style="color: var(--td-text-color-placeholder);">›</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="tabbar">
+          <a href="../index/home.html" class="tabbar__item" style="text-decoration: none;">
+            <div class="tabbar__icon">🏠</div>
+            <div class="tabbar__label">首页</div>
+          </a>
+          <a href="../mall/index.html" class="tabbar__item" style="text-decoration: none;">
+            <div class="tabbar__icon">🛒</div>
+            <div class="tabbar__label">商城</div>
+          </a>
+          <a href="../academy/intro.html" class="tabbar__item" style="text-decoration: none;">
+            <div class="tabbar__icon">🏫</div>
+            <div class="tabbar__label">商学院</div>
+          </a>
+          <a href="index.html" class="tabbar__item tabbar__item--active" style="text-decoration: none;">
+            <div class="tabbar__icon">👤</div>
+            <div class="tabbar__label">我的</div>
+          </a>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+  
+  <!-- 根据用户大使状态动态更新显示 -->
+  <script>
+    (function() {
+      // 从 localStorage 获取用户的大使状态
+      const userData = localStorage.getItem('userData');
+      let isAmbassador = false;
+      let ambassadorLevel = '';
+      
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          isAmbassador = user.isAmbassador || false;
+          ambassadorLevel = user.ambassadorLevel || '';
+        } catch (e) {
+          console.error('解析用户数据失败', e);
+        }
+      }
+
+      // 也可以从URL参数检测（用于演示）
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('isAmbassador') === 'true') {
+        isAmbassador = true;
+        ambassadorLevel = urlParams.get('level') || '青鸾大使';
+      }
+
+      const ambassadorMenuText = document.getElementById('ambassador-menu-text');
+      const ambassadorBadge = document.getElementById('ambassador-badge');
+
+      if (isAmbassador && ambassadorLevel) {
+        // 已是大使：显示等级徽章
+        ambassadorMenuText.textContent = '传播大使';
+        ambassadorBadge.textContent = ambassadorLevel;
+        ambassadorBadge.style.display = 'inline-block';
+        
+        // 根据等级设置徽章颜色
+        ambassadorBadge.className = 't-badge--standalone t-badge--size-small';
+        if (ambassadorLevel === '准青鸾大使') {
+          ambassadorBadge.className += ' t-badge--theme-default';
+        } else if (ambassadorLevel === '青鸾大使') {
+          ambassadorBadge.className += ' t-badge--theme-primary';
+        } else if (ambassadorLevel === '鸿鹄大使') {
+          ambassadorBadge.className += ' t-badge--theme-success';
+        } else if (ambassadorLevel === '金凤大使') {
+          ambassadorBadge.className += ' t-badge--theme-warning';
+        }
+      } else {
+        // 非大使：显示"申请成为大使"
+        ambassadorMenuText.textContent = '申请成为大使';
+        ambassadorBadge.style.display = 'none';
+      }
+    })();
+  </script>
+</body>
+</html>

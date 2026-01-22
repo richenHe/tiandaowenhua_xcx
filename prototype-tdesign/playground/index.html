@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDesign 组件展示 - Playground</title>
+  <link rel="stylesheet" href="../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../styles/reset.css">
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../components/all.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .playground-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .playground-header {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 40px;
+    }
+
+    .playground-header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+    }
+
+    .playground-header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .component-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .component-section h2 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--td-text-color-primary);
+    }
+
+    .component-section__desc {
+      font-size: 14px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 24px;
+    }
+
+    .component-demo {
+      padding: 24px;
+      background: var(--td-bg-color-page);
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .demo-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .demo-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--td-text-color-primary);
+      margin-bottom: 12px;
+    }
+
+    .device-showcase {
+      display: flex;
+      justify-content: center;
+      margin: 40px 0;
+    }
+
+    .back-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 8px;
+      color: var(--td-brand-color);
+      text-decoration: none;
+      font-weight: 500;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+      z-index: 1000;
+    }
+
+    .back-link:hover {
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html" class="back-link">← 返回首页</a>
+
+  <div class="playground-container">
+    <div class="playground-header">
+      <h1>TDesign 组件展示</h1>
+      <p>基于 TDesign 设计规范的完整组件库</p>
+    </div>
+
+    <!-- Button 按钮 -->
+    <section class="component-section">
+      <h2>Button 按钮</h2>
+      <p class="component-section__desc">按钮用于开始一个即时操作</p>
+      
+      <div class="component-demo">
+        <div class="demo-title">按钮类型</div>
+        <div class="demo-row">
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--shape-round">
+            <span class="t-button__text">填充按钮</span>
+          </button>
+          <button class="t-button t-button--theme-default t-button--variant-base">
+            <span class="t-button__text">次要按钮</span>
+          </button>
+          <button class="t-button t-button--theme-success t-button--variant-base">
+            <span class="t-button__text">成功按钮</span>
+          </button>
+          <button class="t-button t-button--theme-warning t-button--variant-base">
+            <span class="t-button__text">金色按钮</span>
+          </button>
+          <button class="t-button t-button--theme-danger t-button--variant-base">
+            <span class="t-button__text">危险按钮</span>
+          </button>
+        </div>
+
+        <div class="demo-title mt-l">按钮变体</div>
+        <div class="demo-row">
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--shape-round">
+            <span class="t-button__text">填充按钮</span>
+          </button>
+          <button class="t-button t-button--theme-primary t-button--variant-outline t-button--shape-round">
+            <span class="t-button__text">描边按钮</span>
+          </button>
+          <button class="t-button t-button--theme-primary t-button--variant-dashed t-button--shape-round">
+            <span class="t-button__text">虚线按钮</span>
+          </button>
+          <button class="t-button t-button--theme-primary t-button--variant-text t-button--shape-round">
+            <span class="t-button__text">文字按钮</span>
+          </button>
+        </div>
+
+        <div class="demo-title mt-l">按钮尺寸</div>
+        <div class="demo-row">
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-small t-button--shape-round">
+            <span class="t-button__text">小型</span>
+          </button>
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium t-button--shape-round">
+            <span class="t-button__text">中型</span>
+          </button>
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-large t-button--shape-round">
+            <span class="t-button__text">大型</span>
+          </button>
+        </div>
+
+        <div class="demo-title mt-l">块级按钮</div>
+        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--shape-round">
+          <span class="t-button__text">块级按钮</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Card 卡片 -->
+    <section class="component-section">
+      <h2>Card 卡片</h2>
+      <p class="component-section__desc">卡片是承载内容和操作的容器</p>
+      
+      <div class="component-demo">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          <div class="t-card t-card--bordered t-card--shadow">
+            <div class="t-card__header">
+              <div class="t-card__header-wrapper">
+                <div class="t-card__title">卡片标题</div>
+                <div class="t-card__actions">
+                  <button class="t-button t-button--theme-primary t-button--variant-text t-button--size-small">
+                    <span class="t-button__text">更多</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="t-card__body">
+              这是卡片的内容区域，可以放置任何内容。TDesign 是腾讯开源的企业级设计体系。
+            </div>
+            <div class="t-card__footer">
+              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                <span class="t-button__text">取消</span>
+              </button>
+              <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-small">
+                <span class="t-button__text">确定</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="t-card t-card--bordered t-card--hoverable">
+            <div class="t-card__body">
+              <div class="t-card__meta">
+                <div class="t-card__meta-avatar">
+                  <div class="t-avatar t-avatar--size-large t-avatar--theme-primary">
+                    <span class="t-avatar__text">TD</span>
+                  </div>
+                </div>
+                <div class="t-card__meta-content">
+                  <div class="t-card__meta-title">TDesign</div>
+                  <div class="t-card__meta-description">企业级设计体系</div>
+                </div>
+              </div>
+              <div style="margin-top: 16px; color: var(--td-text-color-secondary);">
+                这是一个带有头像的卡片示例，悬停时会有动画效果。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Input 输入框 -->
+    <section class="component-section">
+      <h2>Input 输入框</h2>
+      <p class="component-section__desc">用于接收用户输入的文本信息</p>
+      
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <div class="demo-title">基础输入框</div>
+          <div class="t-input__wrap mb-l">
+            <div class="t-input t-align-left">
+              <input class="t-input__inner" type="text" placeholder="请输入内容" />
+            </div>
+          </div>
+
+          <div class="demo-title">带前缀图标</div>
+          <div class="t-input__wrap mb-l">
+            <div class="t-input t-align-left">
+              <span class="t-input__prefix">🔍</span>
+              <input class="t-input__inner" type="text" placeholder="搜索" />
+            </div>
+          </div>
+
+          <div class="demo-title">带后缀图标</div>
+          <div class="t-input__wrap mb-l">
+            <div class="t-input t-align-left">
+              <input class="t-input__inner" type="password" placeholder="请输入密码" />
+              <span class="t-input__suffix">👁</span>
+            </div>
+          </div>
+
+          <div class="demo-title">禁用状态</div>
+          <div class="t-input__wrap mb-l">
+            <div class="t-input t-align-left t-is-disabled">
+              <input class="t-input__inner" type="text" placeholder="禁用状态" disabled />
+            </div>
+          </div>
+
+          <div class="demo-title">多行文本</div>
+          <textarea class="t-textarea" placeholder="请输入多行文本"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Badge 徽章 -->
+    <section class="component-section">
+      <h2>Badge 徽章</h2>
+      <p class="component-section__desc">用于展示消息数量或状态标识</p>
+      
+      <div class="component-demo">
+        <div class="demo-title">基础用法</div>
+        <div class="demo-row">
+          <div class="t-badge">
+            <button class="t-button t-button--theme-default t-button--variant-base">
+              <span class="t-button__text">消息</span>
+            </button>
+            <span class="t-badge__content">5</span>
+          </div>
+          
+          <div class="t-badge">
+            <button class="t-button t-button--theme-default t-button--variant-base">
+              <span class="t-button__text">通知</span>
+            </button>
+            <span class="t-badge__content t-badge--dot"></span>
+          </div>
+        </div>
+
+        <div class="demo-title mt-l">独立徽章</div>
+        <div class="demo-row">
+          <span class="t-badge--standalone t-badge--theme-primary">主要</span>
+          <span class="t-badge--standalone t-badge--theme-success">成功</span>
+          <span class="t-badge--standalone t-badge--theme-warning">金色</span>
+          <span class="t-badge--standalone t-badge--theme-error">错误</span>
+          <span class="t-badge--standalone t-badge--theme-default">默认</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alert 警告提示 -->
+    <section class="component-section">
+      <h2>Alert 警告提示</h2>
+      <p class="component-section__desc">用于页面中展示重要的提示信息</p>
+      
+      <div class="component-demo">
+        <div class="t-alert t-alert--theme-info">
+          <div class="t-alert__icon">ℹ️</div>
+          <div class="t-alert__content">
+            <div class="t-alert__message">这是一条信息提示</div>
+          </div>
+        </div>
+
+        <div class="t-alert t-alert--theme-success">
+          <div class="t-alert__icon">✓</div>
+          <div class="t-alert__content">
+            <div class="t-alert__message">这是一条成功提示</div>
+          </div>
+        </div>
+
+        <div class="t-alert t-alert--theme-warning">
+          <div class="t-alert__icon">⚠</div>
+          <div class="t-alert__content">
+            <div class="t-alert__title">警告标题</div>
+            <div class="t-alert__message">这是一条警告提示，包含标题和详细说明。</div>
+          </div>
+        </div>
+
+        <div class="t-alert t-alert--theme-error">
+          <div class="t-alert__icon">✕</div>
+          <div class="t-alert__content">
+            <div class="t-alert__message">这是一条错误提示</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs 标签页 -->
+    <section class="component-section">
+      <h2>Tabs 标签页</h2>
+      <p class="component-section__desc">用于在不同视图之间切换</p>
+      
+      <div class="component-demo">
+        <div class="demo-title">下划线样式</div>
+        <div class="t-tabs">
+          <div class="t-tabs__header t-is-top">
+            <div class="t-tabs__nav">
+              <div class="t-tabs__nav-container">
+                <div class="t-tabs__nav-scroll">
+                  <div class="t-tabs__nav-wrap">
+                    <div class="t-tabs__bar" style="left: 0; width: 80px;"></div>
+                    <div class="t-tabs__nav-item t-is-active">
+                      <span class="t-tabs__nav-item-text-wrapper">选项卡1</span>
+                    </div>
+                    <div class="t-tabs__nav-item">
+                      <span class="t-tabs__nav-item-text-wrapper">选项卡2</span>
+                    </div>
+                    <div class="t-tabs__nav-item">
+                      <span class="t-tabs__nav-item-text-wrapper">选项卡3</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="t-tabs__content">
+            当前显示选项卡1的内容
+          </div>
+        </div>
+
+        <div class="demo-title mt-l">胶囊样式</div>
+        <div class="t-tabs t-tabs--theme-pills">
+          <div class="t-tabs__header">
+            <div class="t-tabs__nav">
+              <div class="t-tabs__nav-container">
+                <div class="t-tabs__nav-wrap">
+                  <div class="t-tabs__nav-item t-is-active">
+                    <span class="t-tabs__nav-item-text-wrapper">全部</span>
+                  </div>
+                  <div class="t-tabs__nav-item">
+                    <span class="t-tabs__nav-item-text-wrapper">进行中</span>
+                  </div>
+                  <div class="t-tabs__nav-item">
+                    <span class="t-tabs__nav-item-text-wrapper">已完成</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Progress 进度条 -->
+    <section class="component-section">
+      <h2>Progress 进度条</h2>
+      <p class="component-section__desc">用于展示操作的当前进度</p>
+      
+      <div class="component-demo">
+        <div class="demo-title">线性进度条</div>
+        <div class="t-progress mb-l">
+          <div class="t-progress__bar">
+            <div class="t-progress__inner" style="width: 30%;"></div>
+          </div>
+          <div class="t-progress__text">30%</div>
+        </div>
+
+        <div class="t-progress t-progress--theme-success mb-l">
+          <div class="t-progress__bar">
+            <div class="t-progress__inner" style="width: 100%;"></div>
+          </div>
+          <div class="t-progress__text">✓</div>
+        </div>
+
+        <div class="t-progress t-progress--theme-warning mb-l">
+          <div class="t-progress__bar">
+            <div class="t-progress__inner" style="width: 60%;"></div>
+          </div>
+          <div class="t-progress__text">60%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Divider 分割线 -->
+    <section class="component-section">
+      <h2>Divider 分割线</h2>
+      <p class="component-section__desc">用于分隔内容的组件</p>
+      
+      <div class="component-demo">
+        <div>内容区域1</div>
+        <div class="t-divider"></div>
+        <div>内容区域2</div>
+        <div class="t-divider t-divider--with-text">
+          <span class="t-divider__text">带文字的分割线</span>
+        </div>
+        <div>内容区域3</div>
+        <div class="t-divider t-divider--dashed"></div>
+        <div>内容区域4</div>
+      </div>
+    </section>
+
+    <!-- Avatar 头像 -->
+    <section class="component-section">
+      <h2>Avatar 头像</h2>
+      <p class="component-section__desc">用于展示用户头像或标识</p>
+      
+      <div class="component-demo">
+        <div class="demo-title">尺寸</div>
+        <div class="demo-row">
+          <div class="t-avatar t-avatar--size-small t-avatar--theme-primary">
+            <span class="t-avatar__text">S</span>
+          </div>
+          <div class="t-avatar t-avatar--size-medium t-avatar--theme-primary">
+            <span class="t-avatar__text">M</span>
+          </div>
+          <div class="t-avatar t-avatar--size-large t-avatar--theme-primary">
+            <span class="t-avatar__text">L</span>
+          </div>
+          <div class="t-avatar t-avatar--size-xlarge t-avatar--theme-primary">
+            <span class="t-avatar__text">XL</span>
+          </div>
+        </div>
+
+        <div class="demo-title mt-l">主题</div>
+        <div class="demo-row">
+          <div class="t-avatar t-avatar--theme-primary">
+            <span class="t-avatar__text">主</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-success">
+            <span class="t-avatar__text">成</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-warning">
+            <span class="t-avatar__text">警</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-error">
+            <span class="t-avatar__text">错</span>
+          </div>
+        </div>
+
+        <div class="demo-title mt-l">头像组</div>
+        <div class="t-avatar-group">
+          <div class="t-avatar t-avatar--theme-primary">
+            <span class="t-avatar__text">A</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-success">
+            <span class="t-avatar__text">B</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-warning">
+            <span class="t-avatar__text">C</span>
+          </div>
+          <div class="t-avatar t-avatar--theme-error">
+            <span class="t-avatar__text">D</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设备展示 -->
+    <div class="device-showcase">
+      <div class="device-iphone15pro device-iphone15pro--animated">
+        <div class="device-frame">
+          <div class="device-notch"></div>
+          <div class="device-statusbar">
+            <span class="statusbar-time">9:41</span>
+            <div style="display: flex; gap: 4px;">
+              <span class="statusbar-signal"></span>
+              <span class="statusbar-wifi"></span>
+              <span class="statusbar-battery"></span>
+            </div>
+          </div>
+          <div class="device-screen">
+            <div class="page-container" style="padding: 16px;">
+              <h2 style="margin-bottom: 16px;">iPhone 15 Pro 设备外壳</h2>
+              <p style="color: var(--td-text-color-secondary); margin-bottom: 16px;">
+                这是一个完全模拟 iPhone 15 Pro 的设备外壳，包含刘海屏、状态栏和底部安全区域。
+              </p>
+              
+              <div class="t-card t-card--bordered">
+                <div class="t-card__body">
+                  <h3>规格参数</h3>
+                  <div style="margin-top: 12px; color: var(--td-text-color-secondary);">
+                    • 屏幕尺寸: 6.1 英寸<br>
+                    • CSS 逻辑尺寸: 393px × 852px<br>
+                    • 圆角半径: 47.33px<br>
+                    • 小程序内容宽度: 375px
+                  </div>
+                </div>
+              </div>
+
+              <button class="t-button t-button--theme-primary t-button--variant-base t-button--block mt-l">
+                <span class="t-button__text">查看更多页面</span>
+              </button>
+            </div>
+          </div>
+          <div class="device-safe-area-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

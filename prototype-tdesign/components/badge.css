@@ -1,0 +1,306 @@
+/**
+ * TDesign Badge 徽章组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-badge {
+  position: relative;
+  display: inline-flex;
+}
+
+.t-badge__content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: var(--td-font-weight-medium);
+  line-height: 1;
+  color: var(--td-text-color-anti);
+  background-color: var(--td-error-color);
+  border-radius: var(--td-radius-round);
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--td-bg-color-container);
+  z-index: 1;
+}
+
+/* ==================== 圆点模式 ==================== */
+
+.t-badge__content.t-badge--dot {
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: var(--td-radius-circle);
+}
+
+/* ==================== 主题变体 ==================== */
+
+.t-badge--theme-default .t-badge__content {
+  background-color: var(--td-error-color);
+}
+
+.t-badge--theme-primary .t-badge__content {
+  background-color: var(--td-brand-color);
+}
+
+.t-badge--theme-success .t-badge__content {
+  background-color: var(--td-success-color);
+}
+
+.t-badge--theme-warning .t-badge__content {
+  background-color: var(--td-warning-color);
+}
+
+.t-badge--theme-error .t-badge__content {
+  background-color: var(--td-error-color);
+}
+
+.t-badge--theme-info .t-badge__content {
+  background-color: var(--td-info-color);
+}
+
+/* ==================== 位置变体 ==================== */
+
+.t-badge--position-top-left .t-badge__content {
+  top: 0;
+  right: auto;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.t-badge--position-top-right .t-badge__content {
+  top: 0;
+  right: 0;
+  left: auto;
+  transform: translate(50%, -50%);
+}
+
+.t-badge--position-bottom-left .t-badge__content {
+  top: auto;
+  bottom: 0;
+  right: auto;
+  left: 0;
+  transform: translate(-50%, 50%);
+}
+
+.t-badge--position-bottom-right .t-badge__content {
+  top: auto;
+  bottom: 0;
+  right: 0;
+  left: auto;
+  transform: translate(50%, 50%);
+}
+
+/* ==================== 独立徽章 ==================== */
+
+.t-badge--standalone {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  height: 20px;
+  font-size: var(--td-font-size-s);
+  font-weight: var(--td-font-weight-medium);
+  line-height: 1;
+  border-radius: var(--td-radius-small);
+  white-space: nowrap;
+}
+
+.t-badge--standalone.t-badge--theme-default {
+  color: var(--td-text-color-primary);
+  background-color: var(--td-bg-color-container-hover);
+  border: 1px solid var(--td-border-level-1);
+}
+
+.t-badge--standalone.t-badge--theme-primary {
+  color: var(--td-brand-color);
+  background-color: var(--td-info-color-light);
+}
+
+.t-badge--standalone.t-badge--theme-success {
+  color: var(--td-success-color);
+  background-color: var(--td-success-color-light);
+}
+
+.t-badge--standalone.t-badge--theme-warning {
+  color: var(--td-warning-color);
+  background-color: var(--td-warning-color-light);
+}
+
+.t-badge--standalone.t-badge--theme-error {
+  color: var(--td-error-color);
+  background-color: var(--td-error-color-light);
+}
+
+.t-badge--standalone.t-badge--theme-info {
+  color: var(--td-info-color);
+  background-color: var(--td-info-color-light);
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-badge--size-small .t-badge__content {
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 9px;
+}
+
+.t-badge--size-small.t-badge--dot .t-badge__content {
+  min-width: 6px;
+  height: 6px;
+}
+
+.t-badge--size-medium .t-badge__content {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+.t-badge--size-medium.t-badge--dot .t-badge__content {
+  min-width: 8px;
+  height: 8px;
+}
+
+.t-badge--size-large .t-badge__content {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.t-badge--size-large.t-badge--dot .t-badge__content {
+  min-width: 10px;
+  height: 10px;
+}
+
+/* ==================== 形状变体 ==================== */
+
+.t-badge--shape-circle .t-badge__content {
+  border-radius: var(--td-radius-circle);
+}
+
+.t-badge--shape-round .t-badge__content {
+  border-radius: var(--td-radius-round);
+}
+
+.t-badge--shape-square .t-badge__content {
+  border-radius: var(--td-radius-small);
+}
+
+/* ==================== 独立徽章尺寸 ==================== */
+
+.t-badge--standalone.t-badge--size-small {
+  padding: 1px 6px;
+  height: 18px;
+  font-size: 11px;
+}
+
+.t-badge--standalone.t-badge--size-medium {
+  padding: 2px 8px;
+  height: 20px;
+  font-size: var(--td-font-size-s);
+}
+
+.t-badge--standalone.t-badge--size-large {
+  padding: 3px 10px;
+  height: 24px;
+  font-size: var(--td-font-size-base);
+}
+
+/* ==================== 最大数值 ==================== */
+
+.t-badge__content--max-count::after {
+  content: '+';
+}
+
+/* ==================== 隐藏 ==================== */
+
+.t-badge__content.t-is-hidden {
+  display: none;
+}
+
+/* ==================== 脉冲动画 ==================== */
+
+.t-badge--pulse .t-badge__content::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border-radius: inherit;
+  background-color: inherit;
+  animation: badge-pulse 1.5s infinite;
+  z-index: -1;
+}
+
+@keyframes badge-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ==================== 缎带徽章 ==================== */
+
+.t-badge--ribbon {
+  position: absolute;
+  top: 16px;
+  right: -8px;
+  padding: 2px 8px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-anti);
+  background-color: var(--td-brand-color);
+  border-radius: var(--td-radius-small);
+  box-shadow: 0 0 0 1px var(--td-bg-color-container);
+}
+
+.t-badge--ribbon::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 0;
+  border-color: transparent var(--td-brand-color-dark) transparent transparent;
+}
+
+.t-badge--ribbon.t-badge--theme-success {
+  background-color: var(--td-success-color);
+}
+
+.t-badge--ribbon.t-badge--theme-warning {
+  background-color: var(--td-warning-color);
+}
+
+.t-badge--ribbon.t-badge--theme-error {
+  background-color: var(--td-error-color);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

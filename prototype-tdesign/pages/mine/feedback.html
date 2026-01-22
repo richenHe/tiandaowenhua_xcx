@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>意见反馈 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">意见反馈</div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header-footer">
+          <div class="page-content">
+            <form class="t-form t-form--label-top">
+              
+              <!-- 反馈课程（新增） -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">反馈课程</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-select">
+                    <div class="t-select__input">
+                      <span class="t-select__value" style="color: var(--td-text-color-placeholder);">选择课程（选填）</span>
+                      <span class="t-select__arrow">▼</span>
+                    </div>
+                  </div>
+                  <div class="t-form-item__tips" style="font-size: 12px; color: var(--td-text-color-placeholder); margin-top: 4px;">
+                    从"我的课程"中选择，或留空为通用反馈
+                  </div>
+                </div>
+              </div>
+
+              <!-- 反馈类型 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label t-form-item__label--required">
+                  <span class="t-form-item__label-text">反馈类型</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div class="t-select">
+                    <div class="t-select__input">
+                      <span class="t-select__value">功能建议</span>
+                      <span class="t-select__arrow">▼</span>
+                    </div>
+                  </div>
+                  <div class="t-form-item__tips" style="font-size: 12px; color: var(--td-text-color-placeholder); margin-top: 4px;">
+                    选择课程后：课程内容/课程服务/讲师/场地<br>
+                    未选课程：功能建议/问题反馈/投诉
+                  </div>
+                </div>
+              </div>
+
+              <!-- 反馈内容 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label t-form-item__label--required">
+                  <span class="t-form-item__label-text">反馈内容</span>
+                </label>
+                <div class="t-form-item__control">
+                  <textarea 
+                    class="t-textarea__inner" 
+                    rows="6" 
+                    placeholder="请详细描述您的问题或建议..." 
+                    style="width: 100%; padding: 12px; border: 1px solid var(--td-border-level-1); border-radius: var(--td-radius-default); resize: vertical;"
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- 上传截图 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">上传截图</span>
+                </label>
+                <div class="t-form-item__control">
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <div style="width: 100px; height: 100px; border: 2px dashed var(--td-border-level-2); border-radius: var(--td-radius-default); display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--td-text-color-placeholder); cursor: pointer;">
+                      +
+                    </div>
+                  </div>
+                  <div class="t-form-item__tips" style="font-size: 12px; color: var(--td-text-color-placeholder); margin-top: 4px;">
+                    最多上传3张图片
+                  </div>
+                </div>
+              </div>
+
+              <!-- 联系方式 -->
+              <div class="t-form-item">
+                <label class="t-form-item__label">
+                  <span class="t-form-item__label-text">联系方式</span>
+                </label>
+                <div class="t-form-item__control">
+                  <input 
+                    class="t-input__inner" 
+                    type="text" 
+                    placeholder="方便我们与您联系（选填）" 
+                    style="width: 100%; padding: 12px; border: 1px solid var(--td-border-level-1); border-radius: var(--td-radius-default);"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="fixed-bottom">
+          <a href="index.html" style="display: block; text-decoration: none;">
+            <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+              <span class="t-button__text">提交反馈</span>
+            </button>
+          </a>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>

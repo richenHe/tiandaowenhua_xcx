@@ -1,0 +1,154 @@
+/**
+ * TDesign 主题配置文件
+ * 基于白色主调定制，适配天道文化小程序
+ */
+
+:root {
+  /* ==================== 颜色系统 ==================== */
+  
+  /* TDesign 品牌色 */
+  --td-brand-color: #0052D9;
+  --td-brand-color-light: #266FE8;
+  --td-brand-color-lighter: #4787E8;
+  --td-brand-color-dark: #003BA8;
+  
+  /* 背景色 (白色主调 70%) */
+  --td-bg-color-page: #F5F5F5;          /* 页面背景 */
+  --td-bg-color-container: #FFFFFF;     /* 容器背景(卡片) */
+  --td-bg-color-container-hover: #FAFAFA; /* 容器悬浮背景 */
+  --td-bg-color-container-active: #F5F5F5; /* 容器激活背景 */
+  --td-bg-color-container-select: #F3F6FF; /* 容器选中背景 */
+  
+  /* 文本颜色 (深灰色 20%) */
+  --td-text-color-primary: #000000;     /* 主文本 */
+  --td-text-color-secondary: #5E5E5E;   /* 次要文本 */
+  --td-text-color-placeholder: #BBBBBB; /* 占位文本 */
+  --td-text-color-disabled: #DDDDDD;    /* 禁用文本 */
+  --td-text-color-anti: #FFFFFF;        /* 反色文本(用于深色背景) */
+  --td-text-color-brand: #0052D9;       /* 品牌色文本 */
+  
+  /* 边框颜色 */
+  --td-border-level-0: #F0F0F0;         /* 零级边框(最浅) */
+  --td-border-level-1: #E7E7E7;         /* 一级边框 */
+  --td-border-level-2: #EEEEEE;         /* 二级边框 */
+  --td-border-color-separator: #E7E7E7; /* 分割线颜色 */
+  
+  /* 功能色 */
+  --td-success-color: #00A870;          /* 成功绿 */
+  --td-success-color-light: #E8F8F2;    /* 成功绿-浅 */
+  --td-warning-color: #D4AF37;          /* 金色(价格、徽章) - 保留原方案 */
+  --td-warning-color-light: #FFF9E6;    /* 警告橙-浅 */
+  --td-error-color: #E34D59;            /* 错误红 */
+  --td-error-color-light: #FDECEE;      /* 错误红-浅 */
+  --td-info-color: #0052D9;             /* 信息蓝 */
+  --td-info-color-light: #EDF4FF;       /* 信息蓝-浅 */
+  
+  /* ==================== 间距系统 ==================== */
+  
+  --td-comp-paddingTB-xxs: 1px;
+  --td-comp-paddingTB-xs: 2px;
+  --td-comp-paddingTB-s: 4px;
+  --td-comp-paddingTB-m: 8px;
+  --td-comp-paddingTB-l: 12px;
+  --td-comp-paddingTB-xl: 16px;
+  --td-comp-paddingTB-xxl: 24px;
+  
+  --td-comp-paddingLR-xxs: 4px;
+  --td-comp-paddingLR-xs: 8px;
+  --td-comp-paddingLR-s: 12px;
+  --td-comp-paddingLR-m: 16px;
+  --td-comp-paddingLR-l: 24px;
+  --td-comp-paddingLR-xl: 32px;
+  --td-comp-paddingLR-xxl: 40px;
+  
+  /* 页面级间距 */
+  --td-page-margin: 16px;               /* 页面边距 */
+  --td-card-spacing: 12px;              /* 卡片间距 */
+  --td-section-spacing: 24px;           /* 区块间距 */
+  
+  /* ==================== 圆角系统 ==================== */
+  
+  --td-radius-small: 3px;               /* 小圆角(Badge) */
+  --td-radius-default: 6px;             /* 默认圆角(Button, Input, Card) */
+  --td-radius-medium: 9px;              /* 中圆角 */
+  --td-radius-large: 12px;              /* 大圆角 */
+  --td-radius-extraLarge: 16px;         /* 超大圆角 */
+  --td-radius-round: 999px;             /* 完全圆形 */
+  --td-radius-circle: 50%;              /* 圆形(百分比) */
+  
+  /* ==================== 阴影系统 ==================== */
+  
+  --td-shadow-1: 0 1px 10px rgba(0, 0, 0, 0.05);     /* 卡片阴影 */
+  --td-shadow-2: 0 2px 20px rgba(0, 0, 0, 0.08);     /* 悬浮阴影 */
+  --td-shadow-3: 0 6px 30px rgba(0, 0, 0, 0.12);     /* 弹窗阴影 */
+  --td-shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.06); /* 内阴影 */
+  
+  /* ==================== 字体系统 ==================== */
+  
+  --td-font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, 
+                    "Segoe UI", Roboto, "Helvetica Neue", Arial, 
+                    "Noto Sans", sans-serif, "Apple Color Emoji", 
+                    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  --td-font-size-s: 12px;               /* 辅助文字 */
+  --td-font-size-base: 14px;            /* 正文 */
+  --td-font-size-m: 16px;               /* 小标题 */
+  --td-font-size-l: 18px;               /* 标题 */
+  --td-font-size-xl: 20px;              /* 大标题 */
+  --td-font-size-xxl: 24px;             /* 超大标题 */
+  
+  --td-font-weight-regular: 400;
+  --td-font-weight-medium: 500;
+  --td-font-weight-semibold: 600;
+  --td-font-weight-bold: 700;
+  
+  --td-line-height-small: 1.2;
+  --td-line-height-base: 1.5;
+  --td-line-height-large: 1.8;
+  
+  /* ==================== 尺寸系统 ==================== */
+  
+  /* 组件高度 */
+  --td-comp-size-xs: 24px;
+  --td-comp-size-s: 32px;
+  --td-comp-size-m: 40px;
+  --td-comp-size-l: 48px;
+  --td-comp-size-xl: 56px;
+  
+  /* ==================== z-index 层级 ==================== */
+  
+  --td-z-index-base: 0;
+  --td-z-index-affix: 500;
+  --td-z-index-drawer: 1000;
+  --td-z-index-dialog: 2000;
+  --td-z-index-popup: 2500;
+  --td-z-index-message: 5000;
+  
+  /* ==================== 过渡动画 ==================== */
+  
+  --td-transition-duration-fast: 0.1s;
+  --td-transition-duration-base: 0.2s;
+  --td-transition-duration-slow: 0.3s;
+  
+  --td-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== 深色模式支持 (可选) ==================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 如需支持深色模式，可在此覆盖变量 */
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

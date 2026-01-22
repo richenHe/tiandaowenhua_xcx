@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>引荐人列表 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .tab-header {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid var(--td-border-level-1);
+    }
+    .tab-header__item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 12px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: var(--td-text-color-secondary);
+    }
+    .tab-header__item--active {
+      color: var(--td-brand-color);
+      border-bottom-color: var(--td-brand-color);
+    }
+    .tab-header__icon {
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+    .tab-header__label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .tab-header__desc {
+      font-size: 11px;
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+    .referral-card {
+      background: white;
+      border-radius: var(--td-radius-default);
+      border: 1px solid var(--td-border-level-1);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .referral-card--highlight {
+      border-color: var(--td-brand-color);
+      background: linear-gradient(135deg, rgba(0,82,217,0.02) 0%, rgba(38,111,232,0.05) 100%);
+    }
+    .empty-placeholder {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--td-text-color-placeholder);
+    }
+    .empty-placeholder__icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">引荐人列表</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <!-- Tab 切换头部 -->
+        <div class="tab-header">
+          <div class="tab-header__item tab-header__item--active" id="tab-bole">
+            <div class="tab-header__icon">🏇</div>
+            <div class="tab-header__label">伯乐</div>
+            <div class="tab-header__desc">我的推荐人</div>
+          </div>
+          <div class="tab-header__item" id="tab-qianli">
+            <div class="tab-header__icon">🐎</div>
+            <div class="tab-header__label">千里马</div>
+            <div class="tab-header__desc">我推荐的人</div>
+          </div>
+        </div>
+
+        <div class="scroll-area" style="height: calc(100% - 44px - 90px); overflow-y: auto;">
+          <div class="page-content">
+            
+            <!-- 伯乐板块 (我的推荐人) -->
+            <div id="panel-bole">
+              <div class="section-title section-title--simple">🏇 我的伯乐（推荐人）</div>
+              
+              <!-- 推荐人卡片 -->
+              <div class="referral-card referral-card--highlight">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--theme-primary t-avatar--size-large">
+                    <span class="t-avatar__text">李</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                      <span style="font-size: 16px; font-weight: 600;">李四</span>
+                      <span class="level-badge">🌿</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small" style="margin-right: 6px;">青鸾大使</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="t-divider" style="margin: 12px 0;"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">联系方式</div>
+                    <div style="margin-top: 4px; color: var(--td-text-color-secondary);">138****8888</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--td-text-color-placeholder); font-size: 12px;">推荐时间</div>
+                    <div style="margin-top: 4px; color: var(--td-text-color-secondary);">2024-01-15</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 说明信息 -->
+              <div class="t-alert t-alert--theme-info">
+                <div class="t-alert__icon">ℹ️</div>
+                <div class="t-alert__content">
+                  <div class="t-alert__message" style="font-size: 12px; line-height: 1.6;">
+                    伯乐是引荐您加入天道文化大家庭的人。首次购买课程后，推荐人关系将永久锁定。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 千里马板块 (我推荐的人) - 默认隐藏 -->
+            <div id="panel-qianli" style="display: none;">
+              <div class="section-title section-title--simple">🐎 我的千里马（推荐的人）</div>
+              
+              <!-- 统计卡片 -->
+              <div class="t-card t-card--bordered mb-l" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                <div class="t-card__body" style="padding: 20px;">
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+                    <div>
+                      <div style="font-size: 24px; font-weight: 700; color: #333;">5</div>
+                      <div style="font-size: 12px; color: #666; margin-top: 4px;">总推荐人数</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 24px; font-weight: 700; color: #333;">3</div>
+                      <div style="font-size: 12px; color: #666; margin-top: 4px;">已购课程</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 24px; font-weight: 700; color: #333;">2</div>
+                      <div style="font-size: 12px; color: #666; margin-top: 4px;">成为大使</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 千里马列表 -->
+              <div class="referral-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--theme-success t-avatar--size-medium">
+                    <span class="t-avatar__text">王</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                      <span style="font-weight: 500;">王五</span>
+                      <span class="level-badge level-badge--small">🌱</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      加入时间: 2024-01-20
+                    </div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-default t-badge--size-small">待购课</span>
+                </div>
+              </div>
+
+              <div class="referral-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--theme-warning t-avatar--size-medium">
+                    <span class="t-avatar__text">赵</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                      <span style="font-weight: 500;">赵六</span>
+                      <span class="level-badge level-badge--small">🌿</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      加入时间: 2024-02-05
+                    </div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">已购课</span>
+                </div>
+              </div>
+
+              <div class="referral-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--theme-primary t-avatar--size-medium">
+                    <span class="t-avatar__text">钱</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                      <span style="font-weight: 500;">钱七</span>
+                      <span class="level-badge level-badge--small">🌿</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      加入时间: 2024-02-18
+                    </div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small">准青鸾</span>
+                </div>
+              </div>
+
+              <div class="referral-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--theme-error t-avatar--size-medium">
+                    <span class="t-avatar__text">孙</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                      <span style="font-weight: 500;">孙八</span>
+                      <span class="level-badge level-badge--small">🍀</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      加入时间: 2024-03-01
+                    </div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">青鸾大使</span>
+                </div>
+              </div>
+
+              <div class="referral-card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div class="t-avatar t-avatar--size-medium" style="background: #f5f5f5; color: #999;">
+                    <span class="t-avatar__text">周</span>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                      <span style="font-weight: 500;">周九</span>
+                      <span class="level-badge level-badge--small level-badge--seed">🌱</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">
+                      加入时间: 2024-03-10
+                    </div>
+                  </div>
+                  <span class="t-badge--standalone t-badge--theme-default t-badge--size-small">待购课</span>
+                </div>
+              </div>
+
+              <!-- 邀请更多 -->
+              <div style="text-align: center; padding: 20px;">
+                <a href="../ambassador/qrcode.html" style="text-decoration: none;">
+                  <button class="t-button t-button--theme-primary t-button--variant-base">
+                    <span class="t-button__text">邀请更多好友</span>
+                  </button>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+
+  <!-- Tab 切换脚本 -->
+  <script>
+    const tabBole = document.getElementById('tab-bole');
+    const tabQianli = document.getElementById('tab-qianli');
+    const panelBole = document.getElementById('panel-bole');
+    const panelQianli = document.getElementById('panel-qianli');
+
+    tabBole.addEventListener('click', function() {
+      tabBole.classList.add('tab-header__item--active');
+      tabQianli.classList.remove('tab-header__item--active');
+      panelBole.style.display = 'block';
+      panelQianli.style.display = 'none';
+    });
+
+    tabQianli.addEventListener('click', function() {
+      tabQianli.classList.add('tab-header__item--active');
+      tabBole.classList.remove('tab-header__item--active');
+      panelQianli.style.display = 'block';
+      panelBole.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
+
+
+
+

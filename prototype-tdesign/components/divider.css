@@ -1,0 +1,250 @@
+/**
+ * TDesign Divider 分割线组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 基础结构 ==================== */
+
+.t-divider {
+  display: flex;
+  align-items: center;
+  margin: var(--td-comp-paddingTB-xl) 0;
+  border: none;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-secondary);
+}
+
+.t-divider::before,
+.t-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--td-border-level-1);
+}
+
+/* ==================== 水平分割线 ==================== */
+
+.t-divider--horizontal {
+  width: 100%;
+  flex-direction: row;
+}
+
+/* ==================== 垂直分割线 ==================== */
+
+.t-divider--vertical {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin: 0 8px;
+  vertical-align: middle;
+  background-color: var(--td-border-level-1);
+}
+
+.t-divider--vertical::before,
+.t-divider--vertical::after {
+  display: none;
+}
+
+/* ==================== 带文字分割线 ==================== */
+
+.t-divider--with-text {
+  display: flex;
+}
+
+.t-divider__text {
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+/* ==================== 文字位置 - 左 ==================== */
+
+.t-divider--text-left::before {
+  flex: 0 0 5%;
+  max-width: 5%;
+}
+
+.t-divider--text-left::after {
+  flex: 1;
+}
+
+/* ==================== 文字位置 - 中 ==================== */
+
+.t-divider--text-center::before,
+.t-divider--text-center::after {
+  flex: 1;
+}
+
+/* ==================== 文字位置 - 右 ==================== */
+
+.t-divider--text-right::before {
+  flex: 1;
+}
+
+.t-divider--text-right::after {
+  flex: 0 0 5%;
+  max-width: 5%;
+}
+
+/* ==================== 无文字 ==================== */
+
+.t-divider--no-text::before {
+  flex: 1;
+}
+
+.t-divider--no-text::after {
+  display: none;
+}
+
+/* ==================== 线条样式 - 虚线 ==================== */
+
+.t-divider--dashed::before,
+.t-divider--dashed::after {
+  border-top: 1px dashed var(--td-border-level-1);
+  background-color: transparent;
+  height: 0;
+}
+
+.t-divider--dashed.t-divider--vertical {
+  border-left: 1px dashed var(--td-border-level-1);
+  background-color: transparent;
+  width: 0;
+}
+
+/* ==================== 线条样式 - 点线 ==================== */
+
+.t-divider--dotted::before,
+.t-divider--dotted::after {
+  border-top: 1px dotted var(--td-border-level-1);
+  background-color: transparent;
+  height: 0;
+}
+
+.t-divider--dotted.t-divider--vertical {
+  border-left: 1px dotted var(--td-border-level-1);
+  background-color: transparent;
+  width: 0;
+}
+
+/* ==================== 主题颜色 ==================== */
+
+.t-divider--theme-primary::before,
+.t-divider--theme-primary::after {
+  background-color: var(--td-brand-color);
+}
+
+.t-divider--theme-primary.t-divider--vertical {
+  background-color: var(--td-brand-color);
+}
+
+.t-divider--theme-primary .t-divider__text {
+  color: var(--td-brand-color);
+}
+
+.t-divider--theme-success::before,
+.t-divider--theme-success::after {
+  background-color: var(--td-success-color);
+}
+
+.t-divider--theme-success.t-divider--vertical {
+  background-color: var(--td-success-color);
+}
+
+.t-divider--theme-success .t-divider__text {
+  color: var(--td-success-color);
+}
+
+.t-divider--theme-warning::before,
+.t-divider--theme-warning::after {
+  background-color: var(--td-warning-color);
+}
+
+.t-divider--theme-warning.t-divider--vertical {
+  background-color: var(--td-warning-color);
+}
+
+.t-divider--theme-warning .t-divider__text {
+  color: var(--td-warning-color);
+}
+
+.t-divider--theme-error::before,
+.t-divider--theme-error::after {
+  background-color: var(--td-error-color);
+}
+
+.t-divider--theme-error.t-divider--vertical {
+  background-color: var(--td-error-color);
+}
+
+.t-divider--theme-error .t-divider__text {
+  color: var(--td-error-color);
+}
+
+/* ==================== 尺寸变体 ==================== */
+
+.t-divider--size-small {
+  margin: var(--td-comp-paddingTB-l) 0;
+}
+
+.t-divider--size-medium {
+  margin: var(--td-comp-paddingTB-xl) 0;
+}
+
+.t-divider--size-large {
+  margin: var(--td-comp-paddingTB-xxl) 0;
+}
+
+/* ==================== 紧凑模式 ==================== */
+
+.t-divider--compact {
+  margin: var(--td-comp-paddingTB-m) 0;
+}
+
+/* ==================== 无间距 ==================== */
+
+.t-divider--no-margin {
+  margin: 0;
+}
+
+/* ==================== 粗细 ==================== */
+
+.t-divider--thick::before,
+.t-divider--thick::after {
+  height: 2px;
+}
+
+.t-divider--thick.t-divider--vertical {
+  width: 2px;
+}
+
+.t-divider--thicker::before,
+.t-divider--thicker::after {
+  height: 3px;
+}
+
+.t-divider--thicker.t-divider--vertical {
+  width: 3px;
+}
+
+/* ==================== 渐变分割线 ==================== */
+
+.t-divider--gradient::before,
+.t-divider--gradient::after {
+  background: linear-gradient(to right, transparent, var(--td-border-level-1), transparent);
+}
+
+.t-divider--gradient.t-divider--vertical {
+  background: linear-gradient(to bottom, transparent, var(--td-border-level-1), transparent);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

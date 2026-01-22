@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>选择推荐人 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <div class="back-button" data-back="auto"></div>
+          <div class="page-header__title">选择推荐人</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header">
+          <div class="page-content">
+            <!-- 搜索框 -->
+            <div class="mb-l">
+              <div class="t-input__wrap">
+                <div class="t-input t-input--prefix">
+                  <span class="t-input__prefix">🔍</span>
+                  <input class="t-input__inner" type="text" placeholder="搜索推荐人姓名或手机号" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 提示信息 -->
+            <div class="t-alert t-alert--theme-info mb-l">
+              <div class="t-alert__icon">ℹ️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">支付前可多次修改推荐人，首次购买支付成功后永久锁定</div>
+              </div>
+            </div>
+            
+            <!-- 重要说明 -->
+            <div class="t-alert t-alert--theme-warning mb-l">
+              <div class="t-alert__icon">⚠️</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">
+                  <div style="font-weight: 500; margin-bottom: 4px;">推荐人资格说明：</div>
+                  <div style="font-size: 12px; line-height: 1.6;">
+                    • 准青鸾大使：仅可推荐初探班课程<br>
+                    • 青鸾及以上：可推荐所有课程<br>
+                    • 请根据课程类型选择合适的推荐人
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 推荐人列表 -->
+            <div class="section-title section-title--simple">👥 推荐人列表</div>
+            
+            <div class="t-list">
+              <a href="confirm.html" style="text-decoration: none; color: inherit;">
+                <div class="t-list-item t-list-item--hover">
+                  <div class="t-list-item__content">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="t-avatar t-avatar--theme-default t-avatar--size-medium">
+                        <span class="t-avatar__text">张</span>
+                      </div>
+                      <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">张三</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">手机: 137****5555</div>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <span class="t-badge--standalone t-badge--theme-default t-badge--size-small">准青鸾大使</span>
+                        <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small" style="font-size: 10px;">仅限初探班</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </a>
+
+              <a href="confirm.html" style="text-decoration: none; color: inherit;">
+                <div class="t-list-item t-list-item--hover">
+                  <div class="t-list-item__content">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="t-avatar t-avatar--theme-primary t-avatar--size-medium">
+                        <span class="t-avatar__text">李</span>
+                      </div>
+                      <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">李四</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">手机: 138****8888</div>
+                      </div>
+                      <span class="t-badge--standalone t-badge--theme-primary t-badge--size-small">青鸾大使</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+
+              <a href="confirm.html" style="text-decoration: none; color: inherit;">
+                <div class="t-list-item t-list-item--hover">
+                  <div class="t-list-item__content">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="t-avatar t-avatar--theme-success t-avatar--size-medium">
+                        <span class="t-avatar__text">王</span>
+                      </div>
+                      <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">王五</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">手机: 139****6666</div>
+                      </div>
+                      <span class="t-badge--standalone t-badge--theme-success t-badge--size-small">鸿鹄大使</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+
+              <a href="confirm.html" style="text-decoration: none; color: inherit;">
+                <div class="t-list-item t-list-item--hover">
+                  <div class="t-list-item__content">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="t-avatar t-avatar--theme-warning t-avatar--size-medium">
+                        <span class="t-avatar__text">赵</span>
+                      </div>
+                      <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">赵六</div>
+                        <div style="font-size: 12px; color: var(--td-text-color-secondary);">手机: 137****7777</div>
+                      </div>
+                      <span class="t-badge--standalone t-badge--theme-warning t-badge--size-small">金凤大使</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+  
+  <!-- 返回按钮组件脚本 -->
+  <script src="../../components/back-button.js"></script>
+</body>
+</html>

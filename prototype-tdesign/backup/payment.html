@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>支付 - 天道文化</title>
+  <link rel="stylesheet" href="../../styles/tdesign-theme.css">
+  <link rel="stylesheet" href="../../styles/reset.css">
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="../../components/all.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .payment-amount {
+      text-align: center;
+      padding: 40px 0;
+    }
+    .payment-method {
+      background: white;
+      border-radius: var(--td-radius-large);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+    .payment-method--selected {
+      border-color: var(--td-brand-color);
+      background: var(--td-brand-color-light-1, #f0f5ff);
+    }
+    .payment-method:hover {
+      box-shadow: var(--td-shadow-2);
+    }
+  </style>
+</head>
+<body>
+  <div class="device-iphone15pro device-iphone15pro--animated">
+    <div class="device-frame">
+      <div class="device-notch"></div>
+      <div class="device-statusbar">
+        <span class="statusbar-time">9:41</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="statusbar-signal"></span>
+          <span class="statusbar-wifi"></span>
+          <span class="statusbar-battery"></span>
+        </div>
+      </div>
+      
+      <div class="device-screen">
+        <div class="page-header">
+          <a href="confirm.html" class="page-header__back" style="text-decoration: none; color: inherit;">←</a>
+          <div class="page-header__title">确认支付</div>
+          <div class="page-header__action"></div>
+        </div>
+
+        <div class="scroll-area scroll-area--with-header-footer">
+          <div class="page-content">
+            <!-- 支付金额 -->
+            <div class="payment-amount">
+              <div style="font-size: 14px; color: var(--td-text-color-secondary); margin-bottom: 8px;">支付金额</div>
+              <div style="font-size: 48px; font-weight: 600; color: var(--td-warning-color);">¥1688</div>
+            </div>
+
+            <!-- 订单信息 -->
+            <div class="t-card t-card--bordered mb-l">
+              <div class="t-card__body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="color: var(--td-text-color-secondary);">课程名称</span>
+                  <span style="font-weight: 500;">初探班</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--td-text-color-secondary);">订单号</span>
+                  <span style="font-size: 12px; font-family: monospace;">2024010112345678</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 支付方式 -->
+            <div class="section-title section-title--simple">💳 支付方式</div>
+            
+            <div class="payment-method payment-method--selected">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="font-size: 32px;">💚</div>
+                  <div>
+                    <div style="font-weight: 600;">微信支付</div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">推荐使用</div>
+                  </div>
+                </div>
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: var(--td-brand-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</div>
+              </div>
+            </div>
+
+            <div class="payment-method">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="font-size: 32px;">💙</div>
+                  <div>
+                    <div style="font-weight: 600;">支付宝</div>
+                    <div style="font-size: 12px; color: var(--td-text-color-secondary);">快捷支付</div>
+                  </div>
+                </div>
+                <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--td-border-level-1);"></div>
+              </div>
+            </div>
+
+            <!-- 温馨提示 -->
+            <div class="t-alert t-alert--theme-warning" style="margin-top: 24px;">
+              <div class="t-alert__icon">💡</div>
+              <div class="t-alert__content">
+                <div class="t-alert__message">请在15分钟内完成支付，超时订单将自动取消</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 固定底部 -->
+        <div class="fixed-bottom">
+          <a href="detail.html" style="display: block; text-decoration: none;">
+            <button class="t-button t-button--theme-warning t-button--variant-base t-button--block t-button--size-large">
+              <span class="t-button__text">立即支付 ¥1688</span>
+            </button>
+          </a>
+        </div>
+      </div>
+      
+      <div class="device-safe-area-bottom"></div>
+    </div>
+  </div>
+</body>
+</html>

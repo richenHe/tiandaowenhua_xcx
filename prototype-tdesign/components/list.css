@@ -1,0 +1,303 @@
+/**
+ * TDesign List 列表组件
+ * 基于 TDesign 官方 DOM 结构和样式规范
+ */
+
+/* ==================== 列表容器 ==================== */
+
+.t-list {
+  width: 100%;
+  background-color: var(--td-bg-color-container);
+  border-radius: var(--td-radius-default);
+}
+
+.t-list--bordered {
+  border: 1px solid var(--td-border-level-1);
+}
+
+/* ==================== 列表头部 ==================== */
+
+.t-list__header {
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  border-bottom: 1px solid var(--td-border-level-1);
+  font-size: var(--td-font-size-m);
+  font-weight: var(--td-font-weight-semibold);
+  color: var(--td-text-color-primary);
+}
+
+/* ==================== 列表项 ==================== */
+
+.t-list-item {
+  display: flex;
+  align-items: center;
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  transition: background-color var(--td-transition-duration-base);
+}
+
+.t-list-item + .t-list-item {
+  border-top: 1px solid var(--td-border-level-1);
+}
+
+.t-list-item:last-child {
+  border-bottom-left-radius: var(--td-radius-default);
+  border-bottom-right-radius: var(--td-radius-default);
+}
+
+.t-list-item:first-child {
+  border-top-left-radius: var(--td-radius-default);
+  border-top-right-radius: var(--td-radius-default);
+}
+
+/* ==================== 可悬停 ==================== */
+
+.t-list-item--hoverable {
+  cursor: pointer;
+}
+
+.t-list-item--hoverable:hover {
+  background-color: var(--td-bg-color-container-hover);
+}
+
+.t-list-item--hoverable:active {
+  background-color: var(--td-bg-color-container-active);
+}
+
+/* ==================== 可点击 ==================== */
+
+.t-list-item--clickable {
+  cursor: pointer;
+}
+
+.t-list-item--clickable:hover {
+  background-color: var(--td-bg-color-container-hover);
+}
+
+/* ==================== 列表项元数据 ==================== */
+
+.t-list-item__meta {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+}
+
+.t-list-item__avatar {
+  flex-shrink: 0;
+}
+
+.t-list-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-list-item__title {
+  font-size: var(--td-font-size-base);
+  font-weight: var(--td-font-weight-medium);
+  color: var(--td-text-color-primary);
+  line-height: var(--td-line-height-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t-list-item__description {
+  margin-top: 4px;
+  font-size: var(--td-font-size-s);
+  color: var(--td-text-color-secondary);
+  line-height: var(--td-line-height-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t-list-item__description--multi-line {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ==================== 列表项操作 ==================== */
+
+.t-list-item__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+/* ==================== 列表项额外内容 ==================== */
+
+.t-list-item__extra {
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+/* ==================== 列表底部 ==================== */
+
+.t-list__footer {
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  border-top: 1px solid var(--td-border-level-1);
+  text-align: center;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-s);
+}
+
+/* ==================== 加载更多 ==================== */
+
+.t-list__load-more {
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-m);
+  text-align: center;
+}
+
+/* ==================== 空状态 ==================== */
+
+.t-list__empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--td-text-color-placeholder);
+}
+
+.t-list__empty-icon {
+  font-size: 64px;
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+
+.t-list__empty-text {
+  font-size: var(--td-font-size-base);
+}
+
+/* ==================== 尺寸变体 - 小 ==================== */
+
+.t-list--size-small .t-list-item {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+}
+
+.t-list--size-small .t-list__header {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+  font-size: var(--td-font-size-base);
+}
+
+.t-list--size-small .t-list-item__title {
+  font-size: var(--td-font-size-s);
+}
+
+.t-list--size-small .t-list-item__description {
+  font-size: 11px;
+}
+
+/* ==================== 尺寸变体 - 大 ==================== */
+
+.t-list--size-large .t-list-item {
+  padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-l);
+}
+
+.t-list--size-large .t-list__header {
+  padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-l);
+  font-size: var(--td-font-size-l);
+}
+
+.t-list--size-large .t-list-item__title {
+  font-size: var(--td-font-size-m);
+}
+
+/* ==================== 网格布局 ==================== */
+
+.t-list--grid {
+  display: grid;
+  gap: var(--td-card-spacing);
+}
+
+.t-list--grid.t-list--grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.t-list--grid.t-list--grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.t-list--grid.t-list--grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.t-list--grid .t-list-item {
+  border-top: none;
+  border: 1px solid var(--td-border-level-1);
+  border-radius: var(--td-radius-default);
+}
+
+/* ==================== 垂直列表项 ==================== */
+
+.t-list-item--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.t-list-item--vertical .t-list-item__meta {
+  width: 100%;
+}
+
+.t-list-item--vertical .t-list-item__extra {
+  margin-left: 0;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.t-list-item--vertical .t-list-item__action {
+  margin-left: 0;
+  margin-top: 12px;
+}
+
+/* ==================== 分割线 ==================== */
+
+.t-list--split .t-list-item {
+  border-top: 1px solid var(--td-border-level-1);
+}
+
+.t-list--split .t-list-item:first-child {
+  border-top: none;
+}
+
+/* ==================== 无边框 ==================== */
+
+.t-list--no-border {
+  border: none;
+}
+
+.t-list--no-border .t-list-item {
+  border: none;
+}
+
+/* ==================== 紧凑模式 ==================== */
+
+.t-list--compact .t-list-item {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+}
+
+.t-list--compact .t-list__header,
+.t-list--compact .t-list__footer {
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
+}
+
+/* ==================== 加载中 ==================== */
+
+.t-list--loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
