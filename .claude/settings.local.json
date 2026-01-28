@@ -6,7 +6,9 @@
       "mcp__playwright-global__browser_navigate",
       "mcp__playwright-global__browser_close",
       "WebFetch(domain:cloud.tencent.com)",
-      "WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)"
+      "WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)",
+      "Bash(powershell -Command \"Set-Location ''D:\\project\\cursor\\work\\xcx''; git checkout HEAD -- universal-cloudbase-uniapp-template/src/pages.json universal-cloudbase-uniapp-template/src/App.vue\")",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

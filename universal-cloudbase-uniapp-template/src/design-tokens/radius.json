@@ -1,0 +1,16 @@
+{
+  "radius": {
+    "small": "6rpx",
+    "default": "12rpx",
+    "medium": "18rpx",
+    "large": "24rpx",
+    "extra-large": "32rpx",
+    "round": "999rpx",
+    "circle": "50%"
+  }
+}
+
+
+
+
+

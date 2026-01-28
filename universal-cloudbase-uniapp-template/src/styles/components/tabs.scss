@@ -1,0 +1,227 @@
+/**
+ * TDesign Tabs 选项卡组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-tabs {
+  width: 100%;
+}
+
+.t-tabs__nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: $td-bg-color-container;
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.t-tabs__nav::-webkit-scrollbar {
+  display: none;
+}
+
+.t-tabs__nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 88rpx;
+  padding: 0 $td-comp-paddingLR-m;
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+  cursor: pointer;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+}
+
+.t-tabs__nav-item--active {
+  color: $td-brand-color;
+  font-weight: $td-font-weight-medium;
+}
+
+.t-tabs__nav-item--disabled {
+  color: $td-text-color-disabled;
+  cursor: not-allowed;
+}
+
+// ==================== 下划线指示器 ====================
+
+.t-tabs__track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4rpx;
+  background-color: $td-brand-color;
+  border-radius: 2rpx;
+  transition: transform $td-transition-duration-base $td-transition-timing-function,
+              width $td-transition-duration-base $td-transition-timing-function;
+}
+
+// ==================== 均分模式 ====================
+
+.t-tabs--evenly .t-tabs__nav {
+  display: flex;
+}
+
+.t-tabs--evenly .t-tabs__nav-item {
+  flex: 1;
+  padding: 0;
+}
+
+// ==================== 卡片模式 ====================
+
+.t-tabs--card .t-tabs__nav {
+  background-color: $td-bg-color-page;
+  padding: 8rpx;
+  border-radius: $td-radius-default;
+}
+
+.t-tabs--card .t-tabs__nav-item {
+  height: 64rpx;
+  padding: 0 $td-comp-paddingLR-l;
+  border-radius: $td-radius-default;
+}
+
+.t-tabs--card .t-tabs__nav-item--active {
+  background-color: $td-bg-color-container;
+  box-shadow: $td-shadow-1;
+}
+
+.t-tabs--card .t-tabs__track {
+  display: none;
+}
+
+// ==================== 胶囊模式 ====================
+
+.t-tabs--capsule .t-tabs__nav {
+  background-color: $td-bg-color-page;
+  padding: 6rpx;
+  border-radius: $td-radius-round;
+}
+
+.t-tabs--capsule .t-tabs__nav-item {
+  height: 56rpx;
+  padding: 0 $td-comp-paddingLR-m;
+  border-radius: $td-radius-round;
+}
+
+.t-tabs--capsule .t-tabs__nav-item--active {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+.t-tabs--capsule .t-tabs__track {
+  display: none;
+}
+
+// ==================== 紧凑模式 ====================
+
+.t-tabs--compact .t-tabs__nav-item {
+  height: 72rpx;
+  padding: 0 $td-comp-paddingLR-s;
+}
+
+// ==================== 带边框 ====================
+
+.t-tabs--bordered .t-tabs__nav {
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+// ==================== 固定定位 ====================
+
+.t-tabs--sticky .t-tabs__nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+// ==================== 内容区 ====================
+
+.t-tabs__content {
+  width: 100%;
+}
+
+.t-tabs__panel {
+  width: 100%;
+}
+
+// ==================== 带图标 ====================
+
+.t-tabs__nav-item-icon {
+  margin-right: 8rpx;
+  font-size: 32rpx;
+}
+
+// ==================== 带徽标 ====================
+
+.t-tabs__nav-item .t-badge {
+  margin-left: 8rpx;
+}
+
+// ==================== 滚动按钮 ====================
+
+.t-tabs__scroll-btn {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 100%;
+  background-color: $td-bg-color-container;
+  box-shadow: 0 0 16rpx rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  cursor: pointer;
+}
+
+.t-tabs__scroll-btn--left {
+  left: 0;
+}
+
+.t-tabs__scroll-btn--right {
+  right: 0;
+}
+
+// ==================== 附加操作 ====================
+
+.t-tabs__extra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 $td-comp-paddingLR-m;
+}
+
+// ==================== 分段选择器风格 ====================
+
+.t-tabs--segment {
+  display: inline-flex;
+  background-color: $td-bg-color-container-active;
+  border-radius: $td-radius-default;
+  padding: 6rpx;
+}
+
+.t-tabs--segment .t-tabs__nav {
+  background-color: transparent;
+}
+
+.t-tabs--segment .t-tabs__nav-item {
+  height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: $td-radius-small;
+}
+
+.t-tabs--segment .t-tabs__nav-item--active {
+  background-color: $td-bg-color-container;
+  box-shadow: $td-shadow-1;
+}
+
+.t-tabs--segment .t-tabs__track {
+  display: none;
+}
+

@@ -1,0 +1,202 @@
+/**
+ * TDesign Avatar 头像组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-secondary;
+  font-size: $td-font-size-m;
+  font-weight: $td-font-weight-medium;
+  overflow: hidden;
+  vertical-align: middle;
+  border-radius: 50%;
+}
+
+.t-avatar image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.t-avatar__icon {
+  font-size: 40rpx;
+}
+
+.t-avatar__text {
+  font-size: inherit;
+  text-transform: uppercase;
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-avatar--size-small {
+  width: 56rpx;
+  height: 56rpx;
+  font-size: $td-font-size-s;
+}
+
+.t-avatar--size-small .t-avatar__icon {
+  font-size: 28rpx;
+}
+
+.t-avatar--size-medium {
+  width: 80rpx;
+  height: 80rpx;
+  font-size: $td-font-size-m;
+}
+
+.t-avatar--size-medium .t-avatar__icon {
+  font-size: 40rpx;
+}
+
+.t-avatar--size-large {
+  width: 128rpx;
+  height: 128rpx;
+  font-size: $td-font-size-xl;
+}
+
+.t-avatar--size-large .t-avatar__icon {
+  font-size: 64rpx;
+}
+
+.t-avatar--size-extra-large {
+  width: 160rpx;
+  height: 160rpx;
+  font-size: $td-font-size-xxl;
+}
+
+.t-avatar--size-extra-large .t-avatar__icon {
+  font-size: 80rpx;
+}
+
+// ==================== 形状变体 ====================
+
+.t-avatar--shape-circle {
+  border-radius: 50%;
+}
+
+.t-avatar--shape-round {
+  border-radius: $td-radius-default;
+}
+
+.t-avatar--shape-square {
+  border-radius: 0;
+}
+
+// ==================== 边框 ====================
+
+.t-avatar--bordered {
+  border: 4rpx solid #FFFFFF;
+  box-shadow: 0 0 0 2rpx rgba(0, 0, 0, 0.1);
+}
+
+// ==================== 头像组 ====================
+
+.t-avatar-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.t-avatar-group .t-avatar {
+  margin-left: -20rpx;
+  border: 4rpx solid #FFFFFF;
+}
+
+.t-avatar-group .t-avatar:first-child {
+  margin-left: 0;
+}
+
+.t-avatar-group--size-small .t-avatar {
+  margin-left: -14rpx;
+}
+
+.t-avatar-group--size-large .t-avatar {
+  margin-left: -32rpx;
+}
+
+// ==================== 更多头像 ====================
+
+.t-avatar--more {
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-secondary;
+  font-size: $td-font-size-s;
+}
+
+// ==================== 背景色变体 ====================
+
+.t-avatar--bg-primary {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+.t-avatar--bg-success {
+  background-color: $td-success-color;
+  color: #FFFFFF;
+}
+
+.t-avatar--bg-warning {
+  background-color: $td-warning-color;
+  color: #FFFFFF;
+}
+
+.t-avatar--bg-error {
+  background-color: $td-error-color;
+  color: #FFFFFF;
+}
+
+// ==================== 徽章定位 ====================
+
+.t-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.t-avatar-wrapper .t-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(30%, -30%);
+}
+
+// ==================== 用户信息 ====================
+
+.t-avatar-info {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.t-avatar-info__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-avatar-info__name {
+  font-size: $td-font-size-m;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-primary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t-avatar-info__desc {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

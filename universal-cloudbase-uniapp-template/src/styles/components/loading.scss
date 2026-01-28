@@ -1,0 +1,217 @@
+/**
+ * TDesign Loading 加载组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: $td-brand-color;
+}
+
+.t-loading__spinner {
+  width: 40rpx;
+  height: 40rpx;
+  animation: loading-rotate 1s linear infinite;
+}
+
+@keyframes loading-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-loading--size-small .t-loading__spinner {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.t-loading--size-medium .t-loading__spinner {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.t-loading--size-large .t-loading__spinner {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+// ==================== 文本 ====================
+
+.t-loading__text {
+  margin-left: 16rpx;
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+}
+
+.t-loading--vertical {
+  flex-direction: column;
+}
+
+.t-loading--vertical .t-loading__text {
+  margin-left: 0;
+  margin-top: 16rpx;
+}
+
+// ==================== 全屏加载 ====================
+
+.t-loading--fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: $td-z-index-loading;
+}
+
+// ==================== 局部加载 ====================
+
+.t-loading--local {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+// ==================== 加载容器 ====================
+
+.t-loading__wrapper {
+  position: relative;
+}
+
+.t-loading__wrapper--loading {
+  min-height: 200rpx;
+}
+
+// ==================== 类型变体 ====================
+
+// 圆圈类型
+.t-loading--circular .t-loading__spinner {
+  border: 4rpx solid $td-border-level-2;
+  border-top-color: $td-brand-color;
+  border-radius: 50%;
+}
+
+// 点状类型
+.t-loading--dots {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.t-loading--dots .t-loading__dot {
+  width: 16rpx;
+  height: 16rpx;
+  background-color: $td-brand-color;
+  border-radius: 50%;
+  animation: loading-dots 1.4s ease-in-out infinite both;
+}
+
+.t-loading--dots .t-loading__dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.t-loading--dots .t-loading__dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-dots {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+// ==================== 骨架屏 ====================
+
+.t-skeleton {
+  width: 100%;
+}
+
+.t-skeleton__item {
+  background: linear-gradient(90deg, $td-bg-color-container-active 25%, $td-bg-color-container-hover 50%, $td-bg-color-container-active 75%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.5s ease infinite;
+  border-radius: $td-radius-small;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.t-skeleton__avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+}
+
+.t-skeleton__title {
+  height: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.t-skeleton__paragraph {
+  height: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.t-skeleton__paragraph:last-child {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+// ==================== 空状态 ====================
+
+.t-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64rpx 32rpx;
+}
+
+.t-empty__icon {
+  font-size: 128rpx;
+  color: $td-text-color-placeholder;
+  opacity: 0.5;
+  margin-bottom: 32rpx;
+}
+
+.t-empty__description {
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+  text-align: center;
+}
+
+.t-empty__action {
+  margin-top: 32rpx;
+}
+

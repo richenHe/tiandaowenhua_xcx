@@ -1,0 +1,272 @@
+/**
+ * TDesign Popup 弹出层组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 遮罩层 ====================
+
+.t-popup__mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: $td-z-index-popup;
+  animation: popup-mask-fade-in $td-transition-duration-base;
+}
+
+@keyframes popup-mask-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// ==================== 弹出层主体 ====================
+
+.t-popup {
+  position: fixed;
+  background-color: $td-bg-color-container;
+  z-index: $td-z-index-popup;
+  overflow: hidden;
+}
+
+// ==================== 位置变体 ====================
+
+// 底部弹出
+.t-popup--bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: $td-radius-large $td-radius-large 0 0;
+  animation: popup-slide-up $td-transition-duration-base;
+}
+
+@keyframes popup-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+// 顶部弹出
+.t-popup--top {
+  left: 0;
+  right: 0;
+  top: 0;
+  border-radius: 0 0 $td-radius-large $td-radius-large;
+  animation: popup-slide-down $td-transition-duration-base;
+}
+
+@keyframes popup-slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+// 左侧弹出
+.t-popup--left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 80%;
+  max-width: 600rpx;
+  border-radius: 0 $td-radius-large $td-radius-large 0;
+  animation: popup-slide-right $td-transition-duration-base;
+}
+
+@keyframes popup-slide-right {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+// 右侧弹出
+.t-popup--right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80%;
+  max-width: 600rpx;
+  border-radius: $td-radius-large 0 0 $td-radius-large;
+  animation: popup-slide-left $td-transition-duration-base;
+}
+
+@keyframes popup-slide-left {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+// 居中弹出
+.t-popup--center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: $td-radius-large;
+  animation: popup-zoom-in $td-transition-duration-base;
+}
+
+@keyframes popup-zoom-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+// ==================== 弹出层头部 ====================
+
+.t-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-popup__title {
+  flex: 1;
+  font-size: $td-font-size-m;
+  font-weight: $td-font-weight-semibold;
+  color: $td-text-color-primary;
+  text-align: center;
+}
+
+.t-popup__close {
+  position: absolute;
+  right: $td-comp-paddingLR-m;
+  top: $td-comp-paddingTB-l;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  font-size: 36rpx;
+  color: $td-text-color-secondary;
+  cursor: pointer;
+}
+
+.t-popup__close--left {
+  right: auto;
+  left: $td-comp-paddingLR-m;
+}
+
+// ==================== 弹出层内容 ====================
+
+.t-popup__body {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.t-popup__body--no-padding {
+  padding: 0;
+}
+
+// ==================== 弹出层底部 ====================
+
+.t-popup__footer {
+  display: flex;
+  gap: 24rpx;
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+  padding-bottom: calc(#{$td-comp-paddingTB-l} + env(safe-area-inset-bottom));
+  border-top: 2rpx solid $td-border-level-1;
+}
+
+.t-popup__footer .t-button {
+  flex: 1;
+}
+
+// ==================== 安全区域 ====================
+
+.t-popup--safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// ==================== 关闭动画 ====================
+
+.t-popup__mask--fade-out {
+  animation: popup-mask-fade-out $td-transition-duration-base;
+}
+
+@keyframes popup-mask-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.t-popup--bottom.t-popup--closing {
+  animation: popup-slide-down-out $td-transition-duration-base;
+}
+
+@keyframes popup-slide-down-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.t-popup--top.t-popup--closing {
+  animation: popup-slide-up-out $td-transition-duration-base;
+}
+
+@keyframes popup-slide-up-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+// ==================== 圆形关闭按钮 ====================
+
+.t-popup__close--circle {
+  width: 56rpx;
+  height: 56rpx;
+  background-color: $td-bg-color-container-active;
+  border-radius: 50%;
+}
+
+// ==================== 下拉条 ====================
+
+.t-popup__drag-bar {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 0;
+}
+
+.t-popup__drag-bar::after {
+  content: '';
+  width: 80rpx;
+  height: 8rpx;
+  background-color: $td-border-level-2;
+  border-radius: 4rpx;
+}
+

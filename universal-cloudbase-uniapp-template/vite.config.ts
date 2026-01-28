@@ -5,6 +5,14 @@ import uni from "@dcloudio/vite-plugin-uni";
 export default defineConfig({
   plugins: [uni()],
   base: './',
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // 抑制 Sass 废弃警告
+        silenceDeprecations: ['legacy-js-api', 'import'],
+      }
+    }
+  },
   // optimizeDeps: {
   //   exclude: ['@cloudbase/adapter-uni-app'],  // 排除 @cloudbase/adapter-uni-app 依赖
   // },

@@ -1,0 +1,224 @@
+/**
+ * TDesign Tag 标签组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44rpx;
+  padding: 0 16rpx;
+  font-size: $td-font-size-s;
+  font-weight: $td-font-weight-medium;
+  line-height: 1;
+  border-radius: $td-radius-small;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+// ==================== 主题变体 ====================
+
+// 默认（品牌色）
+.t-tag--theme-default {
+  background-color: rgba(0, 82, 217, 0.1);
+  color: $td-brand-color;
+}
+
+.t-tag--theme-default.t-tag--variant-dark {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+.t-tag--theme-default.t-tag--variant-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-brand-color;
+  color: $td-brand-color;
+}
+
+// 主要
+.t-tag--theme-primary {
+  background-color: rgba(0, 82, 217, 0.1);
+  color: $td-brand-color;
+}
+
+.t-tag--theme-primary.t-tag--variant-dark {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+.t-tag--theme-primary.t-tag--variant-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-brand-color;
+  color: $td-brand-color;
+}
+
+// 成功
+.t-tag--theme-success {
+  background-color: rgba(0, 168, 112, 0.1);
+  color: $td-success-color;
+}
+
+.t-tag--theme-success.t-tag--variant-dark {
+  background-color: $td-success-color;
+  color: #FFFFFF;
+}
+
+.t-tag--theme-success.t-tag--variant-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-success-color;
+  color: $td-success-color;
+}
+
+// 警告
+.t-tag--theme-warning {
+  background-color: rgba(237, 123, 47, 0.1);
+  color: $td-warning-color;
+}
+
+.t-tag--theme-warning.t-tag--variant-dark {
+  background-color: $td-warning-color;
+  color: #FFFFFF;
+}
+
+.t-tag--theme-warning.t-tag--variant-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-warning-color;
+  color: $td-warning-color;
+}
+
+// 错误/危险
+.t-tag--theme-danger,
+.t-tag--theme-error {
+  background-color: rgba(227, 77, 89, 0.1);
+  color: $td-error-color;
+}
+
+.t-tag--theme-danger.t-tag--variant-dark,
+.t-tag--theme-error.t-tag--variant-dark {
+  background-color: $td-error-color;
+  color: #FFFFFF;
+}
+
+.t-tag--theme-danger.t-tag--variant-outline,
+.t-tag--theme-error.t-tag--variant-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-error-color;
+  color: $td-error-color;
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-tag--size-small {
+  height: 36rpx;
+  padding: 0 12rpx;
+  font-size: $td-font-size-xs;
+}
+
+.t-tag--size-medium {
+  height: 44rpx;
+  padding: 0 16rpx;
+  font-size: $td-font-size-s;
+}
+
+.t-tag--size-large {
+  height: 56rpx;
+  padding: 0 24rpx;
+  font-size: $td-font-size-base;
+}
+
+// ==================== 形状变体 ====================
+
+.t-tag--shape-square {
+  border-radius: $td-radius-small;
+}
+
+.t-tag--shape-round {
+  border-radius: $td-radius-round;
+}
+
+.t-tag--shape-mark {
+  border-radius: 0 $td-radius-small $td-radius-small 0;
+}
+
+// ==================== 可关闭 ====================
+
+.t-tag--closable {
+  padding-right: 8rpx;
+}
+
+.t-tag__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8rpx;
+  font-size: 24rpx;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity $td-transition-duration-base;
+}
+
+.t-tag__close:hover {
+  opacity: 1;
+}
+
+// ==================== 带图标 ====================
+
+.t-tag__icon {
+  margin-right: 8rpx;
+  font-size: 24rpx;
+}
+
+// ==================== 可选中 ====================
+
+.t-tag--checkable {
+  cursor: pointer;
+  transition: all $td-transition-duration-base;
+}
+
+.t-tag--checkable:not(.t-tag--checked) {
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-secondary;
+}
+
+.t-tag--checkable:not(.t-tag--checked):hover {
+  background-color: $td-bg-color-container-hover;
+}
+
+.t-tag--checked {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+// ==================== 禁用状态 ====================
+
+.t-tag--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+// ==================== 最大宽度（省略号） ====================
+
+.t-tag--ellipsis {
+  max-width: 200rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ==================== 标签组 ====================
+
+.t-tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.t-tag-group--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+

@@ -1,0 +1,184 @@
+/**
+ * TDesign Alert 警告提示组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-alert {
+  display: flex;
+  align-items: flex-start;
+  padding: $td-comp-paddingTB-m $td-comp-paddingLR-m;
+  border-radius: $td-radius-default;
+  font-size: $td-font-size-base;
+  line-height: $td-line-height-base;
+}
+
+// ==================== 类型变体 ====================
+
+.t-alert--theme-info {
+  background-color: rgba(0, 82, 217, 0.1);
+  color: $td-brand-color;
+}
+
+.t-alert--theme-success {
+  background-color: rgba(0, 168, 112, 0.1);
+  color: $td-success-color;
+}
+
+.t-alert--theme-warning {
+  background-color: rgba(237, 123, 47, 0.1);
+  color: $td-warning-color;
+}
+
+.t-alert--theme-error {
+  background-color: rgba(227, 77, 89, 0.1);
+  color: $td-error-color;
+}
+
+// ==================== 图标 ====================
+
+.t-alert__icon {
+  flex-shrink: 0;
+  margin-right: 16rpx;
+  font-size: 36rpx;
+}
+
+// ==================== 内容 ====================
+
+.t-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-alert__title {
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  margin-bottom: 8rpx;
+}
+
+.t-alert__description {
+  font-size: $td-font-size-s;
+  opacity: 0.85;
+}
+
+// ==================== 关闭按钮 ====================
+
+.t-alert__close {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  font-size: 32rpx;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity $td-transition-duration-base;
+}
+
+.t-alert__close:hover {
+  opacity: 1;
+}
+
+// ==================== 链接 ====================
+
+.t-alert__link {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: $td-font-size-s;
+  font-weight: $td-font-weight-medium;
+  cursor: pointer;
+}
+
+// ==================== 纯色背景 ====================
+
+.t-alert--solid.t-alert--theme-info {
+  background-color: $td-brand-color;
+  color: #FFFFFF;
+}
+
+.t-alert--solid.t-alert--theme-success {
+  background-color: $td-success-color;
+  color: #FFFFFF;
+}
+
+.t-alert--solid.t-alert--theme-warning {
+  background-color: $td-warning-color;
+  color: #FFFFFF;
+}
+
+.t-alert--solid.t-alert--theme-error {
+  background-color: $td-error-color;
+  color: #FFFFFF;
+}
+
+// ==================== 带边框 ====================
+
+.t-alert--bordered {
+  border-width: 2rpx;
+  border-style: solid;
+}
+
+.t-alert--bordered.t-alert--theme-info {
+  border-color: $td-brand-color;
+}
+
+.t-alert--bordered.t-alert--theme-success {
+  border-color: $td-success-color;
+}
+
+.t-alert--bordered.t-alert--theme-warning {
+  border-color: $td-warning-color;
+}
+
+.t-alert--bordered.t-alert--theme-error {
+  border-color: $td-error-color;
+}
+
+// ==================== 公告栏样式 ====================
+
+.t-notice-bar {
+  display: flex;
+  align-items: center;
+  height: 72rpx;
+  padding: 0 $td-comp-paddingLR-m;
+  background-color: rgba(237, 123, 47, 0.1);
+  font-size: $td-font-size-s;
+  color: $td-warning-color;
+}
+
+.t-notice-bar__icon {
+  flex-shrink: 0;
+  margin-right: 12rpx;
+  font-size: 32rpx;
+}
+
+.t-notice-bar__content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.t-notice-bar__text {
+  white-space: nowrap;
+}
+
+.t-notice-bar__text--scrollable {
+  display: inline-block;
+  animation: notice-scroll 10s linear infinite;
+}
+
+@keyframes notice-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.t-notice-bar__action {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  font-size: 24rpx;
+}
+

@@ -1,0 +1,37 @@
+{
+  "spacing": {
+    "xxs": "4rpx",
+    "xs": "8rpx",
+    "s": "16rpx",
+    "m": "24rpx",
+    "l": "32rpx",
+    "xl": "48rpx",
+    "xxl": "64rpx"
+  },
+  "component": {
+    "padding-tb-xxs": "2rpx",
+    "padding-tb-xs": "4rpx",
+    "padding-tb-s": "8rpx",
+    "padding-tb-m": "16rpx",
+    "padding-tb-l": "24rpx",
+    "padding-tb-xl": "32rpx",
+    "padding-tb-xxl": "48rpx",
+    "padding-lr-xxs": "8rpx",
+    "padding-lr-xs": "16rpx",
+    "padding-lr-s": "24rpx",
+    "padding-lr-m": "32rpx",
+    "padding-lr-l": "48rpx",
+    "padding-lr-xl": "64rpx",
+    "padding-lr-xxl": "80rpx"
+  },
+  "layout": {
+    "page-margin": "32rpx",
+    "card-spacing": "24rpx",
+    "section-spacing": "48rpx"
+  }
+}
+
+
+
+
+

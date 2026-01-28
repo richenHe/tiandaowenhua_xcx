@@ -1,0 +1,29 @@
+/**
+ * TDesign 组件样式汇总
+ * 导入所有组件样式
+ */
+
+// 基础组件
+@import './button.scss';
+@import './card.scss';
+@import './cell.scss';
+
+// 表单组件
+@import './input.scss';
+@import './form.scss';
+
+// 数据展示
+@import './avatar.scss';
+@import './badge.scss';
+@import './tag.scss';
+@import './list.scss';
+@import './image.scss';
+@import './swiper.scss';
+@import './tabs.scss';
+
+// 反馈组件
+@import './alert.scss';
+@import './dialog.scss';
+@import './popup.scss';
+@import './loading.scss';
+

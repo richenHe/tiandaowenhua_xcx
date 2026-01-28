@@ -1,0 +1,467 @@
+<template>
+  <view class="page">
+    <td-page-header title="升级指南" />
+    
+    <scroll-view 
+      class="scroll-area" 
+      scroll-y 
+      :style="{ height: scrollHeight }"
+    >
+      <view class="page-content">
+        
+        <!-- 当前等级卡片 -->
+        <view class="current-level-card">
+          <view class="level-icon">🐦</view>
+          <view class="level-info">
+            <view class="level-label">当前等级</view>
+            <view class="level-name">青鸾大使</view>
+          </view>
+        </view>
+
+        <!-- 升级路径图 -->
+        <view class="section-title">📍 升级路径</view>
+        <view class="path-card">
+          <view class="path-item">
+            <view class="path-icon">🥚</view>
+            <view class="path-label">准青鸾</view>
+          </view>
+          <view class="path-arrow">→</view>
+          <view class="path-item active">
+            <view class="path-icon">🐦</view>
+            <view class="path-label current">青鸾 (当前)</view>
+          </view>
+          <view class="path-arrow">→</view>
+          <view class="path-item">
+            <view class="path-icon inactive">🦅</view>
+            <view class="path-label">鸿鹄</view>
+          </view>
+          <view class="path-arrow">→</view>
+          <view class="path-item">
+            <view class="path-icon inactive">🦚</view>
+            <view class="path-label">金凤</view>
+          </view>
+        </view>
+
+        <!-- 升级到鸿鹄大使 -->
+        <view class="section-title">🎯 下一等级：鸿鹄大使</view>
+
+        <!-- 升级条件 -->
+        <view class="upgrade-card">
+          <view class="card-header">
+            <view class="card-title">📋 升级条件</view>
+          </view>
+          <view class="card-body">
+            
+            <!-- 步骤1 -->
+            <view class="step-item">
+              <view class="step-number">1</view>
+              <view class="step-content">
+                <view class="step-title">已是青鸾大使</view>
+                <view class="step-desc">当前等级：青鸾大使 ✓</view>
+                <view class="step-badge success">已满足</view>
+              </view>
+            </view>
+
+            <!-- 步骤2 -->
+            <view class="step-item">
+              <view class="step-number">2</view>
+              <view class="step-content">
+                <view class="step-title">签署《鸿鹄大使补充协议》</view>
+                <view class="step-desc">需要在支付升级费用前签署补充协议</view>
+                <button class="step-btn" @tap="goToContractSign">立即签署</button>
+              </view>
+            </view>
+
+            <!-- 步骤3 -->
+            <view class="step-item">
+              <view class="step-number">3</view>
+              <view class="step-content">
+                <view class="step-title">支付9800元升级费用</view>
+                <view class="step-desc">获得10个初探班名额（可赠送学员）</view>
+                <button class="step-btn warning">支付升级费用</button>
+              </view>
+            </view>
+
+          </view>
+        </view>
+
+        <!-- 升级收益 -->
+        <view class="upgrade-card">
+          <view class="card-header">
+            <view class="card-title">💰 升级收益</view>
+          </view>
+          <view class="card-body">
+            
+            <view class="benefit-item">
+              <view class="benefit-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                💎
+              </view>
+              <view class="benefit-content">
+                <view class="benefit-title">获得16880冻结积分</view>
+                <view class="benefit-desc">推荐初探班解冻1688积分，解冻完毕后持续获得可提现积分</view>
+              </view>
+            </view>
+
+            <view class="divider"></view>
+
+            <view class="benefit-item">
+              <view class="benefit-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                🎁
+              </view>
+              <view class="benefit-content">
+                <view class="benefit-title">10个初探班名额</view>
+                <view class="benefit-desc">可赠送给学员，每个名额价值1688元</view>
+              </view>
+            </view>
+
+            <view class="divider"></view>
+
+            <view class="benefit-item">
+              <view class="benefit-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                💰
+              </view>
+              <view class="benefit-content">
+                <view class="benefit-title">推荐只获得积分（可提现）</view>
+                <view class="benefit-desc">
+                  • 推荐初探班：解冻1688积分（有冻结时）<br/>
+                  • 推荐密训班：直接获得20%可提现积分<br/>
+                  • 推荐咨询：直接获得20%可提现积分
+                </view>
+              </view>
+            </view>
+
+            <view class="divider"></view>
+
+            <view class="benefit-item">
+              <view class="benefit-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                👨‍🏫
+              </view>
+              <view class="benefit-content">
+                <view class="benefit-title">可担任辅导员获得功德分</view>
+                <view class="benefit-desc">辅导员、会务义工、沙龙活动等额外获得功德分</view>
+              </view>
+            </view>
+
+          </view>
+        </view>
+
+        <!-- 注意事项 -->
+        <view class="alert-box warning">
+          <view class="alert-icon">⚠️</view>
+          <view class="alert-content">
+            <view class="alert-title">升级注意事项</view>
+            <view class="alert-message">
+              1. 升级费用9800元不退还<br/>
+              2. 10个初探班名额有效期1年<br/>
+              3. 合同期从签署之日起计算1年<br/>
+              4. 到期前30天可续签
+            </view>
+          </view>
+        </view>
+
+        <!-- 升级按钮 -->
+        <button class="upgrade-btn">🚀 立即升级为鸿鹄大使</button>
+
+        <!-- 底部留白 -->
+        <view style="height: 120rpx;"></view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+
+const scrollHeight = computed(() => {
+  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
+})
+
+const goToContractSign = () => {
+  uni.navigateTo({
+    url: '/pages/ambassador/contract-sign/index'
+  })
+}
+</script>
+
+<style scoped lang="scss">
+.page {
+  width: 100%;
+  height: 100vh;
+  background: #F5F5F5;
+}
+
+.scroll-area {
+  width: 100%;
+}
+
+.page-content {
+  padding: 32rpx;
+}
+
+.current-level-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 24rpx;
+  padding: 48rpx;
+  margin-bottom: 48rpx;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+}
+
+.level-icon {
+  font-size: 96rpx;
+}
+
+.level-info {
+  flex: 1;
+}
+
+.level-label {
+  font-size: 28rpx;
+  opacity: 0.9;
+  margin-bottom: 8rpx;
+}
+
+.level-name {
+  font-size: 48rpx;
+  font-weight: 700;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.path-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.path-item {
+  text-align: center;
+  flex: 1;
+  min-width: 120rpx;
+}
+
+.path-icon {
+  font-size: 64rpx;
+  margin-bottom: 8rpx;
+  
+  &.inactive {
+    opacity: 0.4;
+  }
+}
+
+.path-label {
+  font-size: 22rpx;
+  color: #999;
+  
+  &.current {
+    color: #0052D9;
+    font-weight: 600;
+  }
+}
+
+.path-arrow {
+  color: #999;
+  font-size: 28rpx;
+}
+
+.upgrade-card {
+  background: #fff;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 32rpx;
+  border-bottom: 2rpx solid #F5F5F5;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-body {
+  padding: 32rpx;
+}
+
+.step-item {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 48rpx;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.step-number {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.step-desc {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.6;
+  margin-bottom: 16rpx;
+}
+
+.step-badge {
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  
+  &.success {
+    background: #E8F8F2;
+    color: #00A870;
+  }
+}
+
+.step-btn {
+  height: 64rpx;
+  padding: 0 32rpx;
+  background: #E6F4FF;
+  color: #0052D9;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  border: none;
+  
+  &.warning {
+    background: #FFF4E5;
+    color: #E37318;
+  }
+  
+  &::after {
+    border: none;
+  }
+}
+
+.benefit-item {
+  display: flex;
+  gap: 24rpx;
+  align-items: flex-start;
+}
+
+.benefit-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.benefit-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.benefit-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.benefit-desc {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.divider {
+  height: 2rpx;
+  background: #F5F5F5;
+  margin: 32rpx 0;
+}
+
+.alert-box {
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 48rpx;
+  display: flex;
+  gap: 16rpx;
+  
+  &.warning {
+    background: #FFF4E5;
+  }
+}
+
+.alert-icon {
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.alert-message {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.upgrade-btn {
+  width: 100%;
+  height: 88rpx;
+  background: #FFF4E5;
+  color: #E37318;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  border: none;
+  
+  &::after {
+    border: none;
+  }
+}
+</style>
+

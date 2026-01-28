@@ -1,0 +1,254 @@
+/**
+ * TDesign Dialog 对话框组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 遮罩层 ====================
+
+.t-dialog__mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: $td-z-index-dialog;
+  animation: dialog-mask-fade-in $td-transition-duration-base;
+}
+
+@keyframes dialog-mask-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// ==================== 对话框容器 ====================
+
+.t-dialog__wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  overflow: auto;
+  z-index: $td-z-index-dialog;
+}
+
+// ==================== 对话框主体 ====================
+
+.t-dialog {
+  position: relative;
+  width: 90%;
+  max-width: 640rpx;
+  background-color: $td-bg-color-container;
+  border-radius: $td-radius-large;
+  box-shadow: $td-shadow-3;
+  animation: dialog-zoom-in $td-transition-duration-base;
+}
+
+@keyframes dialog-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// ==================== 对话框头部 ====================
+
+.t-dialog__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-l;
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-dialog__header--no-border {
+  border-bottom: none;
+}
+
+.t-dialog__title {
+  flex: 1;
+  font-size: $td-font-size-l;
+  font-weight: $td-font-weight-semibold;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-small;
+}
+
+.t-dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  margin-left: 32rpx;
+  font-size: 32rpx;
+  color: $td-text-color-secondary;
+  cursor: pointer;
+  border-radius: $td-radius-default;
+  transition: all $td-transition-duration-base;
+  flex-shrink: 0;
+}
+
+.t-dialog__close:hover {
+  color: $td-text-color-primary;
+  background-color: $td-bg-color-container-hover;
+}
+
+// ==================== 对话框内容 ====================
+
+.t-dialog__body {
+  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-l;
+  max-height: 60vh;
+  overflow-y: auto;
+  color: $td-text-color-primary;
+  font-size: $td-font-size-base;
+  line-height: $td-line-height-base;
+}
+
+// ==================== 对话框底部 ====================
+
+.t-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16rpx;
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-l;
+  border-top: 2rpx solid $td-border-level-1;
+}
+
+.t-dialog__footer--no-border {
+  border-top: none;
+}
+
+.t-dialog__footer--center {
+  justify-content: center;
+}
+
+.t-dialog__footer--left {
+  justify-content: flex-start;
+}
+
+// ==================== 确认对话框 ====================
+
+.t-dialog--confirm .t-dialog__body {
+  display: flex;
+  gap: 24rpx;
+}
+
+.t-dialog--confirm .t-dialog__icon {
+  font-size: 48rpx;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.t-dialog--confirm.t-dialog--theme-info .t-dialog__icon {
+  color: $td-brand-color;
+}
+
+.t-dialog--confirm.t-dialog--theme-success .t-dialog__icon {
+  color: $td-success-color;
+}
+
+.t-dialog--confirm.t-dialog--theme-warning .t-dialog__icon {
+  color: $td-warning-color;
+}
+
+.t-dialog--confirm.t-dialog--theme-error .t-dialog__icon {
+  color: $td-error-color;
+}
+
+.t-dialog--confirm .t-dialog__message {
+  flex: 1;
+}
+
+// ==================== 全屏对话框 ====================
+
+.t-dialog--fullscreen {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.t-dialog--fullscreen .t-dialog__body {
+  max-height: none;
+  height: calc(100vh - 240rpx);
+}
+
+// ==================== 居中模式 ====================
+
+.t-dialog--centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 400rpx;
+}
+
+// ==================== 顶部模式 ====================
+
+.t-dialog--top {
+  margin-top: 200rpx;
+  margin-bottom: auto;
+}
+
+// ==================== 无内边距 ====================
+
+.t-dialog--no-padding .t-dialog__header {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+}
+
+.t-dialog--no-padding .t-dialog__body {
+  padding: 0;
+}
+
+.t-dialog--no-padding .t-dialog__footer {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+}
+
+// ==================== 动画 - 淡出 ====================
+
+.t-dialog--fade-out {
+  animation: dialog-zoom-out $td-transition-duration-base;
+}
+
+.t-dialog__mask--fade-out {
+  animation: dialog-mask-fade-out $td-transition-duration-base;
+}
+
+@keyframes dialog-zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes dialog-mask-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+

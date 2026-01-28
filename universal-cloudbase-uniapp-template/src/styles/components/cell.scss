@@ -1,0 +1,208 @@
+/**
+ * TDesign Cell 单元格组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-cell {
+  display: flex;
+  align-items: center;
+  padding: $td-comp-paddingTB-l $td-page-margin;
+  background-color: $td-bg-color-container;
+  transition: background-color $td-transition-duration-base;
+}
+
+.t-cell + .t-cell {
+  border-top: 2rpx solid $td-border-level-1;
+}
+
+// ==================== 可点击 ====================
+
+.t-cell--clickable {
+  cursor: pointer;
+}
+
+.t-cell--clickable:active {
+  background-color: $td-bg-color-container-active;
+}
+
+// ==================== 左侧图标 ====================
+
+.t-cell__left-icon {
+  flex-shrink: 0;
+  margin-right: 24rpx;
+  font-size: 40rpx;
+  color: $td-text-color-secondary;
+}
+
+// ==================== 内容区 ====================
+
+.t-cell__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-cell__title {
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-base;
+}
+
+.t-cell__description {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  line-height: $td-line-height-base;
+}
+
+// ==================== 右侧内容 ====================
+
+.t-cell__note {
+  flex-shrink: 0;
+  margin-left: 24rpx;
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+  text-align: right;
+}
+
+// ==================== 右侧箭头 ====================
+
+.t-cell__right-icon {
+  flex-shrink: 0;
+  margin-left: 8rpx;
+  font-size: 32rpx;
+  color: $td-text-color-placeholder;
+}
+
+// ==================== 分组 ====================
+
+.t-cell-group {
+  background-color: $td-bg-color-container;
+  border-radius: $td-radius-default;
+  overflow: hidden;
+}
+
+.t-cell-group--card {
+  margin: 0 $td-page-margin;
+  border-radius: $td-radius-default;
+  box-shadow: $td-shadow-1;
+}
+
+// ==================== 分组标题 ====================
+
+.t-cell-group__title {
+  padding: $td-comp-paddingTB-l $td-page-margin;
+  padding-bottom: $td-comp-paddingTB-m;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  background-color: $td-bg-color-page;
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-cell--size-small {
+  padding: $td-comp-paddingTB-m $td-page-margin;
+}
+
+.t-cell--size-small .t-cell__title {
+  font-size: $td-font-size-s;
+}
+
+.t-cell--size-large {
+  padding: $td-comp-paddingTB-xl $td-page-margin;
+}
+
+.t-cell--size-large .t-cell__title {
+  font-size: $td-font-size-m;
+}
+
+// ==================== 居中对齐 ====================
+
+.t-cell--middle {
+  align-items: center;
+}
+
+// ==================== 顶部对齐 ====================
+
+.t-cell--top {
+  align-items: flex-start;
+}
+
+.t-cell--top .t-cell__left-icon {
+  margin-top: 4rpx;
+}
+
+// ==================== 必填标记 ====================
+
+.t-cell--required .t-cell__title::before {
+  content: '*';
+  margin-right: 8rpx;
+  color: $td-error-color;
+}
+
+// ==================== 开关单元格 ====================
+
+.t-cell--switch .t-cell__note {
+  margin-left: 0;
+}
+
+// ==================== 带边框 ====================
+
+.t-cell--bordered {
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-cell--bordered:last-child {
+  border-bottom: none;
+}
+
+// ==================== 无边距 ====================
+
+.t-cell-group--inset .t-cell:first-child {
+  border-top-left-radius: $td-radius-default;
+  border-top-right-radius: $td-radius-default;
+}
+
+.t-cell-group--inset .t-cell:last-child {
+  border-bottom-left-radius: $td-radius-default;
+  border-bottom-right-radius: $td-radius-default;
+}
+
+// ==================== 图片单元格 ====================
+
+.t-cell__avatar {
+  flex-shrink: 0;
+  margin-right: 24rpx;
+}
+
+.t-cell__avatar image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $td-radius-default;
+}
+
+// ==================== 多行描述 ====================
+
+.t-cell__description--multi-line {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ==================== 对齐方式 ====================
+
+.t-cell--center {
+  justify-content: center;
+}
+
+.t-cell--center .t-cell__content {
+  flex: none;
+  text-align: center;
+}
+

@@ -1,73 +1,308 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"pages": [
+		{
+			"path": "pages/auth/login/index",
+			"style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "CloudBase UniApp",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
+        "navigationBarTitleText": "天道文化",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mall/index",
+      "style": {
+        "navigationBarTitleText": "商城",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/academy/index",
+      "style": {
+        "navigationBarTitleText": "商学院",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path": "pages/demo/demo",
+			"path": "pages/auth/complete-profile/index",
 			"style": {
-				"navigationBarTitleText": "云开发演示",
-				"navigationBarBackgroundColor": "#007aff",
-				"navigationBarTextStyle": "white"
-			}
-		},
+        "navigationBarTitleText": "完善资料",
+        "navigationStyle": "custom"
+      }
+    },
 		{
-			"path": "pages/login/index",
+			"path": "pages/course/detail/index",
 			"style": {
-				"navigationBarTitleText": "选择登录方式",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
-			}
-		},
+        "navigationBarTitleText": "课程详情",
+        "navigationStyle": "custom"
+      }
+    },
 		{
-			"path": "pages/login/password-login",
+			"path": "pages/course/my-courses/index",
 			"style": {
-				"navigationBarTitleText": "密码登录",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
-			}
-		},
+        "navigationBarTitleText": "我的课程",
+        "navigationStyle": "custom"
+      }
+    },
 		{
-			"path": "pages/login/phone-login",
+			"path": "pages/course/schedule/index",
 			"style": {
-				"navigationBarTitleText": "手机验证码登录",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
-			}
-		},
+        "navigationBarTitleText": "课程排期",
+        "navigationStyle": "custom"
+      }
+    },
 		{
-			"path": "pages/login/email-login",
+			"path": "pages/course/appointment-confirm/index",
 			"style": {
-				"navigationBarTitleText": "邮箱验证码登录",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
-			}
-		},
+        "navigationBarTitleText": "预约确认",
+        "navigationStyle": "custom"
+      }
+    },
 		{
-			"path": "pages/profile/profile",
+			"path": "pages/order/confirm/index",
 			"style": {
-				"navigationBarTitleText": "用户信息",
-				"navigationBarBackgroundColor": "#667eea",
-				"navigationBarTextStyle": "white"
-			}
-		}
+        "navigationBarTitleText": "确认订单",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/order/select-referee/index",
+			"style": {
+        "navigationBarTitleText": "选择推荐人",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/order/payment/index",
+			"style": {
+        "navigationBarTitleText": "确认支付",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/order/detail/index",
+			"style": {
+        "navigationBarTitleText": "订单详情",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/profile/index",
+			"style": {
+        "navigationBarTitleText": "个人资料",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/orders/index",
+			"style": {
+        "navigationBarTitleText": "我的订单",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/appointments/index",
+			"style": {
+        "navigationBarTitleText": "我的预约",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/contracts/index",
+			"style": {
+        "navigationBarTitleText": "我的协议",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/feedback/index",
+			"style": {
+        "navigationBarTitleText": "意见反馈",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/consultation/index",
+			"style": {
+        "navigationBarTitleText": "在线咨询",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/referral-list/index",
+			"style": {
+        "navigationBarTitleText": "引荐人列表",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/mine/referee-manage/index",
+			"style": {
+        "navigationBarTitleText": "推荐人管理",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/level/index",
+			"style": {
+        "navigationBarTitleText": "大使等级",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/apply/index",
+			"style": {
+        "navigationBarTitleText": "申请传播大使",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/team/index",
+			"style": {
+        "navigationBarTitleText": "我的团队",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/qrcode/index",
+			"style": {
+        "navigationBarTitleText": "我的二维码",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/merit-points/index",
+			"style": {
+        "navigationBarTitleText": "功德分管理",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/cash-points/index",
+			"style": {
+        "navigationBarTitleText": "积分管理",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/upgrade-guide/index",
+			"style": {
+        "navigationBarTitleText": "升级指南",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/activity-records/index",
+			"style": {
+        "navigationBarTitleText": "活动记录",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/contract-detail/index",
+			"style": {
+        "navigationBarTitleText": "协议详情",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/contract-sign/index",
+			"style": {
+        "navigationBarTitleText": "签署协议",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/ambassador/withdraw/index",
+			"style": {
+        "navigationBarTitleText": "申请提现",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/academy/intro/index",
+			"style": {
+        "navigationBarTitleText": "商学院",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/academy/cases/index",
+			"style": {
+        "navigationBarTitleText": "学员案例",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/academy/materials/index",
+			"style": {
+        "navigationBarTitleText": "朋友圈素材",
+        "navigationStyle": "custom"
+      }
+    },
+		{
+			"path": "pages/common/announcement/index",
+			"style": {
+        "navigationBarTitleText": "平台公告",
+        "navigationStyle": "custom"
+      }
+    }
 	],
 	"globalStyle": {
-		"navigationBarTextStyle": "white",
-		"navigationBarTitleText": "CloudBase UniApp",
-		"navigationBarBackgroundColor": "#667eea",
-		"backgroundColor": "#f5f5f5"
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "天道文化",
+    "navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F5F5F5"
 	},
+  "tabBar": {
+    "color": "#5E5E5E",
+    "selectedColor": "#0052D9",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/mall/index",
+        "text": "商城",
+        "iconPath": "static/tabbar/mall.png",
+        "selectedIconPath": "static/tabbar/mall-active.png"
+      },
+      {
+        "pagePath": "pages/academy/index",
+        "text": "商学院",
+        "iconPath": "static/tabbar/academy.png",
+        "selectedIconPath": "static/tabbar/academy-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-active.png"
+      }
+    ]
+  },
 	"easycom": {
-	"autoscan": true,
-	"custom": {
-	  "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+		"autoscan": true,
+		"custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+      "^Td(.*)": "@/components/tdesign/Td$1.vue"
+		}
 	}
-	
-  }
 }

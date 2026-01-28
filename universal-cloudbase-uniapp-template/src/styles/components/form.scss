@@ -1,0 +1,237 @@
+/**
+ * TDesign Form 表单组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 表单容器 ====================
+
+.t-form {
+  width: 100%;
+}
+
+// ==================== 表单项 ====================
+
+.t-form-item {
+  margin-bottom: $td-form-item-spacing;
+}
+
+.t-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.t-form-item__label {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-base;
+}
+
+.t-form-item__label--required::before {
+  content: '*';
+  margin-right: 8rpx;
+  color: $td-error-color;
+}
+
+.t-form-item__content {
+  width: 100%;
+}
+
+// ==================== 表单项帮助文本 ====================
+
+.t-form-item__help {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  line-height: $td-line-height-base;
+}
+
+// ==================== 表单项错误文本 ====================
+
+.t-form-item__error {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-error-color;
+  line-height: $td-line-height-base;
+}
+
+// ==================== 内联表单 ====================
+
+.t-form--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $td-form-item-spacing;
+}
+
+.t-form--inline .t-form-item {
+  margin-bottom: 0;
+}
+
+// ==================== 水平表单 ====================
+
+.t-form--horizontal .t-form-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.t-form--horizontal .t-form-item__label {
+  flex-shrink: 0;
+  width: 160rpx;
+  padding-right: 24rpx;
+  margin-bottom: 0;
+  text-align: right;
+  line-height: $td-comp-size-m;
+}
+
+.t-form--horizontal .t-form-item__content {
+  flex: 1;
+}
+
+// ==================== 卡片式表单 ====================
+
+.t-form--card {
+  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-m;
+  background-color: $td-bg-color-container;
+  border-radius: $td-radius-default;
+}
+
+.t-form--card .t-form-item {
+  padding: $td-comp-paddingTB-l 0;
+  margin-bottom: 0;
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-form--card .t-form-item:last-child {
+  border-bottom: none;
+}
+
+// ==================== 列表式表单 ====================
+
+.t-form--list {
+  background-color: $td-bg-color-container;
+}
+
+.t-form--list .t-form-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 96rpx;
+  padding: 0 $td-page-margin;
+  margin-bottom: 0;
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-form--list .t-form-item:last-child {
+  border-bottom: none;
+}
+
+.t-form--list .t-form-item__label {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding-right: 24rpx;
+}
+
+.t-form--list .t-form-item__content {
+  flex: 1;
+  text-align: right;
+}
+
+.t-form--list .t-input {
+  border: none;
+  text-align: right;
+}
+
+.t-form--list .t-input__inner {
+  text-align: right;
+}
+
+// ==================== 表单底部 ====================
+
+.t-form__footer {
+  padding: $td-form-item-spacing 0;
+}
+
+.t-form__footer .t-button {
+  width: 100%;
+}
+
+.t-form__footer .t-button + .t-button {
+  margin-top: 24rpx;
+}
+
+// ==================== 验证码输入框 ====================
+
+.t-form-item--code {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.t-form-item--code .t-input {
+  flex: 1;
+}
+
+.t-form-item--code .t-button--code {
+  flex-shrink: 0;
+  min-width: 200rpx;
+}
+
+// ==================== 带图标的表单项 ====================
+
+.t-form-item--icon {
+  position: relative;
+}
+
+.t-form-item--icon .t-form-item__icon {
+  position: absolute;
+  left: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 36rpx;
+  color: $td-text-color-secondary;
+}
+
+.t-form-item--icon .t-input {
+  padding-left: 80rpx;
+}
+
+// ==================== 协议勾选 ====================
+
+.t-form__agreement {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  line-height: $td-line-height-base;
+}
+
+.t-form__agreement-checkbox {
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.t-form__agreement-link {
+  color: $td-brand-color;
+}
+
+// ==================== 表单分组 ====================
+
+.t-form-group {
+  margin-bottom: $td-section-spacing;
+}
+
+.t-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.t-form-group__title {
+  padding: $td-comp-paddingTB-m $td-page-margin;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  background-color: $td-bg-color-page;
+}
+

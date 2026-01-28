@@ -1,0 +1,146 @@
+/**
+ * TDesign 主题 SCSS 变量
+ * 基于 prototype-tdesign/styles/tdesign-theme.css 转换
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+// ==================== 颜色系统 ====================
+
+// TDesign 品牌色
+$td-brand-color: #0052D9;
+$td-brand-color-light: #266FE8;
+$td-brand-color-lighter: #4787E8;
+$td-brand-color-dark: #003BA8;
+
+// 背景色 (白色主调 70%)
+$td-bg-color-page: #F5F5F5;
+$td-bg-color-container: #FFFFFF;
+$td-bg-color-container-hover: #FAFAFA;
+$td-bg-color-container-active: #F5F5F5;
+$td-bg-color-container-select: #F3F6FF;
+
+// 文本颜色 (深灰色 20%)
+$td-text-color-primary: #000000;
+$td-text-color-secondary: #5E5E5E;
+$td-text-color-placeholder: #BBBBBB;
+$td-text-color-disabled: #DDDDDD;
+$td-text-color-anti: #FFFFFF;
+$td-text-color-brand: #0052D9;
+
+// 边框颜色
+$td-border-level-0: #F0F0F0;
+$td-border-level-1: #E7E7E7;
+$td-border-level-2: #EEEEEE;
+$td-border-color-separator: #E7E7E7;
+
+// 功能色
+$td-success-color: #00A870;
+$td-success-color-light: #E8F8F2;
+$td-warning-color: #D4AF37; // 金色 (价格、徽章)
+$td-warning-color-light: #FFF9E6;
+$td-error-color: #E34D59;
+$td-error-color-light: #FDECEE;
+$td-info-color: #0052D9;
+$td-info-color-light: #EDF4FF;
+
+// ==================== 间距系统 (px -> rpx) ====================
+
+// 组件内边距 (上下)
+$td-comp-paddingTB-xxs: 2rpx;
+$td-comp-paddingTB-xs: 4rpx;
+$td-comp-paddingTB-s: 8rpx;
+$td-comp-paddingTB-m: 16rpx;
+$td-comp-paddingTB-l: 24rpx;
+$td-comp-paddingTB-xl: 32rpx;
+$td-comp-paddingTB-xxl: 48rpx;
+
+// 组件内边距 (左右)
+$td-comp-paddingLR-xxs: 8rpx;
+$td-comp-paddingLR-xs: 16rpx;
+$td-comp-paddingLR-s: 24rpx;
+$td-comp-paddingLR-m: 32rpx;
+$td-comp-paddingLR-l: 48rpx;
+$td-comp-paddingLR-xl: 64rpx;
+$td-comp-paddingLR-xxl: 80rpx;
+
+// 页面级间距
+$td-page-margin: 32rpx;
+$td-card-spacing: 24rpx;
+$td-section-spacing: 48rpx;
+$td-form-item-spacing: 32rpx;
+
+// ==================== 圆角系统 (px -> rpx) ====================
+
+$td-radius-small: 6rpx;
+$td-radius-default: 12rpx;
+$td-radius-medium: 18rpx;
+$td-radius-large: 24rpx;
+$td-radius-extraLarge: 32rpx;
+$td-radius-round: 999rpx;
+$td-radius-circle: 50%;
+
+// ==================== 阴影系统 ====================
+
+$td-shadow-1: 0 2rpx 20rpx rgba(0, 0, 0, 0.05);
+$td-shadow-2: 0 4rpx 40rpx rgba(0, 0, 0, 0.08);
+$td-shadow-3: 0 12rpx 60rpx rgba(0, 0, 0, 0.12);
+$td-shadow-inset: inset 0 4rpx 8rpx rgba(0, 0, 0, 0.06);
+
+// ==================== 字体系统 ====================
+
+$td-font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, 
+                  "Segoe UI", Roboto, "Helvetica Neue", Arial, 
+                  "Noto Sans", sans-serif;
+
+// 字体大小 (px -> rpx)
+$td-font-size-xs: 20rpx;  // 10px
+$td-font-size-s: 24rpx;   // 12px
+$td-font-size-base: 28rpx; // 14px
+$td-font-size-m: 32rpx;   // 16px
+$td-font-size-l: 36rpx;   // 18px
+$td-font-size-xl: 40rpx;  // 20px
+$td-font-size-xxl: 48rpx; // 24px
+
+// 字体粗细
+$td-font-weight-regular: 400;
+$td-font-weight-medium: 500;
+$td-font-weight-semibold: 600;
+$td-font-weight-bold: 700;
+
+// 行高
+$td-line-height-small: 1.2;
+$td-line-height-base: 1.5;
+$td-line-height-large: 1.8;
+
+// ==================== 尺寸系统 (px -> rpx) ====================
+
+// 组件高度
+$td-comp-size-xs: 48rpx;  // 24px
+$td-comp-size-s: 64rpx;   // 32px
+$td-comp-size-m: 80rpx;   // 40px
+$td-comp-size-l: 96rpx;   // 48px
+$td-comp-size-xl: 112rpx; // 56px
+
+// ==================== z-index 层级 ====================
+
+$td-z-index-base: 0;
+$td-z-index-affix: 500;
+$td-z-index-drawer: 1000;
+$td-z-index-dialog: 2000;
+$td-z-index-popup: 2500;
+$td-z-index-message: 5000;
+$td-z-index-loading: 6000;
+
+// ==================== 过渡动画 ====================
+
+$td-transition-duration-fast: 0.1s;
+$td-transition-duration-base: 0.2s;
+$td-transition-duration-slow: 0.3s;
+$td-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+// ==================== 响应式断点 ====================
+
+$breakpoint-sm: 320px;  // iPhone SE
+$breakpoint-md: 375px;  // iPhone 13/14
+$breakpoint-lg: 414px;  // iPhone Pro Max
+

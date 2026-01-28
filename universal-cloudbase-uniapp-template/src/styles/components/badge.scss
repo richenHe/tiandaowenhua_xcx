@@ -1,0 +1,175 @@
+/**
+ * TDesign Badge 徽标组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-badge {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.t-badge__inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 12rpx;
+  font-size: $td-font-size-xs;
+  font-weight: $td-font-weight-medium;
+  color: #FFFFFF;
+  background-color: $td-error-color;
+  border-radius: 32rpx;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+// ==================== 位置 ====================
+
+.t-badge--top-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+.t-badge--top-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-badge--size-small .t-badge__inner {
+  min-width: 24rpx;
+  height: 24rpx;
+  padding: 0 8rpx;
+  font-size: 20rpx;
+}
+
+.t-badge--size-large .t-badge__inner {
+  min-width: 40rpx;
+  height: 40rpx;
+  padding: 0 16rpx;
+  font-size: $td-font-size-s;
+}
+
+// ==================== 类型变体 ====================
+
+.t-badge--theme-primary .t-badge__inner {
+  background-color: $td-brand-color;
+}
+
+.t-badge--theme-success .t-badge__inner {
+  background-color: $td-success-color;
+}
+
+.t-badge--theme-warning .t-badge__inner {
+  background-color: $td-warning-color;
+}
+
+.t-badge--theme-danger .t-badge__inner {
+  background-color: $td-error-color;
+}
+
+.t-badge--theme-info .t-badge__inner {
+  background-color: #909399;
+}
+
+// ==================== 点样式 ====================
+
+.t-badge--dot .t-badge__inner {
+  min-width: 16rpx;
+  width: 16rpx;
+  height: 16rpx;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.t-badge--size-small.t-badge--dot .t-badge__inner {
+  min-width: 12rpx;
+  width: 12rpx;
+  height: 12rpx;
+}
+
+.t-badge--size-large.t-badge--dot .t-badge__inner {
+  min-width: 20rpx;
+  width: 20rpx;
+  height: 20rpx;
+}
+
+// ==================== 形状变体 ====================
+
+.t-badge--shape-square .t-badge__inner {
+  border-radius: $td-radius-default;
+}
+
+.t-badge--shape-ribbon .t-badge__inner {
+  position: absolute;
+  top: -6rpx;
+  right: -12rpx;
+  padding: 4rpx 20rpx;
+  border-radius: 0 $td-radius-default 0 $td-radius-default;
+}
+
+// ==================== 边框 ====================
+
+.t-badge--bordered .t-badge__inner {
+  border: 4rpx solid #FFFFFF;
+}
+
+// ==================== 偏移 ====================
+
+.t-badge--offset .t-badge__inner {
+  transform: translate(4rpx, -4rpx);
+}
+
+// ==================== 独立使用 ====================
+
+.t-badge--standalone {
+  display: inline-flex;
+}
+
+.t-badge--standalone .t-badge__inner {
+  position: relative;
+  transform: none;
+}
+
+// ==================== 标签徽章 ====================
+
+.t-badge--tag {
+  display: inline-flex;
+  align-items: center;
+  height: 40rpx;
+  padding: 0 16rpx;
+  font-size: $td-font-size-xs;
+  font-weight: $td-font-weight-medium;
+  color: #FFFFFF;
+  background-color: $td-brand-color;
+  border-radius: $td-radius-default;
+}
+
+.t-badge--tag-outline {
+  background-color: transparent;
+  border: 2rpx solid $td-brand-color;
+  color: $td-brand-color;
+}
+
+.t-badge--tag-light {
+  background-color: rgba(0, 82, 217, 0.1);
+  color: $td-brand-color;
+}
+
+// ==================== 数字超出显示 ====================
+
+.t-badge--overflow .t-badge__inner {
+  padding: 0 10rpx;
+}
+

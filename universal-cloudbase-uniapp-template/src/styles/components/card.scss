@@ -1,0 +1,217 @@
+/**
+ * TDesign Card 卡片组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: $td-bg-color-container;
+  border-radius: $td-radius-default;
+  overflow: hidden;
+  transition: box-shadow $td-transition-duration-base $td-transition-timing-function;
+}
+
+// ==================== 边框变体 ====================
+
+.t-card--bordered {
+  border: 2rpx solid $td-border-level-1;
+}
+
+// ==================== 阴影变体 ====================
+
+.t-card--shadow {
+  box-shadow: $td-shadow-1;
+}
+
+.t-card--shadow-always {
+  box-shadow: $td-shadow-2;
+}
+
+// ==================== 卡片头部 ====================
+
+.t-card__header {
+  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-m;
+  border-bottom: 2rpx solid $td-border-level-1;
+}
+
+.t-card__header--no-border {
+  border-bottom: none;
+}
+
+.t-card__header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.t-card__title {
+  font-size: $td-font-size-m;
+  font-weight: $td-font-weight-semibold;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-small;
+}
+
+.t-card__subtitle {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  line-height: $td-line-height-base;
+}
+
+.t-card__description {
+  margin-top: 16rpx;
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+  line-height: $td-line-height-base;
+}
+
+.t-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+// ==================== 卡片主体 ====================
+
+.t-card__body {
+  flex: 1;
+  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-m;
+}
+
+.t-card__body--no-padding {
+  padding: 0;
+}
+
+// ==================== 卡片底部 ====================
+
+.t-card__footer {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
+  border-top: 2rpx solid $td-border-level-1;
+}
+
+.t-card__footer--no-border {
+  border-top: none;
+}
+
+// ==================== 紧凑模式 ====================
+
+.t-card--compact .t-card__header {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-s;
+}
+
+.t-card--compact .t-card__body {
+  padding: $td-comp-paddingTB-l $td-comp-paddingLR-s;
+}
+
+.t-card--compact .t-card__footer {
+  padding: $td-comp-paddingTB-m $td-comp-paddingLR-s;
+}
+
+// ==================== 选中状态 ====================
+
+.t-card--selected {
+  border-color: $td-brand-color;
+  background-color: $td-bg-color-container-select;
+}
+
+// ==================== 强调边框 ====================
+
+.t-card--accent-border {
+  border-left: 6rpx solid $td-brand-color;
+}
+
+.t-card--accent-border-success {
+  border-left: 6rpx solid $td-success-color;
+}
+
+.t-card--accent-border-warning {
+  border-left: 6rpx solid $td-warning-color;
+}
+
+.t-card--accent-border-error {
+  border-left: 6rpx solid $td-error-color;
+}
+
+// ==================== 禁用状态 ====================
+
+.t-card--disabled {
+  opacity: 0.6;
+}
+
+// ==================== 图片卡片 ====================
+
+.t-card__cover {
+  width: 100%;
+  display: block;
+}
+
+.t-card__cover image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+// ==================== 卡片Meta信息 ====================
+
+.t-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.t-card__meta-avatar {
+  flex-shrink: 0;
+}
+
+.t-card__meta-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-card__meta-title {
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-primary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t-card__meta-description {
+  margin-top: 8rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-secondary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ==================== 卡片列表间距 ====================
+
+.t-card + .t-card {
+  margin-top: $td-card-spacing;
+}
+
+// ==================== 横向卡片 ====================
+
+.t-card--horizontal {
+  flex-direction: row;
+}
+
+.t-card--horizontal .t-card__cover {
+  width: 240rpx;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.t-card--horizontal .t-card__body {
+  flex: 1;
+}
+

@@ -1,0 +1,247 @@
+/**
+ * TDesign Button 按钮组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 0 $td-comp-paddingLR-m;
+  height: $td-comp-size-m;
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+  border: 2rpx solid transparent;
+  border-radius: $td-radius-default;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+  box-sizing: border-box;
+}
+
+.t-button__text {
+  display: inline-block;
+}
+
+.t-button__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 32rpx;
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-button--size-small {
+  height: $td-comp-size-s;
+  padding: 0 $td-comp-paddingLR-xs;
+  font-size: $td-font-size-s;
+}
+
+.t-button--size-medium {
+  height: $td-comp-size-m;
+  padding: 0 $td-comp-paddingLR-m;
+  font-size: $td-font-size-base;
+}
+
+.t-button--size-large {
+  height: $td-comp-size-l;
+  padding: 0 $td-comp-paddingLR-l;
+  font-size: $td-font-size-m;
+}
+
+// ==================== 块级按钮 ====================
+
+.t-button--block {
+  display: flex;
+  width: 100%;
+}
+
+// ==================== 主题 - Primary (品牌色) ====================
+
+// 浅色填充按钮（主要样式）
+.t-button--theme-primary.t-button--variant-base {
+  color: $td-brand-color;
+  background-color: $td-bg-color-container-select;
+  border-color: transparent;
+}
+
+.t-button--theme-primary.t-button--variant-outline {
+  color: $td-brand-color;
+  background-color: transparent;
+  border-color: $td-brand-color;
+}
+
+.t-button--theme-primary.t-button--variant-dashed {
+  color: $td-brand-color;
+  background-color: transparent;
+  border-color: $td-brand-color;
+  border-style: dashed;
+}
+
+.t-button--theme-primary.t-button--variant-text {
+  color: $td-brand-color;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+// ==================== 主题 - Default (默认) ====================
+
+.t-button--theme-default.t-button--variant-base {
+  color: $td-text-color-primary;
+  background-color: $td-bg-color-container;
+  border-color: $td-border-level-1;
+}
+
+.t-button--theme-default.t-button--variant-outline {
+  color: $td-text-color-primary;
+  background-color: transparent;
+  border-color: $td-border-level-1;
+}
+
+.t-button--theme-default.t-button--variant-text {
+  color: $td-text-color-primary;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+// ==================== 主题 - Success (成功) ====================
+
+.t-button--theme-success.t-button--variant-base {
+  color: $td-text-color-anti;
+  background-color: $td-success-color;
+  border-color: $td-success-color;
+}
+
+.t-button--theme-success.t-button--variant-outline {
+  color: $td-success-color;
+  background-color: transparent;
+  border-color: $td-success-color;
+}
+
+.t-button--theme-success.t-button--variant-text {
+  color: $td-success-color;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+// ==================== 主题 - Warning (金色) ====================
+
+.t-button--theme-warning.t-button--variant-base {
+  color: $td-text-color-anti;
+  background-color: $td-warning-color;
+  border-color: $td-warning-color;
+}
+
+.t-button--theme-warning.t-button--variant-outline {
+  color: $td-warning-color;
+  background-color: transparent;
+  border-color: $td-warning-color;
+}
+
+.t-button--theme-warning.t-button--variant-text {
+  color: $td-warning-color;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+// ==================== 主题 - Danger (错误) ====================
+
+.t-button--theme-danger.t-button--variant-base {
+  color: $td-text-color-anti;
+  background-color: $td-error-color;
+  border-color: $td-error-color;
+}
+
+.t-button--theme-danger.t-button--variant-outline {
+  color: $td-error-color;
+  background-color: transparent;
+  border-color: $td-error-color;
+}
+
+.t-button--theme-danger.t-button--variant-text {
+  color: $td-error-color;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+// ==================== 禁用状态 ====================
+
+.t-button.t-is-disabled {
+  opacity: 0.4;
+}
+
+// ==================== 加载状态 ====================
+
+.t-button.t-is-loading {
+  opacity: 0.6;
+}
+
+.t-button.t-is-loading .t-button__text {
+  opacity: 0.6;
+}
+
+.t-button__loading {
+  display: inline-flex;
+  animation: button-loading-spin 0.8s linear infinite;
+}
+
+@keyframes button-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+// ==================== 图标按钮 ====================
+
+.t-button--icon-only {
+  padding: 0;
+  width: $td-comp-size-m;
+}
+
+.t-button--icon-only.t-button--size-small {
+  width: $td-comp-size-s;
+}
+
+.t-button--icon-only.t-button--size-large {
+  width: $td-comp-size-l;
+}
+
+// ==================== 形状 ====================
+
+.t-button--shape-round {
+  border-radius: $td-radius-round;
+}
+
+.t-button--shape-circle {
+  border-radius: $td-radius-circle;
+}
+
+.t-button--shape-square {
+  border-radius: 0;
+}
+
+// ==================== 按钮组 ====================
+
+.t-button-group {
+  display: inline-flex;
+}
+
+.t-button-group .t-button {
+  border-radius: 0;
+}
+
+.t-button-group .t-button:first-child {
+  border-top-left-radius: $td-radius-default;
+  border-bottom-left-radius: $td-radius-default;
+}
+
+.t-button-group .t-button:last-child {
+  border-top-right-radius: $td-radius-default;
+  border-bottom-right-radius: $td-radius-default;
+}
+

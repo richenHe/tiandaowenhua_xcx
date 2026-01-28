@@ -1,0 +1,238 @@
+/**
+ * TDesign Image 图片组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-image {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.t-image__inner {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+// ==================== 填充模式 ====================
+
+.t-image--fit-contain .t-image__inner {
+  object-fit: contain;
+}
+
+.t-image--fit-cover .t-image__inner {
+  object-fit: cover;
+}
+
+.t-image--fit-fill .t-image__inner {
+  object-fit: fill;
+}
+
+.t-image--fit-none .t-image__inner {
+  object-fit: none;
+}
+
+.t-image--fit-scale-down .t-image__inner {
+  object-fit: scale-down;
+}
+
+// ==================== 形状变体 ====================
+
+.t-image--shape-circle {
+  border-radius: 50%;
+}
+
+.t-image--shape-round {
+  border-radius: $td-radius-default;
+}
+
+.t-image--shape-square {
+  border-radius: 0;
+}
+
+// ==================== 加载状态 ====================
+
+.t-image__loading,
+.t-image__error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-placeholder;
+}
+
+.t-image__loading-icon,
+.t-image__error-icon {
+  font-size: 48rpx;
+  margin-bottom: 16rpx;
+}
+
+.t-image__loading-text,
+.t-image__error-text {
+  font-size: $td-font-size-s;
+}
+
+// ==================== 懒加载占位 ====================
+
+.t-image--lazy {
+  background-color: $td-bg-color-container-active;
+}
+
+// ==================== 预览模式 ====================
+
+.t-image--preview {
+  cursor: pointer;
+}
+
+// ==================== 图片组 ====================
+
+.t-image-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.t-image-group .t-image {
+  flex-shrink: 0;
+}
+
+// ==================== 九宫格 ====================
+
+.t-image-grid {
+  display: grid;
+  gap: 8rpx;
+}
+
+.t-image-grid--cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.t-image-grid--cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.t-image-grid .t-image {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+// ==================== 图片查看器 ====================
+
+.t-image-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000000;
+  z-index: $td-z-index-popup;
+}
+
+.t-image-viewer__swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.t-image-viewer__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.t-image-viewer__close {
+  position: absolute;
+  top: 40rpx;
+  right: 40rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 32rpx;
+}
+
+.t-image-viewer__pagination {
+  position: absolute;
+  bottom: 60rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12rpx 24rpx;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: $td-radius-round;
+  color: #FFFFFF;
+  font-size: $td-font-size-s;
+}
+
+// ==================== 图片上传 ====================
+
+.t-image-upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.t-image-upload__item {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: $td-radius-default;
+  overflow: hidden;
+}
+
+.t-image-upload__item image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.t-image-upload__delete {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 20rpx;
+}
+
+.t-image-upload__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 160rpx;
+  height: 160rpx;
+  background-color: $td-bg-color-container-active;
+  border: 2rpx dashed $td-border-level-1;
+  border-radius: $td-radius-default;
+  color: $td-text-color-placeholder;
+}
+
+.t-image-upload__add-icon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+
+.t-image-upload__add-text {
+  font-size: $td-font-size-s;
+}
+

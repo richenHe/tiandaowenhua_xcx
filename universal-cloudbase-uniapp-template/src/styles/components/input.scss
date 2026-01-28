@@ -1,0 +1,224 @@
+/**
+ * TDesign Input 输入框组件样式
+ * 单位: px -> rpx (1px = 2rpx)
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 基础结构 ====================
+
+.t-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: $td-comp-size-m;
+  padding: 0 $td-comp-paddingLR-m;
+  background-color: $td-bg-color-container;
+  border: 2rpx solid $td-border-level-1;
+  border-radius: $td-radius-default;
+  box-sizing: border-box;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+}
+
+.t-input__inner {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-size: $td-font-size-base;
+  color: $td-text-color-primary;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.t-input__inner::placeholder {
+  color: $td-text-color-placeholder;
+}
+
+// ==================== 前缀后缀 ====================
+
+.t-input__prefix,
+.t-input__suffix {
+  display: flex;
+  align-items: center;
+  color: $td-text-color-secondary;
+  font-size: 32rpx;
+}
+
+.t-input__prefix {
+  margin-right: 16rpx;
+}
+
+.t-input__suffix {
+  margin-left: 16rpx;
+}
+
+.t-input__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-secondary;
+  font-size: 24rpx;
+  cursor: pointer;
+}
+
+// ==================== 尺寸变体 ====================
+
+.t-input--size-small {
+  height: $td-comp-size-s;
+  padding: 0 $td-comp-paddingLR-s;
+  font-size: $td-font-size-s;
+}
+
+.t-input--size-large {
+  height: $td-comp-size-l;
+  padding: 0 $td-comp-paddingLR-l;
+  font-size: $td-font-size-m;
+}
+
+// ==================== 状态变体 ====================
+
+.t-input:focus,
+.t-input--focused {
+  border-color: $td-brand-color;
+}
+
+.t-input--success {
+  border-color: $td-success-color;
+}
+
+.t-input--warning {
+  border-color: $td-warning-color;
+}
+
+.t-input--error {
+  border-color: $td-error-color;
+}
+
+.t-input--disabled {
+  background-color: $td-bg-color-container-active;
+  color: $td-text-color-disabled;
+  cursor: not-allowed;
+}
+
+.t-input--disabled .t-input__inner {
+  color: $td-text-color-disabled;
+}
+
+.t-input--readonly {
+  background-color: $td-bg-color-container-hover;
+}
+
+// ==================== 无边框 ====================
+
+.t-input--borderless {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.t-input--borderless:focus,
+.t-input--borderless.t-input--focused {
+  border-color: transparent;
+}
+
+// ==================== 底部边框 ====================
+
+.t-input--underline {
+  border: none;
+  border-bottom: 2rpx solid $td-border-level-1;
+  border-radius: 0;
+  padding: 0;
+}
+
+.t-input--underline:focus,
+.t-input--underline.t-input--focused {
+  border-bottom-color: $td-brand-color;
+}
+
+// ==================== Textarea ====================
+
+.t-textarea {
+  position: relative;
+  width: 100%;
+  padding: $td-comp-paddingTB-m $td-comp-paddingLR-m;
+  background-color: $td-bg-color-container;
+  border: 2rpx solid $td-border-level-1;
+  border-radius: $td-radius-default;
+  box-sizing: border-box;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+}
+
+.t-textarea__inner {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 0;
+  margin: 0;
+  font-size: $td-font-size-base;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-base;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+}
+
+.t-textarea__inner::placeholder {
+  color: $td-text-color-placeholder;
+}
+
+.t-textarea__limit {
+  position: absolute;
+  right: 24rpx;
+  bottom: 16rpx;
+  font-size: $td-font-size-s;
+  color: $td-text-color-placeholder;
+}
+
+.t-textarea:focus,
+.t-textarea--focused {
+  border-color: $td-brand-color;
+}
+
+// ==================== 输入框组 ====================
+
+.t-input-group {
+  display: flex;
+  width: 100%;
+}
+
+.t-input-group .t-input {
+  border-radius: 0;
+}
+
+.t-input-group .t-input:first-child {
+  border-top-left-radius: $td-radius-default;
+  border-bottom-left-radius: $td-radius-default;
+}
+
+.t-input-group .t-input:last-child {
+  border-top-right-radius: $td-radius-default;
+  border-bottom-right-radius: $td-radius-default;
+}
+
+.t-input-group .t-input + .t-input {
+  margin-left: -2rpx;
+}
+
+// ==================== 搜索框 ====================
+
+.t-input--search {
+  border-radius: $td-radius-round;
+  padding-left: 24rpx;
+}
+
+.t-input--search .t-input__prefix {
+  margin-right: 12rpx;
+}
+
