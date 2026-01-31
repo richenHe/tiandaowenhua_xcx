@@ -1,0 +1,50 @@
+/**
+ * TDesign CapsuleTabs 胶囊标签样式
+ * 纯 CSS 实现，替代 CapsuleTabs 组件
+ * 参考: prototype-tdesign/components/tabs.css 胶囊模式
+ */
+
+@import '../tdesign-vars.scss';
+
+.t-capsule-tabs {
+  display: inline-flex;
+  align-items: center;
+  background-color: $td-bg-color-container-hover;
+  border-radius: $td-radius-round;
+  padding: 4rpx;
+}
+
+.t-capsule-tabs__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $td-comp-paddingTB-m $td-comp-paddingLR-m;
+  border-radius: $td-radius-round;
+  font-size: $td-font-size-base;
+  color: $td-text-color-secondary;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.t-capsule-tabs__item--active {
+  background-color: $td-bg-color-container;
+  color: $td-brand-color;
+  font-weight: $td-font-weight-medium;
+  box-shadow: $td-shadow-1;
+}
+
+// 块级样式（占满父容器宽度）
+.t-capsule-tabs--block {
+  display: flex;
+  width: 100%;
+  
+  .t-capsule-tabs__item {
+    flex: 1;
+  }
+}
+
+
+
+
+

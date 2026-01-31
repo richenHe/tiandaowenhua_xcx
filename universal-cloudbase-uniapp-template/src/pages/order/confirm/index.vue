@@ -91,6 +91,7 @@
         </button>
       </view>
     </view>
+
   </view>
 </template>
 
@@ -136,10 +137,24 @@ const goToSelectReferee = () => {
   });
 };
 
-// 确认支付
+// 点击确认支付按钮 - 显示原生确认弹窗
 const handleConfirm = () => {
-  uni.navigateTo({
-    url: '/pages/order/payment/index',
+  uni.showModal({
+    title: '提示',
+    content: `确认推荐人为【${refereeInfo.value.name}】吗？\n\n一旦支付则无法修改！`,
+    confirmText: '确定',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) {
+        // 用户点击确定，跳转到支付页面
+        uni.navigateTo({
+          url: '/pages/order/payment/index',
+        });
+      } else if (res.cancel) {
+        // 用户点击取消
+        console.log('用户取消了支付');
+      }
+    }
   });
 };
 </script>

@@ -43,6 +43,11 @@ export const app = init();
 export const auth = app.auth();
 
 /**
+ * 云开发数据库实例
+ */
+export const db = app.database();
+
+/**
  * 检查环境配置是否有效
  */
 export const checkEnvironment = () => {

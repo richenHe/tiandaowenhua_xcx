@@ -30,35 +30,76 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { signInWithOpenId, auth, app } from '@/utils/cloudbase';
 
-/**
- * 微信一键登录
- */
+// 防止重复点击
+const isLoggingIn = ref(false);
+
 const handleWechatLogin = async () => {
+  if (isLoggingIn.value) {
+    return;
+  }
+  
+  isLoggingIn.value = true;
+  
   try {
-    // 获取用户授权
-    const res = await uni.getUserProfile({
-      desc: '用于完善会员资料',
+    const userProfileRes = await uni.getUserProfile({
+      desc: '用于完善会员资料和个性化服务',
     });
     
-    console.log('用户信息', res.userInfo);
-    
-    // 模拟登录成功，跳转到完善资料页
-    uni.navigateTo({
-      url: '/pages/auth/complete-profile/index',
+    uni.showLoading({
+      title: '登录中...',
+      mask: true
     });
-  } catch (error) {
-    console.error('登录失败', error);
+    
+    const loginState = await signInWithOpenId();
+    const currentUser = await auth.getCurrentUser();
+    
+    if (!currentUser?.uid) {
+      throw new Error('无法获取用户 ID');
+    }
+    
+    uni.hideLoading();
+    
     uni.showToast({
-      title: '登录已取消',
-      icon: 'none',
+      title: '登录成功！',
+      icon: 'success',
+      duration: 2000
     });
+    
+    setTimeout(() => {
+      uni.redirectTo({
+        url: '/pages/auth/complete-profile/index'
+      });
+    }, 1500);
+    
+  } catch (error: any) {
+    uni.hideLoading();
+    
+    if (error.errMsg && error.errMsg.includes('getUserProfile:fail cancel')) {
+      uni.showToast({
+        title: '您已取消授权',
+        icon: 'none',
+        duration: 2000
+      });
+    } else if (error.errMsg && error.errMsg.includes('getUserProfile')) {
+      uni.showToast({
+        title: '获取用户信息失败，请重试',
+        icon: 'none',
+        duration: 2000
+      });
+    } else {
+      uni.showToast({
+        title: error?.message || '登录失败，请稍后重试',
+        icon: 'none',
+        duration: 2000
+      });
+    }
+  } finally {
+    isLoggingIn.value = false;
   }
 };
 
-/**
- * 查看用户协议
- */
 const goToAgreement = () => {
   uni.showToast({
     title: '用户协议',
@@ -66,9 +107,6 @@ const goToAgreement = () => {
   });
 };
 
-/**
- * 查看隐私政策
- */
 const goToPrivacy = () => {
   uni.showToast({
     title: '隐私政策',

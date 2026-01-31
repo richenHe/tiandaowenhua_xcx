@@ -12,6 +12,58 @@
 
         <!-- 表单 -->
         <view class="form-card">
+          <!-- 微信头像 -->
+          <view class="form-item">
+            <view class="form-label">
+              <text>微信头像</text>
+            </view>
+            <view class="avatar-box">
+              <button 
+                class="avatar-btn" 
+                open-type="chooseAvatar" 
+                @chooseavatar="onChooseAvatar"
+              >
+                <image 
+                  v-if="formData.avatarUrl" 
+                  :src="formData.avatarUrl" 
+                  class="avatar-image"
+                  mode="aspectFill"
+                />
+                <view v-else class="avatar-placeholder">
+                  <text class="avatar-placeholder-icon">📷</text>
+                  <text class="avatar-placeholder-text">点击选择头像</text>
+                </view>
+              </button>
+            </view>
+          </view>
+
+          <!-- 微信昵称 -->
+          <view class="form-item">
+            <view class="form-label">
+              <text>微信昵称</text>
+            </view>
+            <view class="nickname-box">
+              <view 
+                class="nickname-input-wrapper"
+                :class="{ 'nickname-input-wrapper--filled': formData.nickName }"
+                @click="focusNicknameInput"
+              >
+                <input
+                  id="nicknameInput"
+                  class="nickname-input"
+                  type="nickname"
+                  placeholder="点击输入昵称"
+                  v-model="formData.nickName"
+                  @input="onNicknameInput"
+                />
+                <view class="nickname-icon">
+                  <text v-if="!formData.nickName">✏️</text>
+                  <text v-else class="nickname-check">✓</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
           <!-- 真实姓名 -->
           <view class="form-item">
             <view class="form-label">
@@ -120,11 +172,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { auth, db } from '@/utils/cloudbase';
 
 // 表单数据
 const formData = ref({
+  avatarUrl: '', // 微信头像
+  nickName: '', // 微信昵称
   realName: '',
   phone: '',
   gender: 'male',
@@ -237,9 +292,45 @@ const onRegionChange = (e: any) => {
 };
 
 /**
+ * 选择头像
+ */
+const onChooseAvatar = (e: any) => {
+  formData.value.avatarUrl = e.detail.avatarUrl;
+};
+
+/**
+ * 显示昵称输入（聚焦隐藏的 input）
+ */
+const showNicknameInput = () => {
+  // 通过 uni.showModal 提供与头像选择类似的交互体验
+  uni.showModal({
+    title: '设置昵称',
+    editable: true,
+    placeholderText: '请输入昵称',
+    content: formData.value.nickName || '',
+    confirmText: '确定',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm && res.content) {
+        formData.value.nickName = res.content.trim();
+      }
+    }
+  });
+};
+
+/**
+ * 昵称输入完成
+ */
+const onNicknameBlur = (e: any) => {
+  if (e.detail.value) {
+    formData.value.nickName = e.detail.value.trim();
+  }
+};
+
+/**
  * 提交表单
  */
-const handleSubmit = () => {
+const handleSubmit = async () => {
   // 验证必填项
   if (!formData.value.realName) {
     uni.showToast({
@@ -267,28 +358,143 @@ const handleSubmit = () => {
     return;
   }
 
-  console.log('提交表单', formData.value);
-
-  // 模拟提交成功，跳转到首页
-  uni.showToast({
-    title: '提交成功',
-    icon: 'success',
-  });
-
-  setTimeout(() => {
-    uni.switchTab({
-      url: '/pages/index/index',
+  try {
+    uni.showLoading({
+      title: '保存中...',
+      mask: true
     });
-  }, 1500);
+
+    // 获取当前用户
+    const currentUser = await auth.getCurrentUser();
+    const userId = currentUser?.uid;
+
+    if (!userId) {
+      throw new Error('无法获取用户 ID');
+    }
+
+    // 准备保存的数据
+    const userData = {
+      userId: userId,
+      avatarUrl: formData.value.avatarUrl || '',
+      nickName: formData.value.nickName || '',
+      realName: formData.value.realName,
+      phone: formData.value.phone,
+      gender: formData.value.gender,
+      birthdate: formData.value.birthdate,
+      industry: formData.value.industry || '',
+      region: formData.value.region || '',
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 检查用户是否已存在
+    const existingUser = await db.collection('users')
+      .where({ userId: userId })
+      .get();
+
+    if (existingUser.data && existingUser.data.length > 0) {
+      // 更新现有用户
+      await db.collection('users')
+        .where({ userId: userId })
+        .update(userData);
+    } else {
+      // 新增用户
+      await db.collection('users').add({
+        ...userData,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    uni.hideLoading();
+
+    uni.showToast({
+      title: '保存成功',
+      icon: 'success',
+    });
+
+    setTimeout(() => {
+      uni.switchTab({
+        url: '/pages/index/index',
+      });
+    }, 1500);
+
+  } catch (error: any) {
+    console.error('❌ 保存用户资料失败:', error);
+    uni.hideLoading();
+    uni.showToast({
+      title: error?.message || '保存失败，请重试',
+      icon: 'none',
+      duration: 2000
+    });
+  }
 };
 
 /**
- * 跳过填写
+ * 跳过填写（仍然保存头像和昵称）
  */
-const handleSkip = () => {
-  uni.switchTab({
-    url: '/pages/index/index',
-  });
+const handleSkip = async () => {
+  try {
+    uni.showLoading({
+      title: '保存中...',
+      mask: true
+    });
+
+    // 获取当前用户
+    const currentUser = await auth.getCurrentUser();
+    const userId = currentUser?.uid;
+
+    if (!userId) {
+      throw new Error('无法获取用户 ID');
+    }
+
+    // 只保存头像和昵称（如果有的话）
+    const userData = {
+      userId: userId,
+      avatarUrl: formData.value.avatarUrl || '',
+      nickName: formData.value.nickName || '',
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 检查用户是否已存在
+    const existingUser = await db.collection('users')
+      .where({ userId: userId })
+      .get();
+
+    if (existingUser.data && existingUser.data.length > 0) {
+      // 更新现有用户
+      await db.collection('users')
+        .where({ userId: userId })
+        .update(userData);
+    } else {
+      // 新增用户
+      await db.collection('users').add({
+        ...userData,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    uni.hideLoading();
+
+    uni.switchTab({
+      url: '/pages/index/index',
+    });
+
+  } catch (error: any) {
+    console.error('❌ 保存用户基本信息失败:', error);
+    uni.hideLoading();
+    
+    // 即使保存失败也允许跳过
+    uni.showToast({
+      title: '已跳过',
+      icon: 'none',
+      duration: 1500
+    });
+    
+    setTimeout(() => {
+      uni.switchTab({
+        url: '/pages/index/index',
+      });
+    }, 1500);
+  }
 };
 </script>
 
@@ -374,6 +580,126 @@ const handleSkip = () => {
   &--center {
     text-align: center;
   }
+}
+
+// 头像选择器
+.avatar-box {
+  display: flex;
+  justify-content: center;
+  margin-top: 16rpx;
+}
+
+.avatar-btn {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  
+  &::after {
+    border: none;
+  }
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: $td-bg-color-container;
+  border: 4rpx dashed $td-border-level-2;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-placeholder-icon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+
+.avatar-placeholder-text {
+  font-size: 20rpx;
+  color: $td-text-color-placeholder;
+}
+
+// 昵称选择器（与头像保持一致的设计）
+.nickname-box {
+  display: flex;
+  justify-content: center;
+  margin-top: 16rpx;
+}
+
+.nickname-btn {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  width: 100%;
+  height: 88rpx;
+  border-radius: $td-radius-default;
+  overflow: hidden;
+  
+  &::after {
+    border: none;
+  }
+}
+
+.nickname-display {
+  width: 100%;
+  height: 100%;
+  background-color: $td-bg-color-container;
+  border: 2rpx solid $td-brand-color;
+  border-radius: $td-radius-default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24rpx;
+}
+
+.nickname-text {
+  font-size: 28rpx;
+  color: $td-text-color-primary;
+  font-weight: 500;
+}
+
+.nickname-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: $td-bg-color-container;
+  border: 2rpx dashed $td-border-level-2;
+  border-radius: $td-radius-default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+}
+
+.nickname-placeholder-icon {
+  font-size: 32rpx;
+}
+
+.nickname-placeholder-text {
+  font-size: 28rpx;
+  color: $td-text-color-placeholder;
+}
+
+.nickname-input-hidden {
+  position: absolute;
+  top: -9999rpx;
+  left: -9999rpx;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
 // 单选框

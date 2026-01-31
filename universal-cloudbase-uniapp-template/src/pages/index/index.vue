@@ -1,11 +1,5 @@
 <template>
   <view class="page-container">
-    <!-- 通知铃铛按钮 -->
-    <view class="notification-btn" @click="goToAnnouncement">
-      <text class="notification-icon">🔔</text>
-      <view v-if="hasNewNotification" class="notification-dot"></view>
-    </view>
-
     <!-- 轮播 Banner -->
     <swiper 
       class="banner-swiper" 
@@ -112,8 +106,6 @@ import Calendar from '@/components/Calendar.vue';
 
 // 轮播图当前索引
 const currentBannerIndex = ref(0);
-// 是否有新通知
-const hasNewNotification = ref(true);
 // 当前选中的标签索引
 const currentTab = ref('all');
 // 日历弹窗显示状态
@@ -204,16 +196,11 @@ const onBannerClick = (banner: any) => {
   }
 };
 
-// 标签切换事件
 const onTabChange = (value: string | number) => {
-  console.log('Tab changed:', value);
-  
-  // 如果点击日历，显示弹窗并重置选中状态
   if (value === 'calendar') {
     showCalendarPopup();
-    // 重置为之前的选中状态（保持课程分类选中）
     setTimeout(() => {
-      currentTab.value = 'all'; // 或者保持之前的选中值
+      currentTab.value = 'all';
     }, 0);
   }
 };
@@ -229,27 +216,19 @@ const hideCalendarPopup = () => {
   calendarVisible.value = false;
 };
 
-// 日期选择事件
 const onDateSelect = (date: Date) => {
-  console.log('Selected date:', date);
   // 日历只是展示，不需要提示和关闭弹窗
 };
 
-// 加载日历价格数据（模拟API调用）
 const loadCalendarPriceData = async () => {
-  // TODO: 实际项目中这里应该调用后台API
-  // const res = await api.getCalendarPrices();
-  
-  // 模拟数据：为当月的一些日期设置价格
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
   const mockData: Record<string, number> = {};
   
-  // 为当月每一天设置价格（模拟数据）
   for (let day = 1; day <= 28; day++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    mockData[dateStr] = 60; // 统一价格 ¥60
+    mockData[dateStr] = 60;
   }
   
   calendarPriceData.value = mockData;
@@ -265,9 +244,7 @@ const goToCourseDetail = (course: any) => {
   uni.navigateTo({ url: `/pages/course/detail/index?id=${course.id}` });
 };
 
-// 页面加载时初始化
 onMounted(() => {
-  // 可以在这里预加载日历数据
   loadCalendarPriceData();
 });
 </script>
@@ -280,34 +257,6 @@ onMounted(() => {
   min-height: 100vh;
   background-color: $td-bg-color-page;
   position: relative;
-}
-
-// 通知铃铛按钮
-.notification-btn {
-  position: fixed;
-  top: 100rpx;
-  right: 32rpx;
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  
-  .notification-icon {
-    font-size: 48rpx;
-    filter: drop-shadow(0 4rpx 8rpx rgba(0, 0, 0, 0.2));
-  }
-  
-  .notification-dot {
-    position: absolute;
-    top: 8rpx;
-    right: 8rpx;
-    width: 16rpx;
-    height: 16rpx;
-    background-color: $td-error-color;
-    border-radius: 50%;
-  }
 }
 
 // 轮播图

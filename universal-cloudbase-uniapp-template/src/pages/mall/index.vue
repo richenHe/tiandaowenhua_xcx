@@ -259,11 +259,10 @@ const handleCategoryChange = (value: number) => {
   activeCategory.value = value
 }
 
-// 跳转积分明细
+// 跳转积分明细（功德分管理页面）
 const goToPointsDetail = () => {
-  uni.showToast({
-    title: '跳转积分明细',
-    icon: 'none'
+  uni.navigateTo({
+    url: '/pages/ambassador/merit-points/index'
   })
 }
 

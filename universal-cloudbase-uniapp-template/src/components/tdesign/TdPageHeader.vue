@@ -127,7 +127,8 @@ const handleLeftClick = () => {
 @import '@/styles/tdesign-vars.scss';
 
 .td-page-header {
-  background-color: $td-bg-color-container;
+  background-color: #FFFFFF;
+  width: 100%;
 }
 
 .td-page-header--fixed {
@@ -136,6 +137,7 @@ const handleLeftClick = () => {
   left: 0;
   right: 0;
   z-index: 100;
+  background-color: #FFFFFF;
 }
 
 .td-page-header--transparent {

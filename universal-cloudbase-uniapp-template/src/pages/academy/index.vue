@@ -1,11 +1,7 @@
 <template>
   <view class="page-container">
     <!-- 页面头部 -->
-    <TdPageHeader title="商学院" :show-back="false">
-      <template #right>
-        <text class="header-icon" @click="handleShare">📤</text>
-      </template>
-    </TdPageHeader>
+    <TdPageHeader title="商学院" :show-back="false" />
 
     <!-- Hero Banner -->
     <view class="hero-banner">
@@ -227,14 +223,6 @@ const contacts = ref([
   { label: '📍 地址', value: '北京市朝阳区国学大道888号', isLink: false },
   { label: '🕐 时间', value: '周一至周五 9:00-18:00', isLink: false }
 ]);
-
-// 分享
-const handleShare = () => {
-  uni.showToast({
-    title: '分享功能开发中',
-    icon: 'none'
-  });
-};
 </script>
 
 <style lang="scss" scoped>
@@ -244,12 +232,6 @@ const handleShare = () => {
   width: 100%;
   min-height: 100vh;
   background-color: $td-bg-color-page;
-}
-
-// 页面头部图标
-.header-icon {
-  font-size: 40rpx;
-  padding: 0 8rpx;
 }
 
 // Hero Banner

@@ -1,35 +1,7 @@
-/**
- * TDesign Dialog 对话框组件样式
- * 单位: px -> rpx (1px = 2rpx)
- */
-
 @import '../tdesign-vars.scss';
 
-// ==================== 遮罩层 ====================
-
-.t-dialog__mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: $td-z-index-dialog;
-  animation: dialog-mask-fade-in $td-transition-duration-base;
-}
-
-@keyframes dialog-mask-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-// ==================== 对话框容器 ====================
-
-.t-dialog__wrap {
+// Dialog 弹窗样式
+.t-dialog-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -38,24 +10,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
   padding: 32rpx;
-  overflow: auto;
-  z-index: $td-z-index-dialog;
+  box-sizing: border-box;
 }
-
-// ==================== 对话框主体 ====================
 
 .t-dialog {
-  position: relative;
-  width: 90%;
-  max-width: 640rpx;
-  background-color: $td-bg-color-container;
+  width: 100%;
+  max-width: 560rpx;
+  background-color: white;
   border-radius: $td-radius-large;
-  box-shadow: $td-shadow-3;
-  animation: dialog-zoom-in $td-transition-duration-base;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+  animation: dialog-fade-in 0.3s ease-out;
 }
 
-@keyframes dialog-zoom-in {
+@keyframes dialog-fade-in {
   from {
     opacity: 0;
     transform: scale(0.9);
@@ -66,189 +37,97 @@
   }
 }
 
-// ==================== 对话框头部 ====================
-
 .t-dialog__header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-l;
-  border-bottom: 2rpx solid $td-border-level-1;
-}
-
-.t-dialog__header--no-border {
-  border-bottom: none;
+  padding: 32rpx 32rpx 16rpx;
+  text-align: center;
 }
 
 .t-dialog__title {
-  flex: 1;
-  font-size: $td-font-size-l;
-  font-weight: $td-font-weight-semibold;
+  font-size: 36rpx;
+  font-weight: 600;
   color: $td-text-color-primary;
-  line-height: $td-line-height-small;
+  line-height: 1.4;
 }
-
-.t-dialog__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48rpx;
-  height: 48rpx;
-  margin-left: 32rpx;
-  font-size: 32rpx;
-  color: $td-text-color-secondary;
-  cursor: pointer;
-  border-radius: $td-radius-default;
-  transition: all $td-transition-duration-base;
-  flex-shrink: 0;
-}
-
-.t-dialog__close:hover {
-  color: $td-text-color-primary;
-  background-color: $td-bg-color-container-hover;
-}
-
-// ==================== 对话框内容 ====================
 
 .t-dialog__body {
-  padding: $td-comp-paddingTB-xl $td-comp-paddingLR-l;
-  max-height: 60vh;
-  overflow-y: auto;
-  color: $td-text-color-primary;
-  font-size: $td-font-size-base;
-  line-height: $td-line-height-base;
+  padding: 16rpx 32rpx 32rpx;
+  text-align: center;
 }
 
-// ==================== 对话框底部 ====================
+.t-dialog__content {
+  font-size: 28rpx;
+  color: $td-text-color-secondary;
+  line-height: 1.6;
+  white-space: pre-line;
+}
 
 .t-dialog__footer {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16rpx;
-  padding: $td-comp-paddingTB-l $td-comp-paddingLR-l;
   border-top: 2rpx solid $td-border-level-1;
 }
 
-.t-dialog__footer--no-border {
-  border-top: none;
-}
-
-.t-dialog__footer--center {
-  justify-content: center;
-}
-
-.t-dialog__footer--left {
-  justify-content: flex-start;
-}
-
-// ==================== 确认对话框 ====================
-
-.t-dialog--confirm .t-dialog__body {
-  display: flex;
-  gap: 24rpx;
-}
-
-.t-dialog--confirm .t-dialog__icon {
-  font-size: 48rpx;
-  flex-shrink: 0;
-  margin-top: 4rpx;
-}
-
-.t-dialog--confirm.t-dialog--theme-info .t-dialog__icon {
-  color: $td-brand-color;
-}
-
-.t-dialog--confirm.t-dialog--theme-success .t-dialog__icon {
-  color: $td-success-color;
-}
-
-.t-dialog--confirm.t-dialog--theme-warning .t-dialog__icon {
-  color: $td-warning-color;
-}
-
-.t-dialog--confirm.t-dialog--theme-error .t-dialog__icon {
-  color: $td-error-color;
-}
-
-.t-dialog--confirm .t-dialog__message {
+.t-dialog__button {
   flex: 1;
-}
-
-// ==================== 全屏对话框 ====================
-
-.t-dialog--fullscreen {
-  width: 100%;
-  max-width: none;
-  height: 100%;
-  max-height: none;
-  margin: 0;
-  border-radius: 0;
-}
-
-.t-dialog--fullscreen .t-dialog__body {
-  max-height: none;
-  height: calc(100vh - 240rpx);
-}
-
-// ==================== 居中模式 ====================
-
-.t-dialog--centered {
+  height: 96rpx;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  min-height: 400rpx;
-}
-
-// ==================== 顶部模式 ====================
-
-.t-dialog--top {
-  margin-top: 200rpx;
-  margin-bottom: auto;
-}
-
-// ==================== 无内边距 ====================
-
-.t-dialog--no-padding .t-dialog__header {
-  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
-}
-
-.t-dialog--no-padding .t-dialog__body {
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
   padding: 0;
-}
-
-.t-dialog--no-padding .t-dialog__footer {
-  padding: $td-comp-paddingTB-l $td-comp-paddingLR-m;
-}
-
-// ==================== 动画 - 淡出 ====================
-
-.t-dialog--fade-out {
-  animation: dialog-zoom-out $td-transition-duration-base;
-}
-
-.t-dialog__mask--fade-out {
-  animation: dialog-mask-fade-out $td-transition-duration-base;
-}
-
-@keyframes dialog-zoom-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
+  
+  &::after {
+    border: none;
   }
-  to {
-    opacity: 0;
-    transform: scale(0.9);
+  
+  &:active {
+    background-color: $td-bg-color-container-active;
+  }
+  
+  &:not(:last-child) {
+    border-right: 2rpx solid $td-border-level-1;
   }
 }
 
-@keyframes dialog-mask-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
+.t-dialog__button-text {
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.t-dialog__button--cancel {
+  .t-dialog__button-text {
+    color: $td-text-color-secondary;
   }
 }
 
+.t-dialog__button--confirm {
+  .t-dialog__button-text {
+    color: $td-brand-color;
+  }
+}
+
+// 主题样式
+.t-dialog--theme-info {
+  .t-dialog__button--confirm .t-dialog__button-text {
+    color: $td-brand-color;
+  }
+}
+
+.t-dialog--theme-success {
+  .t-dialog__button--confirm .t-dialog__button-text {
+    color: $td-success-color;
+  }
+}
+
+.t-dialog--theme-warning {
+  .t-dialog__button--confirm .t-dialog__button-text {
+    color: $td-warning-color;
+  }
+}
+
+.t-dialog--theme-error {
+  .t-dialog__button--confirm .t-dialog__button-text {
+    color: $td-error-color;
+  }
+}

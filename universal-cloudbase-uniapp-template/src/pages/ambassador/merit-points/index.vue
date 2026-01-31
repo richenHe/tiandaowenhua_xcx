@@ -1,6 +1,21 @@
 <template>
   <view class="page">
-    <td-page-header title="功德分管理" />
+    <!-- 页面头部 -->
+    <view class="t-page-header t-page-header--fixed t-page-header--border">
+      <view class="t-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+      <view class="t-page-header__navbar">
+        <view class="t-page-header__left" @click="handleBack">
+          <view class="t-page-header__back">
+            <text class="t-page-header__back-icon">←</text>
+          </view>
+        </view>
+        <view class="t-page-header__title t-page-header__title--center">
+          <text class="t-page-header__title-text">功德分管理</text>
+        </view>
+        <view class="t-page-header__right"></view>
+      </view>
+    </view>
+    <view class="t-page-header__placeholder" :style="{ height: headerHeight + 'px' }"></view>
     
     <scroll-view 
       class="scroll-area" 
@@ -59,9 +74,19 @@
           </view>
         </view>
 
-        <!-- Tab切换 -->
+        <!-- Tab切换 - 使用纯 CSS 类名 -->
         <view class="tabs-wrapper">
-          <t-capsule-tabs :tabs="tabs" :activeTab="activeTab" @change="onTabChange" />
+          <view class="t-capsule-tabs">
+            <view 
+              v-for="tab in tabs" 
+              :key="tab.value"
+              class="t-capsule-tabs__item"
+              :class="{ 't-capsule-tabs__item--active': activeTab === tab.value }"
+              @click="activeTab = tab.value"
+            >
+              {{ tab.label }}
+            </view>
+          </view>
         </view>
 
         <!-- 功德分明细列表 -->
@@ -180,13 +205,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import TCapsuleTabs from '@/components/CapsuleTabs.vue'
+import { ref, computed, onMounted } from 'vue'
 
-const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
-})
+const statusBarHeight = ref(20)
+const activeTab = ref('all')
 
 const tabs = ref([
   { label: '全部明细', value: 'all' },
@@ -195,10 +217,21 @@ const tabs = ref([
   { label: '兑换', value: 'exchange' }
 ])
 
-const activeTab = ref('all')
+onMounted(() => {
+  const systemInfo = uni.getSystemInfoSync()
+  statusBarHeight.value = systemInfo.statusBarHeight || 20
+})
 
-const onTabChange = (value: string) => {
-  activeTab.value = value
+const headerHeight = computed(() => {
+  return statusBarHeight.value + 44 // 44px 是导航栏高度
+})
+
+const scrollHeight = computed(() => {
+  return `calc(100vh - ${headerHeight.value}px)`
+})
+
+const handleBack = () => {
+  uni.navigateBack()
 }
 </script>
 

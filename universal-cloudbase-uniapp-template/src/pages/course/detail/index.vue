@@ -1,10 +1,6 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="初探班详情" :showBack="true">
-      <template #action>
-        <text class="action-icon" @click="handleShare">📤</text>
-      </template>
-    </TdPageHeader>
+    <TdPageHeader title="初探班详情" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
       <!-- 封面图片 -->
@@ -32,7 +28,7 @@
                 <view class="t-tabs__nav-wrap">
                   <view
                     class="t-tabs__bar"
-                    :style="{ left: activeTabIndex * 160 + 'rpx', width: '160rpx' }"
+                    :style="{ left: `calc(${activeTabIndex} * 33.33%)`, width: '33.33%' }"
                   ></view>
                   <view
                     v-for="(tab, index) in tabs"
@@ -83,10 +79,10 @@
     <view class="fixed-bottom">
       <text class="bottom-price">¥{{ courseInfo.price }}</text>
       <button
-        class="t-button t-button--theme-light t-button--variant-base t-button--size-large"
+        class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
         @click="handleBuy"
       >
-        <text class="t-button__text">立即购买</text>
+        <span class="t-button__text">立即购买</span>
       </button>
     </view>
   </view>
@@ -121,15 +117,6 @@ const courseInfo = ref({
 });
 
 /**
- * 分享
- */
-const handleShare = () => {
-  uni.showShareMenu({
-    withShareTicket: true,
-  });
-};
-
-/**
  * 立即购买
  */
 const handleBuy = () => {
@@ -144,19 +131,16 @@ const handleBuy = () => {
 
 .page-container {
   min-height: 100vh;
-  background-color: $td-bg-color-page;
+  background-color: #FFFFFF;
   display: flex;
   flex-direction: column;
-}
-
-.action-icon {
-  font-size: 36rpx;
-  cursor: pointer;
+  width: 100%;
 }
 
 .scroll-area {
   flex: 1;
   overflow-y: auto;
+  background-color: $td-bg-color-page;
 }
 
 .cover-image {
@@ -172,6 +156,22 @@ const handleBuy = () => {
 .page-content {
   padding: 32rpx;
   padding-bottom: calc(152rpx + env(safe-area-inset-bottom)); // 为固定底部预留空间 + 额外留白
+  background-color: $td-bg-color-page;
+  min-height: calc(100vh - 420rpx - var(--td-page-header-height)); // 确保内容区域填满屏幕
+}
+
+// 卡片样式
+.t-card {
+  background-color: #FFFFFF;
+  
+  &--bordered {
+    border: 2rpx solid $td-border-level-1;
+    border-radius: $td-radius-large;
+  }
+  
+  &__body {
+    padding: 32rpx;
+  }
 }
 
 // 课程基本信息
@@ -223,6 +223,7 @@ const handleBuy = () => {
   display: flex;
   position: relative;
   padding: 8rpx;
+  width: 100%;
 }
 
 .t-tabs__bar {
@@ -236,13 +237,19 @@ const handleBuy = () => {
 
 .t-tabs__nav-item {
   flex: 1;
-  padding: 24rpx 0;
+  min-width: 0; // 防止文字溢出
+  padding: 24rpx 16rpx;
   text-align: center;
   font-size: 28rpx;
   color: $td-text-color-secondary;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  white-space: nowrap; // 防止文字换行
+  
+  text {
+    display: inline-block;
+  }
 
   &.t-is-active {
     color: $td-brand-color;
@@ -255,6 +262,10 @@ const handleBuy = () => {
 }
 
 // 标签页内容
+.t-tabs__content {
+  background-color: transparent;
+}
+
 .section-heading {
   font-size: 32rpx;
   font-weight: 600;
@@ -322,11 +333,11 @@ const handleBuy = () => {
     height: 88rpx;
   }
 
-  &--theme-light {
-    background-color: rgba($td-brand-color, 0.1);
+  &--theme-warning {
+    background-color: $td-warning-color;
 
     .t-button__text {
-      color: $td-brand-color;
+      color: #FFFFFF;
       font-size: 32rpx;
       font-weight: 500;
     }
