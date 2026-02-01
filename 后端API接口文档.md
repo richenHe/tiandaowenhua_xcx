@@ -1,22 +1,24 @@
-# 天道文化小程序 - 后端API接口文档
+# 后端 API 接口文档
 
-## 文档说明
+> **📋 文档说明**：本文档仅包含 API 接口定义，不包含业务需求、架构设计等其他内容。
 
-**版本**: V2.0
+**版本**: V2.0  
 **更新时间**: 2026-02-01
-**技术栈**: 腾讯云CloudBase + MySQL + Node.js云函数
+
+---
+
+## 接口说明
 
 **接口标注**:
 - 🔵 小程序端接口
 - 🔴 管理后台接口
 - 🟢 通用接口
 
-**用户体系说明**:
-- 使用 CloudBase OpenID 登录，自动创建用户
-- 用户唯一标识：CloudBase 的 `uid`（格式：`cloud-uid-xxx`）
-- 前端无需调用登录接口，直接使用 `signInWithOpenId()`
-- 后端通过云函数的 `context.user.uid` 获取当前用户
-- 所有用户相关数据使用 `uid` 作为主键和外键
+**用户标识说明**:
+- **用户唯一标识**：CloudBase 的 `uid`（格式：`cloud-uid-xxx`）
+- **持久化特性**：`uid` 是持久化的，即使 token 失效重新登录，同一用户的 `uid` 也不会变化
+- **微信小程序**：额外提供 `openid` 作为微信用户的辅助标识
+- **数据关联**：所有用户相关数据使用 `uid` 作为主键和外键
 
 **通用响应格式**:
 ```json
@@ -27,11 +29,49 @@
 }
 ```
 
+
 **常见错误码**:
 - `401`: 未登录或登录态失效
 - `403`: 资料未完善（预览模式限制）
 - `404`: 资源不存在
 - `422`: 参数验证失败
+
+### 关键设计原则
+1. **主键使用 id**：所有表使用自增 `id INT AUTO_INCREMENT PRIMARY KEY` 作为主键
+2. **uid 唯一索引**：CloudBase 的 `uid` 设置为 `UNIQUE NOT NULL`，用于用户身份识别
+3. **外键关联灵活**：可以使用 `id`（性能优）或 `uid`（语义清晰），推荐使用 `referee_id` + `referee_uid` 双字段
+4. **数据持久化**：CloudBase 登录后，通过 `uid` 查询用户记录，获取对应的 `id`
+5. **接口响应**：接口返回时同时提供 `id` 和 `uid`，前端优先使用 `id` 进行业务操作
+
+### 数据库表结构示例
+
+**用户表（users）**
+```sql
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,    -- 主键（自增ID）
+  uid VARCHAR(64) UNIQUE NOT NULL,      -- CloudBase 用户唯一标识（唯一索引）
+  openid VARCHAR(128),                  -- 微信 OpenID
+  real_name VARCHAR(50),                -- 真实姓名
+  phone VARCHAR(20),                    -- 手机号
+  gender TINYINT,                       -- 性别：0女/1男
+  ambassador_level TINYINT DEFAULT 0,   -- 大使等级：0普通/1准青鸾/2青鸾/3鸿鹄
+  referee_id INT,                       -- 推荐人 id（外键，关联 users.id）
+  referee_uid VARCHAR(64),              -- 推荐人 uid（辅助字段）
+  profile_completed BOOLEAN DEFAULT FALSE,     -- 资料是否完善
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_uid (uid),                  -- uid 索引用于 CloudBase 查询
+  INDEX idx_referee_id (referee_id),    -- 推荐人 id 索引
+  INDEX idx_phone (phone)               -- 手机号索引
+);
+```
+
+**说明**:
+- `id` 作为主键（PRIMARY KEY），自增整数，用于表间关联和快速查询
+- `uid` 设置为唯一索引（UNIQUE NOT NULL），用于 CloudBase 用户身份识别
+- 外键关联使用 `referee_id` 关联其他用户的 `id`，提高查询性能
+- `referee_uid` 作为辅助字段保存，方便调试和数据追溯
+- 后端逻辑：通过 `context.user.uid` 获取 uid，然后查询对应的用户记录获取 `id`
 
 ---
 
@@ -53,6 +93,12 @@
 ## 1. 用户模块
 
 **认证方式**: 使用 CloudBase SDK 的 OpenID 登录，前端调用 `signInWithOpenId()` 后，CloudBase 会自动创建用户并返回 `uid`。所有接口使用 CloudBase 的登录态进行身份验证。
+
+**后端实现逻辑**:
+1. 从 CloudBase 登录态获取 `context.user.uid`
+2. 通过 `uid` 查询数据库用户表，获取用户的 `id`
+3. 后续业务逻辑使用 `id` 进行关联查询（性能更优）
+4. 接口响应同时返回 `id` 和 `uid`，前端优先使用 `id`
 
 ### 🔵 1.1 微信登录
 **说明**: 前端直接使用 CloudBase SDK 的 `signInWithOpenId()` 进行登录，无需调用后端接口。CloudBase 会自动处理用户创建和登录态维护。
@@ -91,13 +137,14 @@ const loginResult = await signInWithOpenId();
 
 **业务逻辑**:
 - 使用 CloudBase 登录态获取当前用户的 `uid`
-- 如果用户资料不存在，则创建新记录（使用 uid 作为主键）
+- 通过 `uid` 查询数据库，如果用户资料不存在，则创建新记录
 - 如果用户资料已存在，则更新记录
 - 首次保存资料时，如果传入 `temp_referee_id`，则设置为用户的推荐人
 
 **响应数据**:
 ```json
 {
+  "id": 1001,
   "uid": "cloud-uid-xxx",
   "profile_completed": true,
   "is_first_save": true,
@@ -113,6 +160,7 @@ const loginResult = await signInWithOpenId();
 **响应数据**:
 ```json
 {
+  "id": 1001,
   "uid": "cloud-uid-xxx",
   "openid": "o6_xxx...",
   "real_name": "张三",
@@ -187,6 +235,7 @@ const loginResult = await signInWithOpenId();
 {
   "list": [
     {
+      "id": 100,
       "uid": "cloud-uid-100",
       "real_name": "大使姓名",
       "level": 2,
@@ -201,7 +250,6 @@ const loginResult = await signInWithOpenId();
 - 不传course_type：返回准青鸾及以上
 - course_type=1：返回准青鸾及以上
 - course_type=2/3/4：只返回青鸾及以上
-- 使用 CloudBase uid 作为大使唯一标识
 
 ### 🔵 1.6 验证推荐人资格
 **接口**: `GET /api/user/validate-referee`
@@ -210,7 +258,8 @@ const loginResult = await signInWithOpenId();
 
 **请求参数**:
 ```
-?referee_uid=cloud-uid-100&course_type=2
+?referee_id=100&course_type=2
+// 或 ?referee_uid=cloud-uid-100&course_type=2
 ```
 
 **响应数据**:
@@ -219,6 +268,7 @@ const loginResult = await signInWithOpenId();
   "valid": false,
   "error_message": "该推荐人暂时只能推荐初探班课程",
   "referee_info": {
+    "id": 100,
     "uid": "cloud-uid-100",
     "real_name": "大使姓名",
     "level": 1,
@@ -388,7 +438,7 @@ const loginResult = await signInWithOpenId();
 ```json
 {
   "course_id": 1,
-  "referee_uid": "cloud-uid-100"  // 可选，不传则使用用户资料中的推荐人
+  "referee_id": 100  // 可选，不传则使用用户资料中的推荐人
 }
 ```
 
@@ -396,7 +446,6 @@ const loginResult = await signInWithOpenId();
 - 验证推荐人资格（准青鸾只能推荐初探班）
 - 密训班自动包含初探班
 - 记录推荐人变更日志
-- 使用 CloudBase uid 作为用户和推荐人标识
 
 **响应数据**:
 ```json
@@ -405,6 +454,7 @@ const loginResult = await signInWithOpenId();
   "course_id": 1,
   "course_name": "初探班",
   "amount": 1688.00,
+  "referee_id": 100,
   "referee_uid": "cloud-uid-100",
   "referee_name": "推荐人姓名",
   "referee_level": 2,
@@ -421,7 +471,7 @@ const loginResult = await signInWithOpenId();
 ```json
 {
   "order_no": "ORD202401150001",
-  "referee_uid": "cloud-uid-200"
+  "referee_id": 200
 }
 ```
 
@@ -429,7 +479,6 @@ const loginResult = await signInWithOpenId();
 - 仅待支付订单可修改
 - 验证推荐人资格
 - 记录变更日志
-- 使用 CloudBase uid 作为推荐人标识
 
 ### 🔵 3.3 发起支付
 **接口**: `POST /api/order/pay`
