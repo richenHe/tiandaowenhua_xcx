@@ -34,7 +34,7 @@
     <scroll-view scroll-y class="scroll-area">
       <view class="scroll-content">
         <!-- 推荐与设置 -->
-        <view class="section-title">⚙️ 推荐与设置</view>
+        <view class="t-section-title t-section-title--simple">⚙️ 推荐与设置</view>
         <view class="menu-group">
           <view 
             v-for="(item, index) in settingsMenu" 
@@ -56,7 +56,7 @@
         </view>
 
         <!-- 帮助与反馈 -->
-        <view class="section-title">💬 帮助与反馈</view>
+        <view class="t-section-title t-section-title--simple">💬 帮助与反馈</view>
         <view class="menu-group">
           <view 
             v-for="(item, index) in helpMenu" 
@@ -111,11 +111,6 @@ const settingsMenu = computed(() => [
     badgeTheme: 'primary' 
   },
   { 
-    type: 'referee-manage', 
-    icon: '👥', 
-    label: '推荐人管理' 
-  },
-  { 
     type: 'ambassador', 
     icon: '🎖️', 
     label: '传播大使',
@@ -131,9 +126,9 @@ const settingsMenu = computed(() => [
 
 // 帮助与反馈菜单
 const helpMenu = ref([
-  { type: 'consultation', icon: '💬', label: '在线咨询' },
+  // { type: 'consultation', icon: '💬', label: '在线咨询' }, // 暂时隐藏在线咨询功能
   { type: 'feedback', icon: '📝', label: '意见反馈' },
-  { type: 'announcement', icon: '📢', label: '平台公告', badge: '3' }
+  { type: 'announcement', icon: '📢', label: '平台公告', badge: '3', badgeTheme: 'error' }
 ]);
 
 // 跳转到个人资料
@@ -292,13 +287,6 @@ const handleMenuClick = (type: string) => {
 }
 
 // 分节标题
-.section-title {
-  padding: 24rpx 32rpx;
-  font-size: $td-font-size-base;
-  color: $td-text-color-secondary;
-  text-align: left;
-}
-
 // 菜单组
 .menu-group {
   background-color: white;

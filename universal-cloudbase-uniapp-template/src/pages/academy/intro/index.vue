@@ -27,7 +27,7 @@
         </view>
 
         <!-- 核心理念 -->
-        <view class="section-title">💡 核心理念</view>
+        <view class="t-section-title t-section-title--simple">💡 核心理念</view>
         <view class="concept-grid">
           <view 
             v-for="(concept, index) in conceptList" 
@@ -49,7 +49,7 @@
         </view>
 
         <!-- 讲师团队 -->
-        <view class="section-title">👨‍🏫 讲师团队</view>
+        <view class="t-section-title t-section-title--simple">👨‍🏫 讲师团队</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view 
@@ -71,7 +71,7 @@
         </view>
 
         <!-- 发展历程 -->
-        <view class="section-title">📅 发展历程</view>
+        <view class="t-section-title t-section-title--simple">📅 发展历程</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="t-timeline">
@@ -91,7 +91,7 @@
         </view>
 
         <!-- 荣誉资质 -->
-        <view class="section-title">🏆 荣誉资质</view>
+        <view class="t-section-title t-section-title--simple">🏆 荣誉资质</view>
         <view class="honor-grid">
           <view 
             v-for="(honor, index) in honorList" 
@@ -326,13 +326,6 @@ const contactList = ref([
 }
 
 // 章节标题
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: $td-text-color-primary;
-  margin-bottom: 24rpx;
-}
-
 // 核心理念
 .concept-grid {
   display: flex;

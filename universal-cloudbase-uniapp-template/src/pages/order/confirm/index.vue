@@ -5,7 +5,7 @@
     <scroll-view scroll-y class="scroll-area">
       <view class="page-content">
         <!-- 课程信息 -->
-        <view class="section-title section-title--simple">📦 课程信息</view>
+        <view class="t-section-title t-section-title--simple">📦 课程信息</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="course-info">
@@ -22,7 +22,7 @@
         </view>
 
         <!-- 个人信息 -->
-        <view class="section-title section-title--simple">👤 个人信息</view>
+        <view class="t-section-title t-section-title--simple">👤 个人信息</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="info-row">
@@ -37,7 +37,7 @@
         </view>
 
         <!-- 推荐人信息 -->
-        <view class="section-title section-title--simple">🎯 推荐人信息</view>
+        <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
         <view class="t-card t-card--bordered t-card--hoverable mb-l" @click="goToSelectReferee">
           <view class="t-card__body">
             <view class="referee-info">
@@ -58,7 +58,7 @@
         </view>
 
         <!-- 订单金额 -->
-        <view class="section-title section-title--simple">💰 订单金额</view>
+        <view class="t-section-title t-section-title--simple">💰 订单金额</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="amount-row">
@@ -175,20 +175,6 @@ const handleConfirm = () => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
-}
-
-// 章节标题
-.section-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-
-  &--simple {
-    padding: 0;
-    background: none;
-    border: none;
-  }
 }
 
 .mb-l {

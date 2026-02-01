@@ -264,20 +264,6 @@ const handleSelectReferee = (referee: any) => {
   line-height: 1.8;
 }
 
-// 章节标题
-.section-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-
-  &--simple {
-    padding: 0;
-    background: none;
-    border: none;
-  }
-}
-
 // 列表
 .t-list {
   background-color: white;

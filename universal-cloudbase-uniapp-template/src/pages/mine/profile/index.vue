@@ -26,7 +26,7 @@
         </view>
 
         <!-- 推荐人信息 -->
-        <view class="section-title">🎯 推荐人信息</view>
+        <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
         <view class="t-list">
           <view class="t-list-item" @click="goToRefereeManage">
             <view class="t-list-item__meta">我的传播大使</view>
@@ -42,7 +42,7 @@
         </view>
 
         <!-- 个人信息 -->
-        <view class="section-title">📝 个人信息</view>
+        <view class="t-section-title t-section-title--simple">📝 个人信息</view>
         <view class="t-list">
           <view class="t-list-item" @click="handleEditBirthday">
             <view class="t-list-item__meta">出生八字</view>
@@ -274,14 +274,6 @@ const handleSave = () => {
 // 占位文本
 .placeholder-text {
   color: $td-text-color-placeholder !important;
-}
-
-// 分区标题
-.section-title {
-  font-size: 28rpx;
-  color: $td-text-color-secondary;
-  margin: 48rpx 0 24rpx 0;
-  padding-left: 8rpx;
 }
 
 // 底部留白

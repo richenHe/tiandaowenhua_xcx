@@ -24,7 +24,7 @@
         </view>
 
         <!-- 基本信息 -->
-        <view class="section-title">📝 基本信息</view>
+        <view class="t-section-title t-section-title--simple">📝 基本信息</view>
         
         <view class="form-item">
           <view class="form-label required">真实姓名</view>
@@ -52,7 +52,7 @@
         </view>
 
         <!-- 申请说明 -->
-        <view class="section-title" style="margin-top: 48rpx;">💬 申请说明</view>
+        <view class="t-section-title t-section-title--simple" style="margin-top: 48rpx;">💬 申请说明</view>
 
         <view class="form-item">
           <view class="form-label required">为什么想成为传播大使</view>
@@ -251,13 +251,6 @@ const handleSubmit = () => {
   font-size: 24rpx;
   color: #666;
   line-height: 1.6;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .form-item {

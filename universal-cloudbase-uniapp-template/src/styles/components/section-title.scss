@@ -1,0 +1,38 @@
+/**
+ * Section Title 分隔栏组件
+ * 用于页面内容分区标题展示
+ * 直接参考原型图 CSS，使用 SCSS 变量
+ */
+
+@import '@/styles/tdesign-vars.scss';
+
+/* ==================== Section 标题 ==================== */
+
+.t-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: $td-section-spacing 0 $td-card-spacing;
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-secondary;
+}
+
+.t-section-title::before,
+.t-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1rpx;
+  background-color: $td-border-level-1;
+}
+
+/* 简洁版分隔栏 - 无装饰线条 */
+.t-section-title--simple {
+  justify-content: flex-start;
+}
+
+.t-section-title--simple::before,
+.t-section-title--simple::after {
+  display: none;
+}
+

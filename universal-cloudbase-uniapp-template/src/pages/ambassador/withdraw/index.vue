@@ -17,7 +17,7 @@
         </view>
 
         <!-- 提现金额 -->
-        <view class="section-title">💵 提现金额</view>
+        <view class="t-section-title t-section-title--simple">💵 提现金额</view>
         <view class="amount-card">
           <view class="amount-input-wrapper">
             <text class="amount-symbol">¥</text>
@@ -46,7 +46,7 @@
         </view>
 
         <!-- 提现方式 -->
-        <view class="section-title">💳 提现方式</view>
+        <view class="t-section-title t-section-title--simple">💳 提现方式</view>
         <view class="method-card" @tap="selectMethod('wechat')">
           <view class="method-icon">💚</view>
           <view class="method-info">
@@ -73,7 +73,7 @@
         </view>
 
         <!-- 提现记录 -->
-        <view class="section-title">📋 最近提现记录</view>
+        <view class="t-section-title t-section-title--simple">📋 最近提现记录</view>
         
         <view class="record-card">
           <view class="record-header">
@@ -228,13 +228,6 @@ const handleWithdraw = () => {
 .balance-tip {
   font-size: 24rpx;
   opacity: 0.8;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .amount-card {

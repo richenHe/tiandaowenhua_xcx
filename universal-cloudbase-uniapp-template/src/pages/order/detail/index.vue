@@ -238,20 +238,6 @@ const goToConsultation = () => {
   opacity: 0.9;
 }
 
-// 章节标题
-.section-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-
-  &--simple {
-    padding: 0;
-    background: none;
-    border: none;
-  }
-}
-
 // 信息行
 .info-row {
   display: flex;

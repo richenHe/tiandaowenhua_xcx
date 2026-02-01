@@ -115,22 +115,6 @@ const handleAppointment = (scheduleId: string) => {
   padding: 32rpx;
 }
 
-// 章节标题样式
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: $td-text-color-primary;
-  margin-bottom: 24rpx;
-
-  &--simple {
-    font-size: 28rpx;
-    font-weight: 500;
-    padding: 0;
-    background: none;
-    border: none;
-  }
-}
-
 // 课程排期卡片样式
 .schedule-card {
   margin-bottom: 32rpx;

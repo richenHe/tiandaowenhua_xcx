@@ -2,162 +2,178 @@
   <view class="page-container">
     <TdPageHeader title="完善个人资料" :showBack="true" />
 
-    <scroll-view scroll-y class="scroll-area">
-      <view class="page-content">
+    <scroll-view scroll-y class="scroll-area scroll-area--with-header-footer" style="height: calc(100vh - 88rpx - 136rpx);">
+      <view class="page-content page-content--with-bg" style="padding-bottom: 480rpx;">
         <!-- 提示信息 -->
-        <view class="alert-box">
-          <view class="alert-icon">ℹ️</view>
-          <text class="alert-text">请完善资料后使用小程序</text>
+        <view class="t-alert t-alert--theme-info mb-l">
+          <view class="t-alert__content">
+            <text>请完善资料后使用小程序</text>
+          </view>
         </view>
 
         <!-- 表单 -->
-        <view class="form-card">
+        <view class="t-form t-form--label-top">
           <!-- 微信头像 -->
-          <view class="form-item">
-            <view class="form-label">
+          <view class="t-form-item">
+            <view class="t-form-item__label">
               <text>微信头像</text>
             </view>
-            <view class="avatar-box">
+            <view class="t-form-item__control" style="display: flex; justify-content: center; margin-top: 16rpx;">
               <button 
-                class="avatar-btn" 
+                class="t-avatar-picker"
                 open-type="chooseAvatar" 
                 @chooseavatar="onChooseAvatar"
               >
                 <image 
                   v-if="formData.avatarUrl" 
                   :src="formData.avatarUrl" 
-                  class="avatar-image"
                   mode="aspectFill"
+                  style="width: 100%; height: 100%;"
                 />
-                <view v-else class="avatar-placeholder">
-                  <text class="avatar-placeholder-icon">📷</text>
-                  <text class="avatar-placeholder-text">点击选择头像</text>
-                </view>
+                <text v-else style="font-size: 72rpx; color: #DCDCDC; font-weight: 300;">+</text>
               </button>
             </view>
           </view>
 
           <!-- 微信昵称 -->
-          <view class="form-item">
-            <view class="form-label">
+          <view class="t-form-item">
+            <view class="t-form-item__label">
               <text>微信昵称</text>
             </view>
-            <view class="nickname-box">
-              <view 
-                class="nickname-input-wrapper"
-                :class="{ 'nickname-input-wrapper--filled': formData.nickName }"
-                @click="focusNicknameInput"
-              >
-                <input
-                  id="nicknameInput"
-                  class="nickname-input"
-                  type="nickname"
-                  placeholder="点击输入昵称"
-                  v-model="formData.nickName"
-                  @input="onNicknameInput"
-                />
-                <view class="nickname-icon">
-                  <text v-if="!formData.nickName">✏️</text>
-                  <text v-else class="nickname-check">✓</text>
+            <view class="t-form-item__control">
+              <view class="t-input__wrap">
+                <view class="t-input t-align-left">
+                  <input
+                    class="t-input__inner"
+                    type="text"
+                    placeholder="请输入昵称"
+                    v-model="formData.nickName"
+                  />
                 </view>
               </view>
             </view>
           </view>
 
           <!-- 真实姓名 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text class="required-mark">*</text>
+          <view class="t-form-item">
+            <view class="t-form-item__label t-form-item__label--required">
               <text>真实姓名</text>
             </view>
-            <input
-              class="form-input"
-              type="text"
-              placeholder="请输入真实姓名"
-              v-model="formData.realName"
-            />
+            <view class="t-form-item__control">
+              <view class="t-input__wrap">
+                <view class="t-input t-align-left">
+                  <input class="t-input__inner" type="text" placeholder="请输入真实姓名" v-model="formData.realName" />
+                </view>
+              </view>
+            </view>
           </view>
 
           <!-- 手机号 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text class="required-mark">*</text>
+          <view class="t-form-item">
+            <view class="t-form-item__label t-form-item__label--required">
               <text>手机号</text>
             </view>
-            <input
-              class="form-input"
-              type="tel"
-              placeholder="请输入手机号"
-              v-model="formData.phone"
-            />
+            <view class="t-form-item__control">
+              <view class="t-input__wrap">
+                <view class="t-input t-align-left">
+                  <input class="t-input__inner" type="tel" placeholder="请输入手机号" v-model="formData.phone" />
+                </view>
+              </view>
+            </view>
           </view>
 
           <!-- 性别 -->
-          <view class="form-item">
-            <view class="form-label">性别</view>
-            <view class="radio-group">
-              <view
-                v-for="item in genderOptions"
-                :key="item.value"
-                class="radio-item"
-                @click="formData.gender = item.value"
-              >
-                <view class="radio-icon" :class="{ 'radio-icon--checked': formData.gender === item.value }">
-                  <view v-if="formData.gender === item.value" class="radio-dot"></view>
-                </view>
-                <text class="radio-label">{{ item.label }}</text>
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>性别</text>
+            </view>
+            <view class="t-form-item__control">
+              <view class="t-radio-group">
+                <label
+                  v-for="item in genderOptions"
+                  :key="item.value"
+                  class="t-radio"
+                  @click="formData.gender = item.value"
+                >
+                  <view 
+                    class="t-radio__input"
+                    :class="{ 't-radio__input--checked': formData.gender === item.value }"
+                  ></view>
+                  <text class="t-radio__label">{{ item.label }}</text>
+                </label>
               </view>
             </view>
           </view>
 
           <!-- 出生八字 -->
-          <view class="form-item">
-            <view class="form-label">出生八字 (选填)</view>
-            <view class="birthdate-grid">
-              <input
-                v-for="(item, index) in birthdateFields"
-                :key="index"
-                class="form-input form-input--center"
-                type="text"
-                :placeholder="item.placeholder"
-                v-model="formData.birthdate[item.key]"
-              />
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>出生八字 (选填)</text>
+            </view>
+            <view class="t-form-item__control">
+              <view class="grid grid-cols-4 gap-s">
+                <view
+                  v-for="(item, index) in birthdateFields"
+                  :key="index"
+                  class="t-input__wrap"
+                >
+                  <view class="t-input t-align-center">
+                    <input class="t-input__inner" type="text" :placeholder="item.placeholder" v-model="(formData.birthdate as any)[item.key]" />
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
 
           <!-- 从事行业 -->
-          <view class="form-item">
-            <view class="form-label">从事行业 (选填)</view>
-            <picker
-              mode="selector"
-              :range="industryOptions"
-              :value="industryIndex"
-              @change="onIndustryChange"
-            >
-              <view class="picker-box">
-                <text class="picker-text" :class="{ 'picker-text--placeholder': !formData.industry }">
-                  {{ formData.industry || '请选择' }}
-                </text>
-                <text class="picker-arrow">▼</text>
-              </view>
-            </picker>
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>从事行业 (选填)</text>
+            </view>
+            <view class="t-form-item__control">
+              <picker
+                mode="selector"
+                :range="industryOptions"
+                :value="industryIndex"
+                @change="onIndustryChange"
+              >
+                <view class="t-select">
+                  <view class="t-select__input">
+                    <text 
+                      :class="formData.industry ? 't-select__value' : 't-select__placeholder'"
+                    >
+                      {{ formData.industry || '请选择' }}
+                    </text>
+                    <text class="t-select__arrow">▼</text>
+                  </view>
+                </view>
+              </picker>
+            </view>
           </view>
 
           <!-- 所在地区 -->
-          <view class="form-item">
-            <view class="form-label">所在地区 (选填)</view>
-            <picker
-              mode="region"
-              :value="regionValue"
-              @change="onRegionChange"
-            >
-              <view class="picker-box">
-                <text class="picker-text" :class="{ 'picker-text--placeholder': !formData.region }">
-                  {{ formData.region || '请选择' }}
-                </text>
-                <text class="picker-arrow">▼</text>
-              </view>
-            </picker>
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>所在地区 (选填)</text>
+            </view>
+            <view class="t-form-item__control">
+              <picker
+                mode="region"
+                :value="regionValue"
+                @change="onRegionChange"
+              >
+                <view class="t-select">
+                  <view class="t-select__input">
+                    <text 
+                      :class="formData.region ? 't-select__value' : 't-select__placeholder'"
+                    >
+                      {{ formData.region || '请选择' }}
+                    </text>
+                    <text class="t-select__arrow">▼</text>
+                  </view>
+                </view>
+              </picker>
+            </view>
           </view>
         </view>
       </view>
@@ -165,8 +181,12 @@
 
     <!-- 固定底部 -->
     <view class="fixed-bottom">
-      <button class="submit-btn" @click="handleSubmit">提交</button>
-      <button class="skip-btn" @click="handleSkip">暂不填写，先预览</button>
+      <button class="t-button t-button--theme-primary t-button--variant-base t-button--size-large t-button--block mb-s" @click="handleSubmit">
+        <text class="t-button__text">提交</text>
+      </button>
+      <button class="t-button t-button--theme-default t-button--variant-text t-button--size-large t-button--block" @click="handleSkip">
+        <text class="t-button__text">暂不填写，先预览</text>
+      </button>
     </view>
   </view>
 </template>
@@ -501,314 +521,32 @@ const handleSkip = async () => {
 <style lang="scss" scoped>
 @import '@/styles/tdesign-vars.scss';
 
-.page-container {
-  min-height: 100vh;
-  background-color: $td-bg-color-page;
+// 按钮的伪元素边框重置（微信小程序 button 特有）
+button::after {
+  border: none;
 }
 
-.scroll-area {
-  height: calc(100vh - 88rpx - 176rpx); // 减去header(88rpx)和底部按钮(176rpx)
-  overflow-y: auto;
+// 页面内容区域背景（半透明白色 + 毛玻璃）
+.page-content--with-bg {
+  background-color: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
 }
 
-.page-content {
-  padding: 32rpx;
-  padding-bottom: 300rpx; // 大幅增加底部留白，与其他页面保持一致
-}
-
-// 提示框
-.alert-box {
-  display: flex;
-  align-items: center;
-  padding: 24rpx;
-  margin-bottom: 32rpx;
-  background-color: rgba($td-brand-color, 0.1);
-  border: 2rpx solid rgba($td-brand-color, 0.2);
-  border-radius: $td-radius-default;
-}
-
-.alert-icon {
-  font-size: 32rpx;
-  margin-right: 16rpx;
-}
-
-.alert-text {
-  flex: 1;
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-}
-
-// 表单卡片
-.form-card {
-  background: white;
-  border-radius: $td-radius-default;
-  padding: 32rpx;
-}
-
-.form-item {
-  margin-bottom: 32rpx;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.form-label {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-primary;
-  margin-bottom: 16rpx;
-}
-
-.required-mark {
-  color: $td-error-color;
-  margin-right: 8rpx;
-}
-
-// 输入框
-.form-input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-  background-color: $td-bg-color-container;
-  border: 2rpx solid $td-border-level-2;
-  border-radius: $td-radius-default;
-  box-sizing: border-box;
-
-  &--center {
-    text-align: center;
-  }
-}
-
-// 头像选择器
-.avatar-box {
-  display: flex;
-  justify-content: center;
-  margin-top: 16rpx;
-}
-
-.avatar-btn {
+// 头像选择器（独立组件样式）
+.t-avatar-picker {
   padding: 0;
   margin: 0;
   border: none;
-  background: transparent;
+  background: #FFFFFF;
   width: 160rpx;
   height: 160rpx;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  
-  &::after {
-    border: none;
-  }
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background-color: $td-bg-color-container;
-  border: 4rpx dashed $td-border-level-2;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-placeholder-icon {
-  font-size: 48rpx;
-  margin-bottom: 8rpx;
-}
-
-.avatar-placeholder-text {
-  font-size: 20rpx;
-  color: $td-text-color-placeholder;
-}
-
-// 昵称选择器（与头像保持一致的设计）
-.nickname-box {
-  display: flex;
-  justify-content: center;
-  margin-top: 16rpx;
-}
-
-.nickname-btn {
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  width: 100%;
-  height: 88rpx;
-  border-radius: $td-radius-default;
-  overflow: hidden;
-  
-  &::after {
-    border: none;
-  }
-}
-
-.nickname-display {
-  width: 100%;
-  height: 100%;
-  background-color: $td-bg-color-container;
-  border: 2rpx solid $td-brand-color;
-  border-radius: $td-radius-default;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24rpx;
-}
-
-.nickname-text {
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-  font-weight: 500;
-}
-
-.nickname-placeholder {
-  width: 100%;
-  height: 100%;
-  background-color: $td-bg-color-container;
-  border: 2rpx dashed $td-border-level-2;
-  border-radius: $td-radius-default;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-}
-
-.nickname-placeholder-icon {
-  font-size: 32rpx;
-}
-
-.nickname-placeholder-text {
-  font-size: 28rpx;
-  color: $td-text-color-placeholder;
-}
-
-.nickname-input-hidden {
-  position: absolute;
-  top: -9999rpx;
-  left: -9999rpx;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-// 单选框
-.radio-group {
-  display: flex;
-  gap: 48rpx;
-}
-
-.radio-item {
-  display: flex;
-  align-items: center;
-}
-
-.radio-icon {
-  width: 36rpx;
-  height: 36rpx;
-  border: 4rpx solid $td-border-level-2;
-  border-radius: 50%;
-  margin-right: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &--checked {
-    border-color: $td-brand-color;
-  }
-}
-
-.radio-dot {
-  width: 20rpx;
-  height: 20rpx;
-  background-color: $td-brand-color;
-  border-radius: 50%;
-}
-
-.radio-label {
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-}
-
-// 出生八字网格
-.birthdate-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16rpx;
-}
-
-// 选择器
-.picker-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 88rpx;
-  padding: 0 24rpx;
-  background-color: $td-bg-color-container;
-  border: 2rpx solid $td-border-level-2;
-  border-radius: $td-radius-default;
-}
-
-.picker-text {
-  flex: 1;
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-
-  &--placeholder {
-    color: $td-text-color-placeholder;
-  }
-}
-
-.picker-arrow {
-  font-size: 24rpx;
-  color: $td-text-color-placeholder;
-  margin-left: 16rpx;
-}
-
-// 固定底部
-.fixed-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: white;
-  border-top: 2rpx solid $td-border-level-1;
-  z-index: 100;
-}
-
-.submit-btn {
-  width: 100%;
-  height: 88rpx;
-  background-color: $td-brand-color;
-  color: white;
-  font-size: 32rpx;
-  font-weight: 500;
-  border-radius: $td-radius-default;
-  border: none;
-  margin-bottom: 16rpx;
-}
-
-.skip-btn {
-  width: 100%;
-  height: 88rpx;
-  background-color: transparent;
-  color: $td-text-color-secondary;
-  font-size: 28rpx;
-  border-radius: $td-radius-default;
-  border: none;
 }
 </style>
 

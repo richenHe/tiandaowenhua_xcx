@@ -62,7 +62,7 @@
         </view>
 
         <!-- 积分明细列表 -->
-        <view class="section-title">💰 明细记录</view>
+        <view class="t-section-title t-section-title--simple">💰 明细记录</view>
 
         <!-- 升级获得冻结积分 -->
         <view class="record-card">
@@ -370,13 +370,6 @@ const goToWithdraw = () => {
 
 .tabs-wrapper {
   margin-bottom: 32rpx;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .record-card {

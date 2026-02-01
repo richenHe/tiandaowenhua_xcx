@@ -29,77 +29,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { signInWithOpenId, auth, app } from '@/utils/cloudbase';
-
-// 防止重复点击
-const isLoggingIn = ref(false);
+import { signInWithOpenId } from '@/utils/cloudbase';
 
 const handleWechatLogin = async () => {
-  if (isLoggingIn.value) {
-    return;
-  }
-  
-  isLoggingIn.value = true;
-  
+  uni.showLoading({
+    title: '正在登录...',
+  });
+
   try {
-    const userProfileRes = await uni.getUserProfile({
-      desc: '用于完善会员资料和个性化服务',
-    });
-    
-    uni.showLoading({
-      title: '登录中...',
-      mask: true
-    });
-    
-    const loginState = await signInWithOpenId();
-    const currentUser = await auth.getCurrentUser();
-    
-    if (!currentUser?.uid) {
-      throw new Error('无法获取用户 ID');
-    }
+    await signInWithOpenId();
     
     uni.hideLoading();
-    
     uni.showToast({
-      title: '登录成功！',
+      title: '登录成功',
       icon: 'success',
-      duration: 2000
     });
     
     setTimeout(() => {
-      uni.redirectTo({
-        url: '/pages/auth/complete-profile/index'
+      uni.navigateTo({
+        url: '/pages/auth/complete-profile/index',
       });
-    }, 1500);
-    
+    }, 1000);
   } catch (error: any) {
     uni.hideLoading();
     
-    if (error.errMsg && error.errMsg.includes('getUserProfile:fail cancel')) {
-      uni.showToast({
-        title: '您已取消授权',
-        icon: 'none',
-        duration: 2000
-      });
-    } else if (error.errMsg && error.errMsg.includes('getUserProfile')) {
-      uni.showToast({
-        title: '获取用户信息失败，请重试',
-        icon: 'none',
-        duration: 2000
-      });
-    } else {
-      uni.showToast({
-        title: error?.message || '登录失败，请稍后重试',
-        icon: 'none',
-        duration: 2000
-      });
+    let errorMessage = '登录失败，请重试';
+    if (error.message?.includes('小程序认证')) {
+      errorMessage = '请先在云开发控制台配置小程序认证';
+    } else if (error.message?.includes('环境')) {
+      errorMessage = '云开发环境配置错误';
     }
-  } finally {
-    isLoggingIn.value = false;
+    
+    uni.showToast({
+      title: errorMessage,
+      icon: 'none',
+      duration: 3000,
+    });
   }
 };
 
+/**
+ * 查看用户协议
+ */
 const goToAgreement = () => {
   uni.showToast({
     title: '用户协议',
@@ -107,6 +78,9 @@ const goToAgreement = () => {
   });
 };
 
+/**
+ * 查看隐私政策
+ */
 const goToPrivacy = () => {
   uni.showToast({
     title: '隐私政策',

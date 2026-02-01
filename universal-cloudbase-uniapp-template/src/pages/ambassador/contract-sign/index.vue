@@ -32,7 +32,7 @@
         </view>
 
         <!-- 协议内容 -->
-        <view class="section-title">📄 协议内容</view>
+        <view class="t-section-title t-section-title--simple">📄 协议内容</view>
         
         <view class="contract-card">
           <scroll-view class="contract-content" scroll-y>
@@ -277,13 +277,6 @@ const handleSign = () => {
 .info-value {
   color: #333;
   font-weight: 500;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .contract-card {

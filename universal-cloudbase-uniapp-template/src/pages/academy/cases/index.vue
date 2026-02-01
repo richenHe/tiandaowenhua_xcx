@@ -34,7 +34,7 @@
         </view>
 
         <!-- 案例列表 -->
-        <view class="section-title">⭐ 优秀学员</view>
+        <view class="t-section-title t-section-title--simple">⭐ 优秀学员</view>
 
         <!-- 案例1：企业家 -->
         <view class="case-card">
@@ -158,7 +158,7 @@
         </view>
 
         <!-- 视频见证 -->
-        <view class="section-title">🎬 视频见证</view>
+        <view class="t-section-title t-section-title--simple">🎬 视频见证</view>
         <view class="video-card">
           <view class="video-placeholder">
             <view class="play-icon">▶️</view>
@@ -272,13 +272,6 @@ const goToCourseDetail = () => {
 
 .tabs-wrapper {
   margin-bottom: 32rpx;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .case-card {

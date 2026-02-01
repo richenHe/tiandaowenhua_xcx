@@ -198,20 +198,6 @@ const handlePay = () => {
   }
 }
 
-// 章节标题
-.section-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-
-  &--simple {
-    padding: 0;
-    background: none;
-    border: none;
-  }
-}
-
 // 支付方式
 .payment-method {
   background: white;

@@ -7,6 +7,10 @@
 
 // ==================== 基础结构 ====================
 
+.t-input__wrap {
+  width: 100%;
+}
+
 .t-input {
   position: relative;
   display: flex;
@@ -220,5 +224,19 @@
 
 .t-input--search .t-input__prefix {
   margin-right: 12rpx;
+}
+
+// ==================== 文本对齐 ====================
+
+.t-input.t-align-left .t-input__inner {
+  text-align: left;
+}
+
+.t-input.t-align-center .t-input__inner {
+  text-align: center;
+}
+
+.t-input.t-align-right .t-input__inner {
+  text-align: right;
 }
 

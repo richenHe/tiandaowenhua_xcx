@@ -94,14 +94,29 @@ export const signInWithPhoneAuth = async (phoneCode: string) => {
 
 /**
  * 【新增】微信小程序 OpenID 静默登录
+ * 注意：此方法仅在微信小程序环境下有效
  */
 export const signInWithOpenId = async () => {
   if (!checkEnvironment()) {
     throw new Error('环境ID未配置');
   }
-  // 直接调用 auth 模块的同名方法
-  const loginState = await auth.signInWithOpenId();
-  return loginState;
+
+  // 检查是否在微信小程序环境
+  // #ifdef MP-WEIXIN
+  try {
+    const loginState = await auth.signInWithOpenId();
+    return loginState;
+  } catch (error: any) {
+    if (error.code === 'INVALID_PARAM' || error.message?.includes('小程序')) {
+      throw new Error('请先在云开发控制台【环境配置】->【小程序认证】中完成小程序认证配置');
+    }
+    throw error;
+  }
+  // #endif
+  
+  // #ifndef MP-WEIXIN
+  throw new Error('微信 OpenID 登录仅支持微信小程序环境');
+  // #endif
 };
 
 /**

@@ -22,7 +22,7 @@
         </view>
 
         <!-- 功德分与积分 -->
-        <view class="section-title section-title--simple">💎 我的奖励</view>
+        <view class="t-section-title t-section-title--simple">💎 我的奖励</view>
         <view style="display: grid; grid-template-columns: 1fr 1fr; gap: 24rpx; margin-bottom: 48rpx;">
           <view @tap="goToMeritPoints">
             <view class="t-card t-card--bordered" style="cursor: pointer; transition: all 0.3s;">
@@ -59,7 +59,7 @@
         </view>
 
         <!-- 等级体系 -->
-        <view class="section-title section-title--simple">📊 等级体系</view>
+        <view class="t-section-title t-section-title--simple">📊 等级体系</view>
         
         <!-- 准青鸾大使 -->
         <view class="t-card t-card--bordered mb-m">
@@ -262,13 +262,6 @@ const goToApply = () => {
 
 .page-content {
   padding: 32rpx;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .mb-l {

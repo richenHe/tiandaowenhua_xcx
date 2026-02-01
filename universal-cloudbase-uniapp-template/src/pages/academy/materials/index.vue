@@ -25,7 +25,7 @@
         </view>
 
         <!-- 素材分类 -->
-        <view class="section-title">🎨 课程推广海报</view>
+        <view class="t-section-title t-section-title--simple">🎨 课程推广海报</view>
 
         <!-- 初探班海报 -->
         <view class="material-card">
@@ -61,7 +61,7 @@
         </view>
 
         <!-- 宣传文案 -->
-        <view class="section-title">✍️ 推广文案</view>
+        <view class="t-section-title t-section-title--simple">✍️ 推广文案</view>
 
         <!-- 文案1 -->
         <view class="copywriting-card">
@@ -104,7 +104,7 @@
         </view>
 
         <!-- 活动通知 -->
-        <view class="section-title">📢 活动通知</view>
+        <view class="t-section-title t-section-title--simple">📢 活动通知</view>
 
         <!-- 活动文案 -->
         <view class="copywriting-card">
@@ -247,13 +247,6 @@ const copyText = (type: string) => {
 
 .tabs-wrapper {
   margin-bottom: 32rpx;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .material-card {

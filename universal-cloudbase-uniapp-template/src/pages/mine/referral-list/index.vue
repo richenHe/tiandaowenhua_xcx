@@ -29,7 +29,7 @@
       <view class="page-content">
         <!-- 伯乐板块 (我的推荐人) -->
         <view v-if="activeTab === 0">
-          <view class="section-title">🏇 我的伯乐（推荐人）</view>
+          <view class="t-section-title t-section-title--simple">🏇 我的伯乐（推荐人）</view>
 
           <!-- 推荐人卡片 -->
           <view class="referral-card referral-card--highlight">
@@ -62,6 +62,13 @@
             </view>
           </view>
 
+          <!-- 修改推荐人按钮 -->
+          <view class="modify-referee-section">
+            <button class="t-button t-button--outline" @click="handleModifyReferee">
+              <text class="t-button__text">✏️ 修改推荐人</text>
+            </button>
+          </view>
+
           <!-- 说明信息 -->
           <view class="t-alert">
             <text class="alert-icon">ℹ️</text>
@@ -73,7 +80,7 @@
 
         <!-- 千里马板块 (我推荐的人) -->
         <view v-if="activeTab === 1">
-          <view class="section-title">🐎 我的千里马（推荐的人）</view>
+          <view class="t-section-title t-section-title--simple">🐎 我的千里马（推荐的人）</view>
 
           <!-- 统计卡片 -->
           <view class="stats-card">
@@ -212,9 +219,26 @@ const goBack = () => {
 
 // 邀请好友
 const handleInvite = () => {
-  uni.showToast({
-    title: '邀请功能开发中',
-    icon: 'none'
+  uni.navigateTo({
+    url: '/pages/ambassador/qrcode/index'
+  })
+}
+
+// 修改推荐人
+const handleModifyReferee = () => {
+  uni.showModal({
+    title: '修改推荐人',
+    content: '确定要修改推荐人吗？修改后需要重新验证关系。',
+    confirmText: '确定',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) {
+        // TODO: 跳转到修改推荐人页面或打开修改弹窗
+        uni.navigateTo({
+          url: '/pages/mine/modify-referee/index'
+        })
+      }
+    }
   })
 }
 </script>
@@ -277,13 +301,6 @@ const handleInvite = () => {
 }
 
 // 分区标题
-.section-title {
-  font-size: 28rpx;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-  padding-left: 8rpx;
-}
-
 // 推荐人卡片
 .referral-card {
   background-color: #FFFFFF;
@@ -529,6 +546,18 @@ const handleInvite = () => {
 
 .t-button__text {
   font-size: 28rpx;
+}
+
+// 修改推荐人按钮区域
+.modify-referee-section {
+  text-align: center;
+  padding: 32rpx 0;
+}
+
+.t-button--outline {
+  background-color: transparent;
+  border: 2rpx solid $td-brand-color;
+  color: $td-brand-color;
 }
 
 // 底部留白

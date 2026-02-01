@@ -41,7 +41,7 @@
         </view>
 
         <!-- 活动类型统计 -->
-        <view class="section-title">📈 活动类型分布</view>
+        <view class="t-section-title t-section-title--simple">📈 活动类型分布</view>
         <view class="type-grid">
           <view class="type-card">
             <view class="type-icon">👨‍🏫</view>
@@ -71,7 +71,7 @@
         </view>
 
         <!-- 活动记录列表 -->
-        <view class="section-title">📝 活动明细</view>
+        <view class="t-section-title t-section-title--simple">📝 活动明细</view>
 
         <!-- 辅导员记录 -->
         <view class="activity-card">
@@ -299,13 +299,6 @@ const onTabChange = (value: string) => {
   font-size: 24rpx;
   color: #666;
   line-height: 1.6;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .type-grid {

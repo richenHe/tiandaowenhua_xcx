@@ -16,7 +16,7 @@
         </view>
 
         <!-- 团队成员列表 -->
-        <view class="section-title">👥 团队成员</view>
+        <view class="t-section-title t-section-title--simple">👥 团队成员</view>
 
         <view class="member-card" v-for="(member, index) in members" :key="index">
           <view class="member-avatar">{{ member.name.charAt(0) }}</view>
@@ -98,13 +98,6 @@ const members = ref([
 .stats-label {
   font-size: 28rpx;
   color: #999;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .member-card {

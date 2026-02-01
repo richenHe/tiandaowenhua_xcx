@@ -7,7 +7,7 @@
 
     <!-- 环境状态 -->
     <view class="section">
-      <view class="section-title">环境状态</view>
+      <view class="t-section-title t-section-title--simple">环境状态</view>
       <view class="status-card" :class="{ 'status-error': !envValid }">
         <text class="status-text">{{ envStatus }}</text>
       </view>
@@ -15,7 +15,7 @@
 
     <!-- 认证功能 -->
     <view class="section">
-      <view class="section-title">身份认证</view>
+      <view class="t-section-title t-section-title--simple">身份认证</view>
       <view class="auth-info">
         <text class="auth-text">登录状态: {{ loginStatus }}</text>
       </view>
@@ -31,7 +31,7 @@
 
     <!-- 云函数调用 -->
     <view class="section">
-      <view class="section-title">云函数调用</view>
+      <view class="t-section-title t-section-title--simple">云函数调用</view>
       <button class="btn btn-primary" @click="callCloudFunction" :disabled="loading">
         调用 hello 函数
       </button>
@@ -43,7 +43,7 @@
 
     <!-- 调用云托管服务 -->
     <view class="section">
-      <view class="section-title">云托管服务</view>
+      <view class="t-section-title t-section-title--simple">云托管服务</view>
       <button class="btn btn-primary" @click="callCloudRunFunction" :disabled="loading">
         调用云托管服务
       </button>
@@ -55,7 +55,7 @@
 
     <!-- 数据库操作 -->
     <view class="section">
-      <view class="section-title">数据库操作</view>
+      <view class="t-section-title t-section-title--simple">数据库操作</view>
       <view class="input-group">
         <input 
           class="input" 
@@ -80,7 +80,7 @@
 
     <!-- 数据库监听(websoket测试) -->
     <view class="section">
-      <view class="section-title">数据库监听</view>
+      <view class="t-section-title t-section-title--simple">数据库监听</view>
       <button class="btn btn-primary" @click="startListening" :disabled="loading">
         开始监听
       </button>
@@ -95,7 +95,7 @@
 
     <!-- 文件上传 -->
     <view class="section">
-      <view class="section-title">文件上传</view>
+      <view class="t-section-title t-section-title--simple">文件上传</view>
       <button class="btn btn-primary" @click="chooseAndUploadFile" :disabled="loading">
         选择并上传文件
       </button>
@@ -111,7 +111,7 @@
 
     <!-- 文件下载 -->
     <view class="section">
-      <view class="section-title">文件下载</view>
+      <view class="t-section-title t-section-title--simple">文件下载</view>
       <button class="btn btn-primary" @click="downloadFile" :disabled="loading">
         下载文件
       </button>
@@ -500,13 +500,6 @@ const downloadFile = async () => {
   padding: 30rpx;
   margin-bottom: 30rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 20rpx;
 }
 
 .status-card {

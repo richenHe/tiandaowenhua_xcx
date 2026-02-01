@@ -13,7 +13,7 @@
         </view>
 
         <!-- 已签署协议 -->
-        <view class="section-title">📋 已签署协议</view>
+        <view class="t-section-title t-section-title--simple">📋 已签署协议</view>
 
         <!-- 协议列表 -->
         <view 
@@ -63,40 +63,9 @@
             <button class="t-button t-button--outline" @click.stop="handleViewDetail(contract.id)">
               <text class="t-button__text">查看详情</text>
             </button>
-            <button class="t-button t-button--outline" @click.stop="handleDownload(contract.id)">
-              <text class="t-button__text">下载PDF</text>
-            </button>
           </view>
         </view>
 
-        <!-- 协议说明 -->
-        <view class="t-card">
-          <view class="t-card__header">
-            <text class="card-title">📖 协议说明</text>
-          </view>
-          <view class="t-card__body">
-            <view class="description-content">
-              <view class="desc-section">
-                <text class="desc-title">协议类型：</text>
-              </view>
-              <view class="desc-item">• <text class="desc-bold">传播大使合作协议</text>：青鸾大使签署，合同期1年</view>
-              <view class="desc-item">• <text class="desc-bold">鸿鹄大使补充协议</text>：鸿鹄大使签署，与原协议关联</view>
-
-              <view class="desc-section">
-                <text class="desc-title">协议状态：</text>
-              </view>
-              <view class="desc-item">• <text class="desc-bold">有效</text>：协议在合同期内</view>
-              <view class="desc-item">• <text class="desc-bold">已到期</text>：协议已过期，需续签</view>
-
-              <view class="desc-section">
-                <text class="desc-title">特别说明：</text>
-              </view>
-              <view class="desc-item">• 准青鸾大使无需签署协议</view>
-              <view class="desc-item">• 只有正式青鸾大使及以上才需签署</view>
-              <view class="desc-item">• 协议到期前30天会收到续签提醒</view>
-            </view>
-          </view>
-        </view>
       </view>
 
       <!-- 底部留白 -->
@@ -131,23 +100,14 @@ const goBack = () => {
 
 // 跳转到协议详情
 const goToContractDetail = (id: number) => {
-  uni.showToast({
-    title: '查看协议详情',
-    icon: 'none'
+  uni.navigateTo({
+    url: `/pages/ambassador/contract-detail/index?id=${id}`
   })
 }
 
 // 查看详情
 const handleViewDetail = (id: number) => {
   goToContractDetail(id)
-}
-
-// 下载PDF
-const handleDownload = (id: number) => {
-  uni.showToast({
-    title: '下载功能开发中',
-    icon: 'none'
-  })
 }
 </script>
 
@@ -194,14 +154,6 @@ const handleDownload = (id: number) => {
   font-size: 26rpx;
   color: $td-text-color-secondary;
   line-height: 1.6;
-}
-
-// 分区标题
-.section-title {
-  font-size: 28rpx;
-  color: $td-text-color-secondary;
-  margin-bottom: 24rpx;
-  padding-left: 8rpx;
 }
 
 // 卡片样式

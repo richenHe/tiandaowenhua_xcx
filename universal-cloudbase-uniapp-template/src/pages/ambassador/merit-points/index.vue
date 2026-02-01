@@ -55,12 +55,12 @@
 
         <!-- 功能按钮 -->
         <view class="action-grid">
-          <button class="action-btn">兑换商品</button>
-          <button class="action-btn">兑换课程</button>
+          <button class="action-btn" @click="goToMall">兑换商品</button>
+          <button class="action-btn" @click="goToMall">兑换课程</button>
         </view>
 
         <!-- 获得途径统计 -->
-        <view class="section-title">📊 获得途径统计</view>
+        <view class="t-section-title t-section-title--simple">📊 获得途径统计</view>
         <view class="stats-card">
           <view class="stats-grid">
             <view class="stats-item">
@@ -90,7 +90,7 @@
         </view>
 
         <!-- 功德分明细列表 -->
-        <view class="section-title">💎 明细记录</view>
+        <view class="t-section-title t-section-title--simple">💎 明细记录</view>
 
         <!-- 推荐奖励记录 -->
         <view class="record-card">
@@ -233,6 +233,12 @@ const scrollHeight = computed(() => {
 const handleBack = () => {
   uni.navigateBack()
 }
+
+const goToMall = () => {
+  uni.navigateTo({
+    url: '/pages/mall/index'
+  })
+}
 </script>
 
 <style scoped lang="scss">
@@ -336,13 +342,6 @@ const handleBack = () => {
   &::after {
     border: none;
   }
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .stats-card {

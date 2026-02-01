@@ -28,7 +28,7 @@
       </view>
 
       <!-- 核心理念 -->
-      <view class="section-title">💡 核心理念</view>
+      <view class="t-section-title t-section-title--simple">💡 核心理念</view>
       <view class="concepts-list">
         <view 
           v-for="(concept, index) in concepts" 
@@ -50,7 +50,7 @@
       </view>
 
       <!-- 讲师团队 -->
-      <view class="section-title">👨‍🏫 讲师团队</view>
+      <view class="t-section-title t-section-title--simple">👨‍🏫 讲师团队</view>
       <view class="t-card t-card--bordered section-card">
         <view class="t-card__body">
           <view 
@@ -72,7 +72,7 @@
       </view>
 
       <!-- 发展历程 -->
-      <view class="section-title">📅 发展历程</view>
+      <view class="t-section-title t-section-title--simple">📅 发展历程</view>
       <view class="t-card t-card--bordered section-card">
         <view class="t-card__body">
           <view class="timeline">
@@ -92,7 +92,7 @@
       </view>
 
       <!-- 荣誉资质 -->
-      <view class="section-title">🏆 荣誉资质</view>
+      <view class="t-section-title t-section-title--simple">🏆 荣誉资质</view>
       <view class="honors-grid">
         <view 
           v-for="(honor, index) in honors" 
@@ -311,14 +311,6 @@ const contacts = ref([
 }
 
 // 分节标题
-.section-title {
-  font-size: $td-font-size-m;
-  font-weight: $td-font-weight-semibold;
-  color: $td-text-color-primary;
-  margin-bottom: 24rpx;
-  margin-top: 16rpx;
-}
-
 // 核心理念列表
 .concepts-list {
   display: flex;

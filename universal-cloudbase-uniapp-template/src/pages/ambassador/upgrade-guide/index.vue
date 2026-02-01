@@ -19,7 +19,7 @@
         </view>
 
         <!-- 升级路径图 -->
-        <view class="section-title">📍 升级路径</view>
+        <view class="t-section-title t-section-title--simple">📍 升级路径</view>
         <view class="path-card">
           <view class="path-item">
             <view class="path-icon">🥚</view>
@@ -43,7 +43,7 @@
         </view>
 
         <!-- 升级到鸿鹄大使 -->
-        <view class="section-title">🎯 下一等级：鸿鹄大使</view>
+        <view class="t-section-title t-section-title--simple">🎯 下一等级：鸿鹄大使</view>
 
         <!-- 升级条件 -->
         <view class="upgrade-card">
@@ -227,13 +227,6 @@ const goToContractSign = () => {
 .level-name {
   font-size: 48rpx;
   font-weight: 700;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .path-card {

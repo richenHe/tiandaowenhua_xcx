@@ -32,7 +32,7 @@
         </view>
 
         <!-- 使用说明 -->
-        <view class="section-title">📖 使用说明</view>
+        <view class="t-section-title t-section-title--simple">📖 使用说明</view>
         <view class="info-card">
           <view class="info-item">
             <view class="info-icon">1️⃣</view>
@@ -162,13 +162,6 @@ const shareQrcode = () => {
   width: 2rpx;
   height: 80rpx;
   background: #E5E5E5;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 24rpx;
 }
 
 .info-card {

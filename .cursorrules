@@ -1,32 +1,64 @@
 # 项目开发规范
 
-## 🎯 核心原则
+## 核心原则
 
 **必须使用 TDesign CSS 类名，禁止使用 Vue 组件或自定义类名**
 
 ---
 
-## ✅ 强制规范
+## 强制规范
 
-### 1. 组件样式规范
+### 1. 页面底部留空
+- 所有可滚动页面必须添加 `pb-xxl` (120rpx) 底部留白
+- 适用于表单、列表、详情等所有有固定底部按钮的页面
 
-#### ❌ 禁止
-- 使用 TDesign Vue 组件（`<TdCard>`、`<TdButton>`、`<TdDialog>` 等）
-- 创建自定义样式类（`.custom-xxx`）
-- 硬编码颜色值（`color: #0052D9`）
-- 导入 TDesign 组件（`import TdDialog from '@/components/tdesign/TdDialog.vue'`）
+### 2. 组件样式规范
 
-#### ✅ 必须
+**禁止**
+- TDesign Vue 组件（`<TdCard>`、`<TdButton>` 等）
+- 自定义样式类（`.custom-xxx`）
+- 硬编码颜色值
+
+**必须**
 - 使用 TDesign CSS 类名（`.t-card`、`.t-button` 等）
 - 个性化样式使用 inline style
-- 颜色使用 CSS 变量（`var(--td-brand-color)`）
+- 颜色使用 SCSS 变量（`$td-brand-color`）
 
-### 2. 弹窗规范 ⚠️ 重要
+### 3. CSS 组件管理
 
-**必须使用原生微信弹窗 `uni.showModal`**
+**使用流程**
+1. 先查看 `src/styles/components/index.scss`
+2. 优先使用现有组件
+3. 仅在必要时新增组件
+
+**新增组件要求**
+- 使用 BEM 命名（`.t-block__element--modifier`）
+- 必须可复用、独立
+- 使用 SCSS 变量，不硬编码
+- 更新 `index.scss` 导入
+
+### 4. 从原型图迁移样式
+
+**关键转换规则**
+- CSS 变量 `var(--td-xxx)` → SCSS 变量 `$td-xxx`
+- 单位 `px` → `rpx`（1px = 2rpx）
+- 必须导入 `@import '@/styles/tdesign-vars.scss'`
+
+**常见变量对照**
+```
+--td-section-spacing  → $td-section-spacing  (48rpx)
+--td-card-spacing     → $td-card-spacing     (24rpx)
+--td-font-size-base   → $td-font-size-base   (28rpx)
+--td-font-weight-medium → $td-font-weight-medium (500)
+--td-text-color-secondary → $td-text-color-secondary (#5E5E5E)
+--td-border-level-1   → $td-border-level-1   (#E7E7E7)
+```
+
+### 5. 弹窗规范
+
+**必须使用** `uni.showModal`，禁止自定义弹窗组件
 
 ```js
-// ✅ 正确
 uni.showModal({
   title: '提示',
   content: '确定要取消吗？',
@@ -34,74 +66,99 @@ uni.showModal({
   cancelText: '取消',
   success: (res) => {
     if (res.confirm) { /* 确定 */ }
-    else if (res.cancel) { /* 取消 */ }
   }
 })
-
-// ❌ 禁止
-<TdDialog v-model:visible="visible" />
-<view v-if="showDialog" class="t-dialog-overlay">...</view>
 ```
 
 ---
 
-## 📚 可用组件速查
+## 可用组件速查
+
+**使用前必查：`src/styles/components/index.scss`**
 
 ### 基础组件
-1. **Card** - `.t-card`、`.t-card--bordered`、`.t-card__body`
-2. **Button** - `.t-button`、`.t-button--theme-primary`、`.t-button--size-large`
-3. **Badge** - `.t-badge--standalone`、`.t-badge--theme-success`
-4. **Avatar** - `.t-avatar`、`.t-avatar--theme-primary`、`.t-avatar__text`
-5. **Alert** - `.t-alert`、`.t-alert--theme-info`、`.t-alert__message`
-6. **Divider** - `.t-divider`、`.t-divider--dashed`
+- Card: `.t-card`、`.t-card--bordered`
+- Button: `.t-button`、`.t-button--primary`、`.t-button--block`
+- Badge: `.t-badge`、`.t-badge--theme-success`
+- Avatar: `.t-avatar`、`.t-avatar__text`
+- Alert: `.t-alert`、`.t-alert--theme-info`
+
+### 表单组件
+- Form: `.t-form`、`.t-form-item`、`.t-form-item__label`
+- Input: `.t-input`、`.t-input__inner`、`.t-input-group--grid-4`
+- Radio: `.t-radio-group`、`.t-radio-item`
+- Picker: `.t-picker-box`、`.t-picker__text`
+
+### 数据展示
+- List: `.t-list`、`.t-list-item`
+- Cell: `.t-cell`、`.t-cell__title`
 
 ### 布局组件
-7. **PageHeader** - `.t-page-header`、`.t-page-header--fixed`、`.t-page-header__navbar`
-8. **CapsuleTabs** - `.t-capsule-tabs`、`.t-capsule-tabs__item--active`
-9. **Tabs** - `.t-tabs`、`.t-tabs__nav-item`、`.t-is-active`
+- PageHeader: `.t-page-header`、`.t-page-header--fixed`
+- PageFooter: `.t-page-footer--fixed`
+- Tabs: `.t-tabs`、`.t-tabs__nav-item`
+- SectionTitle: `.t-section-title`、`.t-section-title--simple`
+
+### 反馈组件
+- Dialog: 使用 `uni.showModal`（禁止自定义）
+- Popup: `.t-popup`、`.t-popup--bottom`
 
 ---
 
-## 🎨 CSS 变量
-
-- `--td-brand-color` - 品牌色
-- `--td-success-color` - 成功色
-- `--td-warning-color` - 警告色
-- `--td-error-color` - 错误色
-- `--td-text-color-primary` - 主要文字色
-- `--td-text-color-secondary` - 次要文字色
-- `--td-bg-color-container` - 容器背景色
-- `--td-border-level-1` - 边框色
-
----
-
-## ✅ Code Review 检查清单
-
-- [ ] 没有使用 TDesign Vue 组件
-- [ ] 没有创建自定义样式类
-- [ ] 所有组件都使用 TDesign CSS 类名
-- [ ] 弹窗统一使用 `uni.showModal`
-- [ ] 没有使用自定义弹窗组件或内联弹窗
-- [ ] 个性化样式使用 inline style
-- [ ] 颜色使用 CSS 变量
-- [ ] 没有硬编码颜色值
-
----
-
-## 📁 样式文件位置
-
-所有 TDesign CSS 样式已在 `App.vue` 中全局导入，无需单独导入。
+## 样式文件结构
 
 ```
 src/styles/components/
-  ├── index.scss
-  ├── card.scss, button.scss, badge.scss
-  ├── page-header.scss, capsule-tabs.scss
-  └── ...
+  ├── index.scss          # 样式入口（必查）
+  ├── 基础组件/
+  │   ├── button.scss
+  │   ├── card.scss
+  │   ├── badge.scss
+  │   ├── avatar.scss
+  │   └── ...
+  ├── 表单组件/
+  │   ├── form.scss
+  │   ├── input.scss
+  │   └── ...
+  ├── 布局组件/
+  │   ├── page-header.scss
+  │   ├── section-title.scss
+  │   └── ...
+  └── 反馈组件/
+      ├── dialog.scss
+      └── ...
 ```
 
 ---
 
-## 🎯 总结
+## Code Review 检查清单
 
-**优先级：TDesign CSS 类名 > inline style > 禁止 Vue 组件**
+### 样式检查
+- [ ] 使用 TDesign CSS 类名，无自定义类
+- [ ] 弹窗使用 `uni.showModal`
+- [ ] 颜色使用 SCSS 变量，无硬编码
+
+### 组件管理检查
+- [ ] 已查看 `index.scss`，优先使用现有组件
+- [ ] 新增组件符合 BEM 规范且可复用
+- [ ] 新增组件已在 `index.scss` 中导入
+
+### 原型图迁移检查
+- [ ] CSS 变量已转换为 SCSS 变量（`var(--xxx)` → `$xxx`）
+- [ ] 已导入 `@import '@/styles/tdesign-vars.scss'`
+- [ ] 单位已转换（px → rpx）
+- [ ] 视觉效果与原型图一致
+
+---
+
+## 样式使用优先级
+
+```
+1. TDesign 现有 CSS 类名（先查 index.scss）
+   ↓
+2. 可复用组件样式（添加到 components/*.scss）
+   ↓
+3. inline style（仅用于个性化、不可复用的样式）
+   ↓
+4. 禁止 Vue 组件 / 自定义类名
+```
