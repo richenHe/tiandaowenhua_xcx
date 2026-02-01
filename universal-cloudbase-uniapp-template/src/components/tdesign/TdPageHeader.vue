@@ -9,7 +9,7 @@
       <view class="td-page-header__left" @click="handleLeftClick">
         <slot name="left">
           <view v-if="showBack" class="td-page-header__back">
-            <text class="td-page-header__back-icon">←</text>
+            <view class="td-page-header__back-icon"></view>
             <text v-if="backText" class="td-page-header__back-text">{{ backText }}</text>
           </view>
         </slot>
@@ -174,7 +174,12 @@ const handleLeftClick = () => {
 }
 
 .td-page-header__back-icon {
-  font-size: 36rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border-left: 6rpx solid $td-text-color-primary;
+  border-bottom: 6rpx solid $td-text-color-primary;
+  transform: rotate(45deg);
+  margin-right: 8rpx;
 }
 
 .td-page-header__back-text {
