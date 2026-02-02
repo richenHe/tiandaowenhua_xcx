@@ -9,13 +9,21 @@
     <scroll-view class="scroll-content" scroll-y>
       <!-- 积分横幅 -->
       <view class="points-banner">
-        <view class="points-info">
-          <text class="points-label">可用积分</text>
-          <text class="points-value">{{ userPoints }}</text>
+        <view class="points-section">
+          <view class="points-info">
+            <text class="points-label">💎 功德分</text>
+            <text class="points-value">{{ userMeritPoints }}</text>
+          </view>
+          <view class="points-info">
+            <text class="points-label">💰 积分</text>
+            <text class="points-value">{{ userCashPoints }}</text>
+          </view>
         </view>
-        <button class="points-detail-btn" @click="goToPointsDetail">
-          <text class="btn-text">积分明细</text>
-        </button>
+        <view @click="goToPointsDetail">
+          <button class="t-button t-button--theme-default t-button--variant-base t-button--size-small" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white;">
+            <span class="t-button__text">明细</span>
+          </button>
+        </view>
       </view>
 
       <view class="page-content">
@@ -55,9 +63,11 @@
                 <text class="product-stock">库存: {{ product.stock }}件</text>
                 <view class="product-footer">
                   <text class="product-points">{{ product.points }}积分</text>
-                  <button class="product-btn" @click.stop="handleExchange(product)">
-                    <text class="btn-text">兑换</text>
-                  </button>
+                  <view @click.stop="handleExchange(product)">
+                    <button class="t-button t-button--theme-default t-button--variant-base t-button--size-small">
+                      <span class="t-button__text">兑换</span>
+                    </button>
+                  </view>
                 </view>
               </view>
             </view>
@@ -107,11 +117,11 @@
                   </view>
                   <button 
                     class="course-btn"
-                    :class="{ 'course-btn--disabled': course.points > userPoints }"
-                    :disabled="course.points > userPoints"
+                    :class="{ 'course-btn--disabled': !canAfford(course.points) }"
+                    :disabled="!canAfford(course.points)"
                     @click.stop="handleExchangeCourse(course)"
                   >
-                    <text class="btn-text">{{ course.points > userPoints ? '积分不足' : '立即兑换' }}</text>
+                    <text class="btn-text">{{ canAfford(course.points) ? '立即兑换' : '积分不足' }}</text>
                   </button>
                 </view>
               </view>
@@ -140,12 +150,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import CapsuleTabs from '@/components/CapsuleTabs.vue'
-import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { ref, computed, onMounted } from 'vue';
+import CapsuleTabs from '@/components/CapsuleTabs.vue';
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { calculateMixedPayment } from '@/utils/mixed-payment-calculator';
 
-// 用户积分
-const userPoints = ref(2580)
+// 用户功德分和积分
+const userMeritPoints = ref(1500); // 功德分
+const userCashPoints = ref(2580); // 积分（可提现）
 
 // 主Tab
 const mainTabs = ['兑换商品', '兑换课程']
@@ -156,7 +168,13 @@ const mainTabOptions = [
 ]
 
 // 页面标题
-const pageTitle = computed(() => mainTabs[activeMainTab.value])
+const pageTitle = computed(() => mainTabs[activeMainTab.value]);
+
+// 判断是否有足够的功德分和积分兑换
+const canAfford = (requiredPoints: number) => {
+  const totalAvailable = userMeritPoints.value + userCashPoints.value;
+  return totalAvailable >= requiredPoints;
+};
 
 // 商品分类
 const categories = ['全部', '文具', '生活', '周边']
@@ -276,27 +294,54 @@ const handleProductClick = (product: any) => {
 
 // 兑换商品
 const handleExchange = (product: any) => {
-  if (userPoints.value < product.points) {
-    uni.showToast({
-      title: '积分不足',
-      icon: 'none'
-    })
-    return
+  // 计算混合支付方案
+  const paymentPlan = calculateMixedPayment(
+    product.points,
+    userMeritPoints.value,
+    userCashPoints.value
+  );
+
+  // 如果需要现金支付，提示用户
+  if (paymentPlan.needsCashPayment) {
+    uni.showModal({
+      title: '功德分和积分不足',
+      content: `兑换${product.name}需要${product.points}功德分。您的功德分和积分不足以完成兑换，请先充值或获取更多积分。`,
+      showCancel: false,
+    });
+    return;
   }
+
+  // 构建确认内容
+  let confirmContent = `兑换 ${product.name}\n`;
+  confirmContent += `需要功德分: ${product.points}\n\n`;
+  
+  // 如果需要使用积分抵扣，增加明确提示
+  if (paymentPlan.cashPointsToUse > 0) {
+    confirmContent += `⚠️ 功德分不足，需要积分抵扣\n\n`;
+  }
+  
+  confirmContent += `将扣除:\n`;
+  confirmContent += `• 功德分: ${paymentPlan.meritPointsToUse}\n`;
+  if (paymentPlan.cashPointsToUse > 0) {
+    confirmContent += `• 积分(抵扣): ${paymentPlan.cashPointsToUse}\n`;
+  }
+  confirmContent += `\n剩余:\n`;
+  confirmContent += `• 功德分: ${paymentPlan.remainingMeritPoints}\n`;
+  confirmContent += `• 积分: ${paymentPlan.remainingCashPoints}`;
 
   uni.showModal({
     title: '确认兑换',
-    content: `确定使用${product.points}积分兑换${product.name}吗？`,
+    content: confirmContent,
+    confirmText: '确认兑换',
+    cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
-        uni.showToast({
-          title: '兑换成功',
-          icon: 'success'
-        })
+        // 调用后端API兑换
+        performExchange('goods', product.id, paymentPlan);
       }
-    }
-  })
-}
+    },
+  });
+};
 
 // 点击课程
 const handleCourseClick = (course: any) => {
@@ -308,27 +353,98 @@ const handleCourseClick = (course: any) => {
 
 // 兑换课程
 const handleExchangeCourse = (course: any) => {
-  if (userPoints.value < course.points) {
-    uni.showToast({
-      title: '积分不足',
-      icon: 'none'
-    })
-    return
+  // 计算混合支付方案
+  const paymentPlan = calculateMixedPayment(
+    course.points,
+    userMeritPoints.value,
+    userCashPoints.value
+  );
+
+  // 如果需要现金支付，提示用户
+  if (paymentPlan.needsCashPayment) {
+    uni.showModal({
+      title: '功德分和积分不足',
+      content: `兑换《${course.name}》需要${course.points}功德分。您的功德分和积分不足以完成兑换，请先充值或获取更多积分。`,
+      showCancel: false,
+    });
+    return;
   }
+
+  // 构建确认内容
+  let confirmContent = `兑换课程: ${course.name}\n`;
+  confirmContent += `需要功德分: ${course.points}\n\n`;
+  
+  // 如果需要使用积分抵扣，增加明确提示
+  if (paymentPlan.cashPointsToUse > 0) {
+    confirmContent += `⚠️ 功德分不足，需要积分抵扣\n\n`;
+  }
+  
+  confirmContent += `将扣除:\n`;
+  confirmContent += `• 功德分: ${paymentPlan.meritPointsToUse}\n`;
+  if (paymentPlan.cashPointsToUse > 0) {
+    confirmContent += `• 积分(抵扣): ${paymentPlan.cashPointsToUse}\n`;
+  }
+  confirmContent += `\n剩余:\n`;
+  confirmContent += `• 功德分: ${paymentPlan.remainingMeritPoints}\n`;
+  confirmContent += `• 积分: ${paymentPlan.remainingCashPoints}`;
 
   uni.showModal({
     title: '确认兑换',
-    content: `确定使用${course.points}积分兑换《${course.name}》课程吗？`,
+    content: confirmContent,
+    confirmText: '确认兑换',
+    cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
-        uni.showToast({
-          title: '兑换成功',
-          icon: 'success'
-        })
+        // 调用后端API兑换
+        performExchange('course', course.id, paymentPlan);
       }
-    }
-  })
-}
+    },
+  });
+};
+
+// 执行兑换
+const performExchange = async (
+  type: 'goods' | 'course',
+  itemId: number,
+  paymentPlan: ReturnType<typeof calculateMixedPayment>
+) => {
+  console.log('Performing exchange:', { type, itemId, paymentPlan });
+
+  // 模拟API调用
+  uni.showLoading({ title: '兑换中...' });
+
+  setTimeout(() => {
+    uni.hideLoading();
+
+    // 更新本地功德分和积分
+    userMeritPoints.value = paymentPlan.remainingMeritPoints;
+    userCashPoints.value = paymentPlan.remainingCashPoints;
+
+    uni.showToast({
+      title: '兑换成功',
+      icon: 'success',
+      duration: 2000,
+    });
+
+    // 实际应该调用: POST /api/merit-points/exchange
+    // body: {
+    //   goods_id: itemId (if type === 'goods'),
+    //   course_id: itemId (if type === 'course'),
+    //   merit_points_used: paymentPlan.meritPointsToUse,
+    //   cash_points_used: paymentPlan.cashPointsToUse
+    // }
+  }, 1500);
+};
+
+onMounted(() => {
+  fetchUserPoints();
+});
+
+// 模拟获取用户功德分和积分
+const fetchUserPoints = () => {
+  console.log('Fetching user points...');
+  // 实际应该调用 API 获取用户功德分和积分
+};
 </script>
 
 <style lang="scss" scoped>
@@ -360,6 +476,11 @@ const handleExchangeCourse = (course: any) => {
   justify-content: space-between;
 }
 
+.points-section {
+  display: flex;
+  gap: 48rpx;
+}
+
 .points-info {
   display: flex;
   flex-direction: column;
@@ -375,19 +496,6 @@ const handleExchangeCourse = (course: any) => {
   font-size: 48rpx;
   font-weight: 700;
   color: #FFFFFF;
-}
-
-.points-detail-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: #FFFFFF;
-  padding: 12rpx 32rpx;
-  border-radius: $td-radius-default;
-  font-size: 26rpx;
-
-  &::after {
-    border: none;
-  }
 }
 
 .page-content {
@@ -460,34 +568,10 @@ const handleExchangeCourse = (course: any) => {
   color: $td-warning-color;
 }
 
-.product-btn {
-  background-color: #E6F4FF;
-  color: $td-brand-color;
-  padding: 8rpx 24rpx;
-  border-radius: $td-radius-default;
-  font-size: 24rpx;
-  border: none;
-
-  &::after {
-    border: none;
-  }
-}
-
 // 加载更多
 .load-more {
   text-align: center;
   padding: 40rpx 0;
-}
-
-.load-more-btn {
-  background: transparent;
-  color: $td-text-color-secondary;
-  font-size: 26rpx;
-  border: none;
-
-  &::after {
-    border: none;
-  }
 }
 
 // 提示框

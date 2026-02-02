@@ -14,8 +14,8 @@
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="info-row">
-              <text class="info-label">课程名称</text>
-              <text class="info-value">{{ orderInfo.courseName }}</text>
+              <text class="info-label">订单名称</text>
+              <text class="info-value">{{ orderInfo.orderName }}</text>
             </view>
             <view class="info-row">
               <text class="info-label">订单号</text>
@@ -49,27 +49,6 @@
           </view>
         </view>
 
-        <view
-          class="payment-method"
-          :class="{ 'payment-method--selected': selectedPayment === 'alipay' }"
-          @click="selectedPayment = 'alipay'"
-        >
-          <view class="payment-method__content">
-            <view class="payment-method__left">
-              <text class="payment-method__icon">💙</text>
-              <view class="payment-method__info">
-                <view class="payment-method__name">支付宝</view>
-                <view class="payment-method__desc">快捷支付</view>
-              </view>
-            </view>
-            <view
-              class="payment-method__radio"
-              :class="{ 'payment-method__radio--checked': selectedPayment === 'alipay' }"
-            >
-              <text v-if="selectedPayment === 'alipay'" class="radio-check">✓</text>
-            </view>
-          </view>
-        </view>
 
         <!-- 温馨提示 -->
         <view class="t-alert t-alert--theme-warning" style="margin-top: 48rpx;">
@@ -97,7 +76,8 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 // 订单信息
 const orderInfo = ref({
   orderNo: '2024010112345678',
-  courseName: '初探班',
+  orderName: '初探班',
+  orderType: 1, // 1-课程购买, 2-复训费, 4-大使升级
   amount: 1688,
 });
 

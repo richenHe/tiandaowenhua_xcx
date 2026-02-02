@@ -189,16 +189,23 @@
         "navigationStyle": "custom"
       }
     },
-		{
-			"path": "pages/ambassador/cash-points/index",
-			"style": {
+	{
+		"path": "pages/ambassador/cash-points/index",
+		"style": {
         "navigationBarTitleText": "积分管理",
         "navigationStyle": "custom"
       }
     },
-		{
-			"path": "pages/ambassador/upgrade-guide/index",
-			"style": {
+	{
+		"path": "pages/ambassador/exchange-records/index",
+		"style": {
+        "navigationBarTitleText": "兑换记录",
+        "navigationStyle": "custom"
+      }
+    },
+	{
+		"path": "pages/ambassador/upgrade-guide/index",
+		"style": {
         "navigationBarTitleText": "升级指南",
         "navigationStyle": "custom"
       }

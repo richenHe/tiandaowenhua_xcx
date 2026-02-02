@@ -180,9 +180,11 @@
         </view>
 
         <!-- CTA按钮 -->
-        <button class="cta-btn" @tap="goToCourseDetail">
-          🚀 立即开始学习
-        </button>
+        <view @tap="goToCourseDetail">
+          <button class="t-button t-button--theme-default t-button--variant-base t-button--block t-button--size-large">
+            <span class="t-button__text">🚀 立即开始学习</span>
+          </button>
+        </view>
 
         <!-- 底部留白 -->
         <view style="height: 120rpx;"></view>
@@ -480,21 +482,6 @@ const goToCourseDetail = () => {
   line-height: 1.6;
 }
 
-.cta-btn {
-  width: 100%;
-  height: 88rpx;
-  background: #E6F4FF;
-  color: #0052D9;
-  border-radius: 12rpx;
-  font-size: 32rpx;
-  font-weight: 500;
-  border: none;
-  margin-bottom: 48rpx;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 
 

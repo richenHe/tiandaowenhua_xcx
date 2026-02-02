@@ -50,8 +50,16 @@
 
         <!-- 操作按钮 -->
         <view class="action-buttons">
-          <button class="action-btn primary" @tap="saveQrcode">保存二维码</button>
-          <button class="action-btn default" @tap="shareQrcode">分享给好友</button>
+          <view @tap="saveQrcode">
+            <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+              <span class="t-button__text">💾 保存二维码</span>
+            </button>
+          </view>
+          <view @tap="shareQrcode">
+            <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+              <span class="t-button__text">📤 分享给好友</span>
+            </button>
+          </view>
         </view>
 
         <!-- 底部留白 -->
@@ -199,26 +207,5 @@ const shareQrcode = () => {
   gap: 24rpx;
 }
 
-.action-btn {
-  height: 88rpx;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  border: none;
-  
-  &.primary {
-    background: #E6F4FF;
-    color: #0052D9;
-  }
-  
-  &.default {
-    background: #fff;
-    color: #333;
-    border: 2rpx solid #E5E5E5;
-  }
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 

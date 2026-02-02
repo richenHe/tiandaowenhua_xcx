@@ -35,12 +35,23 @@
 
     <!-- 页面内容 -->
     <view class="page-content">
-      <!-- 通知提示栏 -->
+      <!-- 通知提示栏 - 轮播公告 -->
       <view class="notice-bar" @click="goToAnnouncement">
         <view class="t-alert t-alert--theme-info">
           <view class="t-alert__icon">📢</view>
           <view class="t-alert__content">
-            <text class="t-alert__message">【重要】初探班第12期即将开课</text>
+            <swiper 
+              class="announcement-swiper" 
+              :vertical="true"
+              :autoplay="true"
+              :interval="3000" 
+              :duration="500"
+              :circular="true"
+            >
+              <swiper-item v-for="(announcement, index) in announcementList" :key="index">
+                <text class="t-alert__message">{{ announcement.title }}</text>
+              </swiper-item>
+            </swiper>
           </view>
           <view class="t-alert__close">›</view>
         </view>
@@ -110,6 +121,13 @@ const currentBannerIndex = ref(0);
 const currentTab = ref('all');
 // 日历弹窗显示状态
 const calendarVisible = ref(false);
+
+// 公告列表数据
+const announcementList = ref([
+  { id: 1, title: '【重要】初探班第12期即将开课' },
+  { id: 2, title: '【通知】密训班报名火热进行中' },
+  { id: 3, title: '【提醒】学员请及时完成课程预约' }
+]);
 
 // 轮播图数据
 const bannerList = ref([
@@ -236,7 +254,7 @@ const loadCalendarPriceData = async () => {
 
 // 跳转到公告页面
 const goToAnnouncement = () => {
-  uni.navigateTo({ url: '/pages/common/announcement' });
+  uni.navigateTo({ url: '/pages/common/announcement/index' });
 };
 
 // 跳转到课程详情
@@ -356,20 +374,40 @@ swiper-item {
   &__icon {
     font-size: 32rpx;
     margin-right: 16rpx;
+    flex-shrink: 0;
   }
   
   &__content {
     flex: 1;
+    overflow: hidden;
+    height: 44rpx; // 固定高度以适配轮播
   }
   
   &__message {
     font-size: $td-font-size-base;
     color: $td-text-color-primary;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   &__close {
     font-size: 40rpx;
     color: $td-text-color-secondary;
+    flex-shrink: 0;
+  }
+}
+
+// 公告轮播
+.announcement-swiper {
+  width: 100%;
+  height: 44rpx;
+  
+  swiper-item {
+    display: flex;
+    align-items: center;
+    height: 44rpx;
   }
 }
 

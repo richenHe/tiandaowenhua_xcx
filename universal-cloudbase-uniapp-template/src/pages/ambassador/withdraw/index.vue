@@ -121,9 +121,11 @@
 
     <!-- 底部提交按钮 -->
     <view class="fixed-bottom">
-      <button class="submit-btn" @tap="handleWithdraw">
-        确认提现 {{ withdrawAmount ? '¥' + withdrawAmount : '' }}
-      </button>
+      <view @tap="handleWithdraw">
+        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+          <span class="t-button__text">💰 确认提现 {{ withdrawAmount ? '¥' + withdrawAmount : '' }}</span>
+        </button>
+      </view>
     </view>
   </view>
 </template>
@@ -434,19 +436,5 @@ const handleWithdraw = () => {
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
-.submit-btn {
-  width: 100%;
-  height: 88rpx;
-  background: #E6F4FF;
-  color: #0052D9;
-  border-radius: 12rpx;
-  font-size: 32rpx;
-  font-weight: 500;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 

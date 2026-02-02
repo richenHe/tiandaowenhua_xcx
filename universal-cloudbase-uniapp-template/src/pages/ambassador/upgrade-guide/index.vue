@@ -11,10 +11,10 @@
         
         <!-- 当前等级卡片 -->
         <view class="current-level-card">
-          <view class="level-icon">🐦</view>
+          <view class="level-icon">{{ currentLevelInfo.icon }}</view>
           <view class="level-info">
             <view class="level-label">当前等级</view>
-            <view class="level-name">青鸾大使</view>
+            <view class="level-name">{{ currentLevelInfo.name }}</view>
           </view>
         </view>
 
@@ -42,16 +42,52 @@
           </view>
         </view>
 
-        <!-- 升级到鸿鹄大使 -->
-        <view class="t-section-title t-section-title--simple">🎯 下一等级：鸿鹄大使</view>
+        <!-- 下一等级标题 -->
+        <view v-if="nextLevelInfo" class="t-section-title t-section-title--simple">
+          🎯 下一等级：{{ nextLevelInfo.name }}
+        </view>
 
-        <!-- 升级条件 -->
-        <view class="upgrade-card">
+        <!-- 升级条件 - 准青鸾升级到青鸾 -->
+        <view v-if="currentLevel === 1" class="upgrade-card">
           <view class="card-header">
             <view class="card-title">📋 升级条件</view>
           </view>
           <view class="card-body">
-            
+            <!-- 步骤1：推荐初探班 -->
+            <view class="step-item">
+              <view class="step-number">1</view>
+              <view class="step-content">
+                <view class="step-title">推荐初探班课程</view>
+                <view v-if="hasRecommendedCourse" class="step-desc">
+                  您已成功推荐初探班课程 ✓
+                </view>
+                <view v-else class="step-desc">推荐1名学员报名初探班课程</view>
+                <view v-if="hasRecommendedCourse" class="step-badge success">已满足</view>
+              </view>
+            </view>
+
+            <!-- 步骤2：签署协议 -->
+            <view v-if="canUpgradeToQingluan" class="step-item">
+              <view class="step-number">2</view>
+              <view class="step-content">
+                <view class="step-title">签署《青鸾大使协议》</view>
+                <view class="step-desc">已满足青鸾大使升级条件，请签署协议</view>
+                <view @tap="goToContractSign">
+                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
+                    <span class="t-button__text">📝 立即签署协议</span>
+                  </button>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 升级条件 - 青鸾升级到鸿鹄 -->
+        <view v-else-if="currentLevel === 2" class="upgrade-card">
+          <view class="card-header">
+            <view class="card-title">📋 升级条件</view>
+          </view>
+          <view class="card-body">
             <!-- 步骤1 -->
             <view class="step-item">
               <view class="step-number">1</view>
@@ -68,7 +104,11 @@
               <view class="step-content">
                 <view class="step-title">签署《鸿鹄大使补充协议》</view>
                 <view class="step-desc">需要在支付升级费用前签署补充协议</view>
-                <button class="step-btn" @tap="goToContractSign">立即签署</button>
+                <view @tap="goToContractSign">
+                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
+                    <span class="t-button__text">📝 立即签署</span>
+                  </button>
+                </view>
               </view>
             </view>
 
@@ -78,10 +118,13 @@
               <view class="step-content">
                 <view class="step-title">支付9800元升级费用</view>
                 <view class="step-desc">获得10个初探班名额（可赠送学员）</view>
-                <button class="step-btn warning">支付升级费用</button>
+                <view @tap="handleUpgrade">
+                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
+                    <span class="t-button__text">💳 支付升级费用</span>
+                  </button>
+                </view>
               </view>
             </view>
-
           </view>
         </view>
 
@@ -160,7 +203,11 @@
         </view>
 
         <!-- 升级按钮 -->
-        <button class="upgrade-btn">🚀 立即升级为鸿鹄大使</button>
+        <view v-if="nextLevelInfo" @tap="handleUpgrade">
+          <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+            <span class="t-button__text">🚀 立即升级为{{ nextLevelInfo.name }}</span>
+          </button>
+        </view>
 
         <!-- 底部留白 -->
         <view style="height: 120rpx;"></view>
@@ -170,18 +217,80 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { ref, computed, onMounted } from 'vue';
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+
+// 用户当前等级: 1=准青鸾, 2=青鸾, 3=鸿鹄, 4=金凤
+const currentLevel = ref(1);
+
+// 是否推荐初探班成功
+const hasRecommendedCourse = ref(true);
+
+// 是否已签署协议
+const hasSignedContract = ref(false);
 
 const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
-})
+  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))';
+});
+
+// 当前等级信息
+const currentLevelInfo = computed(() => {
+  const levels = [
+    { id: 0, name: '普通用户', icon: '👤' },
+    { id: 1, name: '准青鸾大使', icon: '🥚' },
+    { id: 2, name: '青鸾大使', icon: '🐦' },
+    { id: 3, name: '鸿鹄大使', icon: '🦅' },
+    { id: 4, name: '金凤大使', icon: '🦚' },
+  ];
+  return levels.find((l) => l.id === currentLevel.value) || levels[0];
+});
+
+// 下一等级信息
+const nextLevelInfo = computed(() => {
+  const nextId = currentLevel.value + 1;
+  const levels = [
+    { id: 1, name: '准青鸾大使', icon: '🥚' },
+    { id: 2, name: '青鸾大使', icon: '🐦' },
+    { id: 3, name: '鸿鹄大使', icon: '🦅' },
+    { id: 4, name: '金凤大使', icon: '🦚' },
+  ];
+  return levels.find((l) => l.id === nextId);
+});
+
+// 是否满足青鸾大使升级条件
+const canUpgradeToQingluan = computed(() => {
+  return currentLevel.value === 1 && hasRecommendedCourse.value;
+});
+
+onMounted(() => {
+  fetchUserUpgradeStatus();
+});
+
+// 模拟获取用户升级状态
+const fetchUserUpgradeStatus = () => {
+  console.log('Fetching user upgrade status...');
+  // 实际应该调用 API 获取用户等级、推荐记录、协议签署状态等
+  // API: GET /api/ambassador/upgrade-status
+};
 
 const goToContractSign = () => {
+  // 跳转到签署协议页面，传递升级类型参数
   uni.navigateTo({
-    url: '/pages/ambassador/contract-sign/index'
-  })
-}
+    url: `/pages/ambassador/contract-sign/index?upgradeType=${currentLevel.value + 1}`,
+  });
+};
+
+const handleUpgrade = () => {
+  if (currentLevel.value === 1 && canUpgradeToQingluan.value) {
+    // 准青鸾升级到青鸾，只需签署协议
+    goToContractSign();
+  } else if (currentLevel.value === 2) {
+    // 青鸾升级到鸿鹄，需要支付费用，跳转到订单确认页
+    uni.navigateTo({
+      url: '/pages/order/confirm/index?upgradeType=3&amount=9800',
+    });
+  }
+};
 </script>
 
 <style scoped lang="scss">
@@ -348,25 +457,6 @@ const goToContractSign = () => {
   }
 }
 
-.step-btn {
-  height: 64rpx;
-  padding: 0 32rpx;
-  background: #E6F4FF;
-  color: #0052D9;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  border: none;
-  
-  &.warning {
-    background: #FFF4E5;
-    color: #E37318;
-  }
-  
-  &::after {
-    border: none;
-  }
-}
-
 .benefit-item {
   display: flex;
   gap: 24rpx;
@@ -442,19 +532,5 @@ const goToContractSign = () => {
   line-height: 1.6;
 }
 
-.upgrade-btn {
-  width: 100%;
-  height: 88rpx;
-  background: #FFF4E5;
-  color: #E37318;
-  border-radius: 12rpx;
-  font-size: 32rpx;
-  font-weight: 500;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 

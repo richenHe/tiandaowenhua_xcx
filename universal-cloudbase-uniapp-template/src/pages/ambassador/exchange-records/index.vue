@@ -1,0 +1,361 @@
+<template>
+  <view class="page">
+    <!-- 页面头部 -->
+    <view class="t-page-header t-page-header--fixed t-page-header--border">
+      <view class="t-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+      <view class="t-page-header__navbar">
+        <view class="t-page-header__left" @click="handleBack">
+          <view class="t-page-header__back">
+            <text class="t-page-header__back-icon">←</text>
+          </view>
+        </view>
+        <view class="t-page-header__title t-page-header__title--center">
+          <text class="t-page-header__title-text">兑换记录</text>
+        </view>
+        <view class="t-page-header__right"></view>
+      </view>
+    </view>
+    <view class="t-page-header__placeholder" :style="{ height: headerHeight + 'px' }"></view>
+
+    <scroll-view class="scroll-area" scroll-y :style="{ height: scrollHeight }">
+      <view class="page-content">
+        <!-- 统计卡片 -->
+        <view class="stats-card">
+          <view class="stats-title">📊 兑换统计</view>
+          <view class="stats-grid">
+            <view class="stats-item">
+              <view class="stats-value">{{ totalRecords }}</view>
+              <view class="stats-label">累计兑换次数</view>
+            </view>
+            <view class="stats-item">
+              <view class="stats-value">{{ totalPoints }}</view>
+              <view class="stats-label">累计消耗功德分</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- Tab切换 -->
+        <view class="tabs-wrapper">
+          <view class="t-capsule-tabs">
+            <view
+              v-for="tab in tabs"
+              :key="tab.value"
+              class="t-capsule-tabs__item"
+              :class="{ 't-capsule-tabs__item--active': activeTab === tab.value }"
+              @click="activeTab = tab.value"
+            >
+              {{ tab.label }}
+            </view>
+          </view>
+        </view>
+
+        <!-- 兑换记录列表 -->
+        <view v-if="filteredRecords.length > 0" class="records-list">
+          <view v-for="record in filteredRecords" :key="record.id" class="record-card">
+            <view class="record-icon" :style="{ background: record.iconBg }">
+              {{ record.icon }}
+            </view>
+            <view class="record-content">
+              <view class="record-header">
+                <view class="record-info">
+                  <view class="record-title">{{ record.title }}</view>
+                  <view class="record-desc">{{ record.desc }}</view>
+                </view>
+                <view class="record-amount">
+                  <view class="amount-points">-{{ record.meritPoints }}</view>
+                  <view v-if="record.cashPoints > 0" class="amount-cash">积分 -{{ record.cashPoints }}</view>
+                </view>
+              </view>
+              <view class="record-footer">
+                <text>兑换单号: {{ record.exchangeNo }}</text>
+                <text>{{ record.exchangeTime }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 空状态 -->
+        <view v-else class="empty-state">
+          <view class="empty-icon">📋</view>
+          <view class="empty-text">暂无兑换记录</view>
+        </view>
+
+        <!-- 加载更多 -->
+        <view v-if="filteredRecords.length > 0" class="load-more">
+          <button class="t-button t-button--theme-default t-button--variant-text" @click="loadMore">
+            <span class="t-button__text">加载更多</span>
+          </button>
+        </view>
+
+        <!-- 底部留白 -->
+        <view class="pb-xxl"></view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+
+const statusBarHeight = ref(20);
+const activeTab = ref('all');
+
+const tabs = ref([
+  { label: '全部', value: 'all' },
+  { label: '商品', value: 'goods' },
+  { label: '课程', value: 'course' },
+]);
+
+// 模拟兑换记录数据
+const records = ref([
+  {
+    id: 1,
+    type: 'course',
+    title: '兑换复训费',
+    desc: '初探班第12期复训',
+    meritPoints: 500.0,
+    cashPoints: 0,
+    exchangeNo: 'DH202401050001',
+    exchangeTime: '2024-01-05 14:30',
+    icon: '🎓',
+    iconBg: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  },
+  {
+    id: 2,
+    type: 'goods',
+    title: '兑换茶具套装',
+    desc: '紫砂茶壶+茶杯',
+    meritPoints: 800.0,
+    cashPoints: 200.0,
+    exchangeNo: 'DH202312280002',
+    exchangeTime: '2023-12-28 10:15',
+    icon: '🍵',
+    iconBg: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  },
+  {
+    id: 3,
+    type: 'goods',
+    title: '兑换国学书籍',
+    desc: '《道德经》全注解',
+    meritPoints: 300.0,
+    cashPoints: 0,
+    exchangeNo: 'DH202312150003',
+    exchangeTime: '2023-12-15 16:45',
+    icon: '📚',
+    iconBg: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  },
+  {
+    id: 4,
+    type: 'course',
+    title: '兑换咨询服务',
+    desc: '一对一咨询服务',
+    meritPoints: 999.0,
+    cashPoints: 0,
+    exchangeNo: 'DH202312010004',
+    exchangeTime: '2023-12-01 09:20',
+    icon: '💬',
+    iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  },
+]);
+
+// 计算总兑换次数和消耗功德分
+const totalRecords = computed(() => records.value.length);
+const totalPoints = computed(() =>
+  records.value.reduce((sum, record) => sum + record.meritPoints, 0).toFixed(1)
+);
+
+// 根据 activeTab 筛选记录
+const filteredRecords = computed(() => {
+  if (activeTab.value === 'all') {
+    return records.value;
+  }
+  return records.value.filter((record) => record.type === activeTab.value);
+});
+
+onMounted(() => {
+  const systemInfo = uni.getSystemInfoSync();
+  statusBarHeight.value = systemInfo.statusBarHeight || 20;
+  fetchExchangeRecords();
+});
+
+const headerHeight = computed(() => {
+  return statusBarHeight.value + 44; // 44px 是导航栏高度
+});
+
+const scrollHeight = computed(() => {
+  return `calc(100vh - ${headerHeight.value}px)`;
+});
+
+const handleBack = () => {
+  uni.navigateBack();
+};
+
+// 模拟获取兑换记录
+const fetchExchangeRecords = () => {
+  console.log('Fetching exchange records...');
+  // 实际应该调用 API: GET /api/merit-points/exchange-records
+};
+
+// 加载更多
+const loadMore = () => {
+  uni.showToast({ title: '没有更多记录了', icon: 'none' });
+};
+</script>
+
+<style scoped lang="scss">
+@import '@/styles/tdesign-vars.scss';
+
+.page {
+  width: 100%;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.scroll-area {
+  width: 100%;
+}
+
+.page-content {
+  padding: 32rpx;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 48rpx;
+  margin-bottom: 32rpx;
+  color: #fff;
+}
+
+.stats-title {
+  font-size: 28rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.9;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32rpx;
+}
+
+.stats-item {
+  text-align: center;
+}
+
+.stats-value {
+  font-size: 56rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.stats-label {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+.tabs-wrapper {
+  margin-bottom: 32rpx;
+}
+
+.records-list {
+  margin-bottom: 32rpx;
+}
+
+.record-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  gap: 24rpx;
+}
+
+.record-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.record-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+
+.record-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.record-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.record-amount {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  text-align: right;
+}
+
+.amount-points {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #e34d59;
+  margin-bottom: 4rpx;
+}
+
+.amount-cash {
+  font-size: 24rpx;
+  color: #ff9800;
+}
+
+.record-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #999;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.3;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.load-more {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+</style>
+

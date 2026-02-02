@@ -12,6 +12,21 @@
 
     <!-- 页面内容 -->
     <view class="page-content">
+      <!-- 快捷入口 -->
+      <view class="quick-access-section">
+        <view 
+          v-for="(item, index) in quickAccessList" 
+          :key="index"
+          class="quick-access-card"
+          @tap="handleQuickAccess(item.type)"
+        >
+          <view class="quick-access-body">
+            <text class="quick-access-icon">{{ item.icon }}</text>
+            <text class="quick-access-title">{{ item.title }}</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 商学院简介 -->
       <view class="t-card t-card--bordered section-card">
         <view class="t-card__header">
@@ -106,26 +121,6 @@
         </view>
       </view>
 
-      <!-- 联系我们 -->
-      <view class="t-card t-card--bordered section-card">
-        <view class="t-card__header">
-          <text class="t-card__title">📞 联系我们</text>
-        </view>
-        <view class="t-card__body">
-          <view class="contact-list">
-            <view 
-              v-for="(item, index) in contacts" 
-              :key="index"
-              class="contact-item"
-            >
-              <text class="contact-label">{{ item.label }}</text>
-              <text class="contact-value" :class="{ 'contact-value--link': item.isLink }">
-                {{ item.value }}
-              </text>
-            </view>
-          </view>
-        </view>
-      </view>
     </view>
   </view>
 </template>
@@ -133,6 +128,35 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+
+// 快捷入口数据
+const quickAccessList = ref([
+  {
+    icon: '📱',
+    title: '朋友圈素材',
+    desc: '获取精美素材，一键分享推广',
+    type: 'moments'
+  },
+  {
+    icon: '🏆',
+    title: '学员成功案例',
+    desc: '见证成长故事，激励学习动力',
+    type: 'cases'
+  }
+]);
+
+// 快捷入口点击事件
+const handleQuickAccess = (type: string) => {
+  if (type === 'moments') {
+    uni.navigateTo({
+      url: '/pages/academy/materials/index'
+    });
+  } else if (type === 'cases') {
+    uni.navigateTo({
+      url: '/pages/academy/cases/index'
+    });
+  }
+};
 
 // 核心理念数据
 const concepts = ref([
@@ -215,14 +239,6 @@ const honors = ref([
   { icon: '📜', name: '文化传承贡献奖' },
   { icon: '💼', name: '企业培训示范单位' }
 ]);
-
-// 联系方式数据
-const contacts = ref([
-  { label: '📧 邮箱', value: 'contact@tiandao.com', isLink: true },
-  { label: '📱 电话', value: '400-123-4567', isLink: true },
-  { label: '📍 地址', value: '北京市朝阳区国学大道888号', isLink: false },
-  { label: '🕐 时间', value: '周一至周五 9:00-18:00', isLink: false }
-]);
 </script>
 
 <style lang="scss" scoped>
@@ -265,6 +281,54 @@ const contacts = ref([
 // 页面内容
 .page-content {
   padding: $td-page-margin;
+}
+
+// 快捷入口
+.quick-access-section {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+  align-items: stretch;
+}
+
+.quick-access-card {
+  flex: 1;
+  height: 200rpx;
+  background: linear-gradient(135deg, #00C4FF 0%, #0096D9 100%);
+  border-radius: 16rpx;
+  overflow: hidden;
+  transition: transform 0.2s;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  &:first-child {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+}
+
+.quick-access-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.quick-access-icon {
+  font-size: 72rpx;
+  margin-bottom: 20rpx;
+  filter: drop-shadow(0 2rpx 8rpx rgba(0, 0, 0, 0.1));
+}
+
+.quick-access-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 // 卡片
@@ -533,43 +597,6 @@ const contacts = ref([
   display: block;
   font-size: 24rpx;
   color: $td-text-color-secondary;
-}
-
-// 联系我们
-.contact-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.contact-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24rpx 0;
-  border-bottom: 2rpx solid $td-border-level-1;
-  
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-  
-  &:first-child {
-    padding-top: 0;
-  }
-}
-
-.contact-label {
-  font-size: $td-font-size-base;
-  color: $td-text-color-secondary;
-}
-
-.contact-value {
-  font-size: $td-font-size-base;
-  color: $td-text-color-primary;
-  
-  &--link {
-    color: $td-brand-color;
-  }
 }
 </style>
 

@@ -11,6 +11,25 @@
       </view>
 
       <view class="page-content">
+        <!-- 快捷入口 -->
+        <view class="quick-access-section">
+          <view 
+            v-for="(item, index) in quickAccessList" 
+            :key="index"
+            class="t-card t-card--bordered quick-access-card"
+            @tap="handleQuickAccess(item.type)"
+          >
+            <view class="t-card__body quick-access-body">
+              <text class="quick-access-icon">{{ item.icon }}</text>
+              <view class="quick-access-info">
+                <text class="quick-access-title">{{ item.title }}</text>
+                <text class="quick-access-desc">{{ item.desc }}</text>
+              </view>
+              <text class="quick-access-arrow">›</text>
+            </view>
+          </view>
+        </view>
+
         <!-- 商学院简介 -->
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__header">
@@ -105,29 +124,6 @@
           </view>
         </view>
 
-        <!-- 联系我们 -->
-        <view class="t-card t-card--bordered mb-l">
-          <view class="t-card__header">
-            <view class="t-card__title">📞 联系我们</view>
-          </view>
-          <view class="t-card__body">
-            <view class="t-list">
-              <view 
-                v-for="(contact, index) in contactList" 
-                :key="index"
-                class="t-list-item"
-              >
-                <view class="t-list-item__meta">{{ contact.label }}</view>
-                <view 
-                  class="t-list-item__content" 
-                  :class="{ 'contact-link': contact.isLink }"
-                >
-                  {{ contact.value }}
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
       </view>
     </scroll-view>
   </view>
@@ -136,6 +132,35 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+
+// 快捷入口数据
+const quickAccessList = ref([
+  {
+    icon: '📱',
+    title: '朋友圈素材',
+    desc: '获取精美素材，一键分享推广',
+    type: 'moments'
+  },
+  {
+    icon: '🏆',
+    title: '学员成功案例',
+    desc: '见证成长故事，激励学习动力',
+    type: 'cases'
+  }
+]);
+
+// 快捷入口点击事件
+const handleQuickAccess = (type: string) => {
+  if (type === 'moments') {
+    uni.navigateTo({
+      url: '/pages/academy/moments-material/index'
+    });
+  } else if (type === 'cases') {
+    uni.navigateTo({
+      url: '/pages/academy/success-cases/index'
+    });
+  }
+};
 
 // 核心理念数据
 const conceptList = ref([
@@ -221,14 +246,6 @@ const honorList = ref([
   { emoji: '📜', text: '文化传承贡献奖' },
   { emoji: '💼', text: '企业培训示范单位' }
 ]);
-
-// 联系方式数据
-const contactList = ref([
-  { label: '📧 邮箱', value: 'contact@tiandao.com', isLink: true },
-  { label: '📱 电话', value: '400-123-4567', isLink: true },
-  { label: '📍 地址', value: '北京市朝阳区国学大道888号', isLink: false },
-  { label: '🕐 时间', value: '周一至周五 9:00-18:00', isLink: false }
-]);
 </script>
 
 <style lang="scss" scoped>
@@ -280,6 +297,68 @@ const contactList = ref([
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx;
+}
+
+// 快捷入口
+.quick-access-section {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 48rpx;
+}
+
+.quick-access-card {
+  flex: 1;
+  transition: transform 0.2s;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  .t-card__body {
+    padding: 0;
+  }
+}
+
+.quick-access-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32rpx 16rpx;
+  position: relative;
+}
+
+.quick-access-icon {
+  font-size: 64rpx;
+  margin-bottom: 16rpx;
+}
+
+.quick-access-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.quick-access-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $td-text-color-primary;
+  margin-bottom: 8rpx;
+}
+
+.quick-access-desc {
+  font-size: 22rpx;
+  color: $td-text-color-placeholder;
+  line-height: 1.5;
+}
+
+.quick-access-arrow {
+  position: absolute;
+  right: 16rpx;
+  top: 16rpx;
+  font-size: 32rpx;
+  color: $td-text-color-placeholder;
+  font-weight: 300;
 }
 
 // 卡片
@@ -547,44 +626,6 @@ const contactList = ref([
 .honor-text {
   font-size: 24rpx;
   color: $td-text-color-secondary;
-}
-
-// 联系方式列表
-.t-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.t-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24rpx 0;
-  border-bottom: 2rpx solid $td-border-level-1;
-  
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-  
-  &:first-child {
-    padding-top: 0;
-  }
-  
-  &__meta {
-    font-size: 28rpx;
-    color: $td-text-color-secondary;
-  }
-  
-  &__content {
-    font-size: 28rpx;
-    color: $td-text-color-primary;
-    text-align: right;
-    
-    &.contact-link {
-      color: $td-brand-color;
-    }
-  }
 }
 </style>
 

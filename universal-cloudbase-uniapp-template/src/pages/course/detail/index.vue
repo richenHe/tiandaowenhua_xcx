@@ -82,14 +82,14 @@
         class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
         @click="handleBuy"
       >
-        <span class="t-button__text">立即购买</span>
+        <span class="t-button__text">{{ buttonText }}</span>
       </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 
 // 当前选中的标签页
@@ -104,7 +104,9 @@ const tabs = [
 
 // 课程信息（mock数据）
 const courseInfo = ref({
+  id: null,
   name: '初探班',
+  type: 1,
   price: 1688,
   soldCount: 500,
   description: '这是一门系统性学习天道文化的课程，帮助学员深入理解国学智慧，传承中华文化。',
@@ -114,15 +116,34 @@ const courseInfo = ref({
     '第三天:深度解析',
   ],
   instructor: '资深讲师，从事国学教育20余年，有丰富的教学经验。',
+  is_purchased: false,
+  user_course_id: null,
+  attend_count: 1,
+});
+
+// 按钮文本(根据购买状态)
+const buttonText = computed(() => {
+  if (courseInfo.value.is_purchased) {
+    return '立即预约';
+  }
+  return '立即购买';
 });
 
 /**
- * 立即购买
+ * 立即购买/预约
  */
 const handleBuy = () => {
-  uni.navigateTo({
-    url: '/pages/order/confirm/index',
-  });
+  if (courseInfo.value.is_purchased) {
+    // 已购买,跳转到预约确认页
+    uni.navigateTo({
+      url: `/pages/course/appointment-confirm/index?user_course_id=${courseInfo.value.user_course_id}&course_id=${courseInfo.value.id}`,
+    });
+  } else {
+    // 未购买,跳转到订单确认页
+    uni.navigateTo({
+      url: `/pages/order/confirm/index?course_id=${courseInfo.value.id}`,
+    });
+  }
 };
 </script>
 

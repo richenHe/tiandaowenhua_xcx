@@ -103,7 +103,7 @@ const userInfo = ref({
 // 跳转到推荐人管理
 const goToRefereeManage = () => {
   uni.navigateTo({
-    url: '/pages/mine/referee-manage/index'
+    url: '/pages/mine/referral-list/index'
   })
 }
 

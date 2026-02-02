@@ -12,79 +12,8 @@
             <view class="info-details">
               <view class="info-item">📅 {{ courseInfo.startDate }} 至 {{ courseInfo.endDate }}</view>
               <view class="info-item">📍 {{ courseInfo.location }}</view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 预约信息 -->
-        <view class="section-title section-title--simple">👤 预约信息</view>
-        <view class="t-card t-card--bordered">
-          <view class="t-card__body">
-            <!-- 真实姓名 -->
-            <view class="t-form-item">
-              <view class="t-form-item__label t-form-item__label--required">
-                <text class="t-form-item__label-text">真实姓名</text>
-              </view>
-              <view class="t-form-item__control">
-                <view class="t-input t-input--default">
-                  <input
-                    class="t-input__inner"
-                    type="text"
-                    placeholder="请输入真实姓名"
-                    v-model="formData.realName"
-                  />
-                </view>
-              </view>
-            </view>
-
-            <!-- 手机号 -->
-            <view class="t-form-item">
-              <view class="t-form-item__label t-form-item__label--required">
-                <text class="t-form-item__label-text">手机号</text>
-              </view>
-              <view class="t-form-item__control">
-                <view class="t-input t-input--default">
-                  <input
-                    class="t-input__inner"
-                    type="number"
-                    placeholder="请输入手机号"
-                    v-model="formData.phone"
-                  />
-                </view>
-              </view>
-            </view>
-
-            <!-- 电子邮箱 -->
-            <view class="t-form-item">
-              <view class="t-form-item__label">
-                <text class="t-form-item__label-text">电子邮箱</text>
-              </view>
-              <view class="t-form-item__control">
-                <view class="t-input t-input--default">
-                  <input
-                    class="t-input__inner"
-                    type="text"
-                    placeholder="选填"
-                    v-model="formData.email"
-                  />
-                </view>
-              </view>
-            </view>
-
-            <!-- 备注 -->
-            <view class="t-form-item">
-              <view class="t-form-item__label">
-                <text class="t-form-item__label-text">备注</text>
-              </view>
-              <view class="t-form-item__control">
-                <view class="t-textarea">
-                  <textarea
-                    class="t-textarea__inner"
-                    placeholder="选填，如有特殊需求请备注"
-                    v-model="formData.remark"
-                    maxlength="200"
-                  ></textarea>
-                </view>
+              <view v-if="courseInfo.userAttendCount > 1" class="info-item price-item">
+                💰 复训费用: ¥{{ courseInfo.retrainPrice }}
               </view>
             </view>
           </view>
@@ -94,7 +23,7 @@
         <view class="tips-card">
           <view class="tips-title">📝 温馨提示</view>
           <view class="tips-content">
-            <view class="tips-item">1. 请确保填写的信息真实准确，以便后续联系</view>
+            <view class="tips-item">1. 系统将自动获取您的注册信息进行预约</view>
             <view class="tips-item">2. 预约成功后，工作人员会在3个工作日内与您联系</view>
             <view class="tips-item">3. 如有疑问，请联系客服：400-123-4567</view>
           </view>
@@ -108,84 +37,103 @@
         class="t-button t-button--theme-light t-button--variant-base t-button--block t-button--size-large"
         @click="handleSubmit"
       >
-        <span class="t-button__text">确认预约</span>
+        <span class="t-button__text">{{ buttonText }}</span>
       </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted, getCurrentInstance } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 
 // 课程信息（Mock）
 const courseInfo = ref({
+  courseId: 0,
   courseName: '初探班',
   period: 12,
   startDate: '2024-02-01',
   endDate: '2024-02-03',
   location: '北京市朝阳区',
+  userAttendCount: 0, // 用户已上课次数
+  retrainPrice: 500, // 复训费用
 });
 
-// 表单数据
-const formData = ref({
-  realName: '',
-  phone: '',
-  email: '',
-  remark: '',
+// 按钮文本
+const buttonText = computed(() => {
+  if (courseInfo.value.userAttendCount === 1) {
+    return '确认预约';
+  } else if (courseInfo.value.userAttendCount > 1) {
+    return `确认预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
+  }
+  return '确认预约'; // 默认值
 });
 
 // 页面加载时获取排期信息
 onMounted(() => {
   const instance = getCurrentInstance();
-  const scheduleId = (instance?.proxy as any)?.$route?.query?.scheduleId;
-  if (scheduleId) {
-    console.log('加载排期信息:', scheduleId);
-    // TODO: 根据scheduleId获取课程排期详情
+  const query = (instance?.proxy as any)?.$route?.query;
+  const courseId = query?.courseId;
+  const userAttendCount = parseInt(query?.userAttendCount || '0');
+
+  if (courseId) {
+    courseInfo.value.courseId = parseInt(courseId);
+    courseInfo.value.userAttendCount = userAttendCount;
+    fetchCourseDetail(courseInfo.value.courseId);
   }
 });
 
-// 提交预约
-const handleSubmit = () => {
-  // 验证必填项
-  if (!formData.value.realName) {
-    uni.showToast({
-      title: '请输入真实姓名',
-      icon: 'none',
-    });
-    return;
-  }
-
-  if (!formData.value.phone) {
-    uni.showToast({
-      title: '请输入手机号',
-      icon: 'none',
-    });
-    return;
-  }
-
-  // 验证手机号格式
-  const phoneReg = /^1[3-9]\d{9}$/;
-  if (!phoneReg.test(formData.value.phone)) {
-    uni.showToast({
-      title: '手机号格式不正确',
-      icon: 'none',
-    });
-    return;
-  }
-
-  console.log('提交预约:', formData.value);
-
-  // TODO: 调用预约接口
-  uni.showToast({
-    title: '预约成功',
-    icon: 'success',
-    duration: 2000,
-  });
-
+// 模拟获取课程详情
+const fetchCourseDetail = (id: number) => {
+  console.log(`Fetching course detail for ID: ${id}`);
+  // 模拟API请求
   setTimeout(() => {
-    uni.navigateBack();
-  }, 2000);
+    courseInfo.value = {
+      ...courseInfo.value,
+      courseId: id,
+      courseName: id === 1 ? '初探班' : '密训班',
+      retrainPrice: id === 1 ? 500 : 800, // 模拟复训费用
+    };
+  }, 500);
+};
+
+// 提交预约 - 使用弹窗确认
+const handleSubmit = () => {
+  // 根据上课次数显示不同的弹窗内容
+  const isFirstTime = courseInfo.value.userAttendCount === 1;
+  const modalContent = isFirstTime
+    ? '确定要预约该课程吗？'
+    : `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`;
+
+  uni.showModal({
+    title: '预约确认',
+    content: modalContent,
+    confirmText: '确定',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) {
+        // 用户点击确定
+        if (courseInfo.value.userAttendCount > 1) {
+          // 需要支付复训费,跳转到支付页面
+          uni.navigateTo({
+            url: `/pages/order/payment/index?orderNo=RETRAIN_${Date.now()}`, // 模拟生成复训订单号
+          });
+        } else {
+          // 首次预约,直接成功
+          // TODO: 调用预约接口
+          uni.showToast({
+            title: '预约成功',
+            icon: 'success',
+            duration: 2000,
+          });
+
+          setTimeout(() => {
+            uni.navigateBack();
+          }, 2000);
+        }
+      }
+    },
+  });
 };
 </script>
 
@@ -224,66 +172,14 @@ const handleSubmit = () => {
   font-size: 28rpx;
   color: $td-text-color-secondary;
   line-height: 1.6;
-}
 
-// 表单项样式
-.t-form-item {
-  margin-bottom: 32rpx;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.t-form-item__label {
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-  margin-bottom: 16rpx;
-  display: flex;
-  align-items: center;
-
-  &--required::before {
-    content: '*';
+  &.price-item {
+    margin-top: 8rpx;
+    padding-top: 16rpx;
+    border-top: 2rpx solid $td-border-level-1;
     color: $td-error-color;
-    margin-right: 8rpx;
+    font-weight: 600;
   }
-}
-
-.t-input {
-  border: 2rpx solid $td-border-level-1;
-  border-radius: var(--td-radius-default);
-  padding: 24rpx 32rpx;
-  background-color: white;
-
-  &:focus-within {
-    border-color: $td-brand-color;
-  }
-}
-
-.t-input__inner {
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-  line-height: 1.5;
-}
-
-.t-textarea {
-  border: 2rpx solid $td-border-level-1;
-  border-radius: var(--td-radius-default);
-  padding: 24rpx 32rpx;
-  background-color: white;
-  min-height: 200rpx;
-
-  &:focus-within {
-    border-color: $td-brand-color;
-  }
-}
-
-.t-textarea__inner {
-  font-size: 28rpx;
-  color: $td-text-color-primary;
-  line-height: 1.5;
-  width: 100%;
-  min-height: 160rpx;
 }
 
 // 温馨提示样式

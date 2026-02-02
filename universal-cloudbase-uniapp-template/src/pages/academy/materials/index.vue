@@ -33,8 +33,16 @@
           <view class="material-title">初探班招生海报</view>
           <view class="material-desc">适用于初探班课程推广，包含课程亮点和报名方式</view>
           <view class="material-actions">
-            <button class="action-btn primary" @tap="saveMaterial">💾 保存图片</button>
-            <button class="action-btn default">📤</button>
+            <view @tap="saveMaterial">
+              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+                <span class="t-button__text">💾 保存图片</span>
+              </button>
+            </view>
+            <view>
+              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                <span class="t-button__text">📤</span>
+              </button>
+            </view>
           </view>
         </view>
 
@@ -44,8 +52,16 @@
           <view class="material-title">密训班招生海报</view>
           <view class="material-desc">适用于密训班课程推广，突出深度学习和VIP服务</view>
           <view class="material-actions">
-            <button class="action-btn primary" @tap="saveMaterial">💾 保存图片</button>
-            <button class="action-btn default">📤</button>
+            <view @tap="saveMaterial">
+              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+                <span class="t-button__text">💾 保存图片</span>
+              </button>
+            </view>
+            <view>
+              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                <span class="t-button__text">📤</span>
+              </button>
+            </view>
           </view>
         </view>
 
@@ -55,8 +71,16 @@
           <view class="material-title">学员见证海报</view>
           <view class="material-desc">真实学员反馈和成长故事，增强可信度</view>
           <view class="material-actions">
-            <button class="action-btn primary" @tap="saveMaterial">💾 保存图片</button>
-            <button class="action-btn default">📤</button>
+            <view @tap="saveMaterial">
+              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+                <span class="t-button__text">💾 保存图片</span>
+              </button>
+            </view>
+            <view>
+              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                <span class="t-button__text">📤</span>
+              </button>
+            </view>
           </view>
         </view>
 
@@ -81,7 +105,11 @@
             💰 限时优惠：¥1688<br/><br/>
             🎯 名额有限，扫码报名！
           </view>
-          <button class="copy-btn" @tap="copyText('初探班推广文案')">📋 复制文案</button>
+          <view @tap="copyText('初探班推广文案')">
+            <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+              <span class="t-button__text">📋 复制文案</span>
+            </button>
+          </view>
         </view>
 
         <!-- 文案2 -->
@@ -294,30 +322,6 @@ const copyText = (type: string) => {
   gap: 16rpx;
 }
 
-.action-btn {
-  height: 64rpx;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  border: none;
-  
-  &.primary {
-    flex: 1;
-    background: #E6F4FF;
-    color: #0052D9;
-  }
-  
-  &.default {
-    width: 64rpx;
-    background: #fff;
-    color: #333;
-    border: 2rpx solid #E5E5E5;
-  }
-  
-  &::after {
-    border: none;
-  }
-}
-
 .copywriting-card {
   background: #fff;
   border-radius: 16rpx;
@@ -376,19 +380,6 @@ const copyText = (type: string) => {
   margin-bottom: 24rpx;
 }
 
-.copy-btn {
-  width: 100%;
-  height: 64rpx;
-  background: #E6F4FF;
-  color: #0052D9;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 
 

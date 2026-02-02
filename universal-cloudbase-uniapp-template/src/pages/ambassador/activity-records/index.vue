@@ -191,7 +191,9 @@
 
         <!-- 加载更多 -->
         <view class="load-more">
-          <button class="load-more-btn">加载更多</button>
+          <button class="t-button t-button--theme-default t-button--variant-text">
+            <span class="t-button__text">加载更多</span>
+          </button>
         </view>
 
         <!-- 底部留白 -->
@@ -452,15 +454,5 @@ const onTabChange = (value: string) => {
   padding: 40rpx 0;
 }
 
-.load-more-btn {
-  background: transparent;
-  color: #999;
-  font-size: 26rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 

@@ -226,19 +226,8 @@ const handleInvite = () => {
 
 // 修改推荐人
 const handleModifyReferee = () => {
-  uni.showModal({
-    title: '修改推荐人',
-    content: '确定要修改推荐人吗？修改后需要重新验证关系。',
-    confirmText: '确定',
-    cancelText: '取消',
-    success: (res) => {
-      if (res.confirm) {
-        // TODO: 跳转到修改推荐人页面或打开修改弹窗
-        uni.navigateTo({
-          url: '/pages/mine/modify-referee/index'
-        })
-      }
-    }
+  uni.navigateTo({
+    url: '/pages/order/select-referee/index'
   })
 }
 </script>

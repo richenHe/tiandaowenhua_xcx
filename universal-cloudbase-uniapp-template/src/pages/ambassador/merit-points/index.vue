@@ -55,8 +55,16 @@
 
         <!-- 功能按钮 -->
         <view class="action-grid">
-          <button class="action-btn" @click="goToMall">兑换商品</button>
-          <button class="action-btn" @click="goToMall">兑换课程</button>
+          <view @tap="goToMall">
+            <button class="t-button t-button--theme-primary t-button--variant-outline t-button--block">
+              <span class="t-button__text">🎁 兑换商品/课程</span>
+            </button>
+          </view>
+          <view @tap="goToExchangeRecords">
+            <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+              <span class="t-button__text">📋 兑换记录</span>
+            </button>
+          </view>
         </view>
 
         <!-- 获得途径统计 -->
@@ -194,7 +202,9 @@
 
         <!-- 加载更多 -->
         <view class="load-more">
-          <button class="load-more-btn">加载更多</button>
+          <button class="t-button t-button--theme-default t-button--variant-text">
+            <span class="t-button__text">加载更多</span>
+          </button>
         </view>
 
         <!-- 底部留白 -->
@@ -235,8 +245,14 @@ const handleBack = () => {
 }
 
 const goToMall = () => {
-  uni.navigateTo({
+  uni.switchTab({
     url: '/pages/mall/index'
+  })
+}
+
+const goToExchangeRecords = () => {
+  uni.navigateTo({
+    url: '/pages/ambassador/exchange-records/index'
   })
 }
 </script>
@@ -329,19 +345,6 @@ const goToMall = () => {
   grid-template-columns: 1fr 1fr;
   gap: 24rpx;
   margin-bottom: 48rpx;
-}
-
-.action-btn {
-  height: 88rpx;
-  background: #E6F4FF;
-  color: #0052D9;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
 }
 
 .stats-card {
@@ -460,15 +463,5 @@ const goToMall = () => {
   padding: 40rpx 0;
 }
 
-.load-more-btn {
-  background: transparent;
-  color: #999;
-  font-size: 26rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 

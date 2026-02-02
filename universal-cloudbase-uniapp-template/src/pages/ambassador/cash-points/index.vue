@@ -52,9 +52,11 @@
         </view>
 
         <!-- 提现按钮 -->
-        <button class="withdraw-btn" @tap="goToWithdraw">
-          💸 申请提现（可提现: ¥7,472）
-        </button>
+        <view @tap="goToWithdraw">
+          <button class="t-button t-button--theme-warning t-button--variant-base t-button--block t-button--size-large">
+            <span class="t-button__text">💸 申请提现（可提现: ¥7,472）</span>
+          </button>
+        </view>
 
         <!-- Tab切换 -->
         <view class="tabs-wrapper">
@@ -185,7 +187,9 @@
 
         <!-- 加载更多 -->
         <view class="load-more">
-          <button class="load-more-btn">加载更多</button>
+          <button class="t-button t-button--theme-default t-button--variant-text">
+            <span class="t-button__text">加载更多</span>
+          </button>
         </view>
 
         <!-- 底部留白 -->
@@ -195,7 +199,11 @@
 
     <!-- 底部提现按钮 -->
     <view class="fixed-bottom">
-      <button class="submit-btn" @tap="goToWithdraw">申请提现</button>
+      <view @tap="goToWithdraw">
+        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
+          <span class="t-button__text">💰 申请提现</span>
+        </button>
+      </view>
     </view>
   </view>
 </template>
@@ -352,22 +360,6 @@ const goToWithdraw = () => {
   color: #999;
 }
 
-.withdraw-btn {
-  width: 100%;
-  height: 88rpx;
-  background: #FFF4E5;
-  color: #E37318;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  font-weight: 500;
-  margin-bottom: 48rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
-
 .tabs-wrapper {
   margin-bottom: 32rpx;
 }
@@ -506,17 +498,6 @@ const goToWithdraw = () => {
   padding: 40rpx 0;
 }
 
-.load-more-btn {
-  background: transparent;
-  color: #999;
-  font-size: 26rpx;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
-
 .fixed-bottom {
   position: fixed;
   bottom: 0;
@@ -528,19 +509,5 @@ const goToWithdraw = () => {
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
-.submit-btn {
-  width: 100%;
-  height: 88rpx;
-  background: #FFF4E5;
-  color: #E37318;
-  border-radius: 12rpx;
-  font-size: 32rpx;
-  font-weight: 500;
-  border: none;
-  
-  &::after {
-    border: none;
-  }
-}
 </style>
 
