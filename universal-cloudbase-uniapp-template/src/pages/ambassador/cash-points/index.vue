@@ -53,7 +53,7 @@
         </view>
 
         <!-- 提现按钮 -->
-        <view @tap="goToWithdraw">
+        <view @tap="goToWithdraw" style="margin-bottom: 48rpx;">
           <button class="t-button t-button--theme-warning t-button--variant-base t-button--block t-button--size-large">
             <span class="t-button__text">💸 申请提现（可提现: ¥7,472）</span>
           </button>
