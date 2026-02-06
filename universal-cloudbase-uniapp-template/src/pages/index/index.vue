@@ -1,99 +1,104 @@
 <template>
   <view class="page-container">
-    <!-- 轮播 Banner -->
-    <swiper 
-      class="banner-swiper" 
-      :indicator-dots="false" 
-      :autoplay="true" 
-      :interval="4000" 
-      :duration="300"
-      :circular="true"
-      @change="onSwiperChange"
+    <!-- 滚动内容区域 -->
+    <scroll-view
+      class="scroll-content"
+      :scroll-y="true"
     >
-      <swiper-item v-for="(banner, index) in bannerList" :key="index">
-        <view 
-          class="banner-slide" 
-          :class="banner.theme"
-          @click="onBannerClick(banner)"
-        >
-          <text class="banner-emoji">{{ banner.emoji }}</text>
-          <text class="banner-title">{{ banner.title }}</text>
-          <text class="banner-subtitle">{{ banner.subtitle }}</text>
-        </view>
-      </swiper-item>
-    </swiper>
-    
-    <!-- 轮播指示器 -->
-    <view class="banner-pagination">
-      <view 
-        v-for="(item, index) in bannerList" 
-        :key="index"
-        class="banner-pagination-bullet"
-        :class="{ 'banner-pagination-bullet-active': currentBannerIndex === index }"
-      ></view>
-    </view>
-
-    <!-- 页面内容 -->
-    <view class="page-content">
-      <!-- 通知提示栏 - 轮播公告 -->
-      <view class="notice-bar" @click="goToAnnouncement">
-        <view class="t-alert t-alert--theme-info">
-          <view class="t-alert__icon">📢</view>
-          <view class="t-alert__content">
-            <swiper 
-              class="announcement-swiper" 
-              :vertical="true"
-              :autoplay="true"
-              :interval="3000" 
-              :duration="500"
-              :circular="true"
-            >
-              <swiper-item v-for="(announcement, index) in announcementList" :key="index">
-                <text class="t-alert__message">{{ announcement.title }}</text>
-              </swiper-item>
-            </swiper>
+      <!-- 轮播 Banner（可以滚动） -->
+      <swiper
+        class="banner-swiper"
+        :indicator-dots="false"
+        :autoplay="true"
+        :interval="4000"
+        :duration="300"
+        :circular="true"
+        @change="onSwiperChange"
+      >
+        <swiper-item v-for="(banner, index) in bannerList" :key="index">
+          <view
+            class="banner-slide"
+            :class="banner.theme"
+            @click="onBannerClick(banner)"
+          >
+            <text class="banner-emoji">{{ banner.emoji }}</text>
+            <text class="banner-title">{{ banner.title }}</text>
+            <text class="banner-subtitle">{{ banner.subtitle }}</text>
           </view>
-          <view class="t-alert__close">›</view>
-        </view>
-      </view>
+        </swiper-item>
+      </swiper>
 
-      <!-- 标签切换区域 -->
-      <view class="tabs-container">
-        <!-- 课程分类标签 + 日历按钮 -->
-        <CapsuleTabs 
-          v-model="currentTab" 
-          :options="allTabList"
-          @change="onTabChange"
-        />
-      </view>
-
-      <!-- 课程列表 -->
-      <view class="course-list">
-        <view 
-          v-for="(course, index) in filteredCourseList" 
+      <!-- 轮播指示器 -->
+      <view class="banner-pagination">
+        <view
+          v-for="(item, index) in bannerList"
           :key="index"
-          class="t-card t-card--bordered t-card--hoverable course-card"
-          @click="goToCourseDetail(course)"
-        >
-          <view class="course-image" :class="course.imageTheme">
-            <text class="course-emoji">{{ course.emoji }}</text>
-          </view>
-          <view class="t-card__body">
-            <view class="course-header">
-              <text class="course-title">{{ course.title }}</text>
-              <view v-if="course.purchased" class="t-badge--standalone t-badge--theme-success">
-                <text>已购买</text>
-              </view>
+          class="banner-pagination-bullet"
+          :class="{ 'banner-pagination-bullet-active': currentBannerIndex === index }"
+        ></view>
+      </view>
+
+      <!-- 页面内容 -->
+      <view class="page-content">
+        <!-- 通知提示栏 - 轮播公告 -->
+        <view class="notice-bar" @click="goToAnnouncement">
+          <view class="t-alert t-alert--theme-info">
+            <view class="t-alert__icon">📢</view>
+            <view class="t-alert__content">
+              <swiper
+                class="announcement-swiper"
+                :vertical="true"
+                :autoplay="true"
+                :interval="3000"
+                :duration="500"
+                :circular="true"
+              >
+                <swiper-item v-for="(announcement, index) in announcementList" :key="index">
+                  <text class="t-alert__message">{{ announcement.title }}</text>
+                </swiper-item>
+              </swiper>
             </view>
-            <text class="course-price">¥{{ course.price }}</text>
-            <button class="t-button t-button--theme-warning t-button--variant-base t-button--block">
-              <text class="t-button__text">查看详情</text>
-            </button>
+            <view class="t-alert__close">›</view>
+          </view>
+        </view>
+
+        <!-- 标签切换区域（不吸顶） -->
+        <view class="tabs-container">
+          <CapsuleTabs
+            v-model="currentTab"
+            :options="allTabList"
+            @change="onTabChange"
+          />
+        </view>
+
+        <!-- 课程列表 -->
+        <view class="course-list">
+          <view
+            v-for="(course, index) in filteredCourseList"
+            :key="index"
+            class="t-card t-card--bordered t-card--hoverable course-card"
+            @click="goToCourseDetail(course)"
+          >
+            <view class="course-image" :class="course.imageTheme">
+              <text class="course-emoji">{{ course.emoji }}</text>
+            </view>
+            <view class="t-card__body">
+              <view class="course-header">
+                <text class="course-title">{{ course.title }}</text>
+                <view v-if="course.purchased" class="t-badge--standalone t-badge--theme-success">
+                  <text>已购买</text>
+                </view>
+              </view>
+              <text class="course-price">¥{{ course.price }}</text>
+              <button class="t-button t-button--theme-warning t-button--variant-base t-button--block">
+                <text class="t-button__text">查看详情</text>
+              </button>
+            </view>
           </view>
         </view>
       </view>
-    </view>
-    
+    </scroll-view>
+
     <!-- 日历弹窗 -->
     <view v-if="calendarVisible" class="calendar-popup-mask" @click.stop="hideCalendarPopup" catchtouchmove>
       <view class="calendar-popup" @click.stop>
@@ -348,12 +353,18 @@ swiper-item {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s;
-  
+
   &-active {
     width: 48rpx;
     border-radius: 8rpx;
     background: rgba(255, 255, 255, 0.95);
   }
+}
+
+// 滚动内容区域
+.scroll-content {
+  height: 100vh; // 全屏高度，Banner 也在里面可以滚动
+  box-sizing: border-box;
 }
 
 // 页面内容

@@ -2,16 +2,22 @@
   <view class="page-container">
     <TdPageHeader title="我的课程" :showBack="true" />
 
-    <scroll-view scroll-y class="scroll-area">
+    <scroll-view
+      scroll-y
+      class="scroll-area"
+      @scroll="handleScroll"
+    >
       <view class="page-content">
         <!-- 标签页（使用CapsuleTabs组件） -->
-        <view class="tabs-wrapper">
-          <CapsuleTabs 
-            v-model="currentTab" 
-            :options="tabs"
-            @change="onTabChange"
-          />
-        </view>
+        <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
+          <template #tabs>
+            <CapsuleTabs
+              v-model="currentTab"
+              :options="tabs"
+              @change="onTabChange"
+            />
+          </template>
+        </StickyTabs>
 
         <!-- 课程列表 -->
         <view
@@ -71,9 +77,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
+import StickyTabs from '@/components/StickyTabs.vue';
+
+// 页面头部高度
+const pageHeaderHeight = ref(64);
+
+// StickyTabs 组件引用
+const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync();
+  const statusBarHeight = systemInfo.statusBarHeight || 20;
+  const navbarHeight = 44;
+  pageHeaderHeight.value = statusBarHeight + navbarHeight;
+});
+
+// 处理滚动事件
+const handleScroll = (e: any) => {
+  if (stickyTabsRef.value) {
+    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop);
+  }
+};
 
 // 标签页数据
 const tabs = ref([

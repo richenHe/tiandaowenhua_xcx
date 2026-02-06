@@ -253,6 +253,42 @@ ELSE:
 - 首次购买支付后不可修改
 - 使用 CloudBase uid 作为用户唯一标识
 
+**业务逻辑**:
+```
+1. 验证用户身份(CloudBase uid)
+2. 查询用户上次修改时间:
+   IF (NOW() - referee_updated_at) < 7天:
+       返回错误: "7天内只能修改1次,下次可修改时间为: {referee_updated_at + 7天}"
+3. 验证推荐人ID:
+   - 不能是自己:
+     IF referee_id = current_user_id:
+         返回错误: "不能选择自己为推荐人"
+   - 不能是自己的下级(递归查询推荐关系树):
+     查询以当前用户为根的推荐树
+     IF referee_id IN 推荐树:
+         返回错误: "不能选择自己的下级为推荐人"
+   - 推荐人必须是准青鸾及以上:
+     IF referee.ambassador_level < 1:
+         返回错误: "推荐人必须是传播大使"
+4. 检查是否首次购买:
+   IF EXISTS(SELECT 1 FROM orders WHERE user_id = ? AND pay_status = 1):
+       返回错误: "首次购买支付后不可修改推荐人"
+5. 更新推荐人并记录日志:
+   UPDATE users SET 
+     referee_id = ?,
+     referee_uid = ?,
+     referee_updated_at = NOW()
+   WHERE id = ?
+   
+   INSERT INTO referee_change_logs (
+     user_id, old_referee_id, new_referee_id,
+     change_type = 2,  // 用户主动修改
+     change_source = 1,  // 小程序用户资料
+     change_ip = ?
+   )
+6. 返回成功及下次可修改时间: NOW() + 7天
+```
+
 **响应数据**:
 ```json
 {
@@ -303,6 +339,34 @@ ELSE:
 ```
 ?referee_id=100&course_type=2
 // 或 ?referee_uid=cloud-uid-100&course_type=2
+```
+
+**业务逻辑**:
+```
+1. 查询推荐人信息(通过referee_id或referee_uid)
+2. 验证推荐人是否存在:
+   IF NOT EXISTS:
+       返回错误: "推荐人不存在"
+3. 验证推荐人等级:
+   IF course_type = 1:  // 初探班
+       IF referee.ambassador_level >= 1:  // 准青鸾及以上
+           valid = true
+       ELSE:
+           valid = false
+           error_message = "推荐人必须是传播大使才能推荐初探班"
+   ELSE IF course_type IN (2,3,4):  // 密训班/咨询/顾问
+       IF referee.ambassador_level >= 2:  // 青鸾及以上
+           valid = true
+       ELSE:
+           valid = false
+           error_message = "该推荐人暂时只能推荐初探班课程"
+4. 检查协议有效性:
+   IF referee.ambassador_level >= 1:
+       查询协议签署记录
+       IF 协议已过期:
+           valid = false
+           error_message = "推荐人协议已过期,暂不能推荐"
+5. 返回验证结果和推荐人详细信息
 ```
 
 **响应数据**:
@@ -602,6 +666,44 @@ ELSE:
 - 验证推荐人资格
 - 记录变更日志
 
+**业务逻辑**:
+```
+1. 查询订单信息:
+   SELECT * FROM orders WHERE order_no = ? AND user_id = ?
+2. 验证订单状态:
+   IF order.pay_status != 0:
+       返回错误: "仅待支付订单可修改推荐人"
+3. 根据订单类型确定课程类型:
+   IF order_type = 1:  // 课程购买
+       查询课程: SELECT type FROM courses WHERE id = order.related_id
+       course_type = course.type
+   ELSE IF order_type = 2:  // 复训
+       查询用户课程: SELECT course_type FROM user_courses WHERE id = order.related_id
+       course_type = user_course.course_type
+   ELSE IF order_type = 4:  // 大使升级
+       course_type = null  // 升级无需验证课程类型
+4. 验证新推荐人资格:
+   IF course_type IS NOT NULL:
+       调用推荐人资格验证接口
+       IF NOT valid:
+           返回错误: error_message
+5. 更新订单推荐人:
+   UPDATE orders SET 
+     referee_id = ?,
+     referee_uid = ?,
+     referee_updated_at = NOW()
+   WHERE order_no = ? AND pay_status = 0
+6. 记录变更日志:
+   INSERT INTO referee_change_logs (
+     user_id, order_no,
+     old_referee_id, new_referee_id,
+     change_type = 3,  // 订单页修改
+     change_source = 2,  // 订单支付页
+     change_ip = ?
+   )
+7. 返回更新后的推荐人信息
+```
+
 ### 🔵 3.3 发起支付
 **接口**: `POST /api/order/pay`
 
@@ -610,6 +712,47 @@ ELSE:
 {
   "order_no": "ORD202401150001"
 }
+```
+
+**业务逻辑**:
+```
+1. 查询订单信息:
+   SELECT * FROM orders WHERE order_no = ? AND user_id = ?
+2. 验证订单状态:
+   IF pay_status = 1:
+       返回错误: "订单已支付"
+   IF pay_status = 2:
+       返回错误: "订单已取消"
+3. 检查订单有效期:
+   IF created_at + 30分钟 < NOW():
+       UPDATE orders SET pay_status = 3  // 已关闭
+       返回错误: "订单已超时，请重新下单"
+4. 验证订单金额:
+   IF final_amount <= 0:
+       返回错误: "订单金额异常"
+5. 调用微信支付统一下单API:
+   请求参数:
+   - appid: 小程序appid
+   - mchid: 商户号
+   - description: order_name
+   - out_trade_no: order_no
+   - notify_url: https://yourdomain.com/api/order/notify
+   - amount: {
+       total: final_amount * 100,  // 转为分
+       currency: "CNY"
+     }
+   - payer: {
+       openid: user.openid
+     }
+6. 微信返回prepay_id后,生成支付参数:
+   timeStamp = 当前时间戳
+   nonceStr = 随机字符串
+   package = "prepay_id=" + prepay_id
+   signType = "RSA"
+   paySign = 使用商户私钥签名
+7. 更新订单prepay_id:
+   UPDATE orders SET prepay_id = ? WHERE order_no = ?
+8. 返回支付参数给前端
 ```
 
 **响应数据**:
@@ -931,6 +1074,54 @@ ELSE:
 - 复训：开课前3天可取消并退款
 - 超过3天不可取消
 
+**业务逻辑**:
+```
+1. 查询预约信息:
+   SELECT a.*, cr.class_date, cr.course_id
+   FROM appointments a
+   JOIN class_records cr ON a.class_record_id = cr.id
+   WHERE a.id = ? AND a.user_id = ?
+2. 验证预约状态:
+   IF status = 1:  // 已签到
+       返回错误: "已签到的预约无法取消"
+   IF status = 3:  // 已取消
+       返回错误: "该预约已取消"
+3. 检查取消时限:
+   距离开课天数 = DATEDIFF(class_date, NOW())
+   
+   IF is_retrain = 1:  // 复训预约
+       IF 距离开课天数 < 3:
+           返回错误: "开课前3天内无法取消复训预约"
+       can_refund = true
+   ELSE:  // 首次预约
+       IF 距离开课天数 < 1:
+           返回错误: "开课前1天内无法取消预约"
+       can_refund = false
+4. 开启事务:
+   a. 更新预约状态:
+      UPDATE appointments SET
+        status = 3,  // 已取消
+        cancel_reason = ?,
+        cancel_time = NOW()
+      WHERE id = ?
+   
+   b. 释放课程名额:
+      UPDATE class_records SET
+        booked_quota = booked_quota - 1
+      WHERE id = ?
+   
+   c. 如果是复训且需要退款:
+      IF is_retrain = 1 AND can_refund:
+         查询订单: SELECT * FROM orders WHERE order_no = appointment.order_no
+         IF order.pay_status = 1:
+            - 调用微信退款接口
+            - 更新订单状态: pay_status = 4 (已退款)
+            - 记录退款时间: refund_time = NOW()
+5. 提交事务
+6. 发送取消通知给用户
+7. 返回取消成功及退款信息(如有)
+```
+
 ### 🔵 4.4 我的预约
 **接口**: `GET /api/appointment/my`
 
@@ -986,10 +1177,71 @@ ELSE:
 ```
 
 **业务逻辑**:
-- 检查是否首次上课
-- 标记复训状态
-- 上课次数+1
-- 更新学员课程数据
+```
+1. 查询预约记录:
+   SELECT a.*, uc.attend_count, uc.course_id
+   FROM appointments a
+   JOIN user_courses uc ON a.user_course_id = uc.id
+   WHERE a.class_record_id = ? AND a.user_id = ?
+2. 验证预约是否存在:
+   IF NOT EXISTS:
+       返回错误: "未找到该学员的预约记录"
+3. 检查是否重复签到:
+   IF appointment.status = 1:  // 已签到
+       返回提示: "该学员已签到,签到时间: {checkin_time}"
+4. 判断是否首次上课:
+   IF attend_count = 1:
+       is_first_time = true
+   ELSE:
+       is_first_time = false
+5. 开启事务:
+   a. 更新签到记录:
+      UPDATE appointments SET
+        status = 1,  // 已签到
+        checkin_time = ?,
+        remark = ?
+      WHERE id = ?
+   
+   b. 更新上课次数:
+      UPDATE user_courses SET
+        attend_count = attend_count + 1,
+        last_attend_time = NOW()
+      WHERE id = ?
+   
+   c. 如果是首次上课,处理推荐人奖励:
+      IF is_first_time:
+         查询推荐人: SELECT referee_id FROM users WHERE id = ?
+         IF referee_id IS NOT NULL:
+            查询推荐人大使等级:
+            IF referee.ambassador_level = 2:  // 青鸾
+               检查是否首次推荐:
+               IF referee.is_first_recommend = false:
+                  // 首次推荐解冻1688积分
+                  UPDATE users SET
+                    cash_points_frozen = cash_points_frozen - 1688,
+                    cash_points_available = cash_points_available + 1688,
+                    is_first_recommend = true
+                  WHERE id = referee_id
+                  
+                  INSERT INTO cash_points_records (
+                    user_id = referee_id,
+                    type = 2,  // 解冻
+                    amount = 1688,
+                    order_no = 对应订单号
+                  )
+            ELSE IF referee.ambassador_level = 3:  // 鸿鹄
+               // 鸿鹄大使首次推荐也解冻1688积分
+               IF referee.cash_points_frozen >= 1688:
+                  UPDATE users SET
+                    cash_points_frozen = cash_points_frozen - 1688,
+                    cash_points_available = cash_points_available + 1688
+                  WHERE id = referee_id
+                  
+                  INSERT INTO cash_points_records (...)
+6. 提交事务
+7. 发送签到成功通知
+8. 返回签到成功信息
+```
 
 ### 🔴 4.7 签到管理 - 签到列表
 **接口**: `GET /api/admin/attendance/list`
@@ -1124,6 +1376,48 @@ ELSE:
 
 **前置条件**: 必须已购买密训班
 
+**业务逻辑**:
+```
+1. 验证用户已登录(CloudBase uid)
+2. 检查资料是否完善:
+   IF profile_completed = 0:
+       返回错误: "请先完善个人资料"
+3. 检查是否已是大使:
+   IF ambassador_level >= 1:
+       返回错误: "您已经是传播大使,无需重复申请"
+4. 验证前置条件:
+   查询用户课程:
+   IF NOT EXISTS(
+       SELECT 1 FROM user_courses 
+       WHERE user_id = ? AND course_type = 2  // 密训班
+   ):
+       返回错误: "必须先购买密训班才能申请成为传播大使"
+5. 检查是否重复申请:
+   IF EXISTS(
+       SELECT 1 FROM ambassador_applications 
+       WHERE user_id = ? AND status IN (0,1,2)  // 待审核/待面试/面试中
+   ):
+       返回错误: "您已提交申请,请等待审核结果"
+6. 验证必填字段:
+   IF real_name OR phone OR wechat_id OR city OR apply_reason 为空:
+       返回错误: "请填写完整的申请信息"
+7. 创建申请记录:
+   INSERT INTO ambassador_applications (
+     user_id, real_name, phone, wechat_id, city,
+     occupation, apply_reason, understanding,
+     willing_help, promotion_plan,
+     status = 0,  // 待审核
+     created_at = NOW()
+   )
+8. 发送通知给管理员(待审核提醒)
+9. 返回申请成功信息:
+   {
+     "application_id": xxx,
+     "status": 0,
+     "message": "申请已提交,请耐心等待审核"
+   }
+```
+
 ### 🔵 6.3 查看申请状态
 **接口**: `GET /api/ambassador/apply-status`
 
@@ -1142,6 +1436,50 @@ ELSE:
 **接口**: `GET /api/ambassador/qrcode`
 
 **前置条件**: 准青鸾及以上等级
+
+**业务逻辑**:
+```
+1. 验证用户是传播大使:
+   IF ambassador_level < 1:
+       返回错误: "仅限传播大使使用该功能"
+2. 检查协议有效性:
+   查询协议签署记录:
+   SELECT * FROM contract_signatures 
+   WHERE user_id = ? AND status = 1 
+   ORDER BY created_at DESC LIMIT 1
+   
+   IF NOT EXISTS OR contract_end < NOW():
+       返回错误: "协议已过期,请先续签协议"
+3. 生成或获取推荐码:
+   IF referee_code IS NULL:
+       LOOP:
+           生成6位唯一码(大写字母+数字组合)
+           检查是否已存在
+           IF NOT EXISTS: BREAK
+       UPDATE users SET referee_code = ? WHERE id = ?
+4. 构建小程序码参数:
+   scene = "ref_" + user_id  // 或使用 referee_code
+   page = "pages/auth/login/index"
+   width = 280
+   auto_color = false
+   line_color = {"r":0,"g":0,"b":0}
+5. 调用微信小程序码生成API:
+   如果已生成过,从缓存或数据库获取
+   如果未生成:
+      - 调用 GET wxacode.getUnlimited 接口
+      - 上传返回的图片到云存储
+      - 保存URL到数据库
+6. 生成分享链接:
+   share_url = "pages/auth/login/index?ref=" + referee_code
+7. 根据等级返回提示信息:
+   IF ambassador_level = 1:  // 准青鸾
+       tip = "您当前为准青鸾大使,暂时只能推荐初探班学员"
+   ELSE IF ambassador_level = 2:  // 青鸾
+       tip = "您可以推荐初探班和密训班学员"
+   ELSE IF ambassador_level >= 3:  // 鸿鹄及以上
+       tip = "您可以推荐所有课程"
+8. 返回二维码和分享信息
+```
 
 **响应数据**:
 ```json
@@ -1282,6 +1620,67 @@ ELSE:
     "account_no": "微信账号"
   }
 }
+```
+
+**业务逻辑**:
+```
+1. 验证用户资格:
+   IF ambassador_level < 1:
+       返回错误: "仅限传播大使提现"
+   IF profile_completed = 0:
+       返回错误: "请先完善个人资料"
+2. 验证提现金额:
+   IF amount < 100:
+       返回错误: "最低提现金额为100元"
+   IF amount > 50000:
+       返回错误: "单笔提现最高金额为50000元"
+   IF amount > cash_points_available:
+       返回错误: "可提现积分不足,当前可提现: {cash_points_available}元"
+3. 验证是否有待处理提现:
+   IF EXISTS(
+       SELECT 1 FROM withdrawals 
+       WHERE user_id = ? AND status IN (0,1)  // 待审核/审核通过待转账
+   ):
+       返回错误: "您有待处理的提现申请,请等待处理完成"
+4. 验证账户信息:
+   IF account_type = 1:  // 微信
+       验证 account_name 和 account_no 不为空
+   ELSE IF account_type = 2:  // 支付宝
+       验证账户信息格式
+   ELSE IF account_type = 3:  // 银行卡
+       验证银行卡号、开户行等信息
+5. 开启事务:
+   a. 冻结提现金额:
+      UPDATE users SET
+        cash_points_available = cash_points_available - ?,
+        cash_points_pending = cash_points_pending + ?
+      WHERE id = ? AND cash_points_available >= ?
+   
+   b. 创建提现记录:
+      withdraw_no = "WD" + YYYYMMDD + 8位随机数
+      INSERT INTO withdrawals (
+        withdraw_no, user_id, amount,
+        account_type, account_info,
+        status = 0,  // 待审核
+        apply_time = NOW()
+      )
+   
+   c. 插入积分明细:
+      INSERT INTO cash_points_records (
+        user_id, type = 4,  // 提现申请
+        amount = -amount,
+        withdraw_no,
+        remark = "申请提现"
+      )
+6. 提交事务
+7. 发送审核通知给管理员
+8. 返回提现申请成功:
+   {
+     "withdraw_no": xxx,
+     "amount": xxx,
+     "status": "待审核",
+     "tip": "预计1-3个工作日内审核完成"
+   }
 ```
 
 ### 🔵 6.11 提现记录
@@ -1603,6 +2002,76 @@ ELSE:
 }
 ```
 
+**业务逻辑**:
+```
+1. 查询申请记录:
+   SELECT * FROM ambassador_applications WHERE id = ?
+2. 验证申请状态:
+   IF status NOT IN (0, 2):  // 仅待审核和待面试可操作
+       返回错误: "该申请已处理,当前状态: {status_name}"
+3. 验证操作权限:
+   检查管理员是否有审核权限
+4. 根据操作类型处理:
+   
+   IF action = "approve":  // 通过
+       a. 开启事务
+       b. 更新申请状态:
+          UPDATE ambassador_applications SET
+            status = 3,  // 已通过
+            audit_admin_id = ?,
+            audit_time = NOW(),
+            audit_remark = ?
+          WHERE id = ?
+       
+       c. 更新用户等级:
+          UPDATE users SET
+            ambassador_level = 1,  // 准青鸾
+            ambassador_start_date = NOW()
+          WHERE id = application.user_id
+       
+       d. 提交事务
+       e. 发送通过通知给用户
+       f. 返回: "审核通过,用户已升级为准青鸾大使"
+   
+   ELSE IF action = "arrange_interview":  // 安排面试
+       IF interview_time 为空:
+           返回错误: "请填写面试时间"
+       
+       UPDATE ambassador_applications SET
+         status = 2,  // 待面试
+         interview_time = ?,
+         interview_remark = ?,
+         audit_admin_id = ?
+       WHERE id = ?
+       
+       发送面试通知给用户(包含面试时间和地点)
+       返回: "已安排面试"
+   
+   ELSE IF action = "reject":  // 拒绝
+       IF reject_reason 为空:
+           返回错误: "请填写拒绝原因"
+       
+       UPDATE ambassador_applications SET
+         status = 4,  // 已拒绝
+         reject_reason = ?,
+         audit_admin_id = ?,
+         audit_time = NOW()
+       WHERE id = ?
+       
+       发送拒绝通知给用户(包含拒绝原因)
+       返回: "已拒绝申请"
+   
+   ELSE:
+       返回错误: "无效的操作类型"
+5. 记录操作日志:
+   INSERT INTO admin_operation_logs (
+     admin_id, operation_type = "ambassador_audit",
+     related_id = application_id,
+     action, remark
+   )
+6. 返回处理结果
+```
+
 ### 🔴 6.14 大使管理 - 列表
 **接口**: `GET /api/admin/ambassador/list`
 
@@ -1785,6 +2254,54 @@ ELSE:
 ?contract_type=1&ambassador_level=2
 ```
 
+**业务逻辑**:
+```
+1. 验证用户已登录
+2. 查询最新协议模板:
+   SELECT * FROM contract_templates
+   WHERE contract_type = ? 
+     AND ambassador_level = ?
+     AND status = 1  // 启用状态
+   ORDER BY version DESC, created_at DESC
+   LIMIT 1
+3. 验证模板是否存在:
+   IF NOT EXISTS:
+       返回错误: "暂无可用的协议模板"
+4. 获取当前用户信息:
+   SELECT real_name, phone, city, referee.real_name as referee_name
+   FROM users u
+   LEFT JOIN users referee ON u.referee_id = referee.id
+   WHERE u.id = ?
+5. 填充协议变量:
+   定义变量映射:
+   {
+     "{{real_name}}": user.real_name,
+     "{{phone}}": user.phone,
+     "{{city}}": user.city,
+     "{{referee_name}}": user.referee_name || "无",
+     "{{today}}": FORMAT(NOW(), "YYYY年MM月DD日"),
+     "{{contract_start}}": FORMAT(NOW(), "YYYY年MM月DD日"),
+     "{{contract_end}}": FORMAT(NOW() + 1年, "YYYY年MM月DD日"),
+     "{{ambassador_level_name}}": 根据level返回名称,
+     "{{year}}": YEAR(NOW())
+   }
+   
+   content = template.content
+   FOR EACH variable IN 变量映射:
+       content = content.replace(variable.key, variable.value)
+6. 检查用户是否已签署:
+   SELECT id FROM contract_signatures
+   WHERE user_id = ? 
+     AND contract_template_id = ?
+     AND status = 1
+   
+   IF EXISTS:
+       already_signed = true
+   ELSE:
+       already_signed = false
+7. 返回处理后的协议内容和状态
+```
+
 **响应数据**:
 ```json
 {
@@ -1909,6 +2426,72 @@ ELSE:
   "user_id": 10,
   "renew_years": 1
 }
+```
+
+**业务逻辑**:
+```
+1. 验证管理员权限
+2. 查询用户信息:
+   SELECT * FROM users WHERE id = ?
+3. 验证用户是否是大使:
+   IF ambassador_level < 1:
+       返回错误: "该用户不是传播大使,无需签署协议"
+4. 查询用户最近的协议签署记录:
+   SELECT * FROM contract_signatures
+   WHERE user_id = ? AND status = 1
+   ORDER BY created_at DESC
+   LIMIT 1
+5. 判断是否需要续签:
+   IF EXISTS AND contract_end > NOW() + 3个月:
+       返回提示: "协议尚未临近到期(到期日: {contract_end}),确认要续签吗?"
+6. 获取最新协议模板:
+   SELECT * FROM contract_templates
+   WHERE contract_type = 1
+     AND ambassador_level = user.ambassador_level
+     AND status = 1
+   ORDER BY version DESC LIMIT 1
+7. 填充协议内容(同获取协议模板逻辑):
+   使用用户信息填充变量
+8. 开启事务:
+   a. 如果存在旧协议,更新为已过期:
+      UPDATE contract_signatures SET
+        status = 2  // 已过期
+      WHERE id = old_contract_id
+   
+   b. 创建新的签署记录:
+      contract_start = MAX(NOW(), old_contract_end)  // 从旧协议到期日或当前时间开始
+      contract_end = contract_start + renew_years年
+      
+      INSERT INTO contract_signatures (
+        user_id, contract_template_id,
+        ambassador_level = user.ambassador_level,
+        contract_name = template.contract_name,
+        contract_version = template.version,
+        contract_content = 填充后的协议内容,
+        contract_start,
+        contract_end,
+        sign_time = NOW(),
+        sign_type = 2,  // 管理员续签
+        admin_id = ?,
+        status = 1  // 有效
+      )
+9. 提交事务
+10. 发送续签通知给用户:
+    - 包含新的合同期限
+    - 提醒用户协议内容
+11. 记录操作日志:
+    INSERT INTO admin_operation_logs (
+      admin_id, operation_type = "contract_renew",
+      related_id = user_id,
+      remark = "手动续签协议{renew_years}年"
+    )
+12. 返回续签成功信息:
+    {
+      "signature_id": xxx,
+      "contract_start": xxx,
+      "contract_end": xxx,
+      "message": "协议续签成功"
+    }
 ```
 
 ---
@@ -2058,6 +2641,106 @@ ELSE:
 }
 ```
 
+**业务逻辑**:
+```
+1. 验证管理员权限
+2. 查询上课记录信息:
+   SELECT cr.*, c.name as course_name
+   FROM class_records cr
+   JOIN courses c ON cr.course_id = c.id
+   WHERE cr.id = ?
+3. 验证上课记录是否存在:
+   IF NOT EXISTS:
+       返回错误: "上课记录不存在"
+4. 确定接收人列表:
+   IF user_ids 为空或null:
+       // 发送给所有已预约学员
+       SELECT DISTINCT u.id, u.openid, u.real_name
+       FROM appointments a
+       JOIN users u ON a.user_id = u.id
+       WHERE a.class_record_id = ? 
+         AND a.status IN (0, 1)  // 待上课或已签到
+         AND u.openid IS NOT NULL
+   ELSE:
+       // 发送给指定学员
+       SELECT id, openid, real_name
+       FROM users
+       WHERE id IN (user_ids) AND openid IS NOT NULL
+5. 获取消息模板配置:
+   SELECT * FROM notification_configs
+   WHERE course_id = class_record.course_id
+     AND trigger_type = 5  // 手动发送
+   ORDER BY created_at DESC LIMIT 1
+   
+   IF NOT EXISTS:
+       使用默认模板
+6. 准备消息参数:
+   template_data = {
+     "thing1": {  // 课程名称
+       "value": course_name
+     },
+     "time2": {  // 上课时间
+       "value": class_record.class_date + " " + class_record.class_time
+     },
+     "thing3": {  // 上课地点
+       "value": class_record.class_location
+     },
+     "thing4": {  // 备注
+       "value": message_content || "请准时参加"
+     }
+   }
+7. 批量发送小程序订阅消息:
+   success_count = 0
+   fail_count = 0
+   
+   FOR EACH user IN 接收人列表:
+       TRY:
+           调用微信订阅消息API:
+           POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send
+           {
+             "touser": user.openid,
+             "template_id": template.template_id,
+             "page": "pages/appointment/detail/index?id=" + class_record_id,
+             "data": template_data
+           }
+           
+           IF 发送成功:
+               success_count++
+               send_status = 1
+           ELSE:
+               fail_count++
+               send_status = 2
+       CATCH error:
+           fail_count++
+           send_status = 2
+           error_message = error.message
+       
+       记录发送日志:
+       INSERT INTO notification_logs (
+         user_id = user.id,
+         class_record_id,
+         template_id = template.id,
+         send_status,
+         send_time = NOW(),
+         error_message,
+         admin_id = ?
+       )
+8. 记录操作日志:
+   INSERT INTO admin_operation_logs (
+     admin_id,
+     operation_type = "send_notification",
+     related_id = class_record_id,
+     remark = "手动发送消息给{total}位学员"
+   )
+9. 返回发送统计:
+   {
+     "total": 接收人列表.length,
+     "success_count": success_count,
+     "fail_count": fail_count,
+     "message": "消息发送完成"
+   }
+```
+
 ---
 
 ## 10. 后台管理模块
@@ -2141,6 +2824,91 @@ ELSE:
 **业务规则**:
 - 记录详细变更日志
 - 标注管理员ID
+
+**业务逻辑**:
+```
+1. 验证管理员权限(需要高级管理员权限)
+2. 查询用户当前推荐人信息:
+   SELECT u.*, referee.real_name as old_referee_name
+   FROM users u
+   LEFT JOIN users referee ON u.referee_id = referee.id
+   WHERE u.id = ?
+3. 验证用户是否存在:
+   IF NOT EXISTS:
+       返回错误: "用户不存在"
+4. 验证新推荐人:
+   a. 新推荐人不能是用户自己:
+      IF new_referee_id = user_id:
+          返回错误: "不能将用户的推荐人设置为自己"
+   
+   b. 新推荐人不能是用户的下级:
+      递归查询以user_id为根的推荐关系树
+      IF new_referee_id IN 推荐树:
+          返回错误: "不能将用户的下级设置为推荐人"
+   
+   c. 新推荐人必须存在且是大使:
+      SELECT * FROM users WHERE id = new_referee_id
+      IF NOT EXISTS:
+          返回错误: "新推荐人不存在"
+      IF ambassador_level < 1:
+          返回警告: "新推荐人不是传播大使,确认要设置吗?"
+5. 检查是否会影响已有订单:
+   SELECT COUNT(*) as order_count, SUM(final_amount) as total_amount
+   FROM orders
+   WHERE user_id = ? AND pay_status = 1
+   
+   IF order_count > 0:
+       返回提示信息:
+       "该用户有{order_count}笔已支付订单(总金额{total_amount}元),
+        修改推荐人可能影响推荐人的奖励统计,确认要修改吗?"
+6. 验证修改原因:
+   IF remark 为空或长度 < 10:
+       返回错误: "请填写详细的修改原因(至少10个字符)"
+7. 开启事务:
+   a. 更新用户推荐人:
+      UPDATE users SET
+        referee_id = ?,
+        referee_uid = (SELECT uid FROM users WHERE id = ?),
+        referee_updated_at = NOW()
+      WHERE id = ?
+   
+   b. 记录变更日志:
+      INSERT INTO referee_change_logs (
+        user_id,
+        old_referee_id = user.referee_id,
+        old_referee_uid = user.referee_uid,
+        new_referee_id,
+        new_referee_uid,
+        change_type = 3,  // 管理员修改
+        change_source = 3,  // 后台管理
+        admin_id = ?,
+        remark,
+        change_ip = ?
+      )
+   
+   c. 如果用户有未支付订单,同步更新订单推荐人:
+      UPDATE orders SET
+        referee_id = ?,
+        referee_uid = ?
+      WHERE user_id = ? AND pay_status = 0
+8. 提交事务
+9. 发送通知给用户(可选):
+   "您的推荐人已由管理员修改为: {new_referee_name}"
+10. 记录管理员操作日志:
+    INSERT INTO admin_operation_logs (
+      admin_id,
+      operation_type = "update_referee",
+      related_id = user_id,
+      remark = "修改推荐人: {old_referee_name} → {new_referee_name}"
+    )
+11. 返回修改成功信息:
+    {
+      "success": true,
+      "old_referee_name": xxx,
+      "new_referee_name": xxx,
+      "affected_orders": xxx  // 受影响的订单数量
+    }
+```
 
 ### 🔴 10.5 推荐人变更审计
 **接口**: `GET /api/admin/referee-log/list`
@@ -2226,7 +2994,103 @@ ELSE:
 
 ---
 
-## 遗漏功能识别
+## 补充：建议的数据库表字段
+
+基于补充的业务逻辑，建议在以下表中添加字段：
+
+### users 表
+```sql
+ALTER TABLE users ADD COLUMN referee_updated_at DATETIME COMMENT '推荐人最后修改时间';
+ALTER TABLE users ADD COLUMN referee_code VARCHAR(10) UNIQUE COMMENT '推荐码(6位字母数字组合)';
+ALTER TABLE users ADD COLUMN ambassador_start_date DATE COMMENT '成为大使的日期';
+ALTER TABLE users ADD COLUMN is_first_recommend BOOLEAN DEFAULT FALSE COMMENT '是否已完成首次推荐(用于青鸾解冻积分)';
+ALTER TABLE users ADD COLUMN cash_points_pending DECIMAL(10,2) DEFAULT 0 COMMENT '提现中的积分';
+```
+
+### orders 表
+```sql
+ALTER TABLE orders ADD COLUMN referee_updated_at DATETIME COMMENT '推荐人修改时间';
+ALTER TABLE orders ADD COLUMN expire_at DATETIME COMMENT '订单过期时间(创建后30分钟)';
+ALTER TABLE orders ADD COLUMN prepay_id VARCHAR(64) COMMENT '微信预支付交易会话标识';
+ALTER TABLE orders ADD COLUMN refund_time DATETIME COMMENT '退款时间';
+```
+
+### appointments 表
+```sql
+ALTER TABLE appointments ADD COLUMN cancel_reason VARCHAR(200) COMMENT '取消原因';
+ALTER TABLE appointments ADD COLUMN cancel_time DATETIME COMMENT '取消时间';
+ALTER TABLE appointments ADD COLUMN checkin_time DATETIME COMMENT '签到时间';
+```
+
+### user_courses 表
+```sql
+ALTER TABLE user_courses ADD COLUMN last_attend_time DATETIME COMMENT '最后上课时间';
+```
+
+### withdrawals 表
+```sql
+ALTER TABLE withdrawals ADD COLUMN apply_time DATETIME COMMENT '申请时间';
+ALTER TABLE withdrawals ADD COLUMN audit_time DATETIME COMMENT '审核时间';
+ALTER TABLE withdrawals ADD COLUMN audit_admin_id INT COMMENT '审核管理员ID';
+ALTER TABLE withdrawals ADD COLUMN transfer_time DATETIME COMMENT '转账时间';
+```
+
+### contract_signatures 表
+```sql
+ALTER TABLE contract_signatures ADD COLUMN sign_type TINYINT DEFAULT 1 COMMENT '签署类型:1用户签署/2管理员续签';
+ALTER TABLE contract_signatures ADD COLUMN admin_id INT COMMENT '操作管理员ID(续签时)';
+```
+
+### ambassador_applications 表
+```sql
+ALTER TABLE ambassador_applications ADD COLUMN audit_admin_id INT COMMENT '审核管理员ID';
+ALTER TABLE ambassador_applications ADD COLUMN audit_time DATETIME COMMENT '审核时间';
+ALTER TABLE ambassador_applications ADD COLUMN audit_remark VARCHAR(500) COMMENT '审核备注';
+```
+
+### notification_logs 表
+```sql
+ALTER TABLE notification_logs ADD COLUMN admin_id INT COMMENT '手动发送时的管理员ID';
+ALTER TABLE notification_logs ADD COLUMN error_message TEXT COMMENT '发送失败时的错误信息';
+```
+
+### 新增表：admin_operation_logs (管理员操作日志)
+```sql
+CREATE TABLE admin_operation_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT NOT NULL COMMENT '管理员ID',
+  operation_type VARCHAR(50) NOT NULL COMMENT '操作类型',
+  related_id INT COMMENT '关联记录ID',
+  remark TEXT COMMENT '操作备注',
+  ip_address VARCHAR(50) COMMENT '操作IP',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_admin_id (admin_id),
+  INDEX idx_operation_type (operation_type),
+  INDEX idx_created_at (created_at)
+) COMMENT='管理员操作日志表';
+```
+
+### 索引建议
+```sql
+-- users 表
+ALTER TABLE users ADD INDEX idx_referee_updated_at (referee_updated_at);
+ALTER TABLE users ADD INDEX idx_ambassador_level (ambassador_level);
+
+-- orders 表
+ALTER TABLE orders ADD INDEX idx_expire_at (expire_at);
+ALTER TABLE orders ADD INDEX idx_prepay_id (prepay_id);
+
+-- appointments 表
+ALTER TABLE appointments ADD INDEX idx_cancel_time (cancel_time);
+
+-- withdrawals 表
+ALTER TABLE withdrawals ADD INDEX idx_audit_time (audit_time);
+ALTER TABLE withdrawals ADD INDEX idx_status_apply_time (status, apply_time);
+```
+
+---
+
+<!-- ## 遗漏功能识别
 
 根据需求文档分析，以下功能可能需要补充：
 
@@ -2294,7 +3158,7 @@ ELSE:
 - 触发协议签署流程
 - 签署后自动升级并发放1688冻结积分
 
----
+--- -->
 
 ## 接口安全规范
 

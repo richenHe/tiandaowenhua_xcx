@@ -2,16 +2,22 @@
   <view class="page-container">
     <TdPageHeader title="我的订单" :showBack="true" />
 
-    <scroll-view class="scroll-content" scroll-y>
+    <scroll-view
+      class="scroll-content"
+      scroll-y
+      @scroll="handleScroll"
+    >
       <view class="page-content">
         <!-- 筛选标签 -->
-        <view class="tabs-wrapper">
-          <CapsuleTabs 
-            v-model="activeTab" 
-            :options="tabOptions"
-            @change="handleTabChange"
-          />
-        </view>
+        <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
+          <template #tabs>
+            <CapsuleTabs
+              v-model="activeTab"
+              :options="tabOptions"
+              @change="handleTabChange"
+            />
+          </template>
+        </StickyTabs>
 
         <!-- 订单列表 -->
         <view class="order-list">
@@ -55,9 +61,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
+import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+
+// 页面头部高度
+const pageHeaderHeight = ref(64)
+
+// StickyTabs 组件引用
+const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  const navbarHeight = 44
+  pageHeaderHeight.value = statusBarHeight + navbarHeight
+})
+
+// 处理滚动事件
+const handleScroll = (e: any) => {
+  if (stickyTabsRef.value) {
+    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
+  }
+}
 
 // Tab 标签
 const tabs = ['全部', '已完成', '已取消']

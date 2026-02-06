@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.17.0",
+    "mysql2": "^3.16.3"
+  }
+}

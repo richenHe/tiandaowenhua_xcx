@@ -1,0 +1,32 @@
+{
+  "envId": "cloud1-0gnn3mn17b581124",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "test",
+      "timeout": 30,
+      "envVariables": {
+        "MYSQL_HOST": "gz-cynosdbmysql-grp-2xaxm80c.sql.tencentcdb.com",
+        "MYSQL_PORT": "22483",
+        "MYSQL_USER": "xcx",
+        "MYSQL_PASSWORD": "xCX020202",
+        "MYSQL_DATABASE": "tiandao_culture"
+      },
+      "runtime": "Nodejs18.15",
+      "layers": [
+        {
+          "name": "common",
+          "version": 1
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "name": "common",
+      "path": "./cloudfunctions/layers/common"
+    }
+  ]
+}
+
+

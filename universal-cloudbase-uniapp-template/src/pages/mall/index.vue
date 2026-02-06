@@ -6,7 +6,11 @@
       </template>
     </TdPageHeader>
 
-    <scroll-view class="scroll-content" scroll-y>
+    <scroll-view
+      class="scroll-content"
+      :scroll-y="true"
+      @scroll="handleScroll"
+    >
       <!-- 积分横幅 -->
       <view class="points-banner">
         <view class="points-section">
@@ -29,8 +33,8 @@
       <view class="page-content">
         <!-- 主Tab切换：兑换商品 / 兑换课程 -->
         <view class="tabs-wrapper">
-          <CapsuleTabs 
-            v-model="activeMainTab" 
+          <CapsuleTabs
+            v-model="activeMainTab"
             :options="mainTabOptions"
             @change="handleMainTabChange"
           />
@@ -38,14 +42,16 @@
 
         <!-- 兑换商品内容 -->
         <view v-if="activeMainTab === 0">
-          <!-- 商品分类Tab -->
-          <view class="category-tabs-wrapper">
-            <CapsuleTabs 
-              v-model="activeCategory" 
-              :options="categoryOptions"
-              @change="handleCategoryChange"
-            />
-          </view>
+          <!-- 分类标签（吸顶） -->
+          <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
+            <template #tabs>
+              <CapsuleTabs
+                v-model="activeCategory"
+                :options="categoryOptions"
+                @change="handleCategoryChange"
+              />
+            </template>
+          </StickyTabs>
 
           <!-- 商品网格 -->
           <view class="product-grid">
@@ -152,6 +158,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
+import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { calculateMixedPayment } from '@/utils/mixed-payment-calculator';
 
@@ -169,6 +176,27 @@ const mainTabOptions = [
 
 // 页面标题
 const pageTitle = computed(() => mainTabs[activeMainTab.value]);
+
+// 页面头部高度（用于吸顶偏移）
+const pageHeaderHeight = ref(64);
+
+// StickyTabs 组件引用
+const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
+
+onMounted(() => {
+  // 获取系统信息计算实际的头部高度
+  const systemInfo = uni.getSystemInfoSync();
+  const statusBarHeight = systemInfo.statusBarHeight || 20;
+  const navbarHeight = 44; // 导航栏高度
+  pageHeaderHeight.value = statusBarHeight + navbarHeight;
+});
+
+// 处理滚动事件
+const handleScroll = (e: any) => {
+  if (stickyTabsRef.value) {
+    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop);
+  }
+};
 
 // 判断是否有足够的功德分和积分兑换
 const canAfford = (requiredPoints: number) => {
@@ -435,16 +463,6 @@ const performExchange = async (
     // }
   }, 1500);
 };
-
-onMounted(() => {
-  fetchUserPoints();
-});
-
-// 模拟获取用户功德分和积分
-const fetchUserPoints = () => {
-  console.log('Fetching user points...');
-  // 实际应该调用 API 获取用户功德分和积分
-};
 </script>
 
 <style lang="scss" scoped>
@@ -453,6 +471,7 @@ const fetchUserPoints = () => {
 .page-container {
   min-height: 100vh;
   background-color: $td-bg-color-page;
+  position: relative;
 }
 
 .icon-text {
@@ -462,14 +481,15 @@ const fetchUserPoints = () => {
 
 // 滚动内容
 .scroll-content {
-  height: calc(100vh - var(--td-page-header-height));
+  height: calc(100vh - var(--window-top));
+  box-sizing: border-box;
 }
 
 // 积分横幅
 .points-banner {
   background: linear-gradient(135deg, $td-warning-color, #f5a623);
   padding: 32rpx;
-  margin: 32rpx;
+  margin: 32rpx; // 恢复四周边距
   border-radius: $td-radius-default;
   display: flex;
   align-items: center;
@@ -504,13 +524,8 @@ const fetchUserPoints = () => {
 
 // 标签切换容器
 .tabs-wrapper {
-  margin-bottom: 32rpx;
-  margin-top: 32rpx;
-}
-
-// 分类Tab包装器
-.category-tabs-wrapper {
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
+  margin-top: 0;
 }
 
 // 商品网格

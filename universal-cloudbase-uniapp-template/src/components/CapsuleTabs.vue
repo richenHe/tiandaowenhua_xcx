@@ -1,7 +1,7 @@
 <template>
   <view class="capsule-tabs">
-    <view 
-      v-for="(item, index) in options" 
+    <view
+      v-for="(item, index) in options"
       :key="item.value ?? index"
       class="capsule-tabs__item"
       :class="{ 'is-active': modelValue === (item.value ?? index) }"
@@ -51,7 +51,9 @@ const handleChange = (value: string | number) => {
   border-radius: 999rpx;
   // 原型图: padding: 2px
   padding: 4rpx;
-  
+  // 去掉边框，避免吸顶时出现边框线
+  border: none;
+
   &__item {
     display: inline-flex;
     align-items: center;
@@ -68,7 +70,7 @@ const handleChange = (value: string | number) => {
     transition: all 0.2s ease;
     white-space: nowrap;
     cursor: pointer;
-    
+
     &.is-active {
       // 原型图: background-color: var(--td-bg-color-container) = #FFFFFF
       background-color: #FFFFFF;
@@ -82,4 +84,3 @@ const handleChange = (value: string | number) => {
   }
 }
 </style>
-

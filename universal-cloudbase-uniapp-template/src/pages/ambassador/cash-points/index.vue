@@ -2,13 +2,14 @@
   <view class="page">
     <td-page-header title="积分管理" />
     
-    <scroll-view 
-      class="scroll-area" 
-      scroll-y 
+    <scroll-view
+      class="scroll-area"
+      scroll-y
       :style="{ height: scrollHeight }"
+      @scroll="handleScroll"
     >
       <view class="page-content">
-        
+
         <!-- 积分余额卡片 -->
         <view class="balance-card">
           <view class="balance-label">💰 总积分余额</view>
@@ -59,9 +60,15 @@
         </view>
 
         <!-- Tab切换 -->
-        <view class="tabs-wrapper">
-          <t-capsule-tabs :tabs="tabs" :activeTab="activeTab" @change="onTabChange" />
-        </view>
+        <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
+          <template #tabs>
+            <CapsuleTabs
+              v-model="activeTab"
+              :options="tabs"
+              @change="onTabChange"
+            />
+          </template>
+        </StickyTabs>
 
         <!-- 积分明细列表 -->
         <view class="t-section-title t-section-title--simple">💰 明细记录</view>
@@ -209,13 +216,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import TCapsuleTabs from '@/components/CapsuleTabs.vue'
+import CapsuleTabs from '@/components/CapsuleTabs.vue'
+import StickyTabs from '@/components/StickyTabs.vue'
 
 const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
+  return 'calc(100vh - var(--window-top) - 120rpx)'
 })
+
+// 页面头部高度
+const pageHeaderHeight = ref(64)
+
+// StickyTabs 组件引用
+const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  const navbarHeight = 44
+  pageHeaderHeight.value = statusBarHeight + navbarHeight
+})
+
+// 处理滚动事件
+const handleScroll = (e: any) => {
+  if (stickyTabsRef.value) {
+    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
+  }
+}
 
 const tabs = ref([
   { label: '全部', value: 'all' },
