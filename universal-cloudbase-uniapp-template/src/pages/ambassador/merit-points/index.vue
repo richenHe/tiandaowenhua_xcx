@@ -1,26 +1,12 @@
 <template>
   <view class="page">
-    <!-- 页面头部 -->
-    <view class="t-page-header t-page-header--fixed t-page-header--border">
-      <view class="t-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-      <view class="t-page-header__navbar">
-        <view class="t-page-header__left" @click="handleBack">
-          <view class="t-page-header__back">
-            <text class="t-page-header__back-icon">←</text>
-          </view>
-        </view>
-        <view class="t-page-header__title t-page-header__title--center">
-          <text class="t-page-header__title-text">功德分管理</text>
-        </view>
-        <view class="t-page-header__right"></view>
-      </view>
-    </view>
-    <view class="t-page-header__placeholder" :style="{ height: headerHeight + 'px' }"></view>
+    <TdPageHeader title="功德分管理" :showBack="true" />
     
     <scroll-view 
       class="scroll-area" 
       scroll-y 
       :style="{ height: scrollHeight }"
+      @scroll="handleScroll"
     >
       <view class="page-content">
         
@@ -82,19 +68,16 @@
           </view>
         </view>
 
-        <!-- Tab切换 - 使用纯 CSS 类名 -->
+        <!-- Tab切换 - 吸顶 -->
         <view class="tabs-wrapper">
-          <view class="t-capsule-tabs">
-            <view 
-              v-for="tab in tabs" 
-              :key="tab.value"
-              class="t-capsule-tabs__item"
-              :class="{ 't-capsule-tabs__item--active': activeTab === tab.value }"
-              @click="activeTab = tab.value"
-            >
-              {{ tab.label }}
-            </view>
-          </view>
+          <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight">
+            <template #tabs>
+              <CapsuleTabs
+                v-model="activeTab"
+                :options="tabs"
+              />
+            </template>
+          </StickyTabs>
         </view>
 
         <!-- 功德分明细列表 -->
@@ -216,9 +199,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import CapsuleTabs from '@/components/CapsuleTabs.vue'
+import StickyTabs from '@/components/StickyTabs.vue'
 
-const statusBarHeight = ref(20)
 const activeTab = ref('all')
+
+// StickyTabs 组件引用
+const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
+
+// 页面头部高度
+const pageHeaderHeight = ref(64)
 
 const tabs = ref([
   { label: '全部明细', value: 'all' },
@@ -229,19 +220,20 @@ const tabs = ref([
 
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
-})
-
-const headerHeight = computed(() => {
-  return statusBarHeight.value + 44 // 44px 是导航栏高度
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  // 计算页面头部高度（状态栏 + 导航栏）
+  pageHeaderHeight.value = statusBarHeight + 44
 })
 
 const scrollHeight = computed(() => {
-  return `calc(100vh - ${headerHeight.value}px)`
+  return 'calc(100vh - var(--window-top))'
 })
 
-const handleBack = () => {
-  uni.navigateBack()
+// 处理滚动事件
+const handleScroll = (e: any) => {
+  if (stickyTabsRef.value) {
+    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
+  }
 }
 
 const goToMall = () => {

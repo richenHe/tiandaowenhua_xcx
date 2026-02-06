@@ -148,7 +148,7 @@ const bannerList = ref([
     title: '天道文化商学院',
     subtitle: '传承国学智慧 · 培养复合型人才\n点击了解更多',
     theme: 'banner-slide--purple',
-    link: '/pages/academy/intro/index'
+    link: '/pages/academy/index'
   },
   {
     emoji: '📱',
@@ -215,9 +215,15 @@ const onSwiperChange = (e: any) => {
 // 轮播点击事件
 const onBannerClick = (banner: any) => {
   if (banner.link) {
-    uni.navigateTo({ url: banner.link });
+    // 判断是否为 tabBar 页面
+    const tabBarPages = ['/pages/index/index', '/pages/mall/index', '/pages/academy/index', '/pages/mine/index']
+    if (tabBarPages.includes(banner.link)) {
+      uni.switchTab({ url: banner.link })
+    } else {
+      uni.navigateTo({ url: banner.link })
+    }
   }
-};
+}
 
 const onTabChange = (value: string | number) => {
   if (value === 'calendar') {

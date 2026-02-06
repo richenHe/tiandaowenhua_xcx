@@ -17,12 +17,20 @@
 
 ### 强制规范
 
-#### 1. 样式规范
+#### 1. 样式规范（严格遵守）
 - **禁止**：TDesign Vue 组件、自定义类名、硬编码颜色
 - **必须**：使用 TDesign CSS 类名（.t-card/.t-button 等）
-- 个性化样式用 inline style
-- 颜色使用 SCSS 变量（$td-brand-color）
-- 先查 `src/styles/components/index.scss`，优先使用现有组件
+- **严格遵循样式优先级**：
+  1. 优先使用 TDesign CSS 类名（先查 `src/styles/components/index.scss`）
+  2. 如样式可复用且无类似组件，必须添加到 `src/styles/components/*.scss`
+  3. 最后才考虑 inline style（仅用于真正的个性化场景）
+  4. **绝对禁止**：自定义类名、随意的 style 标签样式
+- **可复用性原则**：
+  - 发现 2+ 处相同/类似样式 → 立即抽取到 components/*.scss
+  - 新建 SCSS 文件时必须在 `components/index.scss` 中导入
+  - 保持样式统一性，避免"一次性"样式
+- **颜色规范**：只能使用 SCSS 变量（如 `$td-brand-color`）
+- **修改前必查**：检查 `src/styles/components/` 是否有可用样式
 
 #### 2. 盒模型规范（防止溢出）
 - scroll-view 带 padding 必须设置 `boxSizing: 'border-box'`
@@ -58,16 +66,79 @@
 布局：.t-page-header, .t-section-title, .t-tabs
 数据：.t-list, .t-cell
 
-### Code Review 检查
-- [ ] 使用 TDesign CSS 类名
-- [ ] scroll-view 带 padding 设置了 boxSizing: border-box
-- [ ] 滚动容器外层有 overflow: hidden
-- [ ] 页面左右对称无溢出
-- [ ] 弹窗用 uni.showModal
-- [ ] 颜色用 SCSS 变量
+#### CapsuleTabs 吸顶组件
+使用 CapsuleTabs 时必须配合 StickyTabs 实现吸顶：
 
-### 样式优先级
-1. TDesign CSS 类名（先查 index.scss）
-2. 可复用组件样式（添加到 components/*.scss）
-3. inline style（个性化样式）
-4. 禁止自定义类名
+```vue
+<template>
+  <scroll-view @scroll="handleScroll">
+    <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight">
+      <template #tabs>
+        <CapsuleTabs v-model="activeTab" :options="tabOptions" />
+      </template>
+    </StickyTabs>
+  </scroll-view>
+</template>
+
+<script setup>
+import CapsuleTabs from '@/components/CapsuleTabs.vue'
+import StickyTabs from '@/components/StickyTabs.vue'
+
+const stickyTabsRef = ref()
+const pageHeaderHeight = ref(64)
+
+onMounted(() => {
+  const systemInfo = uni.getSystemInfoSync()
+  pageHeaderHeight.value = (systemInfo.statusBarHeight || 20) + 44
+})
+
+const handleScroll = (e) => {
+  stickyTabsRef.value?.updateScrollTop(e.detail.scrollTop)
+}
+</script>
+```
+
+**注意**：首页等有 Banner 的页面不需要吸顶，直接使用 CapsuleTabs。
+
+### Code Review 检查清单
+- [ ] **样式优先级**：先用 TDesign CSS 类名，再考虑可复用组件样式
+- [ ] **可复用性**：相同样式已抽取到 components/*.scss
+- [ ] **禁止项**：无自定义类名、无硬编码颜色、无随意 inline style
+- [ ] **盒模型**：scroll-view 带 padding 设置了 boxSizing: border-box
+- [ ] **溢出控制**：滚动容器外层有 overflow: hidden
+- [ ] **布局一致性**：页面左右对称无溢出
+- [ ] **交互规范**：弹窗用 uni.showModal
+- [ ] **颜色规范**：所有颜色用 SCSS 变量（$td-xxx）
+- [ ] **新增样式**：已确认 components/*.scss 中无类似样式，或已添加
+
+### 样式优先级（强制执行）
+**严格按照以下顺序，不得跳级：**
+
+1. **TDesign CSS 类名**（第一选择）
+   - 先查 `src/styles/components/index.scss` 及其引入的所有 SCSS 文件
+   - 使用现有的 `.t-*` 类名，如 `.t-card`、`.t-button`、`.t-page-header__back-icon`
+   - 如需调整，通过 CSS 变量或 SCSS 变量配置
+
+2. **可复用组件样式**（第二选择）
+   - 当前项目中 2+ 处需要相同样式 → 抽取到 `components/*.scss`
+   - 命名规范：`.t-自定义名称`（如 `.t-price-card`、`.t-user-avatar`）
+   - 新建文件后必须在 `components/index.scss` 中添加 `@import`
+   - 必须使用 SCSS 变量，保持全局统一
+
+3. **inline style**（第三选择，最后手段）
+   - 仅用于真正的"一次性"个性化样式
+   - 示例：特定渐变背景、单独的尺寸调整
+   - 颜色仍需使用 SCSS 变量引用
+
+4. **绝对禁止**
+   - ❌ 自定义 class 类名
+   - ❌ 硬编码颜色值（如 `#0052D9`、`rgba(0, 0, 0, 0.5)`）
+   - ❌ `<style>` 标签中的临时样式
+   - ❌ 不可复用的重复样式
+
+### 样式添加流程
+1. 需要样式 → 先查 `src/styles/components/`
+2. 找到匹配 → 直接使用 TDesign 类名
+3. 未找到 + 可复用 → 添加到 `components/*.scss` + 更新 `index.scss`
+4. 未找到 + 一次性 → 使用 inline style（颜色仍用变量）
+5. 完成后更新本规范文档

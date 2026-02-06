@@ -60,15 +60,17 @@
         </view>
 
         <!-- Tab切换 -->
-        <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
-          <template #tabs>
-            <CapsuleTabs
-              v-model="activeTab"
-              :options="tabs"
-              @change="onTabChange"
-            />
-          </template>
-        </StickyTabs>
+        <view class="tabs-wrapper">
+          <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
+            <template #tabs>
+              <CapsuleTabs
+                v-model="activeTab"
+                :options="tabs"
+                @change="onTabChange"
+              />
+            </template>
+          </StickyTabs>
+        </view>
 
         <!-- 积分明细列表 -->
         <view class="t-section-title t-section-title--simple">💰 明细记录</view>
@@ -255,8 +257,8 @@ const tabs = ref([
 
 const activeTab = ref('all')
 
-const onTabChange = (value: string) => {
-  activeTab.value = value
+const onTabChange = (value: string | number) => {
+  activeTab.value = value as string
 }
 
 const goToWithdraw = () => {
