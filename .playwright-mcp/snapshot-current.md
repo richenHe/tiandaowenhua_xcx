@@ -1,0 +1,659 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e4]:
+    - generic [ref=e6]:
+      - link "腾讯云" [ref=e7] [cursor=pointer]:
+        - /url: https://cloud.tencent.com
+        - generic [ref=e8]: 腾讯云
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - button "最新活动 HOT" [ref=e12] [cursor=pointer]:
+            - text: 最新活动
+            - generic [ref=e14]: HOT
+        - listitem [ref=e15]:
+          - button "产品" [ref=e16] [cursor=pointer]
+        - listitem [ref=e17]:
+          - button "解决方案" [ref=e18] [cursor=pointer]
+        - listitem [ref=e19]:
+          - button "定价" [ref=e20] [cursor=pointer]
+        - listitem [ref=e21]:
+          - button "企业中心" [ref=e22] [cursor=pointer]
+        - listitem [ref=e23]:
+          - button "云市场" [ref=e24] [cursor=pointer]
+        - listitem [ref=e25]:
+          - button "开发者" [ref=e26] [cursor=pointer]
+        - listitem [ref=e27]:
+          - button "客户支持" [ref=e28] [cursor=pointer]
+        - listitem [ref=e29]:
+          - button "合作与生态" [ref=e30] [cursor=pointer]
+        - listitem [ref=e31]:
+          - button "了解腾讯云" [ref=e32] [cursor=pointer]
+      - generic [ref=e33]:
+        - generic [ref=e35] [cursor=pointer]:
+          - list [ref=e36]:
+            - listitem [ref=e37]: 短信
+          - button [ref=e38]
+        - generic [ref=e40]:
+          - generic [ref=e42]: 中国站
+          - generic [ref=e43]:
+            - link "文档" [ref=e44] [cursor=pointer]:
+              - /url: https://cloud.tencent.com/document/product
+            - link "备案" [ref=e45] [cursor=pointer]:
+              - /url: https://cloud.tencent.com/product/ba
+            - button "控制台" [ref=e46] [cursor=pointer]
+        - link "登录" [ref=e47] [cursor=pointer]:
+          - /url: javascript:void 0;
+        - link "免费注册" [ref=e48] [cursor=pointer]:
+          - /url: javascript:void 0;
+  - generic [ref=e49]:
+    - generic [ref=e53]:
+      - generic [ref=e55]:
+        - link "云函数" [ref=e58] [cursor=pointer]:
+          - /url: /document/product/583
+        - generic [ref=e62]:
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+          - textbox "在目录中搜索" [ref=e66]
+        - generic [ref=e67]:
+          - link "动态与公告" [ref=e69] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "动态与公告" [level=4] [ref=e70]
+          - link "新手指引" [ref=e73] [cursor=pointer]:
+            - /url: /document/product/583/54786
+            - heading "新手指引" [level=4] [ref=e74]
+          - link "产品简介" [ref=e76] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "产品简介" [level=4] [ref=e77]
+          - link "购买指南" [ref=e80] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "购买指南" [level=4] [ref=e81]
+          - link "快速入门" [ref=e84] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "快速入门" [level=4] [ref=e85]
+          - link "操作指南" [ref=e88] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "操作指南" [level=4] [ref=e89]
+          - link "触发器" [ref=e92] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "触发器" [level=4] [ref=e93]
+          - link "开发指南" [ref=e96] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "开发指南" [level=4] [ref=e97]
+          - link "开发者工具" [ref=e100] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "开发者工具" [level=4] [ref=e101]
+          - link "代码开发" [ref=e104] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "代码开发" [level=4] [ref=e105]
+          - link "Web 框架部署" [ref=e108] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "Web 框架部署" [level=4] [ref=e109]
+          - link "AI 应用" [ref=e112] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "AI 应用" [level=4] [ref=e113]
+          - link "实践教程" [ref=e116] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "实践教程" [level=4] [ref=e117]
+          - link "第三方教程" [ref=e120] [cursor=pointer]:
+            - /url: /document/product/583/72142
+            - heading "第三方教程" [level=4] [ref=e121]
+          - link "客户案例" [ref=e123] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "客户案例" [level=4] [ref=e124]
+          - link "API 文档" [ref=e127] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "API 文档" [level=4] [ref=e128]
+          - link "SDK 文档" [ref=e131] [cursor=pointer]:
+            - /url: /document/product/583/59023
+            - heading "SDK 文档" [level=4] [ref=e132]
+          - link "视频专区" [ref=e134] [cursor=pointer]:
+            - /url: /document/product/583/55448
+            - heading "视频专区" [level=4] [ref=e135]
+          - generic [ref=e136]:
+            - link "常见问题" [ref=e137] [cursor=pointer]:
+              - /url: javascript:void 0;
+              - heading "常见问题" [level=4] [ref=e138]
+            - list [ref=e140]:
+              - listitem [ref=e141]:
+                - link "通用问题" [ref=e142] [cursor=pointer]:
+                  - /url: /document/product/583/9180
+                  - generic [ref=e143]: 通用问题
+              - listitem [ref=e144]:
+                - link "Web 函数相关问题" [ref=e145] [cursor=pointer]:
+                  - /url: /document/product/583/56129
+                  - generic [ref=e146]: Web 函数相关问题
+              - listitem [ref=e147]:
+                - link "计费相关问题" [ref=e148] [cursor=pointer]:
+                  - /url: /document/product/583/55717
+                  - generic [ref=e149]: 计费相关问题
+              - listitem [ref=e150]:
+                - link "网络相关问题" [ref=e151] [cursor=pointer]:
+                  - /url: /document/product/583/55718
+                  - generic [ref=e152]: 网络相关问题
+              - listitem [ref=e153]:
+                - link "日志相关问题" [ref=e154] [cursor=pointer]:
+                  - /url: /document/product/583/55719
+                  - generic [ref=e155]: 日志相关问题
+              - listitem [ref=e156]:
+                - link "状态码相关问题" [ref=e157] [cursor=pointer]:
+                  - /url: /document/product/583/97808
+                  - generic [ref=e158]: 状态码相关问题
+              - listitem [ref=e159]:
+                - link "API 网关触发器相关问题" [ref=e160] [cursor=pointer]:
+                  - /url: /document/product/583/55720
+                  - generic [ref=e161]: API 网关触发器相关问题
+              - listitem [ref=e162]:
+                - link "事件处理相关问题" [ref=e163] [cursor=pointer]:
+                  - /url: /document/product/583/18264
+                  - generic [ref=e164]: 事件处理相关问题
+              - listitem [ref=e165]:
+                - link "SCF 工具相关问题" [ref=e166] [cursor=pointer]:
+                  - /url: /document/product/583/33456
+                  - generic [ref=e167]: SCF 工具相关问题
+          - link "相关协议" [ref=e169] [cursor=pointer]:
+            - /url: javascript:void 0;
+            - heading "相关协议" [level=4] [ref=e170]
+          - link "联系我们" [ref=e173] [cursor=pointer]:
+            - /url: /document/product/583/9712
+            - heading "联系我们" [level=4] [ref=e174]
+          - link "词汇表" [ref=e176] [cursor=pointer]:
+            - /url: /document/product/583/18561
+            - heading "词汇表" [level=4] [ref=e177]
+      - generic [ref=e178]:
+        - generic [ref=e181]:
+          - list [ref=e182]:
+            - listitem [ref=e183]:
+              - link "文档中心" [ref=e184] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/document/product
+            - listitem [ref=e185]:
+              - link "入门中心" [ref=e186] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/guide
+            - listitem [ref=e187]:
+              - link "API 中心" [ref=e188] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/document/api
+            - listitem [ref=e189]:
+              - link "SDK 中心" [ref=e190] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/document/sdk
+            - listitem [ref=e191]:
+              - link "文档活动" [ref=e192] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/document/act
+            - listitem [ref=e193]: 我的反馈
+          - generic [ref=e194]:
+            - link "文档反馈官招募中，报名立赚积分兑换代金券！> HOT" [ref=e195] [cursor=pointer]:
+              - /url: https://cloud.tencent.com/document/product/855/120653
+            - textbox "搜索相关文档" [ref=e197]
+        - generic [ref=e203]:
+          - generic [ref=e205]:
+            - link "文档中心" [ref=e206] [cursor=pointer]:
+              - /url: /document/product
+            - generic [ref=e207]: ">"
+            - link "云函数" [ref=e208] [cursor=pointer]:
+              - /url: /document/product/583
+            - generic [ref=e209]: ">"
+            - link "常见问题" [ref=e210] [cursor=pointer]:
+              - /url: /document/product/583/18262
+            - generic [ref=e211]: ">"
+            - generic [ref=e212]: 通用问题
+          - generic [ref=e213]:
+            - generic [ref=e214]:
+              - heading "通用问题" [level=1] [ref=e215]
+              - generic [ref=e216]:
+                - paragraph [ref=e217]: 最近更新时间：2025-02-20 11:35:43
+                - generic [ref=e218]:
+                  - link [ref=e219] [cursor=pointer]:
+                    - /url: https://main.qcloudimg.com/raw/document/product/pdf/583_18262_cn.pdf
+                  - emphasis [ref=e228]: 我的收藏
+            - generic [ref=e229]:
+              - heading "本页目录：" [level=2] [ref=e230]
+              - list [ref=e231]:
+                - listitem [ref=e232]:
+                  - link "函数运行报错 “Cannot find module”、“No module named”、找不到依赖怎么处理？如何进行依赖安装？" [ref=e233] [cursor=pointer]:
+                    - /url: "#.E5.87.BD.E6.95.B0.E8.BF.90.E8.A1.8C.E6.8A.A5.E9.94.99-.E2.80.9Ccannot-find-module.E2.80.9D.E3.80.81.E2.80.9Cno-module-named.E2.80.9D.E3.80.81.E6.89.BE.E4.B8.8D.E5.88.B0.E4.BE.9D.E8.B5.96.E6.80.8E.E4.B9.88.E5.A4.84.E7.90.86.EF.BC.9F.E5.A6.82.E4.BD.95.E8.BF.9B.E8.A1.8C.E4.BE.9D.E8.B5.96.E5.AE.89.E8.A3.85.EF.BC.9F"
+                - listitem [ref=e234]:
+                  - link "SCF 环境内的时区是什么？如何处理时区影响？" [ref=e235] [cursor=pointer]:
+                    - /url: "#scf-.E7.8E.AF.E5.A2.83.E5.86.85.E7.9A.84.E6.97.B6.E5.8C.BA.E6.98.AF.E4.BB.80.E4.B9.88.EF.BC.9F.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.E6.97.B6.E5.8C.BA.E5.BD.B1.E5.93.8D.EF.BC.9F"
+                - listitem [ref=e236]:
+                  - link "写文件报错无权限？环境内有可写空间吗？" [ref=e237] [cursor=pointer]:
+                    - /url: "#.E5.86.99.E6.96.87.E4.BB.B6.E6.8A.A5.E9.94.99.E6.97.A0.E6.9D.83.E9.99.90.EF.BC.9F.E7.8E.AF.E5.A2.83.E5.86.85.E6.9C.89.E5.8F.AF.E5.86.99.E7.A9.BA.E9.97.B4.E5.90.97.EF.BC.9F"
+                - listitem [ref=e238]:
+                  - link "可写空间写满后报错如何处理？" [ref=e239] [cursor=pointer]:
+                    - /url: "#.E5.8F.AF.E5.86.99.E7.A9.BA.E9.97.B4.E5.86.99.E6.BB.A1.E5.90.8E.E6.8A.A5.E9.94.99.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.EF.BC.9F"
+                - listitem [ref=e240]:
+                  - link "为什么返回的数据格式多了引号？" [ref=e241] [cursor=pointer]:
+                    - /url: "#.E4.B8.BA.E4.BB.80.E4.B9.88.E8.BF.94.E5.9B.9E.E7.9A.84.E6.95.B0.E6.8D.AE.E6.A0.BC.E5.BC.8F.E5.A4.9A.E4.BA.86.E5.BC.95.E5.8F.B7.EF.BC.9F"
+                - listitem [ref=e242]:
+                  - link "主账号是否可以限制子账号只对部分函数进行操作？" [ref=e243] [cursor=pointer]:
+                    - /url: "#.E4.B8.BB.E8.B4.A6.E5.8F.B7.E6.98.AF.E5.90.A6.E5.8F.AF.E4.BB.A5.E9.99.90.E5.88.B6.E5.AD.90.E8.B4.A6.E5.8F.B7.E5.8F.AA.E5.AF.B9.E9.83.A8.E5.88.86.E5.87.BD.E6.95.B0.E8.BF.9B.E8.A1.8C.E6.93.8D.E4.BD.9C.EF.BC.9F"
+                - listitem [ref=e244]:
+                  - link "函数日志如何投递到 COS？" [ref=e245] [cursor=pointer]:
+                    - /url: "#.E5.87.BD.E6.95.B0.E6.97.A5.E5.BF.97.E5.A6.82.E4.BD.95.E6.8A.95.E9.80.92.E5.88.B0-cos.EF.BC.9F"
+                - listitem [ref=e246]:
+                  - link "应用程序如何直接触发函数？" [ref=e247] [cursor=pointer]:
+                    - /url: "#.E5.BA.94.E7.94.A8.E7.A8.8B.E5.BA.8F.E5.A6.82.E4.BD.95.E7.9B.B4.E6.8E.A5.E8.A7.A6.E5.8F.91.E5.87.BD.E6.95.B0.EF.BC.9F"
+                - listitem [ref=e248]:
+                  - link "改动代码或配置时，SCF 还可以使用吗？" [ref=e249] [cursor=pointer]:
+                    - /url: "#.E6.94.B9.E5.8A.A8.E4.BB.A3.E7.A0.81.E6.88.96.E9.85.8D.E7.BD.AE.E6.97.B6.EF.BC.8Cscf-.E8.BF.98.E5.8F.AF.E4.BB.A5.E4.BD.BF.E7.94.A8.E5.90.97.EF.BC.9F"
+                - listitem [ref=e250]:
+                  - link "单一函数的并发实例个数有没有限制？" [ref=e251] [cursor=pointer]:
+                    - /url: "#.E5.8D.95.E4.B8.80.E5.87.BD.E6.95.B0.E7.9A.84.E5.B9.B6.E5.8F.91.E5.AE.9E.E4.BE.8B.E4.B8.AA.E6.95.B0.E6.9C.89.E6.B2.A1.E6.9C.89.E9.99.90.E5.88.B6.EF.BC.9F"
+                - listitem [ref=e252]:
+                  - link "云函数有配额限制吗？" [ref=e253] [cursor=pointer]:
+                    - /url: "#.E4.BA.91.E5.87.BD.E6.95.B0.E6.9C.89.E9.85.8D.E9.A2.9D.E9.99.90.E5.88.B6.E5.90.97.EF.BC.9F"
+                - listitem [ref=e254]:
+                  - link "函数在处理事件时发生故障会怎样？" [ref=e255] [cursor=pointer]:
+                    - /url: "#.E5.87.BD.E6.95.B0.E5.9C.A8.E5.A4.84.E7.90.86.E4.BA.8B.E4.BB.B6.E6.97.B6.E5.8F.91.E7.94.9F.E6.95.85.E9.9A.9C.E4.BC.9A.E6.80.8E.E6.A0.B7.EF.BC.9F"
+                - listitem [ref=e256]:
+                  - link "能否在我的函数代码中使用线程和进程？" [ref=e257] [cursor=pointer]:
+                    - /url: "#.E8.83.BD.E5.90.A6.E5.9C.A8.E6.88.91.E7.9A.84.E5.87.BD.E6.95.B0.E4.BB.A3.E7.A0.81.E4.B8.AD.E4.BD.BF.E7.94.A8.E7.BA.BF.E7.A8.8B.E5.92.8C.E8.BF.9B.E7.A8.8B.EF.BC.9F"
+                - listitem [ref=e258]:
+                  - link "有哪些限制适用于函数代码？" [ref=e259] [cursor=pointer]:
+                    - /url: "#.E6.9C.89.E5.93.AA.E4.BA.9B.E9.99.90.E5.88.B6.E9.80.82.E7.94.A8.E4.BA.8E.E5.87.BD.E6.95.B0.E4.BB.A3.E7.A0.81.EF.BC.9F"
+                - listitem [ref=e260]:
+                  - link "SCF 后台部署了 Java 的 jar 包，前台小程序如何调用无服务器部署的代码？" [ref=e261] [cursor=pointer]:
+                    - /url: "#scf-.E5.90.8E.E5.8F.B0.E9.83.A8.E7.BD.B2.E4.BA.86-java-.E7.9A.84-jar-.E5.8C.85.EF.BC.8C.E5.89.8D.E5.8F.B0.E5.B0.8F.E7.A8.8B.E5.BA.8F.E5.A6.82.E4.BD.95.E8.B0.83.E7.94.A8.E6.97.A0.E6.9C.8D.E5.8A.A1.E5.99.A8.E9.83.A8.E7.BD.B2.E7.9A.84.E4.BB.A3.E7.A0.81.EF.BC.9F"
+                - listitem [ref=e262]:
+                  - link "哪些事件可以触发 SCF 函数？" [ref=e263] [cursor=pointer]:
+                    - /url: "#.E5.93.AA.E4.BA.9B.E4.BA.8B.E4.BB.B6.E5.8F.AF.E4.BB.A5.E8.A7.A6.E5.8F.91-scf-.E5.87.BD.E6.95.B0.EF.BC.9F"
+                - listitem [ref=e264]:
+                  - link "SCF 支持哪些语言？" [ref=e265] [cursor=pointer]:
+                    - /url: "#scf-.E6.94.AF.E6.8C.81.E5.93.AA.E4.BA.9B.E8.AF.AD.E8.A8.80.EF.BC.9F"
+                - listitem [ref=e266]:
+                  - link "能否访问 SCF 运行所在的基础设施？" [ref=e267] [cursor=pointer]:
+                    - /url: "#.E8.83.BD.E5.90.A6.E8.AE.BF.E9.97.AE-scf-.E8.BF.90.E8.A1.8C.E6.89.80.E5.9C.A8.E7.9A.84.E5.9F.BA.E7.A1.80.E8.AE.BE.E6.96.BD.EF.BC.9F"
+                - listitem [ref=e268]:
+                  - link "SCF 如何隔离代码？" [ref=e269] [cursor=pointer]:
+                    - /url: "#scf-.E5.A6.82.E4.BD.95.E9.9A.94.E7.A6.BB.E4.BB.A3.E7.A0.81.EF.BC.9F"
+                - listitem [ref=e270]:
+                  - link "SCF 是否可以和 CVM，TencentDB 等云上其他产品互访？" [ref=e271] [cursor=pointer]:
+                    - /url: "#scf-.E6.98.AF.E5.90.A6.E5.8F.AF.E4.BB.A5.E5.92.8C-cvm.EF.BC.8Ctencentdb-.E7.AD.89.E4.BA.91.E4.B8.8A.E5.85.B6.E4.BB.96.E4.BA.A7.E5.93.81.E4.BA.92.E8.AE.BF.EF.BC.9F"
+                - listitem [ref=e272]:
+                  - link "SCF 是否会重复使用函数实例？" [ref=e273] [cursor=pointer]:
+                    - /url: "#scf-.E6.98.AF.E5.90.A6.E4.BC.9A.E9.87.8D.E5.A4.8D.E4.BD.BF.E7.94.A8.E5.87.BD.E6.95.B0.E5.AE.9E.E4.BE.8B.EF.BC.9F"
+                - listitem [ref=e274]:
+                  - link "为何要保持 SCF 函数无状态？" [ref=e275] [cursor=pointer]:
+                    - /url: "#.E4.B8.BA.E4.BD.95.E8.A6.81.E4.BF.9D.E6.8C.81-scf-.E5.87.BD.E6.95.B0.E6.97.A0.E7.8A.B6.E6.80.81.EF.BC.9F"
+                - listitem [ref=e276]:
+                  - link "如何进行故障排除？" [ref=e277] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E8.BF.9B.E8.A1.8C.E6.95.85.E9.9A.9C.E6.8E.92.E9.99.A4.EF.BC.9F"
+                - listitem [ref=e278]:
+                  - link "通过上传 zip 包创建函数后，提示“函数服务创建失败，请重试”或“未找到函数执行入口文件，请确认代码包入口文件名和 handler 设置是否对应或代码压缩包是否正常”？" [ref=e279] [cursor=pointer]:
+                    - /url: "#.E9.80.9A.E8.BF.87.E4.B8.8A.E4.BC.A0-zip-.E5.8C.85.E5.88.9B.E5.BB.BA.E5.87.BD.E6.95.B0.E5.90.8E.EF.BC.8C.E6.8F.90.E7.A4.BA.E2.80.9C.E5.87.BD.E6.95.B0.E6.9C.8D.E5.8A.A1.E5.88.9B.E5.BB.BA.E5.A4.B1.E8.B4.A5.EF.BC.8C.E8.AF.B7.E9.87.8D.E8.AF.95.E2.80.9D.E6.88.96.E2.80.9C.E6.9C.AA.E6.89.BE.E5.88.B0.E5.87.BD.E6.95.B0.E6.89.A7.E8.A1.8C.E5.85.A5.E5.8F.A3.E6.96.87.E4.BB.B6.EF.BC.8C.E8.AF.B7.E7.A1.AE.E8.AE.A4.E4.BB.A3.E7.A0.81.E5.8C.85.E5.85.A5.E5.8F.A3.E6.96.87.E4.BB.B6.E5.90.8D.E5.92.8C-handler-.E8.AE.BE.E7.BD.AE.E6.98.AF.E5.90.A6.E5.AF.B9.E5.BA.94.E6.88.96.E4.BB.A3.E7.A0.81.E5.8E.8B.E7.BC.A9.E5.8C.85.E6.98.AF.E5.90.A6.E6.AD.A3.E5.B8.B8.E2.80.9D.EF.BC.9F"
+                - listitem [ref=e280]:
+                  - link "提示 timeout 时如何处理？" [ref=e281] [cursor=pointer]:
+                    - /url: "#.E6.8F.90.E7.A4.BA-timeout-.E6.97.B6.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.EF.BC.9F"
+                - listitem [ref=e282]:
+                  - link "如何扩容？" [ref=e283] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E6.89.A9.E5.AE.B9.EF.BC.9F"
+                - listitem [ref=e284]:
+                  - link "如何分配函数计算资源？" [ref=e285] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E5.88.86.E9.85.8D.E5.87.BD.E6.95.B0.E8.AE.A1.E7.AE.97.E8.B5.84.E6.BA.90.EF.BC.9F"
+                - listitem [ref=e286]:
+                  - link "能否使用本地库？" [ref=e287] [cursor=pointer]:
+                    - /url: "#.E8.83.BD.E5.90.A6.E4.BD.BF.E7.94.A8.E6.9C.AC.E5.9C.B0.E5.BA.93.EF.BC.9F"
+                - listitem [ref=e288]:
+                  - link "如何处理函数调用报错 “Resource limit exceed for function”？" [ref=e289] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.E5.87.BD.E6.95.B0.E8.B0.83.E7.94.A8.E6.8A.A5.E9.94.99-.E2.80.9Cresource-limit-exceed-for-function.E2.80.9D.EF.BC.9F"
+                - listitem [ref=e290]:
+                  - link "如何处理创建函数失败 “Account Arrears, Operation not Allowed”？" [ref=e291] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.E5.88.9B.E5.BB.BA.E5.87.BD.E6.95.B0.E5.A4.B1.E8.B4.A5-.E2.80.9Caccount-arrears.2C-operation-not-allowed.E2.80.9D.EF.BC.9F"
+                - listitem [ref=e292]:
+                  - link "如何处理创建函数失败 “SCF_QcsRole 角色不存在，请访问 https://console.cloud.tencent.com/scf 创建角色”？" [ref=e293] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.E5.88.9B.E5.BB.BA.E5.87.BD.E6.95.B0.E5.A4.B1.E8.B4.A5-.E2.80.9Cscf_qcsrole-.E8.A7.92.E8.89.B2.E4.B8.8D.E5.AD.98.E5.9C.A8.EF.BC.8C.E8.AF.B7.E8.AE.BF.E9.97.AE-https.3A.2F.2Fconsole.cloud.tencent.com.2Fscf-.E5.88.9B.E5.BB.BA.E8.A7.92.E8.89.B2.E2.80.9D.EF.BC.9F"
+                - listitem [ref=e294]:
+                  - link "如何处理创建函数失败 “xxx you are not authorized to perform operation xxx”？" [ref=e295] [cursor=pointer]:
+                    - /url: "#.E5.A6.82.E4.BD.95.E5.A4.84.E7.90.86.E5.88.9B.E5.BB.BA.E5.87.BD.E6.95.B0.E5.A4.B1.E8.B4.A5-.E2.80.9Cxxx-you-are-not-authorized-to-perform-operation-xxx.E2.80.9D.EF.BC.9F"
+                - listitem [ref=e296]:
+                  - link "使用模板创建函数时，DemoId 如何获取？" [ref=e297] [cursor=pointer]:
+                    - /url: "#.E4.BD.BF.E7.94.A8.E6.A8.A1.E6.9D.BF.E5.88.9B.E5.BB.BA.E5.87.BD.E6.95.B0.E6.97.B6.EF.BC.8C.60demoid.60-.E5.A6.82.E4.BD.95.E8.8E.B7.E5.8F.96.EF.BC.9F"
+                - listitem [ref=e298]:
+                  - link "临时授权字段包括的更新机制具体是什么？" [ref=e299] [cursor=pointer]:
+                    - /url: "#05057c4a-5152-4fc2-a0db-c838bbd60182"
+            - generic [ref=e302]:
+              - heading "函数运行报错 “Cannot find module”、“No module named”、找不到依赖怎么处理？如何进行依赖安装？" [level=3] [ref=e304]:
+                - generic [ref=e306]: 函数运行报错 “Cannot find module”、“No module named”、找不到依赖怎么处理？如何进行依赖安装？
+              - generic [ref=e309]: 该问题通常是由于代码执行的依赖文件没有上传到云上环境导致的，可按照如下方法进行检查：
+              - generic [ref=e310]:
+                - generic [ref=e311]: "1."
+                - generic [ref=e312]:
+                  - generic [ref=e314]: 请核对代码中引用的依赖文件路径是否准确，如果采用相对路径，
+                  - generic [ref=e317]: 依赖文件需要与函数代码文件在同一个根目录下
+                  - generic [ref=e319]: ，并与函数代码一起打包上传至云端；如果采用绝对路径，请确认该绝对路径是 SCF 的可访问路径，且路径下存在指定的依赖文件。
+              - generic [ref=e320]:
+                - generic [ref=e321]: "2."
+                - generic [ref=e324]: 如果提前将依赖文件上传至层中，请核对层版本与函数运行版本绑定关系是否符合预期。
+              - generic [ref=e325]:
+                - generic [ref=e326]: "3."
+                - generic [ref=e327]:
+                  - generic [ref=e329]: 如果使用了
+                  - link "在线依赖安装" [ref=e330] [cursor=pointer]:
+                    - /url: https://cloud.tencent.com/document/product/583/37920
+                    - generic [ref=e333]: 在线依赖安装
+                  - generic [ref=e335]: 功能，请检查全部依赖是否成功安装。
+              - generic [ref=e336]:
+                - generic [ref=e341]: 说明：
+                - generic [ref=e344]:
+                  - generic [ref=e346]: 部署函数教程请参见
+                  - link "部署函数" [ref=e347] [cursor=pointer]:
+                    - /url: https://cloud.tencent.com/document/product/583/9702
+                    - generic [ref=e350]: 部署函数
+                  - generic [ref=e352]: 。
+                - generic [ref=e355]:
+                  - generic [ref=e357]: 依赖安装方法请参见
+                  - link "依赖安装" [ref=e358] [cursor=pointer]:
+                    - /url: https://cloud.tencent.com/document/product/583/39780
+                    - generic [ref=e361]: 依赖安装
+                  - generic [ref=e363]: 。
+              - heading "SCF 环境内的时区是什么？如何处理时区影响？" [level=3] [ref=e365]:
+                - generic [ref=e367]: SCF 环境内的时区是什么？如何处理时区影响？
+              - generic [ref=e368]:
+                - generic [ref=e370]: 云函数的运行环境内保持的是 UTC 时间，即0时区时间，和北京时间有8小时的时间差。 可以通过语言的时间处理相关库或代码包，识别 UTC 时间并转换为+8区北京时间，或通过设置环境变量
+                - code [ref=e373]: TZ=Asia/Shanghai
+                - generic [ref=e375]: 指定时区。
+              - heading "写文件报错无权限？环境内有可写空间吗？" [level=3] [ref=e377]:
+                - generic [ref=e379]: 写文件报错无权限？环境内有可写空间吗？
+              - generic [ref=e380]:
+                - generic [ref=e382]: 云函数在执行过程中，都拥有一块500MB的临时磁盘空间
+                - code [ref=e385]: /tmp
+                - generic [ref=e387]: ，用户可以在执行代码时对该空间进行一些读写操作，也可以创建子目录，但这部分数据在函数执行完成后不会保留。
+              - generic [ref=e388]:
+                - generic [ref=e393]: 说明：
+                - generic [ref=e398]: 实例间的临时空间互相隔离，不共享，即每个实例均有独立的临时空间。
+                - generic [ref=e401]:
+                  - generic [ref=e403]: 运行环境内除
+                  - code [ref=e406]: /tmp
+                  - generic [ref=e408]: 目录下，其他均限制为只读。
+              - heading "可写空间写满后报错如何处理？" [level=3] [ref=e410]:
+                - generic [ref=e412]: 可写空间写满后报错如何处理？
+              - generic [ref=e413]:
+                - generic [ref=e415]: 如果持续写入
+                - code [ref=e418]: /tmp
+                - generic [ref=e420]: 临时目录，并且由于调用频繁导致实例持续被使用，可能存在临时目录被写满，导致无法写入的问题。 请在代码中自行检查临时目录的写情况，并使用代码删除不再使用的临时文件以释放空间。
+              - heading "为什么返回的数据格式多了引号？" [level=3] [ref=e422]:
+                - generic [ref=e424]: 为什么返回的数据格式多了引号？
+              - generic [ref=e425]:
+                - generic [ref=e427]: API 网关会默认将 SCF 返回结果当做 JSON 格式，详情请参见
+                - link "集成响应与透传响应" [ref=e428] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/12513#.E9.9B.86.E6.88.90.E5.93.8D.E5.BA.94.E4.B8.8E.E9.80.8F.E4.BC.A0.E5.93.8D.E5.BA.94
+                  - generic [ref=e431]: 集成响应与透传响应
+                - generic [ref=e433]: ，在函数配置里勾选集成响应以解决问题。请注意，如果开启了集成响应，则需按照规范返回数据结构 。
+              - heading "主账号是否可以限制子账号只对部分函数进行操作？" [level=3] [ref=e435]:
+                - generic [ref=e437]: 主账号是否可以限制子账号只对部分函数进行操作？
+              - generic [ref=e438]:
+                - generic [ref=e440]: 可以，详情请参见
+                - link "创建子用户并授予部分函数的操作权限" [ref=e441] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/19279
+                  - generic [ref=e444]: 创建子用户并授予部分函数的操作权限
+                - generic [ref=e446]: 。
+              - heading "函数日志如何投递到 COS？" [level=3] [ref=e448]:
+                - generic [ref=e450]: 函数日志如何投递到 COS？
+              - generic [ref=e451]:
+                - generic [ref=e453]: 请参见
+                - link "SCF 日志与 CLS 打通教程" [ref=e454] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/39536
+                  - generic [ref=e457]: SCF 日志与 CLS 打通教程
+                - generic [ref=e459]: 将日志转到日志服务 CLS ，并在日志服务 CLS 配置日志
+                - link "投递到 COS" [ref=e460] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/614/33813
+                  - generic [ref=e463]: 投递到 COS
+                - generic [ref=e465]: 。
+              - heading "应用程序如何直接触发函数？" [level=3] [ref=e467]:
+                - generic [ref=e469]: 应用程序如何直接触发函数？
+              - generic [ref=e472]: 可以通过调用 SCF 的 Invoke API 直接触发函数。该函数的所有者或有调用该函数 Invoke API 权限的账号能直接调用。
+              - heading "改动代码或配置时，SCF 还可以使用吗？" [level=3] [ref=e474]:
+                - generic [ref=e476]: 改动代码或配置时，SCF 还可以使用吗？
+              - generic [ref=e479]: 可以。更新函数时会有短暂的窗口期，通常不到1分钟，在这期间请求将由旧函数代码或新函数代码实现。
+              - heading "单一函数的并发实例个数有没有限制？" [level=3] [ref=e481]:
+                - generic [ref=e483]: 单一函数的并发实例个数有没有限制？
+              - generic [ref=e484]:
+                - generic [ref=e486]: SCF 可以支持大量函数实例并行。每个地域下函数总并发配额可参考
+                - link "配额限制说明" [ref=e487] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/11637
+                  - generic [ref=e490]: 配额限制说明
+                - generic [ref=e492]: ，可参考
+                - link "并发管理" [ref=e493] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/45757
+                  - generic [ref=e496]: 并发管理
+                - generic [ref=e498]: 进行函数级并发管理。
+              - heading "云函数有配额限制吗？" [level=3] [ref=e500]:
+                - generic [ref=e502]: 云函数有配额限制吗？
+              - generic [ref=e503]:
+                - generic [ref=e505]: 云函数 SCF 针对每个用户账号，均有一定的配额限制。您可在
+                - link "配额限制说明" [ref=e506] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/11637
+                  - generic [ref=e509]: 配额限制说明
+                - generic [ref=e511]: 查看用户账号配额限制、函数配额限制、层配额限制、函数运行环境的限制。
+              - heading "函数在处理事件时发生故障会怎样？" [level=3] [ref=e513]:
+                - generic [ref=e515]: 函数在处理事件时发生故障会怎样？
+              - generic [ref=e516]:
+                - generic [ref=e518]: 如遇故障，进行同步调用的函数会返回异常信息，异步调用的函数将自动重试，重试策略可参考
+                - link "错误类型与重试策略" [ref=e519] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/41138#.E5.BC.82.E6.AD.A5.E8.B0.83.E7.94.A8
+                  - generic [ref=e522]: 错误类型与重试策略
+                - generic [ref=e524]: 。
+              - heading "能否在我的函数代码中使用线程和进程？" [level=3] [ref=e526]:
+                - generic [ref=e528]: 能否在我的函数代码中使用线程和进程？
+              - generic [ref=e531]: 能。用户可使用正常的语言和操作系统功能，如创建额外的线程和进程。分配至函数的资源，包括内存、执行时间、磁盘和网络，都通过其使用的线程/进程进行共享。
+              - heading "有哪些限制适用于函数代码？" [level=3] [ref=e533]:
+                - generic [ref=e535]: 有哪些限制适用于函数代码？
+              - generic [ref=e538]: 我们尽量不对正常的语言和操作系统活动施加限制，但有些活动仍被禁用。例如，入站网络连接将被阻止。
+              - heading "SCF 后台部署了 Java 的 jar 包，前台小程序如何调用无服务器部署的代码？" [level=3] [ref=e540]:
+                - generic [ref=e542]: SCF 后台部署了 Java 的 jar 包，前台小程序如何调用无服务器部署的代码？
+              - generic [ref=e543]:
+                - generic [ref=e545]: 可以使用 API 网关。API 网关后端配置成云函数，然后调用网关 API 来触发云函数 。详细教程请参见
+                - link "如何创建触发器" [ref=e546] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/30230
+                  - generic [ref=e549]: 如何创建触发器
+                - generic [ref=e551]: 和
+                - link "API 网关触发器" [ref=e552] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/12513
+                  - generic [ref=e555]: API 网关触发器
+                - generic [ref=e557]: 。
+              - heading "哪些事件可以触发 SCF 函数？" [level=3] [ref=e559]:
+                - generic [ref=e561]: 哪些事件可以触发 SCF 函数？
+              - generic [ref=e564]: 当前支持：手动触发（API）、定时触发、COS 触发、CMQ 触发、API 网关触发等触发方式，后续更多触发方式正在持续添加中。
+              - heading "SCF 支持哪些语言？" [level=3] [ref=e566]:
+                - generic [ref=e568]: SCF 支持哪些语言？
+              - generic [ref=e571]: 目前支持 Python 2.7 & 3.6、Node.js 6.10 & 8.9 & 10.15 & 12.16、Java 8、PHP 5 & 7、Golang 及 Custom Runtime 自定义语言。后续更多开发语言支持正在持续添加中。
+              - heading "能否访问 SCF 运行所在的基础设施？" [level=3] [ref=e573]:
+                - generic [ref=e575]: 能否访问 SCF 运行所在的基础设施？
+              - generic [ref=e578]: 不能，SCF 会代您管理计算基础设施。
+              - heading "SCF 如何隔离代码？" [level=3] [ref=e580]:
+                - generic [ref=e582]: SCF 如何隔离代码？
+              - generic [ref=e585]: 每个函数都运行在自己独有的环境中，拥有自己的资源和文件系统。SCF 使用与 CVM 相同的技术在基础设施和执行级别上提供安全性和隔离。
+              - heading "SCF 是否可以和 CVM，TencentDB 等云上其他产品互访？" [level=3] [ref=e587]:
+                - generic [ref=e589]: SCF 是否可以和 CVM，TencentDB 等云上其他产品互访？
+              - generic [ref=e592]: 可以，您在创建云函数或修改云函数配置时，选择 VPC 配置，将云函数和 CVM，TencentDB 等部署到同一 VPC 即可。
+              - heading "SCF 是否会重复使用函数实例？" [level=3] [ref=e594]:
+                - generic [ref=e596]: SCF 是否会重复使用函数实例？
+              - generic [ref=e599]: 为了提高性能，SCF 会在一定时间内保留您的函数实例，将其再用于服务后续请求。但您的代码不应假设此操作总是发生。
+              - heading "为何要保持 SCF 函数无状态？" [level=3] [ref=e601]:
+                - generic [ref=e603]: 为何要保持 SCF 函数无状态？
+              - generic [ref=e606]: 保持函数的无状态性可使函数按需要尽可能多地启动多个实例，从而满足请求的速率。
+              - heading "如何进行故障排除？" [level=3] [ref=e608]:
+                - generic [ref=e610]: 如何进行故障排除？
+              - generic [ref=e613]: SCF 集成了日志功能，每次调用都会将该次调用的日志输出到控制台日志窗口中，日志记录了该函数每次使用时所消耗的资源、代码中的 log 及平台调用信息等，您可以轻松将故障排除相关的 log 语句插入到代码中。
+              - heading "通过上传 zip 包创建函数后，提示“函数服务创建失败，请重试”或“未找到函数执行入口文件，请确认代码包入口文件名和 handler 设置是否对应或代码压缩包是否正常”？" [level=3] [ref=e615]:
+                - generic [ref=e617]: 通过上传 zip 包创建函数后，提示“函数服务创建失败，请重试”或“未找到函数执行入口文件，请确认代码包入口文件名和 handler 设置是否对应或代码压缩包是否正常”？
+              - generic [ref=e618]:
+                - generic [ref=e620]: 通常是压缩时包含了外层文件夹，zip 解压后无法找到入口函数，即函数的执行方法无法在 zip 包中找到对应的执行文件或函数入口。 执行方法格式为
+                - code [ref=e623]: a.b
+                - generic [ref=e625]: ，其中：a 是 py 文件的名称，b 是代码中的方法名。 如果用户上传的 zip 包在解压后的根目录下找不到名为
+                - code [ref=e628]: a.py
+                - generic [ref=e630]: 的文件，则会提示“函数代码无法显示，代码 zip 包中找不到执行方法指定的文件名”。 例如：文件结构如下：
+              - generic [ref=e632]:
+                - img [ref=e637] [cursor=pointer]
+                - generic [ref=e640]:
+                  - generic [ref=e643]: "--RootFolder"
+                  - generic [ref=e646]: "----SecondFolder"
+                  - generic [ref=e649]: "------a.py"
+                  - generic [ref=e652]: "------thirdfolder"
+                  - generic [ref=e655]: "--------sth.json"
+              - generic [ref=e656]:
+                - generic [ref=e658]: 压缩代码 zip 包时，如果压缩的是 SecondFolder，则会出现上述错误，需要选择
+                - code [ref=e661]: a.py
+                - generic [ref=e663]: 和
+                - code [ref=e666]: thirdfolder
+                - generic [ref=e668]: 进行压缩。
+              - heading "提示 timeout 时如何处理？" [level=3] [ref=e670]:
+                - generic [ref=e672]: 提示 timeout 时如何处理？
+              - generic [ref=e675]: 请先将超时时间设置为一个较大值（不超过900均可）再测试一遍，如果仍然超时，请检查您的代码 log 中是否存在过大的输入数据和计算量、无法跳出的循环、长时间的 sleep 等。
+              - heading "如何扩容？" [level=3] [ref=e677]:
+                - generic [ref=e679]: 如何扩容？
+              - generic [ref=e682]: 用户不必关心函数扩缩容问题，SCF 平台会代您自动扩展。每当接收函数请求时，SCF 会快速定位空闲容量并运行您的代码。由于您的代码是无状态的，可以在需要时尽可能多地启动实例，而不会发生冗长的部署和配置延迟。
+              - heading "如何分配函数计算资源？" [level=3] [ref=e684]:
+                - generic [ref=e686]: 如何分配函数计算资源？
+              - generic [ref=e689]: 用户可以选择函数分配的内存量，CPU 和其他资源也会相应的按比例进行分配。例如，选择256MB的内存时，分配至函数的 CPU 约是分配128MB内存的两倍。
+              - heading "能否使用本地库？" [level=3] [ref=e691]:
+                - generic [ref=e693]: 能否使用本地库？
+              - generic [ref=e696]: 可以。用户可以在函数代码中包含自己的代码库，并以 zip 包的形式上传至平台。
+              - heading "如何处理函数调用报错 “Resource limit exceed for function”？" [level=3] [ref=e698]:
+                - generic [ref=e700]: 如何处理函数调用报错 “Resource limit exceed for function”？
+              - generic [ref=e701]:
+                - generic [ref=e703]: 通常是函数并发触发了配额上限，可以通过公式“函数并发 = qps（每秒的请求数量）x 函数执行时间（秒）”来计算所需的函数并发数量。 例如，qps = 100，函数执行时间 = 100ms，则实际需要的函数并发= 100 x 0.1 = 10。如果并发超了上限，您可以通过
+                - link "提交工单" [ref=e704] [cursor=pointer]:
+                  - /url: https://console.cloud.tencent.com/workorder/category?level1_id=6&level2_id=668&source=0&data_title=%E6%97%A0%E6%9C%8D%E5%8A%A1%E5%99%A8%E4%BA%91%E5%87%BD%E6%95%B0%20SCF&step=1
+                  - generic [ref=e707]: 提交工单
+                - generic [ref=e709]: 来提升限制。
+              - heading "如何处理创建函数失败 “Account Arrears, Operation not Allowed”？" [level=3] [ref=e711]:
+                - generic [ref=e713]: 如何处理创建函数失败 “Account Arrears, Operation not Allowed”？
+              - generic [ref=e716]: 账号欠费，请充值后重试。
+              - heading "如何处理创建函数失败 “SCF_QcsRole 角色不存在，请访问 https://console.cloud.tencent.com/scf 创建角色”？" [level=3] [ref=e718]:
+                - generic [ref=e720]: 如何处理创建函数失败 “SCF_QcsRole 角色不存在，请访问 https://console.cloud.tencent.com/scf 创建角色”？
+              - generic [ref=e721]:
+                - generic [ref=e723]: 创建函数依赖 SCF_QcsRole，请使用主账号访问
+                - link "云函数控制台" [ref=e724] [cursor=pointer]:
+                  - /url: https://console.cloud.tencent.com/scf
+                  - generic [ref=e727]: 云函数控制台
+                - generic [ref=e729]: 按照引导完成授权。
+              - heading "如何处理创建函数失败 “xxx you are not authorized to perform operation xxx”？" [level=3] [ref=e731]:
+                - generic [ref=e733]: 如何处理创建函数失败 “xxx you are not authorized to perform operation xxx”？
+              - generic [ref=e734]:
+                - generic [ref=e736]: 请在访问管理
+                - link "角色" [ref=e737] [cursor=pointer]:
+                  - /url: https://console.cloud.tencent.com/cam/role
+                  - generic [ref=e740]: 角色
+                - generic [ref=e742]: 页面中单击
+                - code [ref=e745]: SCF_QcsRole
+                - generic [ref=e747]: 并确认该角色的权限策略中是否已经关联预设策略
+                - code [ref=e750]: QcloudAccessForScfRole
+                - generic [ref=e752]: ，如未关联，请单击
+                - generic [ref=e755]: 添加策略
+                - generic [ref=e757]: 并关联
+                - code [ref=e760]: QcloudAccessForScfRole
+                - generic [ref=e762]: 后重试。
+              - heading "使用模板创建函数时，DemoId 如何获取？" [level=3] [ref=e764]:
+                - generic [ref=e766]: 使用模板创建函数时，
+                - code [ref=e769]: DemoId
+                - generic [ref=e771]: 如何获取？
+              - generic [ref=e772]:
+                - generic [ref=e774]: 请在云函数控制台创建函数流程中选择
+                - generic [ref=e777]: 模板创建
+                - generic [ref=e779]: ，选择需要使用的模板，单击模板右上角的
+                - generic [ref=e782]: 查看详情
+                - generic [ref=e784]: ，在模板详情页单击
+                - generic [ref=e787]: 点击下载模板函数
+                - generic [ref=e789]: 。模板代码会以
+                - code [ref=e792]: DemoId
+                - generic [ref=e794]: 命名下载到本地。
+              - generic [ref=e795]:
+                - generic [ref=e800]: 注意：
+                - generic [ref=e801]:
+                  - generic [ref=e803]: 同一个函数模板不同地域下的
+                  - code [ref=e806]: DemoId
+                  - generic [ref=e808]: 不同，在获取
+                  - code [ref=e811]: DemoId
+                  - generic [ref=e813]: 时，请关注地域选择。
+              - heading "临时授权字段包括的更新机制具体是什么？" [level=3] [ref=e815]:
+                - generic [ref=e817]: 临时授权字段包括的更新机制具体是什么？
+              - generic [ref=e818]:
+                - generic [ref=e820]: 临时授权字段包括
+                - code [ref=e823]: TENCENTCLOUD_SESSIONTOKEN
+                - generic [ref=e825]: 、
+                - code [ref=e828]: TENCENTCLOUD_SECRETID
+                - generic [ref=e830]: 、
+                - code [ref=e833]: TENCENTCLOUD_SECRETKEY
+                - generic [ref=e835]: 。
+              - generic [ref=e838]:
+                - generic [ref=e840]: 通过
+                - link "环境变量" [ref=e841] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/30228
+                  - generic [ref=e844]: 环境变量
+                - generic [ref=e846]: 获取时，将在实例冷启动时获取最新的授权字段，若本次请求触发复用了之前的实例，则不会更新授权字段，此时的临时授权信息可能已过期。
+              - generic [ref=e849]:
+                - generic [ref=e851]: 通过
+                - link "context" [ref=e852] [cursor=pointer]:
+                  - /url: https://cloud.tencent.com/document/product/583/9210#.E5.87.BD.E6.95.B0.E5.85.A5.E5.8F.82.3Ca-id.3D.22input.22.3E.3C.2Fa.3E
+                  - generic [ref=e855]: context
+                - generic [ref=e857]: 字段获取临时授权字段时，将在每次调用时获取到最新授权字段，此时可保证本次调用所使用的授权字段都有效。
+              - generic [ref=e858]:
+                - generic [ref=e863]: 注意：
+                - generic [ref=e866]: 临时密钥过期时间为8小时，若您的函数执行时长超过8小时可能会有临时密钥过期风险。
+          - generic [ref=e868]:
+            - 'link "上一篇: 视频专区" [ref=e869] [cursor=pointer]':
+              - /url: /document/product/583/55448
+            - 'link "下一篇: Web 函数相关问题" [ref=e870] [cursor=pointer]':
+              - /url: /document/product/583/56129
+          - generic [ref=e871]:
+            - generic [ref=e873]:
+              - generic [ref=e874]: 文档内容是否对您有帮助？
+              - generic [ref=e875]:
+                - link "有帮助" [ref=e876] [cursor=pointer]:
+                  - /url: javascript:;
+                  - text: 有帮助
+                - link "没帮助" [ref=e878] [cursor=pointer]:
+                  - /url: javascript:;
+                  - text: 没帮助
+            - paragraph [ref=e880]: 如果遇到产品相关问题，您可咨询 在线客服寻求帮助。
+          - generic [ref=e882]:
+            - heading "云函数 相关文档" [level=3] [ref=e883]
+            - list [ref=e884]:
+              - listitem [ref=e885]:
+                - link "产品概述" [ref=e886] [cursor=pointer]:
+                  - /url: /document/product/583/9199
+              - listitem [ref=e887]:
+                - link "工作原理" [ref=e888] [cursor=pointer]:
+                  - /url: /document/product/583/9694
+              - listitem [ref=e889]:
+                - link "基本概念" [ref=e890] [cursor=pointer]:
+                  - /url: /document/product/583/9210
+              - listitem [ref=e891]:
+                - link "计费示例" [ref=e892] [cursor=pointer]:
+                  - /url: /document/product/583/12285
+              - listitem [ref=e893]:
+                - link "示例说明" [ref=e894] [cursor=pointer]:
+                  - /url: /document/product/583/9734
+              - listitem [ref=e895]:
+                - link "部署函数" [ref=e896] [cursor=pointer]:
+                  - /url: /document/product/583/9702
+              - listitem [ref=e897]:
+                - link "COS 触发器说明" [ref=e898] [cursor=pointer]:
+                  - /url: /document/product/583/9707
+              - listitem [ref=e899]:
+                - link "实践教程概述" [ref=e900] [cursor=pointer]:
+                  - /url: /document/product/583/9739
+              - listitem [ref=e901]:
+                - link "联系我们" [ref=e902] [cursor=pointer]:
+                  - /url: /document/product/583/9712
+    - generic [ref=e904]:
+      - navigation [ref=e906]:
+        - generic [ref=e907]: Copyright © 2013-2026 Tencent Cloud. All Rights Reserved. 腾讯云 版权所有
+        - link "深圳市腾讯计算机系统有限公司" [ref=e908] [cursor=pointer]:
+          - /url: https://qcloudimg.tencent-cloud.cn/raw/986376a919726e0c35e96b311f54184d.jpg
+        - generic [ref=e909]: ICP备案/许可证号：
+        - link "粤B2-20090059" [ref=e910] [cursor=pointer]:
+          - /url: https://beian.miit.gov.cn/#/Integrated/index
+        - link "粤公网安备44030502008569号" [ref=e911] [cursor=pointer]:
+          - /url: https://beian.mps.gov.cn/#/query/webSearch?code=44030502008569
+          - img [ref=e912]
+          - generic [ref=e913]: 粤公网安备44030502008569号
+        - link "腾讯云计算（北京）有限责任公司" [ref=e914] [cursor=pointer]:
+          - /url: https://qcloudimg.tencent-cloud.cn/raw/a2390663ee4a95ceeead8fdc34d4b207.jpg
+        - generic [ref=e915]: 京ICP证150476号 |
+        - link "京ICP备11018762号" [ref=e916] [cursor=pointer]:
+          - /url: https://beian.miit.gov.cn/#/Integrated/index
+      - generic [ref=e919] [cursor=pointer]: 中国站
+    - button "在 线 咨 询" [ref=e922] [cursor=pointer]:
+      - img [ref=e923]
+      - generic [ref=e928]: 在
+      - generic [ref=e929]: 线
+      - generic [ref=e930]: 咨
+      - generic [ref=e931]: 询

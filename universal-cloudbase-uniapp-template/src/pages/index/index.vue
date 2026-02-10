@@ -119,6 +119,7 @@
 import { ref, computed, onMounted } from 'vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import Calendar from '@/components/Calendar.vue';
+import { CourseApi, SystemApi } from '@/api';
 
 // 轮播图当前索引
 const currentBannerIndex = ref(0);
@@ -175,26 +176,57 @@ const allTabList = ref([
 ]);
 
 // 课程列表数据
-const courseList = ref([
-  {
-    id: 1,
-    title: '初探班',
-    price: 1688,
-    emoji: '📚',
-    imageTheme: 'course-image--pink',
-    type: 'beginner',
-    purchased: true
-  },
-  {
-    id: 2,
-    title: '密训班',
-    price: 38888,
-    emoji: '🎓',
-    imageTheme: 'course-image--blue',
-    type: 'advanced',
-    purchased: false
+const courseList = ref<any[]>([]);
+
+// 加载课程列表
+const loadCourseList = async () => {
+  try {
+    const result = await CourseApi.getList({ page: 1, page_size: 20 });
+
+    // 转换课程数据格式
+    courseList.value = result.list.map((course: any) => ({
+      id: course.id,
+      title: course.name,
+      price: course.price,
+      emoji: getCourseEmoji(course.type),
+      imageTheme: getCourseTheme(course.type),
+      type: getCourseTypeKey(course.type),
+      purchased: false // 需要从用户已购课程中判断
+    }));
+  } catch (error) {
+    console.error('加载课程列表失败:', error);
   }
-]);
+};
+
+// 获取课程图标
+const getCourseEmoji = (type: number): string => {
+  const emojiMap: Record<number, string> = {
+    1: '📚',
+    2: '🎓',
+    3: '🔄'
+  };
+  return emojiMap[type] || '📚';
+};
+
+// 获取课程主题
+const getCourseTheme = (type: number): string => {
+  const themeMap: Record<number, string> = {
+    1: 'course-image--pink',
+    2: 'course-image--blue',
+    3: 'course-image--purple'
+  };
+  return themeMap[type] || 'course-image--pink';
+};
+
+// 获取课程类型键
+const getCourseTypeKey = (type: number): string => {
+  const typeMap: Record<number, string> = {
+    1: 'beginner',
+    2: 'advanced',
+    3: 'retrain'
+  };
+  return typeMap[type] || 'beginner';
+};
 
 // 日历价格数据（模拟从后台获取）
 const calendarPriceData = ref<Record<string, number>>({});
@@ -275,7 +307,24 @@ const goToCourseDetail = (course: any) => {
 
 onMounted(() => {
   loadCalendarPriceData();
+  loadCourseList();
+  loadAnnouncements();
 });
+
+// 加载公告列表
+const loadAnnouncements = async () => {
+  try {
+    const result = await SystemApi.getAnnouncementList({ page: 1, page_size: 3 });
+    if (result.list && result.list.length > 0) {
+      announcementList.value = result.list.map((item: any) => ({
+        id: item.id,
+        title: item.title
+      }));
+    }
+  } catch (error) {
+    console.error('加载公告失败:', error);
+  }
+};
 </script>
 
 <style lang="scss" scoped>

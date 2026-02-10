@@ -11,7 +11,11 @@
       "Bash(powershell:*)",
       "Bash(claude mcp start:*)",
       "Bash(tree:*)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(dir:*)",
+      "mcp__playwright-global__browser_snapshot",
+      "mcp__playwright-global__browser_click",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

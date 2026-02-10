@@ -199,11 +199,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { UserApi, AmbassadorApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
+})
+
+// 用户信息
+const userInfo = ref({
+  ambassador_level: 0,
+  level_name: '普通用户',
+  created_at: ''
+})
+
+// 功德分和积分
+const meritPoints = ref(0)
+const cashPoints = ref(0)
+
+// 加载用户信息
+const loadUserInfo = async () => {
+  try {
+    const profile = await UserApi.getProfile()
+    userInfo.value = {
+      ambassador_level: profile.ambassador_level,
+      level_name: getLevelName(profile.ambassador_level),
+      created_at: profile.created_at
+    }
+  } catch (error) {
+    console.error('加载用户信息失败:', error)
+  }
+}
+
+// 加载功德分和积分
+const loadPoints = async () => {
+  try {
+    const [merit, cash] = await Promise.all([
+      UserApi.getMeritPoints(),
+      UserApi.getCashPoints()
+    ])
+    meritPoints.value = merit.balance
+    cashPoints.value = cash.available
+  } catch (error) {
+    console.error('加载积分信息失败:', error)
+  }
+}
+
+// 获取等级名称
+const getLevelName = (level: number): string => {
+  const levelMap: Record<number, string> = {
+    0: '普通用户',
+    1: '准青鸾大使',
+    2: '青鸾大使',
+    3: '鸿鹄大使',
+    4: '金凤大使'
+  }
+  return levelMap[level] || '普通用户'
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadUserInfo()
+  loadPoints()
 })
 
 const goToMeritPoints = () => {

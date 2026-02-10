@@ -1,0 +1,11 @@
+{
+  "name": "system",
+  "version": "1.0.0",
+  "description": "系统模块云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "@cloudbase/node-sdk": "latest",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

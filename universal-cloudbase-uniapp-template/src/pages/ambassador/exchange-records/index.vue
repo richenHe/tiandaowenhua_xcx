@@ -1,23 +1,8 @@
 <template>
-  <view class="page">
-    <!-- 页面头部 -->
-    <view class="t-page-header t-page-header--fixed t-page-header--border">
-      <view class="t-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-      <view class="t-page-header__navbar">
-        <view class="t-page-header__left" @click="handleBack">
-          <view class="t-page-header__back">
-            <text class="t-page-header__back-icon">←</text>
-          </view>
-        </view>
-        <view class="t-page-header__title t-page-header__title--center">
-          <text class="t-page-header__title-text">兑换记录</text>
-        </view>
-        <view class="t-page-header__right"></view>
-      </view>
-    </view>
-    <view class="t-page-header__placeholder" :style="{ height: headerHeight + 'px' }"></view>
+  <view class="page-container">
+    <TdPageHeader title="兑换记录" :showBack="true" />
 
-    <scroll-view class="scroll-area" scroll-y :style="{ height: scrollHeight }">
+    <scroll-view class="scroll-content" scroll-y>
       <view class="page-content">
         <!-- 统计卡片 -->
         <view class="stats-card">
@@ -96,8 +81,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 
-const statusBarHeight = ref(20);
 const activeTab = ref('all');
 
 const tabs = ref([
@@ -173,22 +158,8 @@ const filteredRecords = computed(() => {
 });
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync();
-  statusBarHeight.value = systemInfo.statusBarHeight || 20;
   fetchExchangeRecords();
 });
-
-const headerHeight = computed(() => {
-  return statusBarHeight.value + 44; // 44px 是导航栏高度
-});
-
-const scrollHeight = computed(() => {
-  return `calc(100vh - ${headerHeight.value}px)`;
-});
-
-const handleBack = () => {
-  uni.navigateBack();
-};
 
 // 模拟获取兑换记录
 const fetchExchangeRecords = () => {
@@ -205,14 +176,17 @@ const loadMore = () => {
 <style scoped lang="scss">
 @import '@/styles/tdesign-vars.scss';
 
-.page {
+.page-container {
   width: 100%;
   height: 100vh;
   background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 }
 
-.scroll-area {
-  width: 100%;
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .page-content {

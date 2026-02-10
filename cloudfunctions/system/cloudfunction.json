@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "openapi": [
+      "subscribeMessage.send"
+    ]
+  },
+  "envVariables": {
+    "JWT_SECRET": "TianDao2026SecureJWTKey@CloudBase#Admin!"
+  },
+  "triggers": []
+}

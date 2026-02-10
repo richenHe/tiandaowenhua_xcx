@@ -1,0 +1,19 @@
+- dialog [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img [ref=e7]
+      - paragraph [ref=e8]: 腾讯云 CloudBase
+    - paragraph [ref=e9]: 登录控制台
+    - generic [ref=e10]:
+      - generic [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+        - generic [ref=e13]:
+          - paragraph [ref=e14]: 使用腾讯云账号登录
+          - paragraph
+        - generic [ref=e15]: 最近选择
+      - generic [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: 使用微信公众平台账号登录
+          - paragraph [ref=e20]: 适用于小程序/小游戏/公众号网页
+    - paragraph [ref=e21]: 还没有账号？请前往 注册

@@ -142,3 +142,305 @@ const handleScroll = (e) => {
 3. 未找到 + 可复用 → 添加到 `components/*.scss` + 更新 `index.scss`
 4. 未找到 + 一次性 → 使用 inline style（颜色仍用变量）
 5. 完成后更新本规范文档
+
+## 云函数开发规范
+
+### 强制规范
+
+#### 1. 运行时版本匹配（严格遵守）⚠️
+- **创建云函数前必须检查依赖层支持的运行时版本**
+- **禁止使用不兼容的运行时版本**
+- 当前项目层配置：
+  - common-layer：支持 `Nodejs14.18`
+  - business-logic-layer：支持 `Nodejs14.18`
+  - **必须使用 `Nodejs14.18` 创建云函数**
+
+错误示例：
+```javascript
+// ❌ 错误 - 使用了不兼容的运行时
+{
+  "name": "user",
+  "runtime": "Nodejs18.15"  // 层不支持此版本
+}
+```
+
+正确示例：
+```javascript
+// ✅ 正确 - 使用层支持的运行时
+{
+  "name": "user",
+  "runtime": "Nodejs14.18"  // 与层兼容
+}
+```
+
+**教训**：运行时不匹配会导致部署失败，浪费时间反复删除重建！
+
+#### 2. 目录结构规范
+```
+cloudfunctions/
+├── 云函数名/
+│   ├── index.js              # 入口文件（路由分发）
+│   ├── package.json          # 依赖配置
+│   ├── cloudfunction.json    # 云函数配置
+│   └── handlers/             # 处理器目录
+│       ├── client/           # 客户端接口
+│       └── admin/            # 管理端接口
+├── layers/                   # 层目录
+│   ├── common/               # 公共层
+│   └── business-logic/       # 业务逻辑层
+└── cloudbaserc.json          # CloudBase 配置
+```
+
+#### 3. 路由架构规范
+- 统一入口文件 `index.js` 处理路由分发
+- 按 `action` 参数区分不同接口
+- 客户端/管理端接口分离
+- 统一错误处理和响应格式
+
+标准入口模板：
+```javascript
+const cloud = require('wx-server-sdk');
+const { response, checkClientAuth, checkAdminAuth } = require('common');
+
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
+// 导入处理器
+const clientHandlers = {
+  action1: require('./handlers/client/action1'),
+  action2: require('./handlers/client/action2')
+};
+
+const adminHandlers = {
+  adminAction1: require('./handlers/admin/adminAction1')
+};
+
+// 路由配置
+const ROUTES = {
+  client: Object.keys(clientHandlers),
+  admin: Object.keys(adminHandlers)
+};
+
+exports.main = async (event, context) => {
+  const { action } = event;
+  const OPENID = cloud.getWXContext().OPENID;
+
+  try {
+    // 客户端接口（需用户鉴权）
+    if (ROUTES.client.includes(action)) {
+      const user = await checkClientAuth(OPENID);
+      return await clientHandlers[action](event, { OPENID, user });
+    }
+
+    // 管理端接口（需管理员鉴权）
+    if (ROUTES.admin.includes(action)) {
+      const admin = await checkAdminAuth(OPENID);
+      return await adminHandlers[action](event, { OPENID, admin });
+    }
+
+    return response.paramError(`未知的操作: ${action}`);
+  } catch (error) {
+    console.error(`[${action}] 执行失败:`, error);
+    return response.error(error.message, error, error.code || 500);
+  }
+};
+```
+
+#### 4. 权限验证规范
+- 客户端接口：使用 `checkClientAuth(OPENID)` 验证用户身份
+- 管理端接口：使用 `checkAdminAuth(OPENID)` 验证管理员权限
+- 登录接口特殊处理：无需提前验证
+
+```javascript
+// 客户端接口处理器示例
+const { query, response } = require('common');
+
+module.exports = async (event, context) => {
+  const { OPENID, user } = context;  // user 已通过鉴权
+  
+  try {
+    // 业务逻辑
+    const data = await query('SELECT * FROM table WHERE user_id = ?', [user.id]);
+    return response.success(data, '查询成功');
+  } catch (error) {
+    return response.error('查询失败', error);
+  }
+};
+```
+
+#### 5. 响应格式规范
+- 必须使用 common 层的 `response` 工具
+- 统一响应格式：`{ success, code, message, data }`
+
+```javascript
+const { response } = require('common');
+
+// 成功响应
+return response.success(data, '操作成功');
+// { success: true, code: 0, message: '操作成功', data: {...} }
+
+// 错误响应
+return response.error('操作失败', error);
+// { success: false, code: 500, message: '操作失败', error: {...} }
+
+// 参数错误
+return response.paramError('缺少必要参数');
+// { success: false, code: 400, message: '缺少必要参数' }
+
+// 未授权
+return response.unauthorized('用户未登录');
+// { success: false, code: 401, message: '用户未登录' }
+```
+
+#### 6. 数据库操作规范
+- 必须使用 common 层的数据库工具
+- 禁止直接创建数据库连接
+- **⚠️ 数据库名称规范**：
+  - **业务数据库**：`tiandao_culture`（存放所有业务表）
+  - **环境数据库**：`cloud1-0gnn3mn17b581124`（仅为环境ID，非业务数据库）
+  - **强制要求**：所有 MCP 数据库查询操作必须明确指定 `tiandao_culture` 数据库
+  - **SQL 语法**：`SELECT * FROM tiandao_culture.表名` 或 `SHOW TABLES FROM tiandao_culture`
+
+```javascript
+const { query, insert, update, softDelete, transaction } = require('common');
+
+// 查询
+const users = await query('SELECT * FROM users WHERE id = ?', [userId]);
+
+// 插入
+const result = await insert('INSERT INTO users (...) VALUES (?)', [data]);
+
+// 更新
+await update('UPDATE users SET ... WHERE id = ?', [data, userId]);
+
+// 软删除
+await softDelete('users', userId);
+
+// 事务
+await transaction(async (conn) => {
+  await conn.query('UPDATE ...', [data1]);
+  await conn.query('INSERT ...', [data2]);
+});
+```
+
+**MCP 数据库查询示例**：
+```sql
+-- ✅ 正确 - 明确指定 tiandao_culture 数据库
+SHOW TABLES FROM tiandao_culture;
+SELECT * FROM tiandao_culture.users WHERE id = 1;
+ALTER TABLE tiandao_culture.announcements ADD COLUMN _openid VARCHAR(64);
+
+-- ❌ 错误 - 未指定数据库，可能查到环境数据库
+SHOW TABLES;
+SELECT * FROM users WHERE id = 1;
+
+-- ❌ 错误 - 查询了环境数据库而非业务数据库
+SELECT * FROM `cloud1-0gnn3mn17b581124`.users;
+```
+
+#### 7. 环境变量配置规范
+在 `cloudbaserc.json` 中配置环境变量：
+```json
+{
+  "functions": [
+    {
+      "name": "user",
+      "runtime": "Nodejs14.18",
+      "envVariables": {
+        "MYSQL_HOST": "数据库主机",
+        "MYSQL_PORT": "端口",
+        "MYSQL_USER": "用户名",
+        "MYSQL_PASSWORD": "密码",
+        "MYSQL_DATABASE": "数据库名",
+        "WECHAT_APPID": "小程序AppID",
+        "WECHAT_APP_SECRET": "小程序密钥",
+        "JWT_SECRET": "JWT密钥"
+      },
+      "layers": [
+        {"name": "common", "version": 2},
+        {"name": "business-logic", "version": 1}
+      ]
+    }
+  ]
+}
+```
+
+### Code Review 检查清单
+- [ ] **运行时版本**：已确认使用 Nodejs14.18（与层兼容）
+- [ ] **目录结构**：符合规范（index.js + handlers/client + handlers/admin）
+- [ ] **路由架构**：统一入口，按 action 分发
+- [ ] **权限验证**：客户端/管理端分离鉴权
+- [ ] **响应格式**：使用 response 工具，格式统一
+- [ ] **数据库操作**：使用 common 层工具，无直接连接
+- [ ] **数据库名称**：MCP 查询已明确指定 `tiandao_culture` 数据库
+- [ ] **环境变量**：敏感信息配置在环境变量中
+- [ ] **错误处理**：统一 try-catch，记录日志
+- [ ] **层依赖**：已正确引用 common 和 business-logic 层
+- [ ] **_openid 字段**：所有表已添加 `_openid VARCHAR(64) DEFAULT '' NOT NULL` 字段
+
+### 部署前检查清单
+1. [ ] 检查依赖层支持的运行时版本
+2. [ ] 确认 cloudbaserc.json 配置正确
+3. [ ] 确认环境变量已配置完整
+4. [ ] 确认 package.json 依赖正确
+5. [ ] 本地测试通过
+6. [ ] 使用正确的运行时版本创建/更新函数
+
+### 常见错误及解决方案
+
+#### 错误1：运行时版本不匹配
+```
+[UpdateFunctionConfiguration] 层版本xxx不适用当前运行时，请修正后重试。
+```
+**解决**：删除函数，使用 Nodejs14.18 重新创建
+
+#### 错误2：层未找到
+```
+[CreateFunction] 未找到指定的Layer，请创建后再试。
+```
+**解决**：
+1. 检查层名称格式：`层名_环境ID`
+2. 使用 `tcb fn layer list` 查看实际层名称
+3. 更新 cloudbaserc.json 中的层配置
+
+#### 错误3：环境变量缺失
+**解决**：在 CloudBase 控制台或 cloudbaserc.json 中补充环境变量
+
+#### 错误4：查询了错误的数据库
+```
+查询结果为空或表不存在
+```
+**解决**：
+1. 确认查询的是 `tiandao_culture` 数据库而非 `cloud1-0gnn3mn17b581124`
+2. 在 SQL 中明确指定数据库名：`SELECT * FROM tiandao_culture.表名`
+3. 使用 `SHOW TABLES FROM tiandao_culture` 查看所有业务表
+
+#### 错误5：表缺少 _openid 字段
+```
+Error 1054: Unknown column '_openid' or 't0._openid' in 'where clause'
+```
+**解决**：
+1. 使用 MCP 工具为表添加 `_openid` 字段：
+   ```sql
+   ALTER TABLE tiandao_culture.表名 ADD COLUMN _openid VARCHAR(64) DEFAULT '' NOT NULL COMMENT '用户openid' AFTER id;
+   ```
+2. 检查所有表是否都有 `_openid` 字段：
+   ```sql
+   SELECT TABLE_NAME, COLUMN_NAME 
+   FROM INFORMATION_SCHEMA.COLUMNS 
+   WHERE TABLE_SCHEMA = 'tiandao_culture' 
+   AND COLUMN_NAME = '_openid'
+   ORDER BY TABLE_NAME;
+   ```
+
+### 最佳实践
+1. **一个云函数一个模块**：user/order/course/ambassador/system 分离
+2. **复用 common 层**：数据库、工具、响应格式统一
+3. **业务逻辑层**：复杂逻辑抽取到 business-logic 层
+4. **接口命名规范**：动词+名词（getProfile/updateOrder/applyWithdraw）
+5. **日志记录**：关键操作记录日志，便于排查问题
+6. **参数验证**：使用 common 层的 validateRequired 验证必填参数
+7. **数据库规范**：
+   - 所有业务表统一存放在 `tiandao_culture` 数据库
+   - MCP 查询必须明确指定数据库名：`tiandao_culture.表名`
+   - 所有表必须包含 `_openid` 字段（CloudBase 权限控制必需）
+   - 数据库连接配置在 `cloudfunctions/*/common/db.js` 中已正确设置

@@ -82,24 +82,97 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { UserApi } from '@/api';
 
 // 用户信息
 const userInfo = ref({
-  name: '张三',
-  phone: '138****8000',
+  name: '加载中...',
+  phone: '',
   levelBadge: '🌿',
   isAmbassador: false,
-  ambassadorLevel: ''
+  ambassadorLevel: '',
+  ambassador_level: 0
 });
 
 // 数据统计
 const stats = ref([
-  { type: 'orders', count: 3, label: '我的订单', color: '#0052D9' },
-  { type: 'appointments', count: 5, label: '我的预约', color: '#00A870' },
-  { type: 'courses', count: 2, label: '我的课程', color: '#D4AF37' },
-  { type: 'contracts', count: 1, label: '我的合同', color: '#E34D59' }
+  { type: 'orders', count: 0, label: '我的订单', color: '#0052D9' },
+  { type: 'appointments', count: 0, label: '我的预约', color: '#00A870' },
+  { type: 'courses', count: 0, label: '我的课程', color: '#D4AF37' },
+  { type: 'contracts', count: 0, label: '我的合同', color: '#E34D59' }
 ]);
+
+// 加载用户信息
+const loadUserProfile = async () => {
+  try {
+    const profile = await UserApi.getProfile();
+
+    // 更新用户信息
+    userInfo.value = {
+      name: profile.real_name || '未设置',
+      phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '',
+      levelBadge: getLevelBadge(profile.ambassador_level),
+      isAmbassador: profile.ambassador_level > 0,
+      ambassadorLevel: getLevelName(profile.ambassador_level),
+      ambassador_level: profile.ambassador_level
+    };
+  } catch (error) {
+    console.error('加载用户信息失败:', error);
+  }
+};
+
+// 加载统计数据
+const loadStats = async () => {
+  try {
+    // 并行加载各项统计数据
+    const [orders, courses, appointments] = await Promise.all([
+      UserApi.getMyOrders({ page: 1, page_size: 1 }),
+      UserApi.getMyCourses({ page: 1, page_size: 1 }),
+      // 预约数据需要从课程模块获取，这里暂时使用0
+      Promise.resolve({ total: 0 })
+    ]);
+
+    stats.value = [
+      { type: 'orders', count: orders.total || 0, label: '我的订单', color: '#0052D9' },
+      { type: 'appointments', count: appointments.total || 0, label: '我的预约', color: '#00A870' },
+      { type: 'courses', count: courses.total || 0, label: '我的课程', color: '#D4AF37' },
+      { type: 'contracts', count: 0, label: '我的合同', color: '#E34D59' }
+    ];
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+  }
+};
+
+// 获取等级徽章
+const getLevelBadge = (level: number): string => {
+  const badges: Record<number, string> = {
+    0: '🌿',
+    1: '🥉',
+    2: '🥈',
+    3: '🥇',
+    4: '👑'
+  };
+  return badges[level] || '🌿';
+};
+
+// 获取等级名称
+const getLevelName = (level: number): string => {
+  const names: Record<number, string> = {
+    0: '',
+    1: '初级大使',
+    2: '中级大使',
+    3: '高级大使',
+    4: '特级大使'
+  };
+  return names[level] || '';
+};
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadUserProfile();
+  loadStats();
+});
 
 // 推荐与设置菜单
 const settingsMenu = computed(() => [
