@@ -1,0 +1,284 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7] [cursor=pointer]:
+        - img "云开发平台"
+      - generic [ref=e8]:
+        - button "cloud1 标准版" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+          - generic "cloud1" [ref=e15]
+          - generic [ref=e17]: 标准版
+          - img [ref=e18]
+        - button "接入指引" [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: 接入指引
+        - generic [ref=e28]:
+          - generic [ref=e29]: 报名AI小程序成长计划，可获得1亿混元Token和1万张生图资源
+          - button "立即报名" [ref=e30] [cursor=pointer]:
+            - link "立即报名" [ref=e31]:
+              - /url: https://docs.cloudbase.net/ai/ai-inspire-plan
+          - button "close" [ref=e32] [cursor=pointer]:
+            - img "close" [ref=e33]
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - searchbox "请输入关键词搜索功能、文档或向 Copilot 提问" [ref=e45]
+          - generic [ref=e48]: /
+        - button "1 个事项" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - text: 1 个事项
+        - button [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+      - button "h" [ref=e60] [cursor=pointer]:
+        - generic [ref=e61]: h
+    - generic [ref=e62]:
+      - navigation [ref=e63]:
+        - list [ref=e66]:
+          - generic [ref=e67]:
+            - listitem [ref=e68] [cursor=pointer]:
+              - link "icon 概览" [ref=e69]:
+                - /url: "#/overview"
+                - img "icon" [ref=e70]
+                - generic "概览" [ref=e73]
+            - listitem [ref=e74] [cursor=pointer]:
+              - link "icon 模板中心" [ref=e75]:
+                - /url: "#/cloud-template/market"
+                - img "icon" [ref=e76]
+                - generic "模板中心" [ref=e79]
+            - separator [ref=e80]
+            - listitem [ref=e81] [cursor=pointer]:
+              - link "icon SQL型数据库" [ref=e82]:
+                - /url: "#/db/mysql/table/default/"
+                - img "icon" [ref=e83]
+                - generic "SQL型数据库" [ref=e86]
+            - listitem [ref=e87] [cursor=pointer]:
+              - link "icon 文档型数据库" [ref=e88]:
+                - /url: "#/db/doc/collection/"
+                - img "icon" [ref=e89]
+                - generic "文档型数据库" [ref=e92]
+            - listitem [ref=e93] [cursor=pointer]:
+              - link "icon 云函数/托管/主机" [ref=e94]:
+                - /url: "#/scf"
+                - img "icon" [ref=e95]
+                - generic "云函数/托管/主机" [ref=e98]
+            - listitem [ref=e99] [cursor=pointer]:
+              - link "icon 云存储" [ref=e100]:
+                - /url: "#/storage"
+                - img "icon" [ref=e101]
+                - generic "云存储" [ref=e104]
+            - listitem [ref=e105] [cursor=pointer]:
+              - link "icon AI" [ref=e106]:
+                - /url: "#/ai"
+                - img "icon" [ref=e107]
+                - generic "AI" [ref=e110]
+            - listitem [ref=e111] [cursor=pointer]:
+              - link "icon 静态网站托管" [ref=e112]:
+                - /url: "#/static-hosting"
+                - img "icon" [ref=e113]
+                - generic "静态网站托管" [ref=e116]
+            - listitem [ref=e117] [cursor=pointer]:
+              - link "icon 身份认证" [ref=e118]:
+                - /url: "#/identity/user-management"
+                - img "icon" [ref=e119]
+                - generic "身份认证" [ref=e122]
+            - listitem [ref=e123] [cursor=pointer]:
+              - link "icon 微搭低代码" [ref=e124]:
+                - /url: "#/lowcode/apps"
+                - img "icon" [ref=e125]
+                - generic "微搭低代码" [ref=e128]
+            - separator [ref=e129]
+            - listitem [ref=e130] [cursor=pointer]:
+              - link "icon 日志监控" [ref=e131]:
+                - /url: "#/devops/log"
+                - img "icon" [ref=e132]
+                - generic "日志监控" [ref=e135]
+            - listitem [ref=e136] [cursor=pointer]:
+              - link "icon 扩展功能" [ref=e137]:
+                - /url: "#/apis"
+                - img "icon" [ref=e138]
+                - generic "扩展功能" [ref=e141]
+            - listitem [ref=e142] [cursor=pointer]:
+              - link "icon 套餐用量" [ref=e143]:
+                - /url: "#/env/package-usage"
+                - img "icon" [ref=e144]
+                - generic "套餐用量" [ref=e147]
+          - generic [ref=e148]:
+            - separator [ref=e149]
+            - generic [ref=e150]:
+              - listitem [ref=e152] [cursor=pointer]:
+                - link "icon 环境管理" [ref=e153]:
+                  - /url: "#/env/http-access"
+                  - img "icon" [ref=e154]
+                  - generic "环境管理" [ref=e157]
+              - listitem [ref=e159] [cursor=pointer]:
+                - img "icon" [ref=e161]
+      - main [ref=e162]:
+        - generic [ref=e163]:
+          - navigation [ref=e165]:
+            - generic [ref=e166]:
+              - heading "云函数/托管/主机" [level=2] [ref=e169]
+              - list [ref=e171]:
+                - listitem [ref=e172] [cursor=pointer]:
+                  - generic [ref=e174]: 云函数
+                - listitem [ref=e175] [cursor=pointer]:
+                  - link "函数管理" [ref=e176]:
+                    - /url: "#/scf"
+                    - generic "函数管理" [ref=e179]
+                - listitem [ref=e180] [cursor=pointer]:
+                  - generic [ref=e182]: 云托管
+                - listitem [ref=e183] [cursor=pointer]:
+                  - link "服务管理" [ref=e184]:
+                    - /url: "#/platform-run"
+                    - generic "服务管理" [ref=e187]
+                - listitem [ref=e188] [cursor=pointer]:
+                  - link "环境设置" [ref=e189]:
+                    - /url: "#/platform-run/env-setting"
+                    - generic "环境设置" [ref=e192]
+                - listitem [ref=e193] [cursor=pointer]:
+                  - generic [ref=e195]: 云服务器
+                - listitem [ref=e196] [cursor=pointer]:
+                  - link "轻量应用服务器 NEW" [ref=e197]:
+                    - /url: "#/lighthouse"
+                    - generic "轻量应用服务器NEW" [ref=e200]:
+                      - generic [ref=e201]:
+                        - generic [ref=e202]: 轻量应用服务器
+                        - generic [ref=e204]: NEW
+          - main [ref=e205]:
+            - generic [ref=e206]:
+              - generic [ref=e209]:
+                - heading "函数管理" [level=2] [ref=e211]
+                - button "云函数教程" [ref=e214] [cursor=pointer]:
+                  - img [ref=e215]
+                  - text: 云函数教程
+              - generic [ref=e219]:
+                - generic [ref=e221]:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]: 云函数快速入门
+                    - generic [ref=e227]:
+                      - paragraph [ref=e228]: 云函数以函数的形式运行后端代码，响应 SDK 的调用或者 HTTP 请求。您的代码会储存在云端，并且在云上环境中运行，无需管理或运维自己的服务器。云函数的适合场景：
+                      - list [ref=e229]:
+                        - listitem [ref=e230]: 快速编写后端逻辑
+                        - listitem [ref=e231]: 弹性业务及请求
+                        - listitem [ref=e232]: 小程序用户身份及权限管理
+                    - link "使用指南" [ref=e235] [cursor=pointer]:
+                      - /url: https://docs.cloudbase.net/cloud-function/quick-start
+                  - generic [ref=e237]:
+                    - generic [ref=e238]:
+                      - list [ref=e242]:
+                        - listitem [ref=e243]:
+                          - generic [ref=e245] [cursor=pointer]: 小程序
+                        - listitem [ref=e246]:
+                          - generic [ref=e248] [cursor=pointer]: Web
+                        - listitem [ref=e249]:
+                          - generic [ref=e251] [cursor=pointer]: 云函数
+                        - listitem [ref=e252]:
+                          - generic [ref=e254] [cursor=pointer]: HTTP API
+                      - link "详细指引 link" [ref=e255] [cursor=pointer]:
+                        - /url: https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/guide/functions/getting-started.html
+                        - button "详细指引 link" [ref=e256]:
+                          - generic [ref=e257]: 详细指引
+                          - img "link" [ref=e258]
+                    - generic [ref=e262]:
+                      - code [ref=e265]: "wx.cloud.init({ env: 'cloud1-0gnn3mn17b581124', traceUser: true, }) // 调用云函数 const result = await wx.cloud.callFunction({ name: 'func_name', // 云函数名称 data: { a: 1 // 传递给云函数的参数 }, })"
+                      - img "copy" [ref=e266] [cursor=pointer]
+                - generic [ref=e271]:
+                  - heading "云函数列表" [level=3] [ref=e275]
+                  - generic [ref=e276]:
+                    - generic [ref=e278]:
+                      - generic [ref=e279]:
+                        - link "新建云函数" [ref=e280] [cursor=pointer]:
+                          - /url: "#/scf/function/create"
+                        - button "权限控制" [ref=e281] [cursor=pointer]
+                        - button "层管理" [ref=e282] [cursor=pointer]
+                        - button "在线开发" [ref=e283] [cursor=pointer]:
+                          - img [ref=e284]
+                          - text: 在线开发
+                        - link "安全管控" [ref=e288] [cursor=pointer]:
+                          - /url: "#/env/qps-limit?resourceType=CloudFunction"
+                      - generic [ref=e289]:
+                        - generic [ref=e292]:
+                          - img [ref=e294]
+                          - searchbox "请输入函数名称" [ref=e297]
+                        - button "refresh" [ref=e298] [cursor=pointer]:
+                          - img "refresh" [ref=e299]
+                    - generic [ref=e302]:
+                      - table [ref=e304]:
+                        - rowgroup [ref=e316]:
+                          - row "函数名 sort 状态 监控 类型 filter 运行环境 filter 并发管理 描述 上次修改时间 sort 创建时间 sortdown 操作" [ref=e317]:
+                            - columnheader "函数名 sort" [ref=e318]:
+                              - generic [ref=e320] [cursor=pointer]:
+                                - generic "函数名" [ref=e322]
+                                - img "sort" [ref=e323]
+                            - columnheader "状态" [ref=e328]:
+                              - generic "状态" [ref=e330]
+                            - columnheader "监控" [ref=e331]:
+                              - generic "监控" [ref=e333]
+                            - columnheader "类型 filter" [ref=e334]:
+                              - generic [ref=e338] [cursor=pointer]:
+                                - generic "类型" [ref=e341]
+                                - img "filter" [ref=e342]
+                            - columnheader "运行环境 filter" [ref=e345]:
+                              - generic [ref=e349] [cursor=pointer]:
+                                - generic "运行环境" [ref=e352]
+                                - img "filter" [ref=e353]
+                            - columnheader "并发管理" [ref=e356]:
+                              - generic "并发管理" [ref=e358]
+                            - columnheader "描述" [ref=e359]:
+                              - generic "描述" [ref=e361]
+                            - columnheader "上次修改时间 sort" [ref=e362]:
+                              - generic [ref=e364] [cursor=pointer]:
+                                - generic "上次修改时间" [ref=e366]
+                                - img "sort" [ref=e367]
+                            - columnheader "创建时间 sortdown" [ref=e372]:
+                              - generic [ref=e374] [cursor=pointer]:
+                                - generic "创建时间" [ref=e376]
+                                - img "sortdown" [ref=e377]
+                            - columnheader "操作" [ref=e380]:
+                              - generic "操作" [ref=e382]
+                      - table [ref=e384]:
+                        - rowgroup [ref=e396]:
+                          - row "user copy 函数更新失败 error monitor 普通函数 Nodejs14.18 未设置 - 2026-02-09 18:35:25 2026-02-09 18:35:25 接入指引 限频设置 删除" [ref=e397]:
+                            - cell "user copy" [ref=e398]:
+                              - generic [ref=e400]:
+                                - button "user" [ref=e401] [cursor=pointer]
+                                - img "copy" [ref=e402] [cursor=pointer]
+                            - cell "函数更新失败 error" [ref=e406]:
+                              - paragraph [ref=e408]:
+                                - generic [ref=e409]: 函数更新失败
+                                - img "error" [ref=e410]
+                            - cell "monitor" [ref=e414]:
+                              - link "monitor" [ref=e416] [cursor=pointer]:
+                                - /url: "#/scf/detail?id=user&NameSpace=cloud1-0gnn3mn17b581124&tab=scfMonitor"
+                                - img "monitor" [ref=e417]
+                            - cell "普通函数" [ref=e420]:
+                              - paragraph [ref=e422]: 普通函数
+                            - cell "Nodejs14.18" [ref=e423]:
+                              - paragraph [ref=e425]: Nodejs14.18
+                            - cell "未设置" [ref=e426]:
+                              - generic [ref=e429]: 未设置
+                            - cell "-" [ref=e430]:
+                              - generic [ref=e432]: "-"
+                            - cell "2026-02-09 18:35:25" [ref=e433]:
+                              - paragraph [ref=e435]: 2026-02-09 18:35:25
+                            - cell "2026-02-09 18:35:25" [ref=e436]:
+                              - paragraph [ref=e438]: 2026-02-09 18:35:25
+                            - cell "接入指引 限频设置 删除" [ref=e439]:
+                              - generic [ref=e440]:
+                                - button "接入指引" [ref=e441] [cursor=pointer]
+                                - button "限频设置" [ref=e442] [cursor=pointer]
+                                - button "删除" [ref=e443] [cursor=pointer]
+                    - generic [ref=e444]:
+                      - generic [ref=e446]:
+                        - text: 共
+                        - strong [ref=e447]: "1"
+                        - text: 条
+                      - generic [ref=e448]:
+                        - img "firstpage" [ref=e450]
+                        - img "arrowleft" [ref=e455]
+                        - generic [ref=e458]:
+                          - textbox [ref=e459]: "1"
+                          - generic [ref=e460]: / 1 页
+                        - img "arrowright" [ref=e462]
+                        - img "lastpage" [ref=e466]
+      - img [ref=e474] [cursor=pointer]
+  - iframe

@@ -1,0 +1,11 @@
+{
+  "name": "callbacks",
+  "version": "1.0.0",
+  "description": "回调处理云函数 - 统一处理微信消息推送、支付回调、退款回调",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "@cloudbase/node-sdk": "latest",
+    "xml2js": "^0.6.2"
+  }
+}

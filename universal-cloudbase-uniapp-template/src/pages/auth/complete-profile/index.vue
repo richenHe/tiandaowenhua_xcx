@@ -192,9 +192,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { auth, db } from '@/utils/cloudbase';
+import { UserApi } from '@/api';
 
 // 表单数据
 const formData = ref({
@@ -379,52 +379,17 @@ const handleSubmit = async () => {
   }
 
   try {
-    uni.showLoading({
-      title: '保存中...',
-      mask: true
-    });
-
-    // 获取当前用户
-    const currentUser = await auth.getCurrentUser();
-    const userId = currentUser?.uid;
-
-    if (!userId) {
-      throw new Error('无法获取用户 ID');
-    }
-
-    // 准备保存的数据
-    const userData = {
-      userId: userId,
-      avatarUrl: formData.value.avatarUrl || '',
-      nickName: formData.value.nickName || '',
+    // 调用API更新资料
+    await UserApi.updateProfile({
       realName: formData.value.realName,
       phone: formData.value.phone,
-      gender: formData.value.gender,
-      birthdate: formData.value.birthdate,
+      city: formData.value.region || '',
+      avatar: formData.value.avatarUrl || '',
+      gender: formData.value.gender === 'male' ? '男' : '女',
       industry: formData.value.industry || '',
-      region: formData.value.region || '',
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 检查用户是否已存在
-    const existingUser = await db.collection('users')
-      .where({ userId: userId })
-      .get();
-
-    if (existingUser.data && existingUser.data.length > 0) {
-      // 更新现有用户
-      await db.collection('users')
-        .where({ userId: userId })
-        .update(userData);
-    } else {
-      // 新增用户
-      await db.collection('users').add({
-        ...userData,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    uni.hideLoading();
+      birthday: formData.value.birthdate.year ?
+        `${formData.value.birthdate.year}-${formData.value.birthdate.month}-${formData.value.birthdate.day}-${formData.value.birthdate.hour}` : ''
+    });
 
     uni.showToast({
       title: '保存成功',
@@ -439,12 +404,6 @@ const handleSubmit = async () => {
 
   } catch (error: any) {
     console.error('❌ 保存用户资料失败:', error);
-    uni.hideLoading();
-    uni.showToast({
-      title: error?.message || '保存失败，请重试',
-      icon: 'none',
-      duration: 2000
-    });
   }
 };
 
@@ -452,69 +411,10 @@ const handleSubmit = async () => {
  * 跳过填写（仍然保存头像和昵称）
  */
 const handleSkip = async () => {
-  try {
-    uni.showLoading({
-      title: '保存中...',
-      mask: true
-    });
-
-    // 获取当前用户
-    const currentUser = await auth.getCurrentUser();
-    const userId = currentUser?.uid;
-
-    if (!userId) {
-      throw new Error('无法获取用户 ID');
-    }
-
-    // 只保存头像和昵称（如果有的话）
-    const userData = {
-      userId: userId,
-      avatarUrl: formData.value.avatarUrl || '',
-      nickName: formData.value.nickName || '',
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 检查用户是否已存在
-    const existingUser = await db.collection('users')
-      .where({ userId: userId })
-      .get();
-
-    if (existingUser.data && existingUser.data.length > 0) {
-      // 更新现有用户
-      await db.collection('users')
-        .where({ userId: userId })
-        .update(userData);
-    } else {
-      // 新增用户
-      await db.collection('users').add({
-        ...userData,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    uni.hideLoading();
-
-    uni.switchTab({
-      url: '/pages/index/index',
-    });
-
-  } catch (error: any) {
-    console.error('❌ 保存用户基本信息失败:', error);
-    uni.hideLoading();
-    
-    // 即使保存失败也允许跳过
-    uni.showToast({
-      title: '已跳过',
-      icon: 'none',
-      duration: 1500
-    });
-    
-    setTimeout(() => {
-      uni.switchTab({
-        url: '/pages/index/index',
-      });
-    }, 1500);
-  }
+  // 直接跳转到首页，不保存任何数据
+  uni.switchTab({
+    url: '/pages/index/index',
+  });
 };
 </script>
 

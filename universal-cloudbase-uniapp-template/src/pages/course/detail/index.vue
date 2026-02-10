@@ -89,8 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { CourseApi } from '@/api';
 
 // 当前选中的标签页
 const activeTabIndex = ref(0);
@@ -102,23 +103,61 @@ const tabs = [
   { label: '讲师介绍' },
 ];
 
-// 课程信息（mock数据）
+// 课程信息
 const courseInfo = ref({
-  id: null,
+  id: null as number | null,
   name: '初探班',
   type: 1,
   price: 1688,
   soldCount: 500,
   description: '这是一门系统性学习天道文化的课程，帮助学员深入理解国学智慧，传承中华文化。',
-  outline: [
-    '第一天:基础理论',
-    '第二天:实践应用',
-    '第三天:深度解析',
-  ],
+  outline: [] as string[],
   instructor: '资深讲师，从事国学教育20余年，有丰富的教学经验。',
   is_purchased: false,
-  user_course_id: null,
+  user_course_id: null as number | null,
   attend_count: 1,
+});
+
+// 加载课程详情
+const loadCourseDetail = async (courseId: number) => {
+  try {
+    const course = await CourseApi.getDetail(courseId);
+
+    courseInfo.value.id = course.id;
+    courseInfo.value.name = course.name;
+    courseInfo.value.type = course.type;
+    courseInfo.value.price = course.current_price || course.price;
+    courseInfo.value.soldCount = course.sold_count || 0;
+    courseInfo.value.description = course.description || '';
+    courseInfo.value.instructor = course.teacher || '';
+    courseInfo.value.is_purchased = course.is_purchased || false;
+    courseInfo.value.user_course_id = course.user_course_id || null;
+    courseInfo.value.attend_count = course.attend_count || 0;
+
+    // 解析课程大纲
+    if (course.outline) {
+      try {
+        courseInfo.value.outline = typeof course.outline === 'string'
+          ? JSON.parse(course.outline)
+          : course.outline;
+      } catch (e) {
+        courseInfo.value.outline = course.outline ? [course.outline] : [];
+      }
+    }
+  } catch (error) {
+    console.error('加载课程详情失败:', error);
+  }
+};
+
+onMounted(() => {
+  // 获取页面参数
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = (currentPage as any).options || {};
+
+  if (options.course_id) {
+    loadCourseDetail(Number(options.course_id));
+  }
 });
 
 // 按钮文本(根据购买状态)

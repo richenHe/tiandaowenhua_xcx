@@ -2,8 +2,8 @@
 
 > **📋 文档说明**：本文档仅包含 API 接口定义，接口概述和业务逻辑，不包含数据库表、业务需求、架构设计等其他内容。
 
-**版本**: V2.0  
-**更新时间**: 2026-02-01
+**版本**: V2.2
+**更新时间**: 2026-02-08
 
 ---
 
@@ -384,6 +384,35 @@ ELSE:
 }
 ```
 
+### 🔵 1.7 查询资料完善状态
+**接口**: `GET /api/user/profile-status`
+
+**接口概述**: 查询用户资料是否完善，用于判断预览模式
+
+**认证**: CloudBase 登录态
+
+**响应数据**:
+```json
+{
+  "profile_completed": false,
+  "is_preview_mode": true,
+  "missing_fields": ["real_name", "phone"],
+  "complete_url": "/pages/auth/complete-profile/index"
+}
+```
+
+**业务逻辑**:
+```
+1. 获取当前用户信息(通过CloudBase uid)
+2. 检查 users 表的 profile_completed 字段
+3. 如果 profile_completed = false:
+   - 检查缺失的必填字段(real_name, phone, gender, birth_bazi, province/city)
+   - 返回缺失字段列表
+4. 返回结果:
+   - is_preview_mode = !profile_completed
+   - 如果是预览模式,返回完善资料页面URL
+```
+
 ---
 
 ## 2. 课程模块
@@ -470,18 +499,34 @@ ELSE:
   "is_purchased": false,
   "user_course_id": 10,
   "attend_count": 1,
-  "included_courses": [2],
+  "included_courses": [
+    {
+      "id": 1,
+      "name": "初探班",
+      "original_price": 1688.00,
+      "gift_note": "购买密训班赠送"
+    }
+  ],
+  "combo_note": "本课程包含初探班，购买后可同时学习两门课程",
   "stock": 100,
   "status": 1
 }
 ```
 
+**字段说明**:
+- `included_courses`: 包含的赠送课程列表（仅密训班等组合课程有此字段）
+- `combo_note`: 组合课程说明文案
+
 **数据库设计注意点**:
 - user_courses 表:
   - `attend_count`: INT, DEFAULT 1(初始化即可首次上课)
-  - `is_gift`: BOOLEAN, 是否赠送(密训班赠送的初探班)
+  - `is_gift`: BOOLEAN DEFAULT 0, 是否赠送课程
+  - `source_order_id`: INT, 来源订单ID（赠送课程关联原订单）
+  - `source_course_id`: INT, 来源课程ID（赠送课程关联密训班ID）
   - `course_type`: TINYINT, 冗余存储课程类型便于查询
+  - `status`: TINYINT DEFAULT 1, 状态(1有效/0失效，退款后失效)
 - 建议添加复合索引: (user_id, course_id)
+- 建议添加索引: (source_order_id) 用于退款时批量更新
 
 ### 🔵 2.3 我的课程
 **接口**: `GET /api/course/my`
@@ -499,11 +544,31 @@ ELSE:
       "attend_count": 3,
       "allow_retrain": true,
       "retrain_price": 500.00,
+      "is_gift": false,
+      "gift_source": null,
+      "status": 1
+    },
+    {
+      "id": 2,
+      "course_id": 1,
+      "course_name": "初探班",
+      "buy_time": "2024-01-20 10:00:00",
+      "first_class_time": null,
+      "attend_count": 1,
+      "allow_retrain": true,
+      "retrain_price": 500.00,
+      "is_gift": true,
+      "gift_source": "购买密训班赠送",
       "status": 1
     }
   ]
 }
 ```
+
+**字段说明**:
+- `is_gift`: 是否为赠送课程
+- `gift_source`: 赠送来源说明（如"购买密训班赠送"）
+- `status`: 课程状态（1有效/0失效，退款后失效）
 
 ### 🔴 2.4 课程管理 - 创建课程
 **接口**: `POST /api/admin/course/create`
@@ -579,7 +644,7 @@ ELSE:
 - order_type=1: 课程购买(初探班/密训班/咨询服务)
 - order_type=2: 复训费支付
 - order_type=3: 咨询服务(已整合到课程模块,type=1处理)
-- order_type=4: 需支付的大使升级(如鸿鹄升级9800元)
+- order_type=4: 需支付的大使升级(金额从 ambassador_level_configs 表读取)
 
 **不适用场景**:
 - 商城兑换(功德分/积分,无真实金钱)
@@ -614,7 +679,7 @@ ELSE:
 |-----------|-------------|---------|
 | 1 课程 | 课程ID | 验证课程存在;验证推荐人资格;检查重复购买;密训班标记需赠送初探班 |
 | 2 复训 | 用户课程ID | 验证用户已购买;检查复训截止时间(开课前3天);检查是否已预约 |
-| 4 升级 | 目标等级 | 验证当前等级;验证升级条件;验证协议是否签署;固定金额9800元(鸿鹄升级) |
+| 4 升级 | 目标等级 | 验证当前等级;验证升级条件;验证协议是否签署;金额从 ambassador_level_configs.upgrade_payment_amount 读取 |
 
 3. **生成订单**
    - 生成订单号: `ORD + 年月日 + 8位随机数`
@@ -782,18 +847,37 @@ ELSE:
 
 **type=1（课程购买）**:
 ```
-1. 插入 user_courses 表:
-   - attend_count 初始值为 1(可以首次上课)
+1. 查询课程信息，获取 included_course_ids
+2. 插入 user_courses 表（主课程）:
+   - attend_count 初始值为 1
    - is_gift = 0
    - course_type 冗余存储课程类型
-2. 如果是密训班(检查 order_metadata):
-   - 额外插入初探班记录
-   - attend_count = 1
-   - is_gift = 1
-3. 首次购买:锁定推荐人(referee_confirmed_at = NOW())
-4. 计算推荐人奖励(密训班按38888元计算)
-5. 发放功德分或解冻积分
-6. 发送购买成功通知
+
+3. 如果是密训班（检查 included_course_ids 不为空）:
+   FOR EACH gift_course_id IN included_course_ids:
+       -- 检查用户是否已有该课程
+       IF NOT EXISTS(SELECT 1 FROM user_courses WHERE user_id=? AND course_id=gift_course_id):
+           INSERT INTO user_courses (
+               user_id,
+               course_id = gift_course_id,
+               order_id,
+               is_gift = 1,
+               source_order_id = order_id,
+               source_course_id = 密训班course_id,
+               attend_count = 1,
+               course_type = 1
+           )
+       -- 用户已有该课程则不重复添加
+
+4. 首次购买: 锁定推荐人(referee_confirmed_at = NOW())
+
+5. 计算推荐人奖励:
+   -- 重要：只按订单金额计算，不重复计算赠送课程
+   reward_base_amount = order.final_amount  -- 密训班38888元
+   -- 不是 38888 + 1688
+
+6. 发放功德分或解冻积分
+7. 发送购买成功通知
 ```
 
 **type=2（复训费）**:
@@ -807,22 +891,28 @@ ELSE:
 
 **type=4（大使升级）**:
 ```
+⚠️ 以下数值均从 ambassador_level_configs 表动态读取，不要硬编码
+
 1. 更新用户等级(ambassador_level = target_level)
-2. 根据目标等级发放对应名额:
-   鸿鹄大使(level=3):
+2. 从 ambassador_level_configs 读取目标等级配置:
+   SELECT * FROM ambassador_level_configs WHERE level = target_level
+   
+3. 根据配置发放名额(如配置了 gift_quota_basic > 0):
    - 插入 ambassador_quotas 表
    - quota_type = 1(初探班)
-   - total_quantity = 10, remaining_quantity = 10
+   - total_quantity = config.gift_quota_basic
+   - remaining_quantity = config.gift_quota_basic
    - expire_date = DATE_ADD(NOW(), INTERVAL 1 YEAR)
    - source_type = 1(大使升级)
    
-   其他大使等级可根据业务规则配置
-3. 根据等级发放对应积分/功德分奖励
-   鸿鹄大使:
-   - 发放16880冻结积分
-   - 更新 users.cash_points_frozen += 16880
+   如配置了 gift_quota_advanced > 0:
+   - 同理插入密训班名额
+   
+4. 根据配置发放冻结积分(如配置了 frozen_points > 0):
+   - 发放 config.frozen_points 冻结积分
+   - 更新 users.cash_points_frozen += config.frozen_points
    - 插入 cash_points_records(type=1获得冻结)
-4. 发送升级成功通知
+5. 发送升级成功通知
 ```
 
 **数据库设计注意点**:
@@ -936,10 +1026,35 @@ ELSE:
 ```
 
 **业务逻辑**:
-- 执行微信退款
-- 回退功德分/积分
-- 更新订单状态
-- 通知用户
+```
+1. 执行微信退款
+2. 回退功德分/积分
+3. 更新订单状态
+
+4. 如果是密训班退款:
+   a. 标记主课程(密训班) user_courses 记录失效:
+      UPDATE user_courses SET status = 0
+      WHERE order_id = {退款订单ID} AND is_gift = 0
+
+   b. 标记赠送课程(初探班) user_courses 记录失效:
+      UPDATE user_courses SET status = 0
+      WHERE source_order_id = {退款订单ID}
+
+5. 通知用户
+```
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "refund_no": "RF202401150001",
+  "refund_amount": 1688.00,
+  "affected_courses": [
+    {"course_name": "密训班", "is_gift": false},
+    {"course_name": "初探班", "is_gift": true}
+  ]
+}
+```
 
 ---
 
@@ -1209,35 +1324,33 @@ ELSE:
       WHERE id = ?
    
    c. 如果是首次上课,处理推荐人奖励:
+      ⚠️ 解冻金额从 ambassador_level_configs.unfreeze_per_referral 读取
+      
       IF is_first_time:
          查询推荐人: SELECT referee_id FROM users WHERE id = ?
          IF referee_id IS NOT NULL:
-            查询推荐人大使等级:
-            IF referee.ambassador_level = 2:  // 青鸾
-               检查是否首次推荐:
-               IF referee.is_first_recommend = false:
-                  // 首次推荐解冻1688积分
-                  UPDATE users SET
-                    cash_points_frozen = cash_points_frozen - 1688,
-                    cash_points_available = cash_points_available + 1688,
-                    is_first_recommend = true
-                  WHERE id = referee_id
-                  
-                  INSERT INTO cash_points_records (
-                    user_id = referee_id,
-                    type = 2,  // 解冻
-                    amount = 1688,
-                    order_no = 对应订单号
-                  )
-            ELSE IF referee.ambassador_level = 3:  // 鸿鹄
-               // 鸿鹄大使首次推荐也解冻1688积分
-               IF referee.cash_points_frozen >= 1688:
-                  UPDATE users SET
-                    cash_points_frozen = cash_points_frozen - 1688,
-                    cash_points_available = cash_points_available + 1688
-                  WHERE id = referee_id
-                  
-                  INSERT INTO cash_points_records (...)
+            查询推荐人大使等级和配置:
+            SELECT alc.* FROM ambassador_level_configs alc
+            WHERE alc.level = referee.ambassador_level
+            
+            unfreeze_amount = config.unfreeze_per_referral  // 从配置读取
+            
+            IF unfreeze_amount > 0 AND referee.cash_points_frozen >= unfreeze_amount:
+               UPDATE users SET
+                 cash_points_frozen = cash_points_frozen - unfreeze_amount,
+                 cash_points_available = cash_points_available + unfreeze_amount
+               WHERE id = referee_id
+               
+               INSERT INTO cash_points_records (
+                 user_id = referee_id,
+                 type = 2,  // 解冻
+                 amount = unfreeze_amount,
+                 order_no = 对应订单号
+               )
+               
+               // 青鸾大使首次推荐标记
+               IF referee.ambassador_level = 2 AND referee.is_first_recommend = false:
+                  UPDATE users SET is_first_recommend = true WHERE id = referee_id
 6. 提交事务
 7. 发送签到成功通知
 8. 返回签到成功信息
@@ -1327,6 +1440,116 @@ ELSE:
 - `DELETE /api/admin/material/delete`
 - `GET /api/admin/material/list`
 
+### 🔴 5.5 学员案例管理 - 创建
+**接口**: `POST /api/admin/case/create`
+
+**请求参数**:
+```json
+{
+  "student_name": "学员姓名",
+  "student_avatar": "头像URL",
+  "title": "案例标题",
+  "content": "学习心得",
+  "video_url": "视频URL",
+  "images": ["图片URL1", "图片URL2"],
+  "sort": 1,
+  "status": 1
+}
+```
+
+### 🔴 5.6 学员案例管理 - 更新
+**接口**: `PUT /api/admin/case/update`
+
+**请求参数**:
+```json
+{
+  "id": 1,
+  "title": "新标题",
+  "content": "新内容",
+  "sort": 2,
+  "status": 1
+}
+```
+
+### 🔴 5.7 学员案例管理 - 删除
+**接口**: `DELETE /api/admin/case/delete`
+
+**请求参数**:
+```json
+{
+  "id": 1
+}
+```
+
+### 🔴 5.8 学员案例管理 - 列表
+**接口**: `GET /api/admin/case/list`
+
+**请求参数**:
+```
+?status=1&keyword=学员&page=1&page_size=20
+```
+
+**响应数据**:
+```json
+{
+  "total": 20,
+  "list": [
+    {
+      "id": 1,
+      "student_name": "学员姓名",
+      "student_avatar": "头像URL",
+      "title": "案例标题",
+      "content": "学习心得",
+      "video_url": "视频URL",
+      "images": ["图片URL1", "图片URL2"],
+      "sort": 1,
+      "status": 1,
+      "created_at": "2024-01-15 10:00:00"
+    }
+  ]
+}
+```
+
+### 🔴 5.9 商学院介绍管理 - 获取
+**接口**: `GET /api/admin/academy/intro`
+
+**响应数据**:
+```json
+{
+  "id": 1,
+  "title": "商学院简介",
+  "content": "HTML内容",
+  "team": [
+    {
+      "name": "讲师姓名",
+      "avatar": "头像URL",
+      "title": "职称",
+      "intro": "简介"
+    }
+  ],
+  "updated_at": "2024-01-15 10:00:00"
+}
+```
+
+### 🔴 5.10 商学院介绍管理 - 更新
+**接口**: `PUT /api/admin/academy/intro`
+
+**请求参数**:
+```json
+{
+  "title": "商学院简介",
+  "content": "HTML内容",
+  "team": [
+    {
+      "name": "讲师姓名",
+      "avatar": "头像URL",
+      "title": "职称",
+      "intro": "简介"
+    }
+  ]
+}
+```
+
 ---
 
 ## 6. 传播大使模块
@@ -1351,7 +1574,10 @@ ELSE:
   "upgrade_progress": {
     "current_level": 2,
     "next_level": 3,
-    "condition": "支付9800元获10个初探班名额"
+    "condition": "从 ambassador_level_configs 动态生成升级条件描述",
+    "upgrade_payment_amount": 9800.00,
+    "gift_quota_basic": 10,
+    "gift_quota_advanced": 0
   }
 }
 ```
@@ -1425,73 +1651,161 @@ ELSE:
 ```json
 {
   "status": 2,
-  "status_name": "待面试",
+  "status_name": "面试通过",
   "interview_time": "2024-01-20 14:00:00",
   "interview_remark": "请准时参加面试",
   "reject_reason": null
 }
 ```
 
+**状态枚举值**:
+- `0`: 待审核
+- `1`: 待面试
+- `2`: 面试通过
+- `3`: 已拒绝
+
 ### 🔵 6.4 生成推荐二维码
 **接口**: `GET /api/ambassador/qrcode`
 
+**云函数**: `ambassador` → `client:generateQRCode`
+
 **前置条件**: 准青鸾及以上等级
 
+**实现方式**: 调用 `business-logic` 层的 `generateAmbassadorQRCode` 方法
+
+> 📖 **SDK 文档**: [`cloudfunctions/layers/business-logic/QRCODE_SDK.md`](cloudfunctions/layers/business-logic/QRCODE_SDK.md)
+
 **业务逻辑**:
+```javascript
+// 云函数实现示例
+case 'client:generateQRCode': {
+  const business = require('/opt/business-logic');
+
+  // 1. 验证用户是传播大使
+  if (user.ambassador_level < 1) {
+    return errorResponse('仅限传播大使使用该功能', null, 403);
+  }
+
+  // 2. 检查协议有效性
+  const [contract] = await query(
+    `SELECT * FROM contract_signatures
+     WHERE user_id = ? AND status = 1
+     ORDER BY created_at DESC LIMIT 1`,
+    [user.id]
+  );
+
+  if (!contract || new Date(contract.contract_end) < new Date()) {
+    return errorResponse('协议已过期,请先续签协议', null, 403);
+  }
+
+  // 3. 检查是否已有二维码
+  if (user.qrcode_url) {
+    return successResponse({
+      qrcode_url: user.qrcode_url,
+      referee_code: user.referee_code,
+      level: user.ambassador_level,
+      level_name: getLevelName(user.ambassador_level),
+      tip: getTipByLevel(user.ambassador_level)
+    });
+  }
+
+  // 4. 生成推荐码（如果没有）
+  let referralCode = user.referee_code;
+  if (!referralCode) {
+    referralCode = generateReferralCode(); // 6位字母数字
+    await update(
+      'UPDATE users SET referee_code = ? WHERE id = ?',
+      [referralCode, user.id]
+    );
+  }
+
+  // 5. 调用 SDK 生成二维码并上传云存储
+  const result = await business.generateAmbassadorQRCode({
+    ambassadorId: user.uid,
+    referralCode: referralCode,
+    width: 430
+  });
+
+  // 6. 保存二维码URL到数据库
+  await update(
+    'UPDATE users SET qrcode_url = ? WHERE id = ?',
+    [result.fileID, user.id]
+  );
+
+  // 7. 返回结果
+  return successResponse({
+    qrcode_url: result.fileID,
+    referee_code: referralCode,
+    level: user.ambassador_level,
+    level_name: getLevelName(user.ambassador_level),
+    tip: getTipByLevel(user.ambassador_level)
+  });
+}
 ```
-1. 验证用户是传播大使:
-   IF ambassador_level < 1:
-       返回错误: "仅限传播大使使用该功能"
-2. 检查协议有效性:
-   查询协议签署记录:
-   SELECT * FROM contract_signatures 
-   WHERE user_id = ? AND status = 1 
-   ORDER BY created_at DESC LIMIT 1
-   
-   IF NOT EXISTS OR contract_end < NOW():
-       返回错误: "协议已过期,请先续签协议"
-3. 生成或获取推荐码:
-   IF referee_code IS NULL:
-       LOOP:
-           生成6位唯一码(大写字母+数字组合)
-           检查是否已存在
-           IF NOT EXISTS: BREAK
-       UPDATE users SET referee_code = ? WHERE id = ?
-4. 构建小程序码参数:
-   scene = "ref_" + user_id  // 或使用 referee_code
-   page = "pages/auth/login/index"
-   width = 280
-   auto_color = false
-   line_color = {"r":0,"g":0,"b":0}
-5. 调用微信小程序码生成API:
-   如果已生成过,从缓存或数据库获取
-   如果未生成:
-      - 调用 GET wxacode.getUnlimited 接口
-      - 上传返回的图片到云存储
-      - 保存URL到数据库
-6. 生成分享链接:
-   share_url = "pages/auth/login/index?ref=" + referee_code
-7. 根据等级返回提示信息:
-   IF ambassador_level = 1:  // 准青鸾
-       tip = "您当前为准青鸾大使,暂时只能推荐初探班学员"
-   ELSE IF ambassador_level = 2:  // 青鸾
-       tip = "您可以推荐初探班和密训班学员"
-   ELSE IF ambassador_level >= 3:  // 鸿鹄及以上
-       tip = "您可以推荐所有课程"
-8. 返回二维码和分享信息
+
+**SDK 调用说明**:
+```javascript
+const business = require('/opt/business-logic');
+
+// 生成大使推广码（自动上传云存储）
+const result = await business.generateAmbassadorQRCode({
+  ambassadorId: 'amb_123456',  // 大使 ID（用于文件命名）
+  referralCode: 'A12345',      // 推荐码（编码到 scene 参数）
+  width: 430                   // 可选，二维码宽度
+});
+
+// result 返回值
+// {
+//   buffer: Buffer,           // 图片二进制数据
+//   cloudPath: string,        // 云存储路径：qrcodes/ambassadors/{id}_{timestamp}.png
+//   fileID: string            // 云存储文件 ID（存入数据库）
+// }
 ```
+
+**小程序端解析推荐码**:
+```javascript
+// pages/auth/login/index.js
+Page({
+  onLoad(query) {
+    if (query.scene) {
+      const scene = decodeURIComponent(query.scene);
+      // scene = 'ref=A12345'
+
+      const params = {};
+      scene.split('&').forEach(part => {
+        const [key, value] = part.split('=');
+        if (key) params[key] = value;
+      });
+
+      if (params.ref) {
+        // 记录推荐人
+        this.setData({ referralCode: params.ref });
+      }
+    }
+  }
+});
+```
+
+**数据库字段**:
+- `users.qrcode_url`: 存储云存储文件 ID（格式：`cloud://xxx/qrcodes/ambassadors/{uid}_{timestamp}.png`）
+- `users.referee_code`: 6位推荐码（大写字母+数字）
 
 **响应数据**:
 ```json
 {
-  "qrcode_url": "小程序码URL",
-  "share_url": "分享链接",
-  "referee_code": "ABC123",
+  "qrcode_url": "cloud://cloud1-xxx/qrcodes/ambassadors/amb_123_1699999999999.png",
+  "referee_code": "A12345",
   "level": 1,
   "level_name": "准青鸾大使",
   "tip": "您当前为准青鸾大使，暂时只能推荐初探班学员"
 }
 ```
+
+**注意事项**:
+1. **scene 参数限制**: 最大 32 字符，只支持数字、英文及部分特殊字符
+2. **小程序需已发布**: 生成的二维码只能打开已发布的小程序
+3. **数量无限制**: 使用 `getUnlimited` 接口，生成数量无限制
+4. **缓存策略**: 二维码生成后存入数据库，下次直接返回，避免重复生成
 
 ### 🔵 6.5 推荐学员列表
 **接口**: `GET /api/ambassador/referees`
@@ -1543,6 +1857,15 @@ ELSE:
 ```
 ?source=1&page=1&page_size=20
 ```
+
+**来源枚举值(source)**:
+- `1`: 推荐初探班
+- `2`: 推荐密训班
+- `3`: 辅导员
+- `4`: 义工
+- `5`: 沙龙活动
+- `6`: 兑换
+- `7`: 其他
 
 **响应数据**:
 ```json
@@ -1988,6 +2311,12 @@ ELSE:
 ?status=0&keyword=张三&page=1&page_size=20
 ```
 
+**状态枚举值(status)**:
+- `0`: 待审核
+- `1`: 待面试
+- `2`: 面试通过
+- `3`: 已拒绝
+
 ### 🔴 6.13 大使申请管理 - 审核
 **接口**: `POST /api/admin/ambassador/audit`
 
@@ -2115,13 +2444,83 @@ ELSE:
 ```json
 {
   "user_id": 10,
-  "activity_type": 1,
+  "activity_type": 3,
   "activity_name": "辅导员活动",
   "activity_date": "2024-01-20",
   "activity_location": "深圳",
   "merit_points": 500.00,
   "remark": ""
 }
+```
+
+**活动类型枚举(activity_type)**:
+- `3`: 辅导员
+- `4`: 义工
+- `5`: 沙龙活动
+- `7`: 其他
+
+### 🔴 6.17 活动记录管理 - 列表
+**接口**: `GET /api/admin/activity/list`
+
+**请求参数**:
+```
+?user_id=10&activity_type=1&start_date=2024-01-01&page=1&page_size=20
+```
+
+**响应数据**:
+```json
+{
+  "total": 50,
+  "list": [
+    {
+      "id": 1,
+      "user_id": 10,
+      "user_name": "大使姓名",
+      "activity_type": 3,
+      "activity_type_name": "辅导员",
+      "activity_name": "第10期初探班辅导",
+      "activity_date": "2024-01-20",
+      "activity_location": "深圳",
+      "merit_points": 500.00,
+      "remark": "",
+      "admin_name": "管理员",
+      "created_at": "2024-01-21 10:00:00"
+    }
+  ]
+}
+```
+
+### 🔴 6.18 活动记录管理 - 更新
+**接口**: `PUT /api/admin/activity/update`
+
+**请求参数**:
+```json
+{
+  "id": 1,
+  "activity_name": "新活动名称",
+  "merit_points": 600.00,
+  "remark": "更新备注"
+}
+```
+
+### 🔴 6.19 活动记录管理 - 删除
+**接口**: `DELETE /api/admin/activity/delete`
+
+**请求参数**:
+```json
+{
+  "id": 1
+}
+```
+
+**业务逻辑**:
+```
+1. 删除活动记录
+2. 回退已发放的功德分:
+   UPDATE users SET merit_points = merit_points - {activity.merit_points}
+   WHERE id = {activity.user_id}
+3. 插入功德分明细记录(type=回退)
+4. 记录操作日志
 ```
 
 ### 🔵 6.17 大使升级接口
@@ -2143,22 +2542,30 @@ ELSE:
 
 **业务逻辑**:
 
+⚠️ 所有金额/积分/名额均从 `ambassador_level_configs` 表动态读取：
+```
+SELECT * FROM ambassador_level_configs WHERE level = target_level
+```
+
 **准青鸾→青鸾(upgrade_type=2,无需支付)**:
 ```
 1. 验证条件:推荐初探班成功1次
 2. 验证协议:必须已签署《青鸾大使协议》
-3. 直接升级:
+3. 读取青鸾配置: SELECT * FROM ambassador_level_configs WHERE level = 2
+4. 直接升级:
    - 更新 ambassador_level = 2
-   - 发放1688冻结积分
-4. 返回升级成功
+   - 如 config.frozen_points > 0:
+     发放 config.frozen_points 冻结积分
+5. 返回升级成功
 ```
 
 **青鸾→鸿鹄(upgrade_type=1,需支付)**:
 ```
 1. 验证条件:已签署《鸿鹄大使补充协议》
-2. 创建订单(调用创建订单接口,order_type=4,金额9800元)
-3. 返回订单信息和支付链接
-4. 支付成功后在支付回调中完成升级
+2. 读取鸿鹄配置: SELECT * FROM ambassador_level_configs WHERE level = 3
+3. 创建订单(调用创建订单接口,order_type=4,金额=config.upgrade_payment_amount)
+4. 返回订单信息和支付链接
+5. 支付成功后在支付回调中完成升级(发放名额/积分等)
 ```
 
 **响应数据**:
@@ -2170,7 +2577,8 @@ ELSE:
   "new_level": 2,
   "new_level_name": "青鸾大使",
   "rewards": {
-    "frozen_points": 1688.00
+    "frozen_points": 1688.00,
+    "_note": "frozen_points 从 ambassador_level_configs.frozen_points 读取"
   }
 }
 ```
@@ -2181,6 +2589,7 @@ ELSE:
   "need_pay": true,
   "order_no": "ORD202401150001",
   "amount": 9800.00,
+  "_note": "amount 从 ambassador_level_configs.upgrade_payment_amount 读取",
   "payment_url": "/pages/order/payment/index?order_no=ORD202401150001"
 }
 ```
@@ -2967,14 +3376,86 @@ ELSE:
 }
 ```
 
-### 🔴 10.8 后台用户管理 - CRUD
+### 🔴 10.8 大使等级配置管理
+> 管理 `ambassador_level_configs` 表，所有大使相关的积分、金额、名额均从此表读取
+
+**接口**:
+- `GET /api/admin/ambassador-level-config/list` - 获取所有等级配置
+- `PUT /api/admin/ambassador-level-config/update` - 更新指定等级配置
+- `POST /api/admin/ambassador-level-config/init` - 初始化默认配置（仅首次）
+
+**获取配置列表响应**:
+```json
+{
+  "list": [
+    {
+      "id": 1,
+      "level": 0,
+      "level_name": "普通用户",
+      "merit_rate_basic": 0.0000,
+      "merit_rate_advanced": 0.0000,
+      "cash_rate_basic": 0.0000,
+      "cash_rate_advanced": 0.0000,
+      "frozen_points": 0.00,
+      "unfreeze_per_referral": 0.00,
+      "upgrade_payment_amount": 0.00,
+      "gift_quota_basic": 0,
+      "gift_quota_advanced": 0,
+      "can_earn_reward": 0
+    },
+    {
+      "id": 2,
+      "level": 2,
+      "level_name": "青鸾大使",
+      "merit_rate_basic": 0.3000,
+      "merit_rate_advanced": 0.2000,
+      "cash_rate_basic": 0.1000,
+      "cash_rate_advanced": 0.0500,
+      "frozen_points": 1688.00,
+      "unfreeze_per_referral": 100.00,
+      "upgrade_payment_amount": 9800.00,
+      "gift_quota_basic": 5,
+      "gift_quota_advanced": 0,
+      "can_earn_reward": 1
+    }
+  ]
+}
+```
+
+**更新配置请求**:
+```json
+{
+  "level": 2,
+  "updates": {
+    "merit_rate_basic": 0.3500,
+    "frozen_points": 2000.00,
+    "gift_quota_basic": 8
+  }
+}
+```
+
+**字段说明**:
+| 字段 | 说明 | 影响范围 |
+|------|------|---------|
+| merit_rate_basic | 推荐初探班功德分比例 | 积分计算 |
+| merit_rate_advanced | 推荐密训班功德分比例 | 积分计算 |
+| cash_rate_basic | 推荐初探班可提现积分比例 | 积分计算 |
+| cash_rate_advanced | 推荐密训班可提现积分比例 | 积分计算 |
+| frozen_points | 升级发放的冻结积分 | 大使升级 |
+| unfreeze_per_referral | 每次推荐解冻积分金额 | 签到/推荐奖励 |
+| upgrade_payment_amount | 支付升级所需金额 | 创建订单 |
+| gift_quota_basic | 升级赠送初探班名额 | 大使升级 |
+| gift_quota_advanced | 升级赠送密训班名额 | 大使升级 |
+| can_earn_reward | 是否可获得推荐奖励 | 推荐奖励判断 |
+
+### 🔴 10.9 后台用户管理 - CRUD
 **接口**:
 - `POST /api/admin/admin-user/create`
 - `PUT /api/admin/admin-user/update`
 - `DELETE /api/admin/admin-user/delete`
 - `GET /api/admin/admin-user/list`
 
-### 🔴 10.9 统计分析
+### 🔴 10.10 统计分析
 **接口**: `GET /api/admin/statistics/dashboard`
 
 **响应数据**:
@@ -3025,6 +3506,10 @@ ALTER TABLE appointments ADD COLUMN checkin_time DATETIME COMMENT '签到时间'
 ### user_courses 表
 ```sql
 ALTER TABLE user_courses ADD COLUMN last_attend_time DATETIME COMMENT '最后上课时间';
+ALTER TABLE user_courses ADD COLUMN is_gift BOOLEAN DEFAULT FALSE COMMENT '是否赠送课程';
+ALTER TABLE user_courses ADD COLUMN source_order_id INT COMMENT '来源订单ID(赠送课程关联原订单)';
+ALTER TABLE user_courses ADD COLUMN source_course_id INT COMMENT '来源课程ID(赠送课程关联密训班ID)';
+ALTER TABLE user_courses ADD COLUMN status TINYINT DEFAULT 1 COMMENT '状态:1有效/0失效(退款后失效)';
 ```
 
 ### withdrawals 表
@@ -3086,6 +3571,11 @@ ALTER TABLE appointments ADD INDEX idx_cancel_time (cancel_time);
 -- withdrawals 表
 ALTER TABLE withdrawals ADD INDEX idx_audit_time (audit_time);
 ALTER TABLE withdrawals ADD INDEX idx_status_apply_time (status, apply_time);
+
+-- user_courses 表
+ALTER TABLE user_courses ADD INDEX idx_source_order_id (source_order_id);
+ALTER TABLE user_courses ADD INDEX idx_is_gift (is_gift);
+ALTER TABLE user_courses ADD INDEX idx_status (status);
 ```
 
 ---
@@ -3156,7 +3646,7 @@ ALTER TABLE withdrawals ADD INDEX idx_status_apply_time (status, apply_time);
 **建议**:
 - 检测准青鸾推荐初探班成功
 - 触发协议签署流程
-- 签署后自动升级并发放1688冻结积分
+- 签署后自动升级并发放冻结积分（金额从 ambassador_level_configs.frozen_points 读取）
 
 --- -->
 
@@ -3224,24 +3714,30 @@ exports.main = async (event, context) => {
 
 ### B. 青鸾大使奖励流程
 ```
-成为青鸾 → 获得1688冻结积分
+⚠️ 以下数值均从 ambassador_level_configs 表动态读取
+
+成为青鸾 → 获得 config.frozen_points 冻结积分
   ↓
-第1次推荐初探班 → 解冻1688积分（可提现）
+第1次推荐初探班 → 解冻 config.unfreeze_per_referral 积分（可提现）
   ↓
-第2次推荐初探班 → 获得30%功德分（506.4）
+第2次推荐初探班 → 获得 config.merit_rate_basic 比例的功德分
   ↓
-推荐密训班 → 获得20%功德分（7777.6）
+推荐密训班 → 获得 config.merit_rate_advanced 比例的功德分
 ```
 
 ### C. 鸿鹄大使奖励流程
 ```
-升级鸿鹄 → 支付9800元 → 获得16880冻结积分+10个初探班名额
+⚠️ 以下数值均从 ambassador_level_configs 表动态读取
+
+升级鸿鹄 → 支付 config.upgrade_payment_amount 元
+         → 获得 config.frozen_points 冻结积分
+         → 获得 config.gift_quota_basic 个初探班名额
   ↓
-推荐初探班 → 解冻1688积分（重复10次）
+推荐初探班 → 解冻 config.unfreeze_per_referral 积分（重复至冻结积分用完）
   ↓
-冻结积分用完 → 推荐初探班 → 获得30%可提现积分
+冻结积分用完 → 推荐初探班 → 获得 config.cash_rate_basic 比例的可提现积分
   ↓
-推荐密训班 → 直接获得20%可提现积分（不消耗冻结积分）
+推荐密训班 → 直接获得 config.cash_rate_advanced 比例的可提现积分（不消耗冻结积分）
 ```
 
 ---

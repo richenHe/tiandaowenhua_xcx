@@ -96,30 +96,129 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { UserApi, CourseApi, OrderApi } from '@/api';
 
 // 课程信息
 const courseInfo = ref({
-  id: 'course-1',
-  name: '初探班',
-  description: '系统学习天道文化基础课程',
-  price: 1688,
+  id: 0,
+  name: '加载中...',
+  description: '',
+  price: 0,
   icon: '📚',
   gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
 });
 
 // 用户信息
 const userInfo = ref({
-  name: '张三',
-  phone: '138****8000',
+  name: '加载中...',
+  phone: '',
 });
 
 // 推荐人信息
 const refereeInfo = ref({
-  id: 'referee-1',
-  name: '李四',
-  level: '青鸾大使',
+  id: 0,
+  name: '未设置',
+  level: '',
+});
+
+// 加载页面数据
+const loadPageData = async () => {
+  try {
+    // 从URL参数获取课程ID
+    const pages = getCurrentPages();
+    const currentPage = pages[pages.length - 1];
+    const options = currentPage.options as any;
+    const courseId = parseInt(options.courseId || '0');
+
+    if (!courseId) {
+      uni.showToast({
+        title: '课程ID不存在',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 并行加载用户信息和课程信息
+    const [profile, course] = await Promise.all([
+      UserApi.getProfile(),
+      CourseApi.getDetail(courseId)
+    ]);
+
+    // 更新用户信息
+    userInfo.value = {
+      name: profile.real_name || '未设置',
+      phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''
+    };
+
+    // 更新课程信息
+    courseInfo.value = {
+      id: course.id,
+      name: course.name,
+      description: course.description || '',
+      price: course.price,
+      icon: getCourseIcon(course.type),
+      gradient: getCourseGradient(course.type)
+    };
+
+    // 如果有推荐人，加载推荐人信息
+    if (profile.referee_id) {
+      try {
+        const referee = await UserApi.getRefereeInfo(profile.referral_code);
+        refereeInfo.value = {
+          id: referee.id,
+          name: referee.real_name,
+          level: getAmbassadorLevelName(referee.ambassador_level)
+        };
+      } catch (error) {
+        console.error('加载推荐人信息失败:', error);
+      }
+    }
+  } catch (error) {
+    console.error('加载页面数据失败:', error);
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    });
+  }
+};
+
+// 获取课程图标
+const getCourseIcon = (type: number): string => {
+  const iconMap: Record<number, string> = {
+    1: '📚',
+    2: '🎓',
+    3: '🔄'
+  };
+  return iconMap[type] || '📚';
+};
+
+// 获取课程渐变色
+const getCourseGradient = (type: number): string => {
+  const gradientMap: Record<number, string> = {
+    1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    3: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+  };
+  return gradientMap[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+};
+
+// 获取大使等级名称
+const getAmbassadorLevelName = (level: number): string => {
+  const levelMap: Record<number, string> = {
+    0: '普通用户',
+    1: '初级大使',
+    2: '中级大使',
+    3: '高级大使',
+    4: '特级大使'
+  };
+  return levelMap[level] || '普通用户';
+};
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadPageData();
 });
 
 // 优惠金额
@@ -144,12 +243,27 @@ const handleConfirm = () => {
     content: `确认推荐人为【${refereeInfo.value.name}】吗？\n\n一旦支付则无法修改！`,
     confirmText: '确定',
     cancelText: '取消',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        // 用户点击确定，跳转到支付页面
-        uni.navigateTo({
-          url: '/pages/order/payment/index',
-        });
+        // 用户点击确定，创建订单
+        try {
+          const orderResult = await OrderApi.create({
+            order_type: 1, // 课程订单
+            item_id: courseInfo.value.id,
+            referee_id: refereeInfo.value.id || undefined
+          });
+
+          // 创建订单成功，跳转到支付页面
+          uni.navigateTo({
+            url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`,
+          });
+        } catch (error: any) {
+          console.error('创建订单失败:', error);
+          uni.showToast({
+            title: error.message || '创建订单失败',
+            icon: 'none'
+          });
+        }
       } else if (res.cancel) {
         // 用户点击取消
         console.log('用户取消了支付');

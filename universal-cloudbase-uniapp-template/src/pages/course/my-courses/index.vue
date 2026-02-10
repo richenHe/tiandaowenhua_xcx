@@ -81,20 +81,13 @@ import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
+import { UserApi } from '@/api';
 
 // 页面头部高度
 const pageHeaderHeight = ref(64);
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
-
-onMounted(() => {
-  // 计算页面头部高度
-  const systemInfo = uni.getSystemInfoSync();
-  const statusBarHeight = systemInfo.statusBarHeight || 20;
-  const navbarHeight = 44;
-  pageHeaderHeight.value = statusBarHeight + navbarHeight;
-});
 
 // 处理滚动事件
 const handleScroll = (e: any) => {
@@ -117,39 +110,49 @@ const onTabChange = (value: string | number) => {
   console.log('Tab changed:', value);
 };
 
-// 课程数据（Mock）
-const courses = ref([
-  {
-    id: 'course-1',
-    name: '初探班',
-    icon: '📚',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    purchaseDate: '2024-01-01',
-    attendedCount: 3,
-    canRetrain: true,
-    status: 'completed',
-  },
-  {
-    id: 'course-2',
-    name: '密训班',
-    icon: '🎓',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    purchaseDate: '2023-12-15',
-    attendedCount: 8,
-    canRetrain: true,
-    status: 'completed',
-  },
-  {
-    id: 'course-3',
-    name: '高级研修班',
-    icon: '🏆',
-    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    purchaseDate: '2024-01-15',
-    attendedCount: 2,
-    canRetrain: false,
-    status: 'ongoing',
-  },
-]);
+// 课程数据
+const courses = ref<any[]>([]);
+
+// 课程图标和渐变色映射
+const courseStyles: Record<number, { icon: string; gradient: string }> = {
+  1: { icon: '📚', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 初探班
+  2: { icon: '🎓', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 密训班
+  3: { icon: '💬', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }  // 咨询服务
+};
+
+// 加载我的课程
+const loadMyCourses = async () => {
+  try {
+    const result = await UserApi.getMyCourses({ page: 1, page_size: 100 });
+
+    courses.value = result.list.map((item: any) => {
+      const style = courseStyles[item.type] || courseStyles[1];
+      return {
+        id: item.course_id,
+        name: item.title,
+        icon: style.icon,
+        gradient: style.gradient,
+        purchaseDate: item.buy_time ? item.buy_time.split(' ')[0] : '',
+        attendedCount: item.attend_count || 0,
+        canRetrain: item.attend_count > 0, // 上过课才能复训
+        status: item.attend_count > 0 ? 'completed' : 'ongoing'
+      };
+    });
+  } catch (error) {
+    console.error('加载课程列表失败:', error);
+  }
+};
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync();
+  const statusBarHeight = systemInfo.statusBarHeight || 20;
+  const navbarHeight = 44;
+  pageHeaderHeight.value = statusBarHeight + navbarHeight;
+
+  // 加载课程列表
+  loadMyCourses();
+});
 
 // 根据选中的标签页筛选课程
 const filteredCourses = computed(() => {

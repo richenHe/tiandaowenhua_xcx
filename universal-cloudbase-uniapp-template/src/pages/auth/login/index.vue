@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { signInWithOpenId } from '@/utils/cloudbase';
+import { UserApi } from '@/api';
 
 const handleWechatLogin = async () => {
   uni.showLoading({
@@ -37,29 +38,42 @@ const handleWechatLogin = async () => {
   });
 
   try {
+    // 1. 先进行微信登录认证
     await signInWithOpenId();
-    
+
+    // 2. 调用后端登录接口，获取用户信息
+    const userInfo = await UserApi.login();
+
     uni.hideLoading();
     uni.showToast({
       title: '登录成功',
       icon: 'success',
     });
-    
+
+    // 3. 根据资料完善状态跳转
     setTimeout(() => {
-      uni.navigateTo({
-        url: '/pages/auth/complete-profile/index',
-      });
+      if (userInfo.profile_completed === 0) {
+        // 资料未完善，跳转到完善资料页面
+        uni.navigateTo({
+          url: '/pages/auth/complete-profile/index',
+        });
+      } else {
+        // 资料已完善，跳转到首页
+        uni.switchTab({
+          url: '/pages/index/index',
+        });
+      }
     }, 1000);
   } catch (error: any) {
     uni.hideLoading();
-    
+
     let errorMessage = '登录失败，请重试';
     if (error.message?.includes('小程序认证')) {
       errorMessage = '请先在云开发控制台配置小程序认证';
     } else if (error.message?.includes('环境')) {
       errorMessage = '云开发环境配置错误';
     }
-    
+
     uni.showToast({
       title: errorMessage,
       icon: 'none',

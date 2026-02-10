@@ -1,0 +1,377 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7] [cursor=pointer]:
+        - img "云开发平台"
+      - generic [ref=e8]:
+        - button "cloud1 标准版" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+          - generic "cloud1" [ref=e15]
+          - generic [ref=e17]: 标准版
+          - img [ref=e18]
+        - button "接入指引" [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: 接入指引
+        - generic [ref=e28]:
+          - generic [ref=e29]: 报名AI小程序成长计划，可获得1亿混元Token和1万张生图资源
+          - button "立即报名" [ref=e30] [cursor=pointer]:
+            - link "立即报名" [ref=e31]:
+              - /url: https://docs.cloudbase.net/ai/ai-inspire-plan
+          - button "close" [ref=e32] [cursor=pointer]:
+            - img "close" [ref=e33]
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - searchbox "请输入关键词搜索功能、文档或向 Copilot 提问" [ref=e45]
+          - generic [ref=e48]: /
+        - button "1 个事项" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - text: 1 个事项
+        - button [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+      - button "h" [ref=e60] [cursor=pointer]:
+        - generic [ref=e61]: h
+    - generic [ref=e62]:
+      - navigation [ref=e63]:
+        - list [ref=e66]:
+          - generic [ref=e67]:
+            - listitem [ref=e68] [cursor=pointer]:
+              - link "icon 概览" [ref=e69]:
+                - /url: "#/overview"
+                - img "icon" [ref=e70]
+                - generic "概览" [ref=e73]
+            - listitem [ref=e74] [cursor=pointer]:
+              - link "icon 模板中心" [ref=e75]:
+                - /url: "#/cloud-template/market"
+                - img "icon" [ref=e76]
+                - generic "模板中心" [ref=e79]
+            - separator [ref=e80]
+            - listitem [ref=e81] [cursor=pointer]:
+              - link "icon SQL型数据库" [ref=e82]:
+                - /url: "#/db/mysql/table/default/"
+                - img "icon" [ref=e83]
+                - generic "SQL型数据库" [ref=e86]
+            - listitem [ref=e87] [cursor=pointer]:
+              - link "icon 文档型数据库" [ref=e88]:
+                - /url: "#/db/doc/collection/"
+                - img "icon" [ref=e89]
+                - generic "文档型数据库" [ref=e92]
+            - listitem [ref=e93] [cursor=pointer]:
+              - link "icon 云函数/托管/主机" [ref=e94]:
+                - /url: "#/scf"
+                - img "icon" [ref=e95]
+                - generic "云函数/托管/主机" [ref=e98]
+            - listitem [ref=e99] [cursor=pointer]:
+              - link "icon 云存储" [ref=e100]:
+                - /url: "#/storage"
+                - img "icon" [ref=e101]
+                - generic "云存储" [ref=e104]
+            - listitem [ref=e105] [cursor=pointer]:
+              - link "icon AI" [ref=e106]:
+                - /url: "#/ai"
+                - img "icon" [ref=e107]
+                - generic "AI" [ref=e110]
+            - listitem [ref=e111] [cursor=pointer]:
+              - link "icon 静态网站托管" [ref=e112]:
+                - /url: "#/static-hosting"
+                - img "icon" [ref=e113]
+                - generic "静态网站托管" [ref=e116]
+            - listitem [ref=e117] [cursor=pointer]:
+              - link "icon 身份认证" [ref=e118]:
+                - /url: "#/identity/user-management"
+                - img "icon" [ref=e119]
+                - generic "身份认证" [ref=e122]
+            - listitem [ref=e123] [cursor=pointer]:
+              - link "icon 微搭低代码" [ref=e124]:
+                - /url: "#/lowcode/apps"
+                - img "icon" [ref=e125]
+                - generic "微搭低代码" [ref=e128]
+            - separator [ref=e129]
+            - listitem [ref=e130] [cursor=pointer]:
+              - link "icon 日志监控" [ref=e131]:
+                - /url: "#/devops/log"
+                - img "icon" [ref=e132]
+                - generic "日志监控" [ref=e135]
+            - listitem [ref=e136] [cursor=pointer]:
+              - link "icon 扩展功能" [ref=e137]:
+                - /url: "#/apis"
+                - img "icon" [ref=e138]
+                - generic "扩展功能" [ref=e141]
+            - listitem [ref=e142] [cursor=pointer]:
+              - link "icon 套餐用量" [ref=e143]:
+                - /url: "#/env/package-usage"
+                - img "icon" [ref=e144]
+                - generic "套餐用量" [ref=e147]
+          - generic [ref=e148]:
+            - separator [ref=e149]
+            - generic [ref=e150]:
+              - listitem [ref=e152] [cursor=pointer]:
+                - link "icon 环境管理" [ref=e153]:
+                  - /url: "#/env/http-access"
+                  - img "icon" [ref=e154]
+                  - generic "环境管理" [ref=e157]
+              - listitem [ref=e159] [cursor=pointer]:
+                - img "icon" [ref=e161]
+      - main [ref=e162]:
+        - generic [ref=e163]:
+          - navigation [ref=e165]:
+            - generic [ref=e166]:
+              - heading "云函数/托管/主机" [level=2] [ref=e169]
+              - list [ref=e171]:
+                - listitem [ref=e172] [cursor=pointer]:
+                  - generic [ref=e174]: 云函数
+                - listitem [ref=e175] [cursor=pointer]:
+                  - link "函数管理" [ref=e176]:
+                    - /url: "#/scf"
+                    - generic "函数管理" [ref=e179]
+                - listitem [ref=e180] [cursor=pointer]:
+                  - generic [ref=e182]: 云托管
+                - listitem [ref=e183] [cursor=pointer]:
+                  - link "服务管理" [ref=e184]:
+                    - /url: "#/platform-run"
+                    - generic "服务管理" [ref=e187]
+                - listitem [ref=e188] [cursor=pointer]:
+                  - link "环境设置" [ref=e189]:
+                    - /url: "#/platform-run/env-setting"
+                    - generic "环境设置" [ref=e192]
+                - listitem [ref=e193] [cursor=pointer]:
+                  - generic [ref=e195]: 云服务器
+                - listitem [ref=e196] [cursor=pointer]:
+                  - link "轻量应用服务器 NEW" [ref=e197]:
+                    - /url: "#/lighthouse"
+                    - generic "轻量应用服务器NEW" [ref=e200]:
+                      - generic [ref=e201]:
+                        - generic [ref=e202]: 轻量应用服务器
+                        - generic [ref=e204]: NEW
+          - main [ref=e205]:
+            - main [ref=e477]:
+              - generic [ref=e478]:
+                - generic [ref=e482]:
+                  - img "btnback" [ref=e484] [cursor=pointer]
+                  - heading "函数详情 / user (lam-eneoytvx)" [level=2] [ref=e487]:
+                    - generic [ref=e488]:
+                      - generic [ref=e489]: 函数详情
+                      - generic [ref=e490]: /
+                      - generic [ref=e491]: user
+                      - generic [ref=e492]: (lam-eneoytvx)
+                  - generic [ref=e495] [cursor=pointer]:
+                    - generic [ref=e496]: user
+                    - img [ref=e497]
+                - generic [ref=e502]:
+                  - list [ref=e505]:
+                    - listitem [ref=e506]:
+                      - generic [ref=e508] [cursor=pointer]: 函数配置
+                    - listitem [ref=e509]:
+                      - generic [ref=e511] [cursor=pointer]: 函数代码
+                    - listitem [ref=e512]:
+                      - generic [ref=e514] [cursor=pointer]: 层管理
+                    - listitem [ref=e515]:
+                      - generic [ref=e517] [cursor=pointer]: 预置并发
+                    - listitem [ref=e518]:
+                      - generic [ref=e520] [cursor=pointer]: 日志
+                    - listitem [ref=e521]:
+                      - generic [ref=e523] [cursor=pointer]: 监控
+                  - generic [ref=e777]:
+                    - generic [ref=e779]:
+                      - heading "函数代码（$LATEST 版本）" [level=3] [ref=e783]
+                      - generic [ref=e784]:
+                        - generic [ref=e786]:
+                          - generic [ref=e788]: 提交方法
+                          - generic [ref=e933] [cursor=pointer]:
+                            - generic [ref=e934]: 前端编辑器
+                            - img [ref=e935]
+                        - iframe [active] [ref=e941]:
+                          - application [ref=f14e2]:
+                            - generic [ref=f14e6]:
+                              - generic [ref=f14e8]:
+                                - generic [ref=f14e9]:
+                                  - button [ref=f14e10] [cursor=pointer]
+                                  - menubar [ref=f14e11]:
+                                    - menuitem "文件" [ref=f14e12]:
+                                      - generic [ref=f14e13]: 文件
+                                    - menuitem "编辑" [ref=f14e14]:
+                                      - generic [ref=f14e15]: 编辑
+                                    - menuitem "选择" [ref=f14e16]:
+                                      - generic [ref=f14e17]: 选择
+                                    - menuitem "查看" [ref=f14e18]:
+                                      - generic [ref=f14e19]: 查看
+                                    - menuitem "转到" [ref=f14e20]:
+                                      - generic [ref=f14e21]: 转到
+                                    - menuitem "运行" [ref=f14e22]:
+                                      - generic [ref=f14e23]: 运行
+                                    - menuitem "更多" [ref=f14e24]:
+                                      - generic [ref=f14e25]: 
+                                - toolbar [ref=f14e31]:
+                                  - button "返回 (Alt+LeftArrow)" [disabled] [ref=f14e32]: 
+                                  - button "前进 (Alt+RightArrow)" [disabled] [ref=f14e33]: 
+                                  - toolbar [ref=f14e36] [cursor=pointer]:
+                                    - listitem [ref=f14e37]:
+                                      - generic [ref=f14e38]: 
+                                      - generic [ref=f14e39]: user
+                                - toolbar "标题操作" [ref=f14e44]:
+                                  - checkbox "切换主侧栏 (Ctrl+B)" [checked] [ref=f14e45] [cursor=pointer]: 
+                                  - checkbox "切换面板 (Ctrl+J)" [ref=f14e46] [cursor=pointer]: 
+                                  - checkbox "切换辅助侧栏 (Ctrl+Alt+B)" [ref=f14e47] [cursor=pointer]: 
+                                  - button "自定义布局..." [ref=f14e48] [cursor=pointer]: 
+                              - generic [ref=f14e53]:
+                                - generic [ref=f14e55]:
+                                  - tablist "活动视图切换器" [ref=f14e58]:
+                                    - tab "资源管理器 (Ctrl+Shift+E)" [expanded] [selected] [ref=f14e59] [cursor=pointer]:
+                                      - generic "资源管理器 (Ctrl+Shift+E)" [ref=f14e60]: 
+                                    - tab "搜索 (Ctrl+Shift+F)" [ref=f14e61] [cursor=pointer]:
+                                      - generic "搜索 (Ctrl+Shift+F)" [ref=f14e62]: 
+                                    - tab "运行和调试 (Ctrl+Shift+D)" [ref=f14e63] [cursor=pointer]:
+                                      - generic "运行和调试 (Ctrl+Shift+D)" [ref=f14e64]: 
+                                    - tab "扩展 (Ctrl+Shift+X)" [ref=f14e65] [cursor=pointer]:
+                                      - generic "扩展 (Ctrl+Shift+X)" [ref=f14e66]: 
+                                  - toolbar "管理" [ref=f14e69]:
+                                    - button "管理" [ref=f14e70] [cursor=pointer]:
+                                      - generic "管理" [ref=f14e71]: 
+                                - generic [ref=f14e72]:
+                                  - generic [ref=f14e73]:
+                                    - heading "资源管理器" [level=2] [ref=f14e75]
+                                    - toolbar "资源管理器操作" [ref=f14e79]:
+                                      - button "视图和更多操作…" [ref=f14e82] [cursor=pointer]: 
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - toolbar
+                                  - generic [ref=f14e87]:
+                                    - generic [ref=f14e89]:
+                                      - 'button "资源管理器部分: user" [expanded] [ref=f14e90] [cursor=pointer]':
+                                        - generic [ref=f14e91]: 
+                                        - text: 
+                                        - 'heading "资源管理器部分: user" [level=3] [ref=f14e92]': user
+                                        - toolbar "user操作" [ref=f14e96]:
+                                          - button "Go to File..." [ref=f14e97]: 
+                                          - button "新建文件..." [ref=f14e98]: 
+                                          - button "新建文件夹..." [ref=f14e99]: 
+                                          - button "刷新资源管理器" [ref=f14e100]: 
+                                          - button "在资源管理器中折叠文件夹" [ref=f14e101]: 
+                                      - tree "文件资源管理器" [ref=f14e104]:
+                                        - generic [ref=f14e105]:
+                                          - treeitem ".vscode" [level=1] [ref=f14e106] [cursor=pointer]:
+                                            - generic [ref=f14e107]:
+                                              - generic [ref=f14e108]: 
+                                              - generic "/.tcb-temp-workspace/cloudfunctions/user/.vscode" [ref=f14e110]:
+                                                - generic [ref=f14e113]: .vscode
+                                          - treeitem "common" [level=1] [ref=f14e114] [cursor=pointer]:
+                                            - generic [ref=f14e115]:
+                                              - generic [ref=f14e116]: 
+                                              - generic "/.tcb-temp-workspace/cloudfunctions/user/common" [ref=f14e118]:
+                                                - generic [ref=f14e121]: common
+                                          - treeitem "handlers" [level=1] [ref=f14e122] [cursor=pointer]:
+                                            - generic [ref=f14e123]:
+                                              - generic [ref=f14e124]: 
+                                              - generic "/.tcb-temp-workspace/cloudfunctions/user/handlers" [ref=f14e126]:
+                                                - generic [ref=f14e129]: handlers
+                                          - treeitem "node_modules" [level=1] [ref=f14e130] [cursor=pointer]:
+                                            - generic [ref=f14e131]:
+                                              - generic [ref=f14e132]: 
+                                              - generic "/.tcb-temp-workspace/cloudfunctions/user/node_modules" [ref=f14e134]:
+                                                - generic [ref=f14e137]: node_modules
+                                          - treeitem "index.js" [level=1] [ref=f14e138] [cursor=pointer]:
+                                            - generic "/.tcb-temp-workspace/cloudfunctions/user/index.js" [ref=f14e142]:
+                                              - generic [ref=f14e145]: index.js
+                                          - treeitem "package-lock.json" [level=1] [ref=f14e146] [cursor=pointer]:
+                                            - generic "/.tcb-temp-workspace/cloudfunctions/user/package-lock.json" [ref=f14e150]:
+                                              - generic [ref=f14e153]: package-lock.json
+                                          - treeitem "package.json" [level=1] [ref=f14e154] [cursor=pointer]:
+                                            - generic "/.tcb-temp-workspace/cloudfunctions/user/package.json" [ref=f14e158]:
+                                              - generic [ref=f14e161]: package.json
+                                    - button "大纲部分" [ref=f14e164] [cursor=pointer]:
+                                      - generic [ref=f14e165]: 
+                                      - text: 
+                                      - heading "大纲" [level=3] [ref=f14e166]
+                                      - text:  
+                                    - button "时间线部分" [ref=f14e169] [cursor=pointer]:
+                                      - generic [ref=f14e170]: 
+                                      - text: 
+                                      - heading "时间线" [level=3] [ref=f14e171]
+                                      - text:    
+                                    - button "Git 提交部分" [ref=f14e174] [cursor=pointer]:
+                                      - generic [ref=f14e175]: 
+                                      - text: 
+                                      - heading "Git 提交" [level=3] [ref=f14e176]
+                                      - text: 
+                                    - button "Git 分支部分" [ref=f14e179] [cursor=pointer]:
+                                      - generic [ref=f14e180]: 
+                                      - text: 
+                                      - heading "Git 分支" [level=3] [ref=f14e181]
+                                      - text:  
+                                    - button "Git 标签部分" [ref=f14e184] [cursor=pointer]:
+                                      - generic [ref=f14e185]: 
+                                      - text: 
+                                      - heading "Git 标签" [level=3] [ref=f14e186]
+                                    - button "工具箱部分" [ref=f14e189] [cursor=pointer]:
+                                      - generic [ref=f14e190]: 
+                                      - text: 
+                                      - heading "工具箱" [level=3] [ref=f14e191]
+                                - main [ref=f14e199]:
+                                  - generic "编辑器组1 (空)" [active] [ref=f14e207]
+                              - status [ref=f14e211]:
+                                - generic [ref=f14e212]:
+                                  - generic "cloudstudio-icon Cloud Studio" [ref=f14e213]:
+                                    - button "cloudstudio-icon Cloud Studio" [ref=f14e214] [cursor=pointer]:
+                                      - generic [ref=f14e215]: 
+                                      - text: Cloud Studio
+                                  - generic "没有问题" [ref=f14e216]:
+                                    - button "没有问题" [ref=f14e217] [cursor=pointer]:
+                                      - generic [ref=f14e218]: 
+                                      - text: "0"
+                                      - generic [ref=f14e219]: 
+                                      - text: "0"
+                                - generic [ref=f14e220]:
+                                  - generic "通知" [ref=f14e221]:
+                                    - button "通知" [ref=f14e222] [cursor=pointer]:
+                                      - generic [ref=f14e223]: 
+                                  - 'generic "布局: US" [ref=f14e224]':
+                                    - 'button "布局: US" [ref=f14e225] [cursor=pointer]'
+                            - generic:
+                              - alert
+                              - alert
+                        - generic [ref=e803]:
+                          - generic [ref=e924]:
+                            - button "保存" [disabled]
+                          - generic [ref=e925]:
+                            - button "保存并安装依赖" [disabled]
+                          - button "测试" [disabled] [ref=e806]
+                    - generic [ref=e808]:
+                      - generic [ref=e810]:
+                        - heading "灰度配置" [level=3] [ref=e812]
+                        - link "灰度发布使用指南" [ref=e814] [cursor=pointer]:
+                          - /url: https://docs.cloudbase.net/cloud-function/gray-release
+                          - text: 灰度发布使用指南
+                          - img [ref=e815]
+                      - generic [ref=e820]:
+                        - table [ref=e822]:
+                          - rowgroup [ref=e829]:
+                            - row "版本 描述 创建时间 流量分布 操作" [ref=e830]:
+                              - columnheader "版本" [ref=e831]:
+                                - generic "版本" [ref=e833]
+                              - columnheader "描述" [ref=e834]:
+                                - generic "描述" [ref=e836]
+                              - columnheader "创建时间" [ref=e837]:
+                                - generic "创建时间" [ref=e839]
+                              - columnheader "流量分布" [ref=e840]:
+                                - generic "流量分布" [ref=e842]
+                              - columnheader "操作" [ref=e843]:
+                                - generic "操作" [ref=e845]
+                        - table [ref=e847]:
+                          - rowgroup [ref=e854]:
+                            - row "$LATEST 2026-02-09 18:38:51 100% 查看详情 流量配置 下载 发布新版本" [ref=e855]:
+                              - cell "$LATEST" [ref=e856]:
+                                - generic "$LATEST" [ref=e858]
+                              - cell [ref=e859]
+                              - cell "2026-02-09 18:38:51" [ref=e861]:
+                                - generic "2026-02-09 18:38:51" [ref=e863]
+                              - cell "100%" [ref=e864]:
+                                - generic "100%" [ref=e866]
+                              - cell "查看详情 流量配置 下载 发布新版本" [ref=e867]:
+                                - generic [ref=e868]:
+                                  - button "查看详情" [ref=e869] [cursor=pointer]
+                                  - button "流量配置" [ref=e870] [cursor=pointer]
+                                  - button "下载" [ref=e871] [cursor=pointer]
+                                  - button "发布新版本" [ref=e872] [cursor=pointer]
+      - img [ref=e470] [cursor=pointer]
+  - iframe

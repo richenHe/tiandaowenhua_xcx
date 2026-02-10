@@ -246,3 +246,9 @@ const goToDetail = (item: any) => {
 
 
 
+
+
+
+
+
+

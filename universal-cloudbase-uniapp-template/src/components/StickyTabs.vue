@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, getCurrentInstance } from 'vue'
 
 // 获取当前组件实例
 const instance = getCurrentInstance()
@@ -44,8 +44,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 吸顶状态
 const isFixed = ref(false)
-const wrapperTop = ref(0)
 const wrapperHeight = ref(0)
+// 元素在滚动内容中的绝对位置（相对于滚动内容顶部）
+const elementOffsetInScroll = ref(-1)
 
 // 正常状态的样式
 const normalStyle = computed(() => ({
@@ -67,56 +68,63 @@ const fixedStyle = computed(() => ({
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
 }))
 
-// 获取元素位置信息
-const getWrapperInfo = () => {
-  if (!props.enabled || !instance) return
-
-  setTimeout(() => {
-    const query = uni.createSelectorQuery().in(instance.proxy)
-    query.select(`#${wrapperId}`).boundingClientRect().exec((res: any) => {
-      if (res && res[0]) {
-        wrapperHeight.value = res[0].height
-      }
-    })
-  }, 100)
-}
-
 // 更新滚动位置
 const updateScrollTop = (scrollTop: number) => {
   if (!props.enabled || !instance) return
 
-  // 第一次滚动时，记录元素的初始位置
-  if (wrapperTop.value === 0) {
+  const query = uni.createSelectorQuery().in(instance.proxy)
+  query.select(`#${wrapperId}`).boundingClientRect().exec((res: any) => {
+    if (res && res[0]) {
+      // 保存高度
+      if (wrapperHeight.value === 0) {
+        wrapperHeight.value = res[0].height
+      }
+
+      // 首次调用时，记录元素在滚动内容中的绝对位置
+      if (elementOffsetInScroll.value < 0) {
+        // 元素相对于视口的 top + 当前滚动距离 = 元素在滚动内容中的绝对位置
+        elementOffsetInScroll.value = res[0].top + scrollTop
+      }
+
+      // 计算触发吸顶的滚动距离
+      // 当元素滚动到 offsetTop 位置时触发吸顶
+      const triggerScrollTop = elementOffsetInScroll.value - props.offsetTop
+
+      // 判断是否需要吸顶
+      const shouldFixed = scrollTop >= triggerScrollTop
+
+      if (shouldFixed !== isFixed.value) {
+        isFixed.value = shouldFixed
+      }
+    }
+  })
+}
+
+// 重置状态（用于页面切换等场景）
+const reset = () => {
+  isFixed.value = false
+  elementOffsetInScroll.value = -1
+  wrapperHeight.value = 0
+}
+
+onMounted(() => {
+  // 组件挂载时获取初始高度
+  if (props.enabled && instance) {
     setTimeout(() => {
       const query = uni.createSelectorQuery().in(instance.proxy)
       query.select(`#${wrapperId}`).boundingClientRect().exec((res: any) => {
         if (res && res[0]) {
-          wrapperTop.value = scrollTop + res[0].top
           wrapperHeight.value = res[0].height
         }
       })
-    }, 50)
-    return
-  }
-
-  // 计算触发点：元素初始位置 - 吸顶偏移量
-  const triggerPoint = wrapperTop.value - props.offsetTop
-  const shouldFixed = scrollTop >= triggerPoint
-
-  if (shouldFixed !== isFixed.value) {
-    isFixed.value = shouldFixed
-  }
-}
-
-onMounted(() => {
-  if (props.enabled) {
-    getWrapperInfo()
+    }, 100)
   }
 })
 
 // 暴露方法给父组件
 defineExpose({
-  updateScrollTop
+  updateScrollTop,
+  reset
 })
 </script>
 
