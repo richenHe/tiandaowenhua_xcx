@@ -12,7 +12,7 @@
         <!-- 可提现金额卡片 -->
         <view class="balance-card">
           <view class="balance-label">💰 可提现积分</view>
-          <view class="balance-value">7,472.0</view>
+          <view class="balance-value">{{ formatAmount(availablePoints) }}</view>
           <view class="balance-tip">1积分 = 1元人民币</view>
         </view>
 
@@ -74,44 +74,27 @@
 
         <!-- 提现记录 -->
         <view class="t-section-title t-section-title--simple">📋 最近提现记录</view>
-        
-        <view class="record-card">
+
+        <!-- 记录列表 -->
+        <view v-for="record in withdrawRecords" :key="record.id" class="record-card">
           <view class="record-header">
             <view class="record-info">
-              <view class="record-title">提现到微信</view>
-              <view class="record-time">2024-01-05 14:30</view>
+              <view class="record-title">提现到{{ record.withdraw_type === 'wechat' ? '微信' : '支付宝' }}</view>
+              <view class="record-time">{{ record.created_at }}</view>
             </view>
             <view class="record-right">
-              <view class="record-amount">¥1,000</view>
-              <view class="record-status success">已到账</view>
+              <view class="record-amount">¥{{ formatAmount(record.amount) }}</view>
+              <view class="record-status" :class="getStatusClass(record.status)">
+                {{ getStatusText(record.status) }}
+              </view>
             </view>
           </view>
         </view>
 
-        <view class="record-card">
-          <view class="record-header">
-            <view class="record-info">
-              <view class="record-title">提现到微信</view>
-              <view class="record-time">2023-12-28 10:15</view>
-            </view>
-            <view class="record-right">
-              <view class="record-amount">¥800</view>
-              <view class="record-status success">已到账</view>
-            </view>
-          </view>
-        </view>
-
-        <view class="record-card">
-          <view class="record-header">
-            <view class="record-info">
-              <view class="record-title">提现到微信</view>
-              <view class="record-time">2023-12-20 16:45</view>
-            </view>
-            <view class="record-right">
-              <view class="record-amount">¥500</view>
-              <view class="record-status success">已到账</view>
-            </view>
-          </view>
+        <!-- 空状态 -->
+        <view v-if="withdrawRecords.length === 0" class="empty-state">
+          <text class="empty-icon">📝</text>
+          <text class="empty-text">暂无提现记录</text>
         </view>
 
         <!-- 底部留白 -->
@@ -131,8 +114,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { UserApi } from '@/api'
+import type { CashPointsInfo, WithdrawRecord } from '@/api/types/user'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
@@ -142,9 +127,43 @@ const withdrawAmount = ref('')
 const withdrawMethod = ref('wechat')
 const quickAmounts = [100, 500, 1000, 2000]
 
+// 可提现积分
+const availablePoints = ref(0)
+
+// 提现记录列表
+const withdrawRecords = ref<WithdrawRecord[]>([])
+
+// 获取可提现积分
+const loadAvailablePoints = async () => {
+  try {
+    const result = await UserApi.getCashPoints()
+    availablePoints.value = result.available
+  } catch (error) {
+    console.error('获取可提现积分失败:', error)
+  }
+}
+
+// 获取提现记录
+const loadWithdrawRecords = async () => {
+  try {
+    const result = await UserApi.getWithdrawRecords({
+      page: 1,
+      pageSize: 5
+    })
+    withdrawRecords.value = result.list
+  } catch (error) {
+    console.error('获取提现记录失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadAvailablePoints()
+  loadWithdrawRecords()
+})
+
 const selectQuickAmount = (amount: number | string) => {
   if (amount === 'all') {
-    withdrawAmount.value = '7472'
+    withdrawAmount.value = String(availablePoints.value)
   } else {
     withdrawAmount.value = String(amount)
   }
@@ -154,19 +173,19 @@ const selectMethod = (method: string) => {
   withdrawMethod.value = method
 }
 
-const handleWithdraw = () => {
+const handleWithdraw = async () => {
   if (!withdrawAmount.value) {
     uni.showToast({ title: '请输入提现金额', icon: 'none' })
     return
   }
-  
+
   const amount = parseFloat(withdrawAmount.value)
   if (amount < 100) {
     uni.showToast({ title: '最低提现金额为100元', icon: 'none' })
     return
   }
-  
-  if (amount > 7472) {
+
+  if (amount > availablePoints.value) {
     uni.showToast({ title: '提现金额超过可用余额', icon: 'none' })
     return
   }
@@ -174,20 +193,59 @@ const handleWithdraw = () => {
   uni.showModal({
     title: '确认提现',
     content: `确认提现 ¥${withdrawAmount.value} 到微信零钱？`,
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        uni.showToast({
-          title: '提现申请已提交',
-          icon: 'success',
-          duration: 2000
-        })
-        
-        setTimeout(() => {
-          uni.navigateBack()
-        }, 2000)
+        try {
+          await UserApi.applyWithdraw({
+            amount,
+            withdrawType: 'wechat',
+            accountInfo: {
+              name: '',
+              account: ''
+            }
+          })
+
+          uni.showToast({
+            title: '提现申请已提交',
+            icon: 'success',
+            duration: 2000
+          })
+
+          setTimeout(() => {
+            uni.navigateBack()
+          }, 2000)
+        } catch (error) {
+          console.error('提现申请失败:', error)
+        }
       }
     }
   })
+}
+
+// 格式化金额
+const formatAmount = (amount: number | string) => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  return isNaN(num) ? '0.0' : num.toFixed(1)
+}
+
+// 获取提现状态文本
+const getStatusText = (status: number) => {
+  const statusMap: Record<number, string> = {
+    0: '待审核',
+    1: '已到账',
+    2: '已拒绝'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 获取提现状态样式
+const getStatusClass = (status: number) => {
+  const classMap: Record<number, string> = {
+    0: 'pending',
+    1: 'success',
+    2: 'error'
+  }
+  return classMap[status] || ''
 }
 </script>
 
@@ -419,10 +477,37 @@ const handleWithdraw = () => {
 
 .record-status {
   font-size: 22rpx;
-  
+
   &.success {
     color: #00A870;
   }
+
+  &.pending {
+    color: #E37318;
+  }
+
+  &.error {
+    color: #E34D59;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
 
 .fixed-bottom {

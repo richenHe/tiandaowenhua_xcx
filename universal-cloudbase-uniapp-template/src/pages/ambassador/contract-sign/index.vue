@@ -10,15 +10,15 @@
       <view class="page-content">
         
         <!-- 协议信息卡片 -->
-        <view class="info-card">
+        <view v-if="contractTemplate" class="info-card">
           <view class="card-header">
-            <view class="card-title">📋 传播大使合作协议</view>
+            <view class="card-title">📋 {{ contractTemplate.title }}</view>
             <view class="status-badge warning">待签署</view>
           </view>
           <view class="card-body">
             <view class="info-row">
               <text class="info-label">协议版本：</text>
-              <text class="info-value">v1.0</text>
+              <text class="info-value">{{ contractTemplate.version }}</text>
             </view>
             <view class="info-row">
               <text class="info-label">合同期限：</text>
@@ -26,27 +26,33 @@
             </view>
             <view class="info-row">
               <text class="info-label">大使等级：</text>
-              <text class="info-value">青鸾大使</text>
+              <text class="info-value">{{ contractTemplate.level_name }}</text>
             </view>
           </view>
         </view>
 
+        <!-- 空状态 -->
+        <view v-else class="empty-state">
+          <text class="empty-icon">📋</text>
+          <text class="empty-text">加载协议模板中...</text>
+        </view>
+
         <!-- 协议内容 -->
-        <view class="t-section-title t-section-title--simple">📄 协议内容</view>
-        
-        <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+        <view v-if="contractTemplate" class="t-section-title t-section-title--simple">📄 协议内容</view>
+
+        <view v-if="contractTemplate" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
-            <view 
-              :style="{ 
+            <view
+              :style="{
                 maxHeight: '800rpx',
                 background: '#F5F5F5',
                 borderRadius: '12rpx',
                 overflow: 'hidden'
               }"
             >
-              <scroll-view 
-                scroll-y 
-                :style="{ 
+              <scroll-view
+                scroll-y
+                :style="{
                   height: '800rpx',
                   padding: '24rpx',
                   fontSize: '26rpx',
@@ -55,80 +61,7 @@
                   boxSizing: 'border-box'
                 }"
               >
-              
-              <view :style="{ color: '#333', fontSize: '32rpx', marginBottom: '24rpx', textAlign: 'center', fontWeight: '600' }">天道文化传播大使合作协议</view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <text :style="{ fontWeight: '600', color: '#333' }">甲方：</text>孙膑道天道文化
-              </view>
-              <view :style="{ marginBottom: '32rpx' }">
-                <text :style="{ fontWeight: '600', color: '#333' }">乙方：</text>{用户姓名}
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第一条 协议目的</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  为了更好地传播天道文化，弘扬国学智慧，甲乙双方本着平等互利、共同发展的原则，达成本协议。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第二条 大使权利与义务</view>
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">乙方权利：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 推荐学员购买课程可获得功德分和积分奖励</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 享受大使专属培训和学习资料</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 参与商学院组织的各类活动</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 使用天道文化品牌进行推广</view>
-                
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">乙方义务：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 认真学习和理解天道文化理念</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 积极推广天道文化课程</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 维护天道文化品牌形象</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 不得进行虚假宣传和误导性推广</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第三条 功德分和积分规则</view>
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">青鸾大使：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 成为时获得1688冻结积分</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 第1次推荐初探班解冻1688积分</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 第2次起推荐获得功德分（30%初探班，20%其他）</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 功德分可兑换课程、复训、咨询服务等</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第四条 推广行为规范</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 不得进行虚假宣传</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 不得误导消费者</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 不得损害品牌形象</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 不得违反法律法规</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第五条 合同期限</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  本协议自签署之日起生效，有效期为1年。到期前30天，双方可协商续约。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第六条 违约责任</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  如乙方违反本协议约定，甲方有权取消其大使资格，并冻结未提现的积分。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第七条 争议解决</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  因本协议引起的争议，双方应友好协商解决。协商不成的，可向甲方所在地人民法院提起诉讼。
-                </view>
-              </view>
-              
-              <view :style="{ marginTop: '48rpx', fontStyle: 'italic', textAlign: 'center' }">
-                本协议一式两份，甲乙双方各执一份，具有同等法律效力。
-              </view>
-              
+                <view v-html="contractTemplate.content"></view>
               </scroll-view>
             </view>
           </view>
@@ -224,8 +157,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi } from '@/api'
+import type { ContractTemplate } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
@@ -234,11 +169,44 @@ const scrollHeight = computed(() => {
 const agreed = ref(false)
 const phoneLastFour = ref('')
 
+// 协议模板数据
+const contractTemplate = ref<ContractTemplate | null>(null)
+
+// 目标等级（从路由参数获取）
+const targetLevel = ref(2)
+
+onMounted(() => {
+  // 获取路由参数
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1] as any
+  const options = currentPage.options || {}
+
+  if (options.upgradeType) {
+    targetLevel.value = parseInt(options.upgradeType)
+  }
+
+  loadContractTemplate()
+})
+
+// 加载协议模板
+const loadContractTemplate = async () => {
+  try {
+    const result = await AmbassadorApi.getContractTemplate(targetLevel.value)
+    contractTemplate.value = result
+  } catch (error) {
+    console.error('获取协议模板失败:', error)
+    uni.showToast({
+      title: '获取协议模板失败',
+      icon: 'none'
+    })
+  }
+}
+
 const toggleAgree = () => {
   agreed.value = !agreed.value
 }
 
-const handleSign = () => {
+const handleSign = async () => {
   if (!agreed.value) {
     uni.showToast({ title: '请先阅读并同意协议', icon: 'none' })
     return
@@ -248,17 +216,31 @@ const handleSign = () => {
     return
   }
 
-  uni.showToast({
-    title: '签署成功',
-    icon: 'success',
-    duration: 2000
-  })
-  
-  setTimeout(() => {
-    uni.navigateTo({
-      url: '/pages/ambassador/contract-detail/index'
+  if (!contractTemplate.value) {
+    uni.showToast({ title: '协议模板未加载', icon: 'none' })
+    return
+  }
+
+  try {
+    const result = await AmbassadorApi.signContract({
+      templateId: contractTemplate.value.id,
+      phoneLastFour: phoneLastFour.value
     })
-  }, 2000)
+
+    uni.showToast({
+      title: '签署成功',
+      icon: 'success',
+      duration: 2000
+    })
+
+    setTimeout(() => {
+      uni.navigateTo({
+        url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
+      })
+    }, 2000)
+  } catch (error) {
+    console.error('签署协议失败:', error)
+  }
 }
 </script>
 
@@ -362,6 +344,26 @@ const handleSign = () => {
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   background: #fff;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
 
 </style>

@@ -88,75 +88,118 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { UserApi } from '@/api';
+import type { SearchRefereeItem } from '@/api/types/user';
 
 // 搜索关键词
 const searchKeyword = ref('');
 
 // 推荐人列表
-const referees = ref([
-  {
-    id: 'referee-1',
-    name: '张三',
-    phone: '137****5555',
-    level: '准青鸾大使',
-    limitation: '仅限初探班',
-    avatarTheme: 'default',
-    badgeTheme: 'default',
-  },
-  {
-    id: 'referee-2',
-    name: '李四',
-    phone: '138****8888',
-    level: '青鸾大使',
-    limitation: '',
-    avatarTheme: 'primary',
-    badgeTheme: 'primary',
-  },
-  {
-    id: 'referee-3',
-    name: '王五',
-    phone: '139****6666',
-    level: '鸿鹄大使',
-    limitation: '',
-    avatarTheme: 'success',
-    badgeTheme: 'success',
-  },
-  {
-    id: 'referee-4',
-    name: '赵六',
-    phone: '137****7777',
-    level: '金凤大使',
-    limitation: '',
-    avatarTheme: 'warning',
-    badgeTheme: 'warning',
-  },
-]);
+const referees = ref<SearchRefereeItem[]>([]);
 
-// 筛选推荐人
+// 加载状态
+const loading = ref(false);
+
+// 获取主题颜色
+const getAvatarTheme = (level: number) => {
+  const themeMap: Record<number, string> = {
+    0: 'default',
+    1: 'default',
+    2: 'primary',
+    3: 'success',
+    4: 'warning'
+  };
+  return themeMap[level] || 'default';
+};
+
+const getBadgeTheme = (level: number) => {
+  const themeMap: Record<number, string> = {
+    0: 'default',
+    1: 'default',
+    2: 'primary',
+    3: 'success',
+    4: 'warning'
+  };
+  return themeMap[level] || 'default';
+};
+
+// 筛选推荐人（本地筛选）
 const filteredReferees = computed(() => {
-  if (!searchKeyword.value) {
-    return referees.value;
+  return referees.value.map(referee => ({
+    ...referee,
+    avatarTheme: getAvatarTheme(referee.ambassador_level),
+    badgeTheme: getBadgeTheme(referee.ambassador_level)
+  }));
+});
+
+// 搜索推荐人
+const searchReferees = async () => {
+  const keyword = searchKeyword.value.trim();
+
+  if (!keyword) {
+    referees.value = [];
+    return;
   }
-  const keyword = searchKeyword.value.toLowerCase();
-  return referees.value.filter(
-    (referee) =>
-      referee.name.toLowerCase().includes(keyword) ||
-      referee.phone.includes(keyword)
-  );
+
+  if (keyword.length < 2) {
+    uni.showToast({
+      title: '请输入至少2个字符',
+      icon: 'none'
+    });
+    return;
+  }
+
+  try {
+    loading.value = true;
+    const result = await UserApi.searchReferees({ keyword });
+    referees.value = result.list;
+
+    if (result.list.length === 0) {
+      uni.showToast({
+        title: '未找到相关推荐人',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('搜索推荐人失败:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 监听搜索关键词变化，实时搜索
+let searchTimer: number | null = null;
+watch(searchKeyword, () => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+  searchTimer = setTimeout(() => {
+    searchReferees();
+  }, 500) as unknown as number;
 });
 
 // 选择推荐人
-const handleSelectReferee = (referee: any) => {
+const handleSelectReferee = async (referee: SearchRefereeItem) => {
   console.log('选择推荐人:', referee);
-  uni.showToast({
-    title: `已选择 ${referee.name}`,
-    icon: 'success',
-  });
-  setTimeout(() => {
-    uni.navigateBack();
-  }, 1000);
+
+  try {
+    await UserApi.updateReferee({
+      refereeCode: referee.referee_code
+    });
+
+    uni.showToast({
+      title: `已选择 ${referee.name}`,
+      icon: 'success',
+    });
+
+    setTimeout(() => {
+      uni.navigateBack();
+    }, 1000);
+  } catch (error) {
+    console.error('选择推荐人失败:', error);
+  }
 };
 </script>
 

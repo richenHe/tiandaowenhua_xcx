@@ -70,7 +70,7 @@ module.exports = async (event, context) => {
       is_reward_granted: order.is_reward_granted,
       reward_granted_at: order.reward_granted_at,
       created_at: order.created_at,
-      expires_at: order.expires_at,
+      expires_at: order.expire_at,
       ...refereeInfo,
       ...courseInfo
     };

@@ -70,12 +70,14 @@ export class AmbassadorApi {
 
   /**
    * 4. 获取升级指南
+   * @param targetLevel 目标等级
    * @returns 升级指南
    */
-  static async getUpgradeGuide(): Promise<UpgradeGuide> {
+  static async getUpgradeGuide(targetLevel: number): Promise<UpgradeGuide> {
     return callCloudFunction<UpgradeGuide>({
       name: 'ambassador',
       action: 'getUpgradeGuide',
+      data: { target_level: targetLevel },
       showLoading: false
     })
   }
@@ -162,14 +164,14 @@ export class AmbassadorApi {
 
   /**
    * 11. 获取协议详情
-   * @param id 协议ID
+   * @param signatureId 签署记录ID
    * @returns 协议详情
    */
-  static async getContractDetail(id: number): Promise<ContractDetail> {
+  static async getContractDetail(signatureId: number): Promise<ContractDetail> {
     return callCloudFunction<ContractDetail>({
       name: 'ambassador',
       action: 'getContractDetail',
-      data: { id },
+      data: { signature_id: signatureId },
       showLoading: false
     })
   }

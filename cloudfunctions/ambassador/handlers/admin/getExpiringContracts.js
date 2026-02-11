@@ -23,19 +23,19 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select(`
         *,
-        user:users!user_id(real_name, phone, avatar_url, ambassador_level),
-        template:contract_templates(title, level, version, expiry_date)
+        user:users!fk_contract_signatures_user(id, real_name, phone, avatar, ambassador_level),
+        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `)
-      .eq('status', 1)  // 已签署
-      .gte('template.expiry_date', now.toISOString())
-      .lte('template.expiry_date', futureDate.toISOString())
-      .order('template.expiry_date', { ascending: true });
+      .eq('status', 1)  // 有效
+      .gte('contract_end', now.toISOString().split('T')[0])
+      .lte('contract_end', futureDate.toISOString().split('T')[0])
+      .order('contract_end', { ascending: true });
 
     if (error) throw error;
 
     // 格式化返回数据
     const list = (signatures || []).map(sig => {
-      const expiryDate = new Date(sig.template?.expiry_date);
+      const expiryDate = new Date(sig.contract_end);
       const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
 
       return {
@@ -43,14 +43,13 @@ module.exports = async (event, context) => {
         user_id: sig.user_id,
         user_name: sig.user?.real_name,
         phone: sig.user?.phone,
-        avatar_url: sig.user?.avatar_url,
-        ambassador_level: sig.user?.ambassador_level,
-        template_id: sig.template_id,
-        template_title: sig.template?.title,
-        template_level: sig.template_level,
-        template_version: sig.template_version,
-        signed_at: sig.signed_at,
-        expiry_date: sig.template?.expiry_date,
+        avatar: sig.user?.avatar,
+        ambassador_level: sig.ambassador_level,
+        template_id: sig.contract_template_id,
+        contract_name: sig.template?.contract_name || sig.contract_name,
+        contract_version: sig.contract_version,
+        sign_time: sig.sign_time,
+        contract_end: sig.contract_end,
         days_remaining: daysRemaining,
         urgency: daysRemaining <= 7 ? 'high' : daysRemaining <= 15 ? 'medium' : 'low'
       };

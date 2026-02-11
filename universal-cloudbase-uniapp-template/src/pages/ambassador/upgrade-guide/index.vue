@@ -219,12 +219,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { AmbassadorApi } from '@/api';
+import type { UpgradeGuide } from '@/api/types/ambassador';
 
 // 用户当前等级: 1=准青鸾, 2=青鸾, 3=鸿鹄, 4=金凤
 const currentLevel = ref(1);
 
+// 升级指南数据
+const upgradeGuideData = ref<UpgradeGuide | null>(null);
+
 // 是否推荐初探班成功
-const hasRecommendedCourse = ref(true);
+const hasRecommendedCourse = ref(false);
 
 // 是否已签署协议
 const hasSignedContract = ref(false);
@@ -235,42 +240,100 @@ const scrollHeight = computed(() => {
 
 // 当前等级信息
 const currentLevelInfo = computed(() => {
-  const levels = [
-    { id: 0, name: '普通用户', icon: '👤' },
-    { id: 1, name: '准青鸾大使', icon: '🥚' },
-    { id: 2, name: '青鸾大使', icon: '🐦' },
-    { id: 3, name: '鸿鹄大使', icon: '🦅' },
-    { id: 4, name: '金凤大使', icon: '🦚' },
-  ];
-  return levels.find((l) => l.id === currentLevel.value) || levels[0];
+  if (!upgradeGuideData.value) {
+    const levels = [
+      { id: 0, name: '普通用户', icon: '👤' },
+      { id: 1, name: '准青鸾大使', icon: '🥚' },
+      { id: 2, name: '青鸾大使', icon: '🐦' },
+      { id: 3, name: '鸿鹄大使', icon: '🦅' },
+      { id: 4, name: '金凤大使', icon: '🦚' },
+    ];
+    return levels.find((l) => l.id === currentLevel.value) || levels[0];
+  }
+
+  const iconMap: Record<number, string> = {
+    0: '👤',
+    1: '🥚',
+    2: '🐦',
+    3: '🦅',
+    4: '🦚'
+  };
+
+  return {
+    id: upgradeGuideData.value.current_level.level,
+    name: upgradeGuideData.value.current_level.name,
+    icon: iconMap[upgradeGuideData.value.current_level.level] || '👤'
+  };
 });
 
 // 下一等级信息
 const nextLevelInfo = computed(() => {
-  const nextId = currentLevel.value + 1;
-  const levels = [
-    { id: 1, name: '准青鸾大使', icon: '🥚' },
-    { id: 2, name: '青鸾大使', icon: '🐦' },
-    { id: 3, name: '鸿鹄大使', icon: '🦅' },
-    { id: 4, name: '金凤大使', icon: '🦚' },
-  ];
-  return levels.find((l) => l.id === nextId);
+  if (!upgradeGuideData.value) {
+    const nextId = currentLevel.value + 1;
+    const levels = [
+      { id: 1, name: '准青鸾大使', icon: '🥚' },
+      { id: 2, name: '青鸾大使', icon: '🐦' },
+      { id: 3, name: '鸿鹄大使', icon: '🦅' },
+      { id: 4, name: '金凤大使', icon: '🦚' },
+    ];
+    return levels.find((l) => l.id === nextId);
+  }
+
+  const iconMap: Record<number, string> = {
+    1: '🥚',
+    2: '🐦',
+    3: '🦅',
+    4: '🦚'
+  };
+
+  return {
+    id: upgradeGuideData.value.target_level.level,
+    name: upgradeGuideData.value.target_level.name,
+    icon: iconMap[upgradeGuideData.value.target_level.level] || '🥚'
+  };
 });
 
 // 是否满足青鸾大使升级条件
 const canUpgradeToQingluan = computed(() => {
-  return currentLevel.value === 1 && hasRecommendedCourse.value;
+  if (!upgradeGuideData.value) return false;
+
+  const contractOption = upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'contract');
+  return contractOption?.eligible || false;
+});
+
+// 获取支付升级选项
+const paymentOption = computed(() => {
+  if (!upgradeGuideData.value) return null;
+  return upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'payment');
+});
+
+// 获取协议升级选项
+const contractOption = computed(() => {
+  if (!upgradeGuideData.value) return null;
+  return upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'contract');
 });
 
 onMounted(() => {
   fetchUserUpgradeStatus();
 });
 
-// 模拟获取用户升级状态
-const fetchUserUpgradeStatus = () => {
-  console.log('Fetching user upgrade status...');
-  // 实际应该调用 API 获取用户等级、推荐记录、协议签署状态等
-  // API: GET /api/ambassador/upgrade-status
+// 获取用户升级状态
+const fetchUserUpgradeStatus = async () => {
+  try {
+    // 获取用户当前等级（从个人中心或其他地方获取）
+    const targetLevel = currentLevel.value + 1;
+
+    const result = await AmbassadorApi.getUpgradeGuide(targetLevel);
+    upgradeGuideData.value = result;
+
+    // 更新当前等级
+    currentLevel.value = result.current_level.level;
+
+    // 检查是否推荐过课程
+    hasRecommendedCourse.value = result.current_stats.order_count > 0;
+  } catch (error) {
+    console.error('获取升级指南失败:', error);
+  }
 };
 
 const goToContractSign = () => {
@@ -284,10 +347,10 @@ const handleUpgrade = () => {
   if (currentLevel.value === 1 && canUpgradeToQingluan.value) {
     // 准青鸾升级到青鸾，只需签署协议
     goToContractSign();
-  } else if (currentLevel.value === 2) {
+  } else if (currentLevel.value === 2 && paymentOption.value) {
     // 青鸾升级到鸿鹄，需要支付费用，跳转到订单确认页
     uni.navigateTo({
-      url: '/pages/order/confirm/index?upgradeType=3&amount=9800',
+      url: `/pages/order/confirm/index?upgradeType=3&amount=${paymentOption.value.fee}`,
     });
   }
 };

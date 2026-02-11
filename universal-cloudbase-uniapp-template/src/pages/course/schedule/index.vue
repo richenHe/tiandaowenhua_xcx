@@ -47,56 +47,64 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { CourseApi } from '@/api';
 
-// 课程排期数据（Mock）
-const schedules = ref([
-  {
-    id: 'schedule-1',
-    courseName: '初探班',
-    period: 12,
-    startDate: '2024-02-01',
-    endDate: '2024-02-03',
-    location: '北京市朝阳区',
-    instructor: '张老师',
-    remainingSlots: 8,
-    totalSlots: 30,
-    registrationDeadline: '01-30',
-  },
-  {
-    id: 'schedule-2',
-    courseName: '密训班',
-    period: 8,
-    startDate: '2024-02-10',
-    endDate: '2024-02-17',
-    location: '上海市浦东新区',
-    instructor: '李老师',
-    remainingSlots: 5,
-    totalSlots: 20,
-    registrationDeadline: '02-08',
-  },
-  {
-    id: 'schedule-3',
-    courseName: '高级研修班',
-    period: 5,
-    startDate: '2024-02-20',
-    endDate: '2024-02-25',
-    location: '深圳市南山区',
-    instructor: '王老师',
-    remainingSlots: 12,
-    totalSlots: 25,
-    registrationDeadline: '02-18',
-  },
-]);
+// 课程排期数据
+const schedules = ref<any[]>([]);
+
+// 课程ID
+const courseId = ref<number>(0);
+
+// 加载课程排期
+const loadSchedules = async () => {
+  if (!courseId.value) return;
+
+  try {
+    const result = await CourseApi.getClassRecords({
+      course_id: courseId.value,
+      page: 1,
+      page_size: 100
+    });
+
+    schedules.value = result.list.map((item: any) => ({
+      id: item.id,
+      courseName: item.course_name,
+      period: '', // 期数信息需要从其他字段获取
+      startDate: item.class_date,
+      endDate: item.class_date, // 如果有结束日期字段可以使用
+      location: item.location,
+      instructor: item.teacher,
+      remainingSlots: item.available_quota,
+      totalSlots: item.max_students,
+      registrationDeadline: item.class_date, // 报名截止时间
+      isAppointed: item.is_appointed === 1
+    }));
+  } catch (error) {
+    console.error('加载课程排期失败:', error);
+  }
+};
 
 // 处理预约
-const handleAppointment = (scheduleId: string) => {
+const handleAppointment = (scheduleId: number) => {
   console.log('预约课程:', scheduleId);
   uni.navigateTo({
-    url: '/pages/course/appointment-confirm/index?scheduleId=' + scheduleId,
+    url: '/pages/course/appointment-confirm/index?classRecordId=' + scheduleId,
   });
 };
+
+onMounted(() => {
+  // 获取页面参数
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = (currentPage as any).options || {};
+
+  if (options.course_id) {
+    courseId.value = Number(options.course_id);
+    loadSchedules();
+  }
+});
 </script>
 
 <style lang="scss" scoped>

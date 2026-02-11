@@ -16,8 +16,8 @@
         <view class="t-section-title t-section-title--simple">📋 已签署协议</view>
 
         <!-- 协议列表 -->
-        <view 
-          v-for="contract in contracts" 
+        <view
+          v-for="contract in contracts"
           :key="contract.id"
           class="t-card"
           @click="goToContractDetail(contract.id)"
@@ -25,10 +25,10 @@
           <view class="t-card__header">
             <view class="card-title-wrapper">
               <text class="card-title">{{ contract.title }}</text>
-              <text class="card-subtitle">{{ contract.subtitle }}</text>
+              <text class="card-subtitle">{{ contract.level_name }}</text>
             </view>
-            <view class="t-badge" :class="`t-badge--${contract.statusType}`">
-              {{ contract.status }}
+            <view class="t-badge" :class="`t-badge--${getStatusType(contract.status)}`">
+              {{ getStatusText(contract.status) }}
             </view>
           </view>
 
@@ -37,23 +37,23 @@
               <view class="info-row">
                 <text class="info-icon">📝</text>
                 <text class="info-label">协议编号</text>
-                <text class="info-value">{{ contract.number }}</text>
+                <text class="info-value">{{ contract.id }}</text>
               </view>
               <view class="info-row">
                 <text class="info-icon">📅</text>
                 <text class="info-label">签署日期</text>
-                <text class="info-value">{{ contract.signDate }}</text>
+                <text class="info-value">{{ formatDate(contract.signed_at) }}</text>
               </view>
               <view class="info-row">
                 <text class="info-icon">📆</text>
                 <text class="info-label">合同期限</text>
-                <text class="info-value">{{ contract.period }}</text>
+                <text class="info-value">{{ formatDate(contract.effective_date) }} 至 {{ formatDate(contract.expiry_date) }}</text>
               </view>
               <view class="info-row">
                 <text class="info-icon">⏰</text>
                 <text class="info-label">剩余天数</text>
-                <text class="info-value" :class="contract.daysLeft > 0 ? 'text-success' : 'text-error'">
-                  {{ contract.daysLeft > 0 ? `${contract.daysLeft}天` : '已到期' }}
+                <text class="info-value" :class="calculateDaysLeft(contract.expiry_date) > 0 ? 'text-success' : 'text-error'">
+                  {{ calculateDaysLeft(contract.expiry_date) > 0 ? `${calculateDaysLeft(contract.expiry_date)}天` : '已到期' }}
                 </text>
               </view>
             </view>
@@ -66,6 +66,12 @@
           </view>
         </view>
 
+        <!-- 空状态 -->
+        <view v-if="contracts.length === 0 && !loading" class="empty-state">
+          <text class="empty-icon">📋</text>
+          <text class="empty-text">暂无协议记录</text>
+        </view>
+
       </view>
 
       <!-- 底部留白 -->
@@ -75,23 +81,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi } from '@/api'
+import type { Contract } from '@/api/types/ambassador'
 
-// Mock 协议数据
-const contracts = ref([
-  {
-    id: 1,
-    title: '传播大使合作协议',
-    subtitle: '青鸾大使协议',
-    status: '有效',
-    statusType: 'success',
-    number: 'HT202401001',
-    signDate: '2024-01-15',
-    period: '2024-01-15 至 2025-01-14',
-    daysLeft: 365
+// 协议列表
+const contracts = ref<Contract[]>([])
+const loading = ref(false)
+
+onMounted(() => {
+  loadContracts()
+})
+
+// 加载协议列表
+const loadContracts = async () => {
+  try {
+    loading.value = true
+    const result = await AmbassadorApi.getMyContracts()
+    contracts.value = result
+  } catch (error) {
+    console.error('获取协议列表失败:', error)
+  } finally {
+    loading.value = false
   }
-])
+}
 
 // 返回上一页
 const goBack = () => {
@@ -108,6 +122,37 @@ const goToContractDetail = (id: number) => {
 // 查看详情
 const handleViewDetail = (id: number) => {
   goToContractDetail(id)
+}
+
+// 计算剩余天数
+const calculateDaysLeft = (expiryDate: string) => {
+  if (!expiryDate) return 0
+
+  const expiry = new Date(expiryDate)
+  const today = new Date()
+  const diff = expiry.getTime() - today.getTime()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+// 获取状态类型
+const getStatusType = (status: number) => {
+  return status === 1 ? 'success' : 'default'
+}
+
+// 获取状态文本
+const getStatusText = (status: number) => {
+  const statusMap: Record<number, string> = {
+    1: '有效',
+    2: '已过期',
+    3: '已撤销'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  return dateStr.split(' ')[0]
 }
 </script>
 
@@ -328,6 +373,26 @@ const handleViewDetail = (id: number) => {
 // 底部留白
 .bottom-spacing {
   height: 120rpx;
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
 </style>
 

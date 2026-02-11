@@ -12,47 +12,53 @@
       <view :style="{ padding: '32rpx' }">
         
         <!-- 协议信息卡片 -->
-        <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+        <view v-if="contractDetail" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__header">
             <view class="t-card__header-wrapper">
-              <text class="t-card__title">📋 传播大使合作协议</text>
+              <text class="t-card__title">📋 {{ contractDetail.signature.title }}</text>
             </view>
           </view>
           <view class="t-card__body">
             <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">协议编号：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">HT202401001</text>
+              <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.id }}</text>
             </view>
             <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">协议版本：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">v1.0</text>
+              <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.version }}</text>
             </view>
             <view :style="{ display: 'flex', justifyContent: 'space-between', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">大使等级：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">青鸾大使</text>
+              <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.level }}</text>
             </view>
           </view>
         </view>
 
+        <!-- 空状态 -->
+        <view v-else class="empty-state">
+          <text class="empty-icon">📋</text>
+          <text class="empty-text">暂无协议详情</text>
+        </view>
+
         <!-- 合同期限 -->
-        <view class="t-section-title t-section-title--simple">📆 合同期限</view>
-        <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+        <view v-if="contractDetail" class="t-section-title t-section-title--simple">📆 合同期限</view>
+        <view v-if="contractDetail" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
             <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">合同开始：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">2024-01-15</text>
+              <text :style="{ color: '#333', fontWeight: '500' }">{{ formatDate(contractDetail.signature.effective_date) }}</text>
             </view>
             <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">合同结束：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">2025-01-14</text>
+              <text :style="{ color: '#333', fontWeight: '500' }">{{ formatDate(contractDetail.signature.expiry_date) }}</text>
             </view>
             <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '24rpx', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">剩余天数：</text>
-              <text :style="{ color: '#00A870', fontWeight: '600', fontSize: '32rpx' }">365天</text>
+              <text :style="{ color: '#00A870', fontWeight: '600', fontSize: '32rpx' }">{{ remainingDays }}天</text>
             </view>
-            
+
             <view :style="{ height: '2rpx', background: '#F5F5F5', margin: '24rpx 0' }"></view>
-            
+
             <view :style="{ padding: '24rpx', background: '#F5F5F5', borderRadius: '12rpx' }">
               <view :style="{ fontSize: '26rpx', fontWeight: '500', color: '#333', marginBottom: '8rpx' }">合同期说明</view>
               <view :style="{ fontSize: '24rpx', color: '#666', lineHeight: '1.5' }">本协议有效期为1年，到期前30天会收到续签提醒通知</view>
@@ -61,20 +67,20 @@
         </view>
 
         <!-- 协议内容 -->
-        <view class="t-section-title t-section-title--simple">📄 协议内容</view>
-        <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+        <view v-if="contractDetail" class="t-section-title t-section-title--simple">📄 协议内容</view>
+        <view v-if="contractDetail" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
-            <view 
-              :style="{ 
+            <view
+              :style="{
                 maxHeight: '800rpx',
                 background: '#F5F5F5',
                 borderRadius: '12rpx',
                 overflow: 'hidden'
               }"
             >
-              <scroll-view 
-                scroll-y 
-                :style="{ 
+              <scroll-view
+                scroll-y
+                :style="{
                   height: '800rpx',
                   padding: '24rpx',
                   fontSize: '26rpx',
@@ -83,80 +89,7 @@
                   boxSizing: 'border-box'
                 }"
               >
-              
-              <view :style="{ color: '#333', fontSize: '32rpx', marginBottom: '24rpx', textAlign: 'center', fontWeight: '600' }">天道文化传播大使合作协议</view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <text :style="{ fontWeight: '600', color: '#333' }">甲方：</text>孙膑道天道文化
-              </view>
-              <view :style="{ marginBottom: '32rpx' }">
-                <text :style="{ fontWeight: '600', color: '#333' }">乙方：</text>张三
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第一条 协议目的</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  为了更好地传播天道文化，弘扬国学智慧，甲乙双方本着平等互利、共同发展的原则，达成本协议。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第二条 大使权利与义务</view>
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">乙方权利：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 推荐学员购买课程可获得功德分和积分奖励</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 享受大使专属培训和学习资料</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 参与商学院组织的各类活动</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 使用天道文化品牌进行推广</view>
-                
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">乙方义务：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 认真学习和理解天道文化理念</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 积极推广天道文化课程</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 维护天道文化品牌形象</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 不得进行虚假宣传和误导性推广</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第三条 功德分和积分规则</view>
-                <view :style="{ marginBottom: '16rpx', fontWeight: '600', color: '#333' }">青鸾大使：</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 成为时获得1688冻结积分</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 第1次推荐初探班解冻1688积分</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 第2次起推荐获得功德分（30%初探班，20%其他）</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 功德分可兑换课程、复训、咨询服务等</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第四条 推广行为规范</view>
-                <view :style="{ marginBottom: '8rpx' }">1. 不得进行虚假宣传</view>
-                <view :style="{ marginBottom: '8rpx' }">2. 不得误导消费者</view>
-                <view :style="{ marginBottom: '8rpx' }">3. 不得损害品牌形象</view>
-                <view :style="{ marginBottom: '24rpx' }">4. 不得违反法律法规</view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第五条 合同期限</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  本协议自签署之日起生效，有效期为1年。到期前30天，双方可协商续约。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第六条 违约责任</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  如乙方违反本协议约定，甲方有权取消其大使资格，并冻结未提现的积分。
-                </view>
-              </view>
-              
-              <view :style="{ marginBottom: '24rpx' }">
-                <view :style="{ color: '#333', margin: '32rpx 0 16rpx', fontSize: '28rpx', fontWeight: '600' }">第七条 争议解决</view>
-                <view :style="{ marginBottom: '24rpx' }">
-                  因本协议引起的争议，双方应友好协商解决。协商不成的，可向甲方所在地人民法院提起诉讼。
-                </view>
-              </view>
-              
-              <view :style="{ marginTop: '48rpx', fontStyle: 'italic', textAlign: 'center' }">
-                本协议一式两份，甲乙双方各执一份，具有同等法律效力。
-              </view>
-              
+                <view v-html="contractDetail.signature.content"></view>
               </scroll-view>
             </view>
           </view>
@@ -170,16 +103,85 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi } from '@/api'
+import type { ContractDetail } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
 })
+
+// 协议详情数据
+const contractDetail = ref<ContractDetail | null>(null)
+
+// 签署记录ID（从路由参数获取）
+const signatureId = ref(0)
+
+onMounted(() => {
+  // 获取路由参数
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1] as any
+  const options = currentPage.options || {}
+
+  if (options.id) {
+    signatureId.value = parseInt(options.id)
+    loadContractDetail()
+  }
+})
+
+// 加载协议详情
+const loadContractDetail = async () => {
+  try {
+    const result = await AmbassadorApi.getContractDetail(signatureId.value)
+    contractDetail.value = result
+  } catch (error) {
+    console.error('获取协议详情失败:', error)
+    uni.showToast({
+      title: '获取协议详情失败',
+      icon: 'none'
+    })
+  }
+}
+
+// 计算剩余天数
+const remainingDays = computed(() => {
+  if (!contractDetail.value?.signature?.expiry_date) return 0
+
+  const expiryDate = new Date(contractDetail.value.signature.expiry_date)
+  const today = new Date()
+  const diff = expiryDate.getTime() - today.getTime()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+})
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  return dateStr.split(' ')[0]
+}
 </script>
 
 <style scoped lang="scss">
 @import '@/styles/tdesign-vars.scss';
-// 页面使用 TDesign CSS 类名和 inline style，无需自定义样式
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
 </style>
 

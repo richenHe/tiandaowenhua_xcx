@@ -77,7 +77,7 @@ module.exports = async (event, context) => {
       refund_reason: order.refund_reason,
       refund_time: order.refund_time,
       created_at: order.created_at,
-      expires_at: order.expires_at,
+      expires_at: order.expire_at,
       order_metadata: order.order_metadata,
       ...refereeInfo,
       ...courseInfo

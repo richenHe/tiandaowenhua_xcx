@@ -1,5 +1,107 @@
 # 项目开发规范
 
+## 字段命名规范 ⚠️
+
+**固定命名规则，全项目统一遵循：**
+
+### 1. 前端与云函数交互
+- **URL 参数**：使用 **camelCase（驼峰命名）**
+- **前端 API 参数**：使用 **camelCase（驼峰命名）**
+- **云函数接收参数**：使用 **camelCase（驼峰命名）**
+
+```typescript
+// ✅ 正确 - URL 参数使用驼峰命名
+uni.navigateTo({
+  url: `/pages/order/confirm/index?courseId=${courseId}`
+})
+
+// ✅ 正确 - 前端 API 参数使用驼峰命名
+await UserApi.updateProfile({
+  realName: '张三',
+  phone: '13800138000',
+  city: '北京',
+  avatar: 'https://...',
+  gender: '男',
+  industry: '互联网',
+  birthday: '1990-01-01'
+})
+
+// ❌ 错误 - 不要使用下划线命名
+{
+  real_name: '张三',  // 这会导致"缺少必填参数"错误
+  course_id: 1        // URL 参数也不能用下划线
+}
+```
+
+### 2. 数据库字段
+使用 **snake_case（下划线命名）**：
+- `real_name`, `phone`, `city`, `avatar`, `gender`, `industry`, `birth_bazi`
+- `created_at`, `updated_at`, `profile_completed`
+- `ambassador_level`, `merit_points`, `cash_points_available`
+
+### 3. 云函数内部转换
+云函数接收驼峰参数，存入数据库时转换为下划线：
+
+```javascript
+// ✅ 正确 - 云函数参数处理
+module.exports = async (event, context) => {
+  const { realName, phone, city, avatar } = event;  // 接收驼峰命名
+  
+  // 存入数据库时转换为下划线
+  const updateData = {
+    real_name: realName,  // 转换为 snake_case
+    phone: phone,
+    city: city || '',
+    avatar: avatar || ''
+  };
+};
+```
+
+### 4. 云函数返回数据
+使用 **snake_case（下划线命名）**，与数据库保持一致：
+
+```javascript
+// 云函数返回数据库原始字段
+return response.success({
+  real_name: user.real_name,
+  phone: user.phone,
+  profile_completed: 1
+})
+```
+
+### 5. 命名对照表
+
+| 数据库字段 | 云函数接收参数 | 前端API参数 | URL参数 | 说明 |
+|-----------|--------------|-----------|---------|------|
+| real_name | realName | realName | realName | 真实姓名 |
+| phone | phone | phone | phone | 手机号 |
+| city | city | city | city | 城市 |
+| avatar | avatar | avatar | avatar | 头像 |
+| gender | gender | gender | gender | 性别 |
+| industry | industry | industry | industry | 行业 |
+| birth_bazi | birthday | birthday | birthday | 出生八字 |
+| course_id | courseId | courseId | courseId | 课程ID |
+| class_record_id | classRecordId | classRecordId | classRecordId | 排期ID |
+| order_type | orderType | orderType | orderType | 订单类型 |
+| item_id | itemId | itemId | itemId | 商品ID |
+
+### 6. 核心原则总结 ⚠️
+
+1. **前端 → 云函数**：始终使用 **camelCase（驼峰命名）**
+2. **URL 参数**：始终使用 **camelCase（驼峰命名）**
+3. **云函数 → 数据库**：云函数内部转换为 **snake_case（下划线命名）**
+4. **数据库字段**：始终使用 **snake_case（下划线命名）**
+5. **云函数 → 前端**：返回数据库原始字段（snake_case）
+
+**关键教训**：
+- ✅ 前端调用 API 时使用 `realName`（驼峰）
+- ✅ URL 参数使用 `courseId`（驼峰）
+- ❌ 前端使用 `real_name`（下划线）会导致"缺少必填参数"错误
+- ❌ URL 参数使用 `course_id`（下划线）会导致参数接收失败
+- ✅ 云函数接收 `realName`（驼峰），内部转换为 `real_name`（下划线）存数据库
+
+---
+
 ## 架构设计原则
 
 ### 统一页面原则
@@ -292,34 +394,119 @@ return response.unauthorized('用户未登录');
 ```
 
 #### 6. 数据库操作规范
-- 必须使用 common 层的数据库工具
-- 禁止直接创建数据库连接
+- **必须使用 common 层的数据库工具**
+- **禁止直接创建数据库连接**
+- **⚠️ 统一使用 Query Builder（强制执行）**：
+  - **禁止使用原生 SQL**（`rawQuery`、`query` 等方法）
+  - **必须使用 CloudBase Query Builder**（Supabase-style）
+  - **所有查询（包括 JOIN）统一使用 `db.from()` 链式调用**
+  - **理由**：
+    1. ✅ 自动防止 SQL 注入
+    2. ✅ 代码简洁、易读、易维护
+    3. ✅ 统一项目风格，避免混乱
+    4. ✅ 类型安全，减少错误
 - **⚠️ 数据库名称规范**：
   - **业务数据库**：`tiandao_culture`（存放所有业务表）
   - **环境数据库**：`cloud1-0gnn3mn17b581124`（仅为环境ID，非业务数据库）
   - **强制要求**：所有 MCP 数据库查询操作必须明确指定 `tiandao_culture` 数据库
   - **SQL 语法**：`SELECT * FROM tiandao_culture.表名` 或 `SHOW TABLES FROM tiandao_culture`
+- **⚠️ Query Builder JOIN 查询规范**：
+  - **强制要求**：所有关联查询必须使用 Query Builder 的外键语法
+  - **外键命名规范**：数据库中的外键格式为 `fk_表名_字段名`（如 `fk_orders_referee`）
+  - **JOIN 语法**：`.select('*, 关联表别名:关联表名!外键名称(字段1, 字段2)')`
+  - **正确示例**：
+    ```javascript
+    // ✅ 正确 - 使用 Query Builder + 外键名称进行 JOIN
+    const { data, error } = await db
+      .from('orders')
+      .select(`
+        *,
+        referee:users!fk_orders_referee(id, real_name, nickname)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(0, 9);
+    
+    const { data: courses, error } = await db
+      .from('user_courses')
+      .select(`
+        *,
+        course:courses!fk_user_courses_course(id, name, type, price)
+      `)
+      .eq('user_id', userId);
+    
+    // ✅ 正确 - 多个 JOIN
+    const { data: appointments, error } = await db
+      .from('appointments')
+      .select(`
+        *,
+        course:courses!fk_appointments_course(name, type),
+        class_record:class_records!fk_appointments_class_record(class_date, start_time, end_time)
+      `)
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+    ```
+  - **错误示例**：
+    ```javascript
+    // ❌ 错误 - 使用了原生 SQL
+    const result = await rawQuery(`
+      SELECT a.*, c.name as course_name
+      FROM appointments a
+      LEFT JOIN courses c ON a.course_id = c.id
+      WHERE a.user_id = ?
+    `, [userId]);
+    
+    // ❌ 错误 - 使用了 Supabase 风格的自动推断外键名
+    .select('*, referee:users(id, real_name)')  // 无外键名，会失败
+    
+    // ❌ 错误 - 使用了错误的外键命名格式
+    .select('*, referee:users!orders_referee_id_fkey(id, real_name)')  // Postgres 风格，不适用
+    ```
+  - **查询外键名称**：使用以下 SQL 查看实际外键名称
+    ```sql
+    SELECT 
+        TABLE_NAME,
+        CONSTRAINT_NAME,
+        COLUMN_NAME,
+        REFERENCED_TABLE_NAME,
+        REFERENCED_COLUMN_NAME
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = 'tiandao_culture'
+    AND TABLE_NAME = '表名'
+    AND REFERENCED_TABLE_NAME IS NOT NULL;
+    ```
 
 ```javascript
-const { query, insert, update, softDelete, transaction } = require('common');
+const { db, response } = require('common');
 
-// 查询
-const users = await query('SELECT * FROM users WHERE id = ?', [userId]);
+// ✅ 正确 - 统一使用 Query Builder
+// 简单查询
+const { data: users, error } = await db
+  .from('users')
+  .select('*')
+  .eq('id', userId);
 
-// 插入
-const result = await insert('INSERT INTO users (...) VALUES (?)', [data]);
+// 带条件查询
+const { data: orders, error } = await db
+  .from('orders')
+  .select('*')
+  .eq('user_id', userId)
+  .in('status', [1, 2, 3])
+  .order('created_at', { ascending: false });
 
-// 更新
-await update('UPDATE users SET ... WHERE id = ?', [data, userId]);
+// JOIN 关联查询（推荐）
+const { data: orders, error } = await db
+  .from('orders')
+  .select(`
+    *,
+    referee:users!fk_orders_referee(id, real_name)
+  `)
+  .eq('user_id', userId);
 
-// 软删除
-await softDelete('users', userId);
-
-// 事务
-await transaction(async (conn) => {
-  await conn.query('UPDATE ...', [data1]);
-  await conn.query('INSERT ...', [data2]);
-});
+// ❌ 禁止使用原生 SQL
+// 以下方法已废弃，不要使用：
+// const result = await query('SELECT ...', [params]);
+// const result = await rawQuery('SELECT ...');
 ```
 
 **MCP 数据库查询示例**：
@@ -372,6 +559,7 @@ SELECT * FROM `cloud1-0gnn3mn17b581124`.users;
 - [ ] **响应格式**：使用 response 工具，格式统一
 - [ ] **数据库操作**：使用 common 层工具，无直接连接
 - [ ] **数据库名称**：MCP 查询已明确指定 `tiandao_culture` 数据库
+- [ ] **Query Builder JOIN**：关联查询使用正确的外键名称（`fk_表名_字段名`格式）
 - [ ] **环境变量**：敏感信息配置在环境变量中
 - [ ] **错误处理**：统一 try-catch，记录日志
 - [ ] **层依赖**：已正确引用 common 和 business-logic 层
@@ -432,6 +620,29 @@ Error 1054: Unknown column '_openid' or 't0._openid' in 'where clause'
    ORDER BY TABLE_NAME;
    ```
 
+#### 错误6：Query Builder JOIN 查询失败
+```
+Error: failed to find relationship between orders and users
+```
+**解决**：
+1. 检查是否使用了正确的外键名称（格式：`fk_表名_字段名`）
+2. 查询实际外键名称：
+   ```sql
+   SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME 
+   FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+   WHERE TABLE_SCHEMA = 'tiandao_culture'
+   AND TABLE_NAME = '表名'
+   AND REFERENCED_TABLE_NAME IS NOT NULL;
+   ```
+3. 修正 Query Builder 语法：
+   ```javascript
+   // ❌ 错误
+   .select('*, referee:users(id, real_name)')
+   
+   // ✅ 正确
+   .select('*, referee:users!fk_orders_referee(id, real_name)')
+   ```
+
 ### 最佳实践
 1. **一个云函数一个模块**：user/order/course/ambassador/system 分离
 2. **复用 common 层**：数据库、工具、响应格式统一
@@ -444,3 +655,8 @@ Error 1054: Unknown column '_openid' or 't0._openid' in 'where clause'
    - MCP 查询必须明确指定数据库名：`tiandao_culture.表名`
    - 所有表必须包含 `_openid` 字段（CloudBase 权限控制必需）
    - 数据库连接配置在 `cloudfunctions/*/common/db.js` 中已正确设置
+8. **关联查询规范**：
+   - **统一使用 Query Builder**（禁止原生 SQL）
+   - 必须明确指定外键名称（格式：`fk_表名_字段名`）
+   - 所有外键信息参考 `docs/database/数据库详细信息.md` 文档
+   - 示例：`db.from('orders').select('*, referee:users!fk_orders_referee(id, real_name)')`

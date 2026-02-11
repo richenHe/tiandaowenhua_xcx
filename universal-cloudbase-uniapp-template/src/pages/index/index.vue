@@ -136,36 +136,7 @@ const announcementList = ref([
 ]);
 
 // 轮播图数据
-const bannerList = ref([
-  {
-    emoji: '',
-    title: '天道文化课程平台',
-    subtitle: '传承国学智慧 · 弘扬天道文化',
-    theme: 'banner-slide--blue',
-    link: ''
-  },
-  {
-    emoji: '🏫',
-    title: '天道文化商学院',
-    subtitle: '传承国学智慧 · 培养复合型人才\n点击了解更多',
-    theme: 'banner-slide--purple',
-    link: '/pages/academy/index'
-  },
-  {
-    emoji: '📱',
-    title: '朋友圈素材库',
-    subtitle: '精美海报 · 宣传文案\n一键保存分享',
-    theme: 'banner-slide--pink',
-    link: '/pages/academy/materials/index'
-  },
-  {
-    emoji: '⭐',
-    title: '学员成功案例',
-    subtitle: '5000+学员见证 · 真实反馈\n查看更多案例',
-    theme: 'banner-slide--blue',
-    link: '/pages/academy/cases/index'
-  }
-]);
+const bannerList = ref<any[]>([]);
 
 // 标签页数据（包含日历）
 const allTabList = ref([
@@ -187,7 +158,7 @@ const loadCourseList = async () => {
     courseList.value = result.list.map((course: any) => ({
       id: course.id,
       title: course.name,
-      price: course.price,
+      price: course.current_price || 0,
       emoji: getCourseEmoji(course.type),
       imageTheme: getCourseTheme(course.type),
       type: getCourseTypeKey(course.type),
@@ -228,8 +199,8 @@ const getCourseTypeKey = (type: number): string => {
   return typeMap[type] || 'beginner';
 };
 
-// 日历价格数据（模拟从后台获取）
-const calendarPriceData = ref<Record<string, number>>({});
+// 日历价格数据（从后台获取）
+const calendarPriceData = ref<Record<string, any>>({});
 
 // 根据标签筛选课程
 const filteredCourseList = computed(() => {
@@ -257,6 +228,43 @@ const onBannerClick = (banner: any) => {
   }
 }
 
+// 加载轮播图列表
+const loadBannerList = async () => {
+  try {
+    const result = await SystemApi.getBannerList();
+    if (result.list && result.list.length > 0) {
+      // 将后台返回的数据转换为前端需要的格式
+      bannerList.value = result.list.map((item: any) => ({
+        id: item.id,
+        emoji: '', // 后台暂无emoji字段，使用空字符串
+        title: item.title,
+        subtitle: item.subtitle || '',
+        theme: getBannerTheme(item.id), // 根据ID或其他规则分配主题
+        link: item.link || '',
+        cover_image: item.cover_image
+      }));
+    }
+  } catch (error) {
+    console.error('加载轮播图失败:', error);
+    // 失败时使用默认数据
+    bannerList.value = [
+      {
+        emoji: '',
+        title: '天道文化课程平台',
+        subtitle: '传承国学智慧 · 弘扬天道文化',
+        theme: 'banner-slide--blue',
+        link: ''
+      }
+    ];
+  }
+};
+
+// 获取轮播图主题色
+const getBannerTheme = (id: number): string => {
+  const themes = ['banner-slide--blue', 'banner-slide--purple', 'banner-slide--pink'];
+  return themes[id % themes.length];
+};
+
 const onTabChange = (value: string | number) => {
   if (value === 'calendar') {
     showCalendarPopup();
@@ -282,17 +290,28 @@ const onDateSelect = (date: Date) => {
 };
 
 const loadCalendarPriceData = async () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const mockData: Record<string, number> = {};
-  
-  for (let day = 1; day <= 28; day++) {
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    mockData[dateStr] = 60;
+  try {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    
+    // 计算当月第一天和最后一天
+    const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const lastDayStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    
+    // 调用后台接口获取日历数据
+    const result = await CourseApi.getCalendarSchedule({
+      startDate: firstDay,
+      endDate: lastDayStr
+    });
+    
+    // 转换数据格式，将课程信息转换为日历组件需要的格式
+    calendarPriceData.value = result;
+  } catch (error) {
+    console.error('加载日历数据失败:', error);
+    calendarPriceData.value = {};
   }
-  
-  calendarPriceData.value = mockData;
 };
 
 // 跳转到公告页面
@@ -302,10 +321,11 @@ const goToAnnouncement = () => {
 
 // 跳转到课程详情
 const goToCourseDetail = (course: any) => {
-  uni.navigateTo({ url: `/pages/course/detail/index?id=${course.id}` });
+  uni.navigateTo({ url: `/pages/course/detail/index?courseId=${course.id}` });
 };
 
 onMounted(() => {
+  loadBannerList();
   loadCalendarPriceData();
   loadCourseList();
   loadAnnouncements();

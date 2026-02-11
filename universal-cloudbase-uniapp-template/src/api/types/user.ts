@@ -78,6 +78,8 @@ export interface UpdateProfileParams {
   city?: string
   /** 头像URL */
   avatar?: string
+  /** 微信昵称 */
+  nickname?: string
   /** 性别 */
   gender?: string
   /** 行业 */
@@ -97,8 +99,8 @@ export interface UpdateProfileResponse {
  * 修改推荐人请求参数
  */
 export interface UpdateRefereeParams {
-  /** 新推荐码 */
-  newReferralCode: string
+  /** 推荐码 */
+  refereeCode: string
 }
 
 /**
@@ -114,15 +116,46 @@ export interface RefereeInfo {
 }
 
 /**
+ * 搜索推荐人请求参数
+ */
+export interface SearchRefereesParams {
+  /** 搜索关键词（姓名或手机号） */
+  keyword: string
+}
+
+/**
+ * 搜索推荐人列表项
+ */
+export interface SearchRefereeItem {
+  id: number
+  uid: string
+  name: string
+  phone: string
+  avatar: string
+  level: string
+  ambassador_level: number
+  limitation: string
+  referee_code: string
+}
+
+/**
+ * 搜索推荐人响应数据
+ */
+export interface SearchRefereesResponse {
+  list: SearchRefereeItem[]
+  total: number
+}
+
+/**
  * 功德分信息
  */
 export interface MeritPointsInfo {
   /** 当前余额 */
   balance: number
   /** 总获得 */
-  totalEarned: number
+  total_earned: number
   /** 总消耗 */
-  totalSpent: number
+  total_spent: number
 }
 
 /**
@@ -155,9 +188,9 @@ export interface CashPointsInfo {
   /** 提现中积分 */
   withdrawing: number
   /** 总获得 */
-  totalEarned: number
+  total_earned: number
   /** 总提现 */
-  totalWithdrawn: number
+  total_spent: number
 }
 
 /**

@@ -27,8 +27,13 @@ module.exports = async (event, context) => {
     }
 
     // 2. 参数验证
-    if (!order_type || !item_id) {
-      return response.paramError('缺少必要参数');
+    if (!order_type) {
+      return response.paramError('缺少订单类型');
+    }
+    
+    // item_id 必须是大于 0 的整数
+    if (!item_id || item_id <= 0) {
+      return response.paramError('item_id 必须是大于 0 的整数');
     }
 
     // 3. 根据 order_type 处理不同业务逻辑
@@ -58,6 +63,10 @@ module.exports = async (event, context) => {
     const order_no = business.generateOrderNo('ORD');
 
     // 5. 插入订单记录
+    // 格式化过期时间为 MySQL datetime 格式
+    const expireDate = new Date(Date.now() + 30 * 60 * 1000);
+    const expire_at = expireDate.toISOString().slice(0, 19).replace('T', ' '); // 'YYYY-MM-DD HH:MM:SS'
+    
     const order = await insert('orders', {
       user_id: user.id,
       order_no,
@@ -71,7 +80,7 @@ module.exports = async (event, context) => {
       referee_uid: orderData.referee_uid || null,
       pay_status: 0, // 待支付
       order_metadata: orderData.metadata ? JSON.stringify(orderData.metadata) : null,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000) // 30分钟后过期
+      expire_at: expire_at
     });
 
     console.log(`[create] 订单创建成功:`, order_no);
@@ -87,7 +96,7 @@ module.exports = async (event, context) => {
       referee_name: orderData.referee_name,
       referee_level: orderData.referee_level,
       status: 0,
-      expires_at: order.expires_at
+      expire_at: expire_at
     }, '订单创建成功');
 
   } catch (error) {
@@ -147,8 +156,8 @@ async function handleCourseOrder(user, course_id, referee_id) {
   }
 
   return {
-    order_name: course.course_name,
-    amount: course.price,
+    order_name: course.name,
+    amount: course.current_price,
     ...refereeData,
     metadata
   };
@@ -196,7 +205,7 @@ async function handleRetrainOrder(user, user_course_id, class_record_id) {
   const course = await findOne('courses', { id: classRecord.course_id });
 
   return {
-    order_name: `${course.course_name} - 复训费`,
+    order_name: `${course.name} - 复训费`,
     amount: course.retrain_price || 500.00,
     referee_id: null, // 复训不涉及推荐人
     referee_uid: null

@@ -24,7 +24,7 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select(`
         *,
-        template:contract_templates(title, level, version, effective_date, expiry_date)
+        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version, effective_time)
       `)
       .eq('id', signature_id)
       .eq('user_id', user.id)
@@ -43,18 +43,19 @@ module.exports = async (event, context) => {
     return response.success({
       signature: {
         id: signature.id,
-        template_id: signature.template_id,
-        title: signature.template?.title || '未知协议',
-        level: signature.template_level,
-        version: signature.template_version,
+        template_id: signature.contract_template_id,
+        contract_name: signature.template?.contract_name || signature.contract_name,
+        ambassador_level: signature.ambassador_level,
+        contract_version: signature.contract_version,
         content: signature.contract_content,
-        signed_at: signature.signed_at,
+        sign_time: signature.sign_time,
+        contract_start: signature.contract_start,
+        contract_end: signature.contract_end,
         status: signature.status,
-        status_text: signature.status === 1 ? '已签署' : signature.status === 2 ? '已过期' : '已撤销',
-        ip_address: signature.ip_address,
-        device_info: signature.device_info,
-        effective_date: signature.template?.effective_date,
-        expiry_date: signature.template?.expiry_date
+        status_text: signature.status === 1 ? '有效' : signature.status === 2 ? '已过期' : signature.status === 3 ? '已续签' : '已作废',
+        sign_ip: signature.sign_ip,
+        sign_device: signature.sign_device,
+        effective_time: signature.template?.effective_time
       }
     });
 

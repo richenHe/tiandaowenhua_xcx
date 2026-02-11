@@ -233,3 +233,46 @@ export interface GetExchangeRecordsParams extends PaginationParams {
  * 获取兑换记录响应数据
  */
 export interface GetExchangeRecordsResponse extends PaginationResponse<ExchangeRecord> {}
+
+/**
+ * 商城课程
+ */
+export interface MallCourse {
+  /** 课程ID */
+  id: number
+  /** 课程名称 */
+  name: string
+  /** 课程昵称 */
+  nickname: string
+  /** 课程类型 */
+  type: number
+  /** 封面图片 */
+  coverImage: string
+  /** 当前价格 */
+  currentPrice: number
+  /** 原价 */
+  originalPrice: number
+  /** 已售数量 */
+  soldCount: number
+  /** 库存 */
+  stock: number
+  /** 是否无限库存 */
+  isUnlimitedStock: boolean
+  /** 状态 */
+  status: number
+}
+
+/**
+ * 获取商城课程列表请求参数
+ */
+export interface GetMallCoursesParams extends PaginationParams {
+  /** 课程类型筛选 */
+  type?: number
+  /** 关键词搜索 */
+  keyword?: string
+}
+
+/**
+ * 获取商城课程列表响应数据
+ */
+export interface GetMallCoursesResponse extends PaginationResponse<MallCourse> {}

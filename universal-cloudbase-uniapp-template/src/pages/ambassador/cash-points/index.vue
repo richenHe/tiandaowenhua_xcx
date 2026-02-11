@@ -13,15 +13,15 @@
         <!-- 积分余额卡片 -->
         <view class="balance-card">
           <view class="balance-label">💰 总积分余额</view>
-          <view class="balance-value">12,536.0</view>
+          <view class="balance-value">{{ formatAmount(cashPointsInfo.available + cashPointsInfo.frozen) }}</view>
           <view class="balance-stats">
             <view class="stat-item">
               <view class="stat-label">冻结积分</view>
-              <view class="stat-value">5,064.0</view>
+              <view class="stat-value">{{ formatAmount(cashPointsInfo.frozen) }}</view>
             </view>
             <view class="stat-item">
               <view class="stat-label">可提现积分</view>
-              <view class="stat-value">7,472.0</view>
+              <view class="stat-value">{{ formatAmount(cashPointsInfo.available) }}</view>
             </view>
           </view>
         </view>
@@ -43,11 +43,11 @@
         <!-- 积分统计卡片 -->
         <view class="stats-grid">
           <view class="stats-card">
-            <view class="stats-value success">15,250.0</view>
+            <view class="stats-value success">{{ formatAmount(cashPointsInfo.total_earned) }}</view>
             <view class="stats-label">累计获得</view>
           </view>
           <view class="stats-card">
-            <view class="stats-value error">2,714.0</view>
+            <view class="stats-value error">{{ formatAmount(cashPointsInfo.total_spent) }}</view>
             <view class="stats-label">累计提现</view>
           </view>
         </view>
@@ -55,7 +55,7 @@
         <!-- 提现按钮 -->
         <view @tap="goToWithdraw" style="margin-bottom: 48rpx;">
           <button class="t-button t-button--theme-warning t-button--variant-base t-button--block t-button--size-large">
-            <span class="t-button__text">💸 申请提现（可提现: ¥7,472）</span>
+            <span class="t-button__text">💸 申请提现（可提现: ¥{{ formatAmount(cashPointsInfo.available) }}）</span>
           </button>
         </view>
 
@@ -75,130 +75,49 @@
         <!-- 积分明细列表 -->
         <view class="t-section-title t-section-title--simple">💰 明细记录</view>
 
-        <!-- 升级获得冻结积分 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-            🎖️
+        <!-- 记录列表 -->
+        <view v-for="record in recordsList" :key="record.id" class="record-card">
+          <view class="record-icon" :style="{ background: getRecordStyle(record.change_type).gradient }">
+            {{ getRecordStyle(record.change_type).icon }}
           </view>
           <view class="record-content">
             <view class="record-header">
               <view class="record-info">
-                <view class="record-title">升级鸿鹄大使</view>
-                <view class="record-desc">获得冻结积分</view>
+                <view class="record-title">{{ record.remark || '积分变动' }}</view>
+                <view class="record-desc" v-if="record.related_id">关联ID: {{ record.related_id }}</view>
               </view>
               <view class="record-right">
-                <view class="record-amount warning">+16,880.0</view>
-                <view class="record-status frozen">冻结</view>
+                <view class="record-amount" :class="record.change_amount > 0 ? 'success' : 'error'">
+                  {{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}
+                </view>
+                <view class="record-status" :class="record.change_amount > 0 ? 'available' : 'frozen'">
+                  {{ record.change_amount > 0 ? '可提现' : '已提现' }}
+                </view>
               </view>
             </view>
             <view class="record-footer">
-              <text>升级记录: UP202401010001</text>
-              <text>2024-01-01</text>
+              <text>余额: {{ formatAmount(record.balance_after) }}</text>
+              <text>{{ record.created_at }}</text>
             </view>
           </view>
         </view>
 
-        <!-- 推荐初探班解冻 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-            🔓
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">推荐初探班课程</view>
-                <view class="record-desc">学员：王五 | 解冻积分</view>
-              </view>
-              <view class="record-right">
-                <view class="record-amount success">+1,688.0</view>
-                <view class="record-status available">可提现</view>
-              </view>
-            </view>
-            <view class="record-footer">
-              <text>订单号: 202401150001</text>
-              <text>2024-01-15</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 推荐密训班直接发放 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            🎓
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">推荐密训班课程</view>
-                <view class="record-desc">学员：李四 | 直接发放20%</view>
-              </view>
-              <view class="record-right">
-                <view class="record-amount success">+7,777.6</view>
-                <view class="record-status available">可提现</view>
-              </view>
-            </view>
-            <view class="record-footer">
-              <text>订单号: 202401120001</text>
-              <text>2024-01-12</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 解冻完毕后继续获得 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
-            💎
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">推荐初探班课程</view>
-                <view class="record-desc">学员：赵六 | 按30%发放</view>
-              </view>
-              <view class="record-right">
-                <view class="record-amount success">+506.4</view>
-                <view class="record-status available">可提现</view>
-              </view>
-            </view>
-            <view class="record-footer">
-              <text>订单号: 202401080001</text>
-              <text>2024-01-08</text>
-            </view>
-            <view class="record-tip success">
-              <view class="tip-icon">✓</view>
-              <view class="tip-text">冻结积分已全部解冻，持续获得可提现积分</view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 提现记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            💸
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">提现到微信</view>
-                <view class="record-desc">提现成功</view>
-              </view>
-              <view class="record-right">
-                <view class="record-amount error">-1,000.0</view>
-                <view class="record-badge success">已到账</view>
-              </view>
-            </view>
-            <view class="record-footer">
-              <text>提现单号: TX202401050001</text>
-              <text>2024-01-05</text>
-            </view>
-          </view>
+        <!-- 空状态 -->
+        <view v-if="recordsList.length === 0 && !loading" class="empty-state">
+          <text class="empty-icon">📝</text>
+          <text class="empty-text">暂无积分记录</text>
         </view>
 
         <!-- 加载更多 -->
-        <view class="load-more">
-          <button class="t-button t-button--theme-default t-button--variant-text">
-            <span class="t-button__text">加载更多</span>
+        <view v-if="!finished && recordsList.length > 0" class="load-more">
+          <button class="t-button t-button--theme-default t-button--variant-text" @tap="loadMore">
+            <span class="t-button__text">{{ loading ? '加载中...' : '加载更多' }}</span>
           </button>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="finished && recordsList.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
 
         <!-- 底部留白 -->
@@ -218,10 +137,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
+import { UserApi } from '@/api'
+import type { CashPointsInfo, CashPointsRecord } from '@/api/types/user'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top) - 120rpx)'
@@ -233,12 +154,84 @@ const pageHeaderHeight = ref(64)
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 
+// 积分信息
+const cashPointsInfo = ref<CashPointsInfo>({
+  available: 0,
+  frozen: 0,
+  withdrawing: 0,
+  total_earned: 0,
+  total_spent: 0
+})
+
+// 积分明细列表
+const recordsList = ref<CashPointsRecord[]>([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
+// 获取积分余额
+const loadCashPoints = async () => {
+  try {
+    const result = await UserApi.getCashPoints()
+    cashPointsInfo.value = result
+  } catch (error) {
+    console.error('获取积分余额失败:', error)
+  }
+}
+
+// 获取积分明细
+const loadRecords = async (reset = false) => {
+  if (loading.value || finished.value) return
+
+  if (reset) {
+    page.value = 1
+    recordsList.value = []
+    finished.value = false
+  }
+
+  try {
+    loading.value = true
+    const result = await UserApi.getCashPointsHistory({
+      page: page.value,
+      pageSize: pageSize.value
+    })
+
+    recordsList.value.push(...result.list)
+    total.value = result.total
+    page.value++
+
+    if (recordsList.value.length >= result.total) {
+      finished.value = true
+    }
+  } catch (error) {
+    console.error('获取积分明细失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  loadRecords()
+}
+
+// 监听Tab切换，重新加载数据
+watch(activeTab, () => {
+  loadRecords(true)
+})
+
 onMounted(() => {
   // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
+
+  // 加载数据
+  loadCashPoints()
+  loadRecords()
 })
 
 // 处理滚动事件
@@ -265,6 +258,24 @@ const goToWithdraw = () => {
   uni.navigateTo({
     url: '/pages/ambassador/withdraw/index'
   })
+}
+
+// 格式化金额
+const formatAmount = (amount: number | string) => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  return isNaN(num) ? '0.0' : num.toFixed(1)
+}
+
+// 获取记录图标和渐变色
+const getRecordStyle = (changeType: string) => {
+  const styleMap: Record<string, { icon: string; gradient: string }> = {
+    'upgrade': { icon: '🎖️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+    'unfreeze': { icon: '🔓', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+    'referral_advanced': { icon: '🎓', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    'referral_course': { icon: '💎', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
+    'withdraw': { icon: '💸', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
+  }
+  return styleMap[changeType] || { icon: '💰', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }
 }
 </script>
 
@@ -527,6 +538,30 @@ const goToWithdraw = () => {
 .load-more {
   text-align: center;
   padding: 40rpx 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.finished-text {
+  font-size: 24rpx;
+  color: #999;
 }
 
 .fixed-bottom {

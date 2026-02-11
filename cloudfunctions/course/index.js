@@ -1,6 +1,6 @@
 /**
  * Course 云函数入口
- * 课程模块 - 34个action
+ * 课程模块 - 35个action
  */
 const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth } = require('./common');
@@ -13,7 +13,7 @@ const auth = app.auth();
 // 初始化 business-logic
 business.init(app);
 
-// 导入处理器 - 公开接口（7个）
+// 导入处理器 - 公开接口（8个）
 const publicHandlers = {
   getList: require('./handlers/public/getList'),
   getDetail: require('./handlers/public/getDetail'),
@@ -21,7 +21,8 @@ const publicHandlers = {
   getCaseDetail: require('./handlers/public/getCaseDetail'),
   getMaterialList: require('./handlers/public/getMaterialList'),
   getAcademyList: require('./handlers/public/getAcademyList'),
-  getAcademyDetail: require('./handlers/public/getAcademyDetail')
+  getAcademyDetail: require('./handlers/public/getAcademyDetail'),
+  getCalendarSchedule: require('./handlers/public/getCalendarSchedule')
 };
 
 // 导入处理器 - 客户端接口（7个）

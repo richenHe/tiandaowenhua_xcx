@@ -18,24 +18,28 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select(`
         *,
-        template:contract_templates(title, level, version)
+        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `)
       .eq('user_id', user.id)
-      .order('signed_at', { ascending: false });
+      .order('sign_time', { ascending: false });
 
     if (error) throw error;
 
     // 格式化返回数据
     const contracts = (signatures || []).map(sig => ({
       id: sig.id,
-      template_id: sig.template_id,
-      title: sig.template?.title || '未知协议',
-      level: sig.template_level,
-      version: sig.template_version,
-      signed_at: sig.signed_at,
+      template_id: sig.contract_template_id,
+      contract_name: sig.template?.contract_name || sig.contract_name || '未知协议',
+      level: sig.ambassador_level,
+      version: sig.contract_version,
+      sign_time: sig.sign_time,
+      contract_start: sig.contract_start,
+      contract_end: sig.contract_end,
       status: sig.status,
-      status_text: sig.status === 1 ? '已签署' : sig.status === 2 ? '已过期' : '已撤销'
+      status_text: sig.status === 1 ? '有效' : sig.status === 2 ? '已过期' : sig.status === 3 ? '已续签' : '已作废'
     }));
+
+    console.log(`[getMyContracts] 查询成功，共 ${contracts.length} 条协议`);
 
     return response.success({
       total: contracts.length,

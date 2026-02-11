@@ -65,20 +65,13 @@ import { ref, computed, onMounted } from 'vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { UserApi } from '@/api'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
-
-onMounted(() => {
-  // 计算页面头部高度
-  const systemInfo = uni.getSystemInfoSync()
-  const statusBarHeight = systemInfo.statusBarHeight || 20
-  const navbarHeight = 44
-  pageHeaderHeight.value = statusBarHeight + navbarHeight
-})
 
 // 处理滚动事件
 const handleScroll = (e: any) => {
@@ -88,7 +81,6 @@ const handleScroll = (e: any) => {
 }
 
 // Tab 标签
-const tabs = ['全部', '已完成', '已取消']
 const activeTab = ref(0)
 const tabOptions = [
   { label: '全部', value: 0 },
@@ -96,42 +88,54 @@ const tabOptions = [
   { label: '已取消', value: 2 }
 ]
 
-// Mock 订单数据
-const orders = ref([
-  {
-    id: 1,
-    title: '初探班',
-    time: '2024-01-01 10:30',
-    price: '1688',
-    status: '已支付',
-    statusType: 'success',
-    icon: '📚',
-    iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    orderStatus: 'completed'
-  },
-  {
-    id: 2,
-    title: '密训班',
-    time: '2023-12-15 14:20',
-    price: '38888',
-    status: '已支付',
-    statusType: 'success',
-    icon: '🎓',
-    iconBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    orderStatus: 'completed'
-  },
-  {
-    id: 3,
-    title: '深研班',
-    time: '2023-11-20 09:15',
-    price: '8888',
-    status: '已取消',
-    statusType: 'default',
-    icon: '📖',
-    iconBg: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    orderStatus: 'cancelled'
+// 订单数据
+const orders = ref<any[]>([])
+
+// 课程图标和渐变色映射
+const courseStyles: Record<number, { icon: string; iconBg: string }> = {
+  1: { icon: '📚', iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 初探班
+  2: { icon: '🎓', iconBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 密训班
+  3: { icon: '💬', iconBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }  // 咨询服务
+}
+
+// 订单状态映射
+const statusMap: Record<number, { text: string; type: string; orderStatus: string }> = {
+  0: { text: '待支付', type: 'warning', orderStatus: 'pending' },
+  1: { text: '已支付', type: 'success', orderStatus: 'completed' },
+  2: { text: '已取消', type: 'default', orderStatus: 'cancelled' },
+  3: { text: '已关闭', type: 'default', orderStatus: 'closed' }
+}
+
+// 加载订单列表
+const loadOrders = async (status?: number) => {
+  try {
+    const params: any = { page: 1, pageSize: 100 }
+    if (status && status > 0) {
+      params.status = status === 1 ? 1 : 2 // 1-已完成, 2-已取消
+    }
+
+    const result = await UserApi.getMyOrders(params)
+
+    orders.value = result.list.map((item: any) => {
+      const style = courseStyles[item.order_type] || courseStyles[1]
+      const statusInfo = statusMap[item.pay_status] || statusMap[0]
+
+      return {
+        id: item.order_no,
+        title: item.order_name,
+        time: item.created_at,
+        price: item.final_amount,
+        status: statusInfo.text,
+        statusType: statusInfo.type,
+        icon: style.icon,
+        iconBg: style.iconBg,
+        orderStatus: statusInfo.orderStatus
+      }
+    })
+  } catch (error) {
+    console.error('加载订单列表失败:', error)
   }
-])
+}
 
 // 过滤订单
 const filteredOrders = computed(() => {
@@ -148,18 +152,30 @@ const filteredOrders = computed(() => {
 // 切换 Tab
 const handleTabChange = (value: number) => {
   activeTab.value = value
+  loadOrders(value)
 }
+
+// 跳转到订单详情
+const goToOrderDetail = (orderNo: string) => {
+  uni.navigateTo({
+    url: `/pages/order/detail/index?orderNo=${orderNo}`
+  })
+}
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  const navbarHeight = 44
+  pageHeaderHeight.value = statusBarHeight + navbarHeight
+
+  // 加载订单列表
+  loadOrders()
+})
 
 // 返回上一页
 const goBack = () => {
   uni.navigateBack()
-}
-
-// 跳转到订单详情
-const goToOrderDetail = (orderId: number) => {
-  uni.navigateTo({
-    url: `/pages/order/detail/index?id=${orderId}`
-  })
 }
 </script>
 

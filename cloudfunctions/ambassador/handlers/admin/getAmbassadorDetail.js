@@ -77,10 +77,10 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select(`
         *,
-        template:contract_templates(title, level, version)
+        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `)
       .eq('user_id', user.id)
-      .order('signed_at', { ascending: false });
+      .order('sign_time', { ascending: false });
 
     if (contractError) throw contractError;
 
@@ -112,10 +112,12 @@ module.exports = async (event, context) => {
       upgrade_logs: upgradeLogs || [],
       contracts: (contracts || []).map(c => ({
         id: c.id,
-        title: c.template?.title,
-        level: c.template_level,
-        version: c.template_version,
-        signed_at: c.signed_at,
+        contract_name: c.template?.contract_name || c.contract_name,
+        ambassador_level: c.ambassador_level,
+        contract_version: c.contract_version,
+        sign_time: c.sign_time,
+        contract_start: c.contract_start,
+        contract_end: c.contract_end,
         status: c.status
       }))
     });

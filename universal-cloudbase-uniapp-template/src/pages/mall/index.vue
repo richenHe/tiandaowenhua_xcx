@@ -160,11 +160,12 @@ import { ref, computed, onMounted } from 'vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { OrderApi, UserApi, SystemApi } from '@/api';
 import { calculateMixedPayment } from '@/utils/mixed-payment-calculator';
 
 // 用户功德分和积分
-const userMeritPoints = ref(1500); // 功德分
-const userCashPoints = ref(2580); // 积分（可提现）
+const userMeritPoints = ref(0);
+const userCashPoints = ref(0);
 
 // 主Tab
 const mainTabs = ['兑换商品', '兑换课程']
@@ -182,14 +183,6 @@ const pageHeaderHeight = ref(64);
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
-
-onMounted(() => {
-  // 获取系统信息计算实际的头部高度
-  const systemInfo = uni.getSystemInfoSync();
-  const statusBarHeight = systemInfo.statusBarHeight || 20;
-  const navbarHeight = 44; // 导航栏高度
-  pageHeaderHeight.value = statusBarHeight + navbarHeight;
-});
 
 // 处理滚动事件
 const handleScroll = (e: any) => {
@@ -215,16 +208,36 @@ const categoryOptions = [
 ]
 
 // 商品列表
-const products = ref([
-  { id: 1, name: '天道文化笔记本', icon: '📚', stock: 50, points: 500, category: 'stationery' },
-  { id: 2, name: '精美书签套装', icon: '🎁', stock: 100, points: 300, category: 'stationery' },
-  { id: 3, name: '荣誉证书框', icon: '🏆', stock: 30, points: 800, category: 'peripheral' },
-  { id: 4, name: '定制保温杯', icon: '☕', stock: 20, points: 1200, category: 'life' },
-  { id: 5, name: '文化帆布袋', icon: '🎒', stock: 45, points: 600, category: 'peripheral' },
-  { id: 6, name: '国学挂画', icon: '🖼️', stock: 15, points: 2000, category: 'peripheral' },
-  { id: 7, name: '冥想垫', icon: '🧘', stock: 25, points: 1500, category: 'life' },
-  { id: 8, name: '经典书籍套装', icon: '📖', stock: 10, points: 3000, category: 'stationery' }
-])
+const products = ref<any[]>([])
+
+// 加载商城商品
+const loadMallGoods = async () => {
+  try {
+    const result = await OrderApi.getMallGoods({ page: 1, page_size: 100 })
+
+    products.value = result.list.map((item: any) => ({
+      id: item.id,
+      name: item.goods_name,
+      icon: '🎁',
+      stock: item.stock_quantity === -1 ? 999 : item.stock_quantity,
+      points: item.merit_points_price,
+      category: 'stationery'
+    }))
+  } catch (error) {
+    console.error('加载商城商品失败:', error)
+  }
+}
+
+// 加载用户积分
+const loadUserPoints = async () => {
+  try {
+    const points = await SystemApi.getUserPoints()
+    userMeritPoints.value = points.meritPoints || 0
+    userCashPoints.value = points.cashPointsAvailable || 0
+  } catch (error) {
+    console.error('加载用户积分失败:', error)
+  }
+}
 
 // 过滤商品
 const filteredProducts = computed(() => {
@@ -236,64 +249,62 @@ const filteredProducts = computed(() => {
   return products.value.filter(p => p.category === category)
 })
 
+onMounted(() => {
+  // 获取系统信息计算实际的头部高度
+  const systemInfo = uni.getSystemInfoSync();
+  const statusBarHeight = systemInfo.statusBarHeight || 20;
+  const navbarHeight = 44;
+  pageHeaderHeight.value = statusBarHeight + navbarHeight;
+
+  // 加载数据
+  loadMallGoods()
+  loadMallCourses()
+  loadUserPoints()
+});
+
 // 课程列表
-const courses = ref([
-  {
-    id: 1,
-    name: '天道文化入门精讲',
-    icon: '📚',
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    desc: '系统讲解天道文化的核心理念，适合初学者入门学习。共10节课，时长约5小时。',
-    points: 5000,
-    originalPrice: 299,
-    badge: '热门',
-    badgeType: 'success'
-  },
-  {
-    id: 2,
-    name: '孙膑兵法精解',
-    icon: '🎓',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    desc: '深入解读孙膑兵法的智慧精髓，将古代智慧应用于现代商业。共15节课。',
-    points: 8000,
-    originalPrice: 499,
-    badge: '推荐',
-    badgeType: 'primary'
-  },
-  {
-    id: 3,
-    name: '修身养性七日课',
-    icon: '🧘',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    desc: '通过七天的系统学习，掌握修身养性的核心方法，提升身心状态。',
-    points: 2000,
-    originalPrice: 99,
-    badge: '',
-    badgeType: ''
-  },
-  {
-    id: 4,
-    name: '易经智慧入门',
-    icon: '☯️',
-    gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    desc: '从零开始学习易经，掌握中华文化的智慧源头。共8节课。',
-    points: 3500,
-    originalPrice: 199,
-    badge: '',
-    badgeType: ''
-  },
-  {
-    id: 5,
-    name: '商道智慧分享',
-    icon: '💼',
-    gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    desc: '成功企业家分享商业智慧，结合天道文化理念的实战经验。',
-    points: 1500,
-    originalPrice: 79,
-    badge: '限时',
-    badgeType: 'warning'
+const courses = ref<any[]>([])
+
+// 加载商城课程
+const loadMallCourses = async () => {
+  try {
+    const result = await OrderApi.getMallCourses({ page: 1, page_size: 100 })
+
+    courses.value = result.list.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      icon: getCourseIcon(item.type),
+      gradient: getCourseGradient(item.type),
+      desc: `${item.nickname} - 课程`,
+      points: item.currentPrice * 100, // 假设1元=100积分
+      originalPrice: item.originalPrice,
+      badge: item.soldCount > 100 ? '热门' : '',
+      badgeType: item.soldCount > 100 ? 'success' : ''
+    }))
+  } catch (error) {
+    console.error('加载商城课程失败:', error)
   }
-])
+}
+
+// 获取课程图标
+const getCourseIcon = (type: number): string => {
+  const iconMap: Record<number, string> = {
+    1: '📚',
+    2: '🎓',
+    3: '🔄'
+  }
+  return iconMap[type] || '📚'
+}
+
+// 获取课程渐变色
+const getCourseGradient = (type: number): string => {
+  const gradientMap: Record<number, string> = {
+    1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    3: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  }
+  return gradientMap[type] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+}
 
 // 切换主Tab
 const handleMainTabChange = (value: number) => {

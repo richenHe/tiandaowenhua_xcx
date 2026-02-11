@@ -385,6 +385,7 @@ const handleSubmit = async () => {
       phone: formData.value.phone,
       city: formData.value.region || '',
       avatar: formData.value.avatarUrl || '',
+      nickname: formData.value.nickName || '',
       gender: formData.value.gender === 'male' ? '男' : '女',
       industry: formData.value.industry || '',
       birthday: formData.value.birthdate.year ?

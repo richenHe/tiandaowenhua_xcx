@@ -114,12 +114,13 @@
           >
             <text class="t-button__text">查看课程</text>
           </button>
-          <button
+          <!-- TODO: 下个版本开发 - 在线客服功能（通过WebSocket实现，不需要数据库） -->
+          <!-- <button
             class="t-button t-button--theme-default t-button--variant-outline t-button--block action-button"
             @click="goToConsultation"
           >
             <text class="t-button__text">联系客服</text>
-          </button>
+          </button> -->
         </view>
       </view>
     </scroll-view>
@@ -127,52 +128,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance } from 'vue';
+import { ref, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { OrderApi } from '@/api';
 
 // 订单详情
 const orderDetail = ref({
-  orderNo: '2024010112345678',
-  createTime: '2024-01-01 10:30:00',
-  payTime: '2024-01-01 10:31:20',
+  orderNo: '',
+  createTime: '',
+  payTime: '',
   payMethod: '微信支付',
   course: {
-    id: 'course-1',
+    id: 0,
     name: '初探班',
     description: '系统学习天道文化基础课程',
     icon: '📚',
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
   user: {
-    name: '张三',
-    phone: '138****8000',
+    name: '',
+    phone: '',
   },
   referee: {
-    id: 'referee-1',
-    name: '李四',
-    level: '青鸾大使',
+    id: 0,
+    name: '',
+    level: '',
   },
   amount: {
-    coursePrice: 1688,
+    coursePrice: 0,
     discount: 0,
-    totalAmount: 1688,
+    totalAmount: 0,
   },
 });
 
+// 大使等级映射
+const levelNames: Record<number, string> = {
+  0: '普通用户',
+  1: '准青鸾大使',
+  2: '青鸾大使',
+  3: '鸿鹄大使'
+};
+
+// 加载订单详情
+const loadOrderDetail = async (orderNo: string) => {
+  try {
+    const order = await OrderApi.getDetail(orderNo);
+
+    orderDetail.value.orderNo = order.order_no;
+    orderDetail.value.createTime = order.created_at;
+    orderDetail.value.payTime = order.pay_time || '';
+    orderDetail.value.payMethod = order.pay_method === 'wechat' ? '微信支付' : '其他';
+
+    orderDetail.value.user.name = order.user_name || '';
+    orderDetail.value.user.phone = order.user_phone || '';
+
+    orderDetail.value.referee.name = order.referee_name || '';
+    orderDetail.value.referee.level = levelNames[order.referee_level || 0] || '';
+
+    orderDetail.value.amount.coursePrice = order.original_amount || 0;
+    orderDetail.value.amount.discount = order.discount_amount || 0;
+    orderDetail.value.amount.totalAmount = order.final_amount || 0;
+
+    orderDetail.value.course.name = order.order_name || '';
+  } catch (error) {
+    console.error('加载订单详情失败:', error);
+  }
+};
+
 // 页面加载时获取订单信息
 onMounted(() => {
-  const instance = getCurrentInstance();
-  const orderNo = (instance?.proxy as any)?.$route?.query?.orderNo;
-  if (orderNo) {
-    console.log('加载订单信息:', orderNo);
-    // TODO: 根据orderNo获取订单详情
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = (currentPage as any).options || {};
+
+  if (options.orderNo) {
+    loadOrderDetail(options.orderNo);
   }
 });
 
 // 跳转到课程详情
 const goToCourseDetail = () => {
   uni.navigateTo({
-    url: '/pages/course/detail/index?id=' + orderDetail.value.course.id,
+    url: '/pages/course/detail/index?courseId=' + orderDetail.value.course.id,
   });
 };
 
@@ -183,12 +220,13 @@ const goToMyCourses = () => {
   });
 };
 
+// TODO: 下个版本开发 - 在线客服功能（通过WebSocket实现，不需要数据库）
 // 跳转到在线咨询
-const goToConsultation = () => {
-  uni.navigateTo({
-    url: '/pages/mine/consultation/index',
-  });
-};
+// const goToConsultation = () => {
+//   uni.navigateTo({
+//     url: '/pages/mine/consultation/index',
+//   });
+// };
 </script>
 
 <style lang="scss" scoped>

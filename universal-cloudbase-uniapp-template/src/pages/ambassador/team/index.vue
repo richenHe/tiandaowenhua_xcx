@@ -46,23 +46,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { UserApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
 })
 
-const members = ref([
-  { name: '王五', joinDate: '2024-01-10', referralCount: 2, level: '准青鸾大使' },
-  { name: '李四', joinDate: '2024-01-08', referralCount: 5, level: '青鸾大使' },
-  { name: '赵六', joinDate: '2024-01-05', referralCount: 1, level: '准青鸾大使' },
-  { name: '孙七', joinDate: '2024-01-03', referralCount: 8, level: '青鸾大使' },
-  { name: '周八', joinDate: '2023-12-28', referralCount: 3, level: '准青鸾大使' },
-  { name: '吴九', joinDate: '2023-12-25', referralCount: 12, level: '鸿鹄大使' },
-  { name: '郑十', joinDate: '2023-12-20', referralCount: 4, level: '青鸾大使' },
-  { name: '钱一', joinDate: '2023-12-15', referralCount: 6, level: '青鸾大使' }
-])
+// 团队成员列表
+const members = ref<any[]>([])
+
+// 大使等级映射
+const levelNames: Record<number, string> = {
+  0: '普通用户',
+  1: '准青鸾大使',
+  2: '青鸾大使',
+  3: '鸿鹄大使'
+}
+
+// 加载团队成员
+const loadTeamMembers = async () => {
+  try {
+    const result = await UserApi.getMyReferees({ page: 1, pageSize: 100 })
+
+    members.value = result.list.map((item: any) => ({
+      name: item.real_name || '未设置',
+      joinDate: item.created_at ? item.created_at.split(' ')[0] : '',
+      referralCount: 0, // 需要额外接口获取
+      level: levelNames[item.ambassador_level || 0]
+    }))
+  } catch (error) {
+    console.error('加载团队成员失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadTeamMembers()
+})
 </script>
 
 <style scoped lang="scss">

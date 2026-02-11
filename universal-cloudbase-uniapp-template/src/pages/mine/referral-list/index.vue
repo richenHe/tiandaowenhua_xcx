@@ -32,18 +32,18 @@
           <view class="t-section-title t-section-title--simple">🏇 我的伯乐（推荐人）</view>
 
           <!-- 推荐人卡片 -->
-          <view class="referral-card referral-card--highlight">
+          <view v-if="referee" class="referral-card referral-card--highlight">
             <view class="card-header">
               <view class="t-avatar t-avatar--primary t-avatar--large">
-                <text class="t-avatar__text">{{ referee.name.charAt(0) }}</text>
+                <text class="t-avatar__text">{{ referee.real_name?.charAt(0) || '?' }}</text>
               </view>
               <view class="card-info">
                 <view class="info-name">
-                  <text class="name-text">{{ referee.name }}</text>
-                  <text class="level-badge">🌿</text>
+                  <text class="name-text">{{ referee.real_name || '未设置' }}</text>
+                  <text class="level-badge">{{ getLevelIcon(referee.ambassador_level) }}</text>
                 </view>
                 <view class="info-level">
-                  <text class="t-badge t-badge--primary">{{ referee.level }}</text>
+                  <text class="t-badge t-badge--primary">{{ getLevelText(referee.ambassador_level) }}</text>
                 </view>
               </view>
             </view>
@@ -53,13 +53,19 @@
             <view class="card-details">
               <view class="detail-item">
                 <text class="detail-label">联系方式</text>
-                <text class="detail-value">{{ referee.phone }}</text>
+                <text class="detail-value">{{ referee.phone || '未设置' }}</text>
               </view>
               <view class="detail-item">
                 <text class="detail-label">推荐时间</text>
-                <text class="detail-value">{{ referee.date }}</text>
+                <text class="detail-value">{{ formatDate(referee.created_at) }}</text>
               </view>
             </view>
+          </view>
+
+          <!-- 无推荐人提示 -->
+          <view v-else class="empty-state">
+            <text class="empty-icon">🏇</text>
+            <text class="empty-text">暂无推荐人</text>
           </view>
 
           <!-- 修改推荐人按钮 -->
@@ -99,26 +105,32 @@
           </view>
 
           <!-- 千里马列表 -->
-          <view 
-            v-for="person in referralList" 
+          <view
+            v-for="person in referralList"
             :key="person.id"
             class="referral-card"
           >
             <view class="card-header">
-              <view class="t-avatar" :class="`t-avatar--${person.avatarType}`">
-                <text class="t-avatar__text">{{ person.name.charAt(0) }}</text>
+              <view class="t-avatar" :class="`t-avatar--${getAvatarType(person.ambassador_level)}`">
+                <text class="t-avatar__text">{{ person.real_name?.charAt(0) || '?' }}</text>
               </view>
               <view class="card-info">
                 <view class="info-name">
-                  <text class="name-text">{{ person.name }}</text>
-                  <text class="level-badge level-badge--small">{{ person.icon }}</text>
+                  <text class="name-text">{{ person.real_name || '未设置' }}</text>
+                  <text class="level-badge level-badge--small">{{ getLevelIcon(person.ambassador_level) }}</text>
                 </view>
-                <text class="info-date">加入时间: {{ person.joinDate }}</text>
+                <text class="info-date">加入时间: {{ formatDate(person.created_at) }}</text>
               </view>
-              <view class="t-badge" :class="`t-badge--${person.statusType}`">
-                {{ person.status }}
+              <view class="t-badge" :class="`t-badge--${getStatusType(person)}`">
+                {{ getStatusText(person) }}
               </view>
             </view>
+          </view>
+
+          <!-- 空状态 -->
+          <view v-if="referralList.length === 0 && !loading" class="empty-state">
+            <text class="empty-icon">🐎</text>
+            <text class="empty-text">暂无推荐记录</text>
           </view>
 
           <!-- 邀请更多 -->
@@ -137,75 +149,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { UserApi } from '@/api'
+import type { RefereeInfo, RefereeListItem } from '@/api/types/user'
 
 // Tab 状态
 const activeTab = ref(0)
 
 // 我的推荐人（伯乐）
-const referee = ref({
-  name: '李四',
-  level: '青鸾大使',
-  phone: '138****8888',
-  date: '2024-01-15'
-})
+const referee = ref<RefereeInfo | null>(null)
 
 // 统计数据
 const stats = ref({
-  total: 5,
-  purchased: 3,
-  ambassador: 2
+  total: 0,
+  purchased: 0,
+  ambassador: 0
 })
 
 // 我推荐的人（千里马）
-const referralList = ref([
-  {
-    id: 1,
-    name: '王五',
-    icon: '🌱',
-    avatarType: 'success',
-    joinDate: '2024-01-20',
-    status: '待购课',
-    statusType: 'default'
-  },
-  {
-    id: 2,
-    name: '赵六',
-    icon: '🌿',
-    avatarType: 'warning',
-    joinDate: '2024-02-05',
-    status: '已购课',
-    statusType: 'success'
-  },
-  {
-    id: 3,
-    name: '钱七',
-    icon: '🌿',
-    avatarType: 'primary',
-    joinDate: '2024-02-18',
-    status: '准青鸾',
-    statusType: 'primary'
-  },
-  {
-    id: 4,
-    name: '孙八',
-    icon: '🍀',
-    avatarType: 'error',
-    joinDate: '2024-03-01',
-    status: '青鸾大使',
-    statusType: 'warning'
-  },
-  {
-    id: 5,
-    name: '周九',
-    icon: '🌱',
-    avatarType: 'default',
-    joinDate: '2024-03-10',
-    status: '待购课',
-    statusType: 'default'
+const referralList = ref<RefereeListItem[]>([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
+// 获取我的推荐人信息
+const loadRefereeInfo = async () => {
+  try {
+    const result = await UserApi.getRefereeInfo()
+    referee.value = result
+  } catch (error) {
+    console.error('获取推荐人信息失败:', error)
   }
-])
+}
+
+// 获取我推荐的人列表
+const loadReferralList = async (reset = false) => {
+  if (loading.value || finished.value) return
+
+  if (reset) {
+    page.value = 1
+    referralList.value = []
+    finished.value = false
+  }
+
+  try {
+    loading.value = true
+    const result = await UserApi.getMyReferees({
+      page: page.value,
+      pageSize: pageSize.value
+    })
+
+    referralList.value.push(...result.list)
+    total.value = result.total
+    page.value++
+
+    // 计算统计数据
+    stats.value.total = result.total
+    stats.value.purchased = result.list.filter(item => item.has_purchased).length
+    stats.value.ambassador = result.list.filter(item => item.ambassador_level >= 1).length
+
+    if (referralList.value.length >= result.total) {
+      finished.value = true
+    }
+  } catch (error) {
+    console.error('获取推荐人列表失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadRefereeInfo()
+  loadReferralList()
+})
 
 // 切换 Tab
 const handleTabChange = (index: number) => {
@@ -229,6 +248,63 @@ const handleModifyReferee = () => {
   uni.navigateTo({
     url: '/pages/order/select-referee/index'
   })
+}
+
+// 获取头像主题
+const getAvatarType = (level: number) => {
+  const typeMap: Record<number, string> = {
+    0: 'default',
+    1: 'default',
+    2: 'primary',
+    3: 'success',
+    4: 'warning'
+  }
+  return typeMap[level] || 'default'
+}
+
+// 获取等级文本
+const getLevelText = (level: number) => {
+  const levelMap: Record<number, string> = {
+    0: '普通用户',
+    1: '准青鸾大使',
+    2: '青鸾大使',
+    3: '鸿鹄大使',
+    4: '金凤大使'
+  }
+  return levelMap[level] || '普通用户'
+}
+
+// 获取等级图标
+const getLevelIcon = (level: number) => {
+  const iconMap: Record<number, string> = {
+    0: '🌱',
+    1: '🌿',
+    2: '🍀',
+    3: '🌳',
+    4: '🌟'
+  }
+  return iconMap[level] || '🌱'
+}
+
+// 获取状态文本
+const getStatusText = (item: RefereeListItem) => {
+  if (item.ambassador_level >= 1) {
+    return getLevelText(item.ambassador_level)
+  }
+  return item.has_purchased ? '已购课' : '待购课'
+}
+
+// 获取状态类型
+const getStatusType = (item: RefereeListItem) => {
+  if (item.ambassador_level >= 1) {
+    return 'warning'
+  }
+  return item.has_purchased ? 'success' : 'default'
+}
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  return dateStr.split(' ')[0]
 }
 </script>
 
@@ -552,6 +628,26 @@ const handleModifyReferee = () => {
 // 底部留白
 .bottom-spacing {
   height: 120rpx;
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
 </style>
 

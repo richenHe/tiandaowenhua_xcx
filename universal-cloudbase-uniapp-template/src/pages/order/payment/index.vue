@@ -70,44 +70,96 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { OrderApi } from '@/api';
 
 // 订单信息
 const orderInfo = ref({
-  orderNo: '2024010112345678',
+  orderNo: '',
   orderName: '初探班',
-  orderType: 1, // 1-课程购买, 2-复训费, 4-大使升级
+  orderType: 1,
   amount: 1688,
 });
 
 // 选中的支付方式
 const selectedPayment = ref('wechat');
 
+// 加载订单详情
+const loadOrderDetail = async (orderNo: string) => {
+  try {
+    const order = await OrderApi.getDetail(orderNo);
+
+    orderInfo.value.orderNo = order.order_no;
+    orderInfo.value.orderName = order.order_name;
+    orderInfo.value.orderType = order.order_type;
+    orderInfo.value.amount = order.final_amount;
+  } catch (error) {
+    console.error('加载订单详情失败:', error);
+  }
+};
+
 // 处理支付
-const handlePay = () => {
+const handlePay = async () => {
   console.log('支付方式:', selectedPayment.value);
 
-  // 模拟支付
-  uni.showLoading({
-    title: '支付中...',
-  });
-
-  setTimeout(() => {
-    uni.hideLoading();
-    uni.showToast({
-      title: '支付成功',
-      icon: 'success',
-      duration: 2000,
+  try {
+    uni.showLoading({
+      title: '支付中...',
     });
 
-    setTimeout(() => {
-      uni.redirectTo({
-        url: '/pages/order/detail/index?orderNo=' + orderInfo.value.orderNo,
-      });
-    }, 2000);
-  }, 1500);
+    // 调用支付接口
+    const payParams = await OrderApi.createPayment({
+      order_no: orderInfo.value.orderNo
+    });
+
+    uni.hideLoading();
+
+    // 调用微信支付
+    uni.requestPayment({
+      timeStamp: payParams.timeStamp,
+      nonceStr: payParams.nonceStr,
+      package: payParams.package,
+      signType: payParams.signType,
+      paySign: payParams.paySign,
+      success: () => {
+        uni.showToast({
+          title: '支付成功',
+          icon: 'success',
+          duration: 2000,
+        });
+
+        setTimeout(() => {
+          uni.redirectTo({
+            url: '/pages/order/detail/index?orderNo=' + orderInfo.value.orderNo,
+          });
+        }, 2000);
+      },
+      fail: (err) => {
+        console.error('支付失败:', err);
+        uni.showToast({
+          title: '支付失败',
+          icon: 'none',
+        });
+      }
+    });
+  } catch (error) {
+    uni.hideLoading();
+    console.error('发起支付失败:', error);
+  }
 };
+
+onMounted(() => {
+  // 获取页面参数
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = (currentPage as any).options || {};
+
+  if (options.orderNo) {
+    orderInfo.value.orderNo = options.orderNo;
+    loadOrderDetail(options.orderNo);
+  }
+});
 </script>
 
 <style lang="scss" scoped>

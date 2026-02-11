@@ -41,7 +41,7 @@ module.exports = async (event, context) => {
 
     // 4. 检查订单有效期
     const now = new Date();
-    const expiresAt = new Date(order.expires_at);
+    const expiresAt = new Date(order.expire_at);
     if (now > expiresAt) {
       // 更新订单状态为已关闭
       await update('orders',

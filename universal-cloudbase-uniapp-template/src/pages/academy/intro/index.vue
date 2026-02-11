@@ -130,8 +130,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { CourseApi } from '@/api';
 
 // 快捷入口数据
 const quickAccessList = ref([
@@ -161,6 +162,32 @@ const handleQuickAccess = (type: string) => {
     });
   }
 };
+
+// 商学院介绍内容
+const academyContent = ref({
+  title: '孙膑道天道文化商学院',
+  subtitle: '传承国学智慧 · 弘扬天道文化',
+  intro: '孙膑道天道文化商学院，致力于传承和弘扬中华优秀传统文化...'
+});
+
+// 加载商学院介绍
+const loadAcademyIntro = async () => {
+  try {
+    const result = await CourseApi.getAcademyList();
+
+    if (result.list && result.list.length > 0) {
+      const firstItem = result.list[0];
+      academyContent.value.title = firstItem.title || academyContent.value.title;
+      academyContent.value.intro = firstItem.summary || academyContent.value.intro;
+    }
+  } catch (error) {
+    console.error('加载商学院介绍失败:', error);
+  }
+};
+
+onMounted(() => {
+  loadAcademyIntro();
+});
 
 // 核心理念数据
 const conceptList = ref([

@@ -13,8 +13,8 @@
             <view class="t-form-item__control">
               <view class="t-select" @click="handleSelectCourse">
                 <view class="t-select__input">
-                  <text class="t-select__value" :class="{ 'placeholder': !formData.course }">
-                    {{ formData.course || '选择课程（选填）' }}
+                  <text class="t-select__value" :class="{ 'placeholder': !formData.courseName }">
+                    {{ formData.courseName || '选择课程（选填）' }}
                   </text>
                   <text class="t-select__arrow">▼</text>
                 </view>
@@ -33,13 +33,12 @@
             <view class="t-form-item__control">
               <view class="t-select" @click="handleSelectType">
                 <view class="t-select__input">
-                  <text class="t-select__value">{{ formData.type }}</text>
+                  <text class="t-select__value">{{ formData.typeLabel }}</text>
                   <text class="t-select__arrow">▼</text>
                 </view>
               </view>
               <view class="t-form-item__tips">
-                选择课程后：课程内容/课程服务/讲师/场地<br>
-                未选课程：功能建议/问题反馈/投诉
+                请选择反馈类型
               </view>
             </view>
           </view>
@@ -121,44 +120,84 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { SystemApi } from '@/api'
+import type { FeedbackType, FeedbackCourse } from '@/api/types/system'
 
 // 表单数据
 const formData = ref({
-  course: '',
-  type: '功能建议',
+  courseId: undefined as number | undefined,
+  courseName: '',
+  typeValue: 2, // 默认功能建议
+  typeLabel: '功能建议',
   content: '',
   images: [] as string[],
   contact: ''
 })
 
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
+// 可选课程列表
+const courses = ref<FeedbackCourse[]>([])
+// 反馈类型列表
+const feedbackTypes = ref<FeedbackType[]>([])
+
+onMounted(() => {
+  loadFeedbackTypes()
+  loadFeedbackCourses()
+})
+
+// 加载反馈类型
+const loadFeedbackTypes = async () => {
+  try {
+    const result = await SystemApi.getFeedbackTypes()
+    feedbackTypes.value = result
+  } catch (error) {
+    console.error('获取反馈类型失败:', error)
+  }
+}
+
+// 加载可反馈的课程
+const loadFeedbackCourses = async () => {
+  try {
+    const result = await SystemApi.getFeedbackCourses()
+    courses.value = result
+  } catch (error) {
+    console.error('获取课程列表失败:', error)
+  }
 }
 
 // 选择课程
 const handleSelectCourse = () => {
+  if (courses.value.length === 0) {
+    uni.showToast({
+      title: '暂无已购买的课程',
+      icon: 'none'
+    })
+    return
+  }
+
+  const itemList = courses.value.map(c => c.name)
+
   uni.showActionSheet({
-    itemList: ['初探班', '密训班', '深研班'],
+    itemList,
     success: (res) => {
-      const courses = ['初探班', '密训班', '深研班']
-      formData.value.course = courses[res.tapIndex]
+      const selectedCourse = courses.value[res.tapIndex]
+      formData.value.courseId = selectedCourse.id
+      formData.value.courseName = selectedCourse.name
     }
   })
 }
 
 // 选择反馈类型
 const handleSelectType = () => {
-  const itemList = formData.value.course 
-    ? ['课程内容', '课程服务', '讲师', '场地']
-    : ['功能建议', '问题反馈', '投诉']
-  
+  const itemList = feedbackTypes.value.map(t => t.label)
+
   uni.showActionSheet({
     itemList,
     success: (res) => {
-      formData.value.type = itemList[res.tapIndex]
+      const selectedType = feedbackTypes.value[res.tapIndex]
+      formData.value.typeValue = selectedType.value
+      formData.value.typeLabel = selectedType.label
     }
   })
 }
@@ -181,7 +220,7 @@ const handleDeleteImage = (index: number) => {
 }
 
 // 提交反馈
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!formData.value.content.trim()) {
     uni.showToast({
       title: '请填写反馈内容',
@@ -190,14 +229,34 @@ const handleSubmit = () => {
     return
   }
 
-  uni.showToast({
-    title: '提交成功',
-    icon: 'success'
-  })
+  if (formData.value.content.length < 5) {
+    uni.showToast({
+      title: '反馈内容至少5个字',
+      icon: 'none'
+    })
+    return
+  }
 
-  setTimeout(() => {
-    uni.navigateBack()
-  }, 1500)
+  try {
+    await SystemApi.submitFeedback({
+      type: formData.value.typeValue,
+      course_id: formData.value.courseId,
+      content: formData.value.content,
+      images: formData.value.images.length > 0 ? formData.value.images : undefined,
+      contact: formData.value.contact || undefined
+    })
+
+    uni.showToast({
+      title: '提交成功',
+      icon: 'success'
+    })
+
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 1500)
+  } catch (error) {
+    console.error('提交反馈失败:', error)
+  }
 }
 </script>
 

@@ -16,24 +16,48 @@ export interface Course {
   type: number
   /** 封面图片 */
   cover_image: string
-  /** 价格 */
-  price: number
   /** 原价 */
   original_price: number
+  /** 当前价格 */
+  current_price: number
+  /** 复训价格 */
+  retrain_price: number
   /** 课程简介 */
   description: string
   /** 课程详细内容 */
   content?: string
+  /** 课程大纲 */
+  outline?: string
   /** 课程时长 */
   duration?: string
-  /** 上课地点 */
-  location?: string
   /** 授课老师 */
   teacher?: string
-  /** 课程大纲 */
-  syllabus?: string[]
+  /** 允许复训 */
+  allow_retrain?: boolean
+  /** 包含的课程ID */
+  included_course_ids?: number[]
+  /** 库存（-1表示无限） */
+  stock?: number
+  /** 已售数量 */
+  sold_count?: number
+  /** 排序 */
+  sort_order?: number
   /** 状态（1-上架，0-下架） */
   status: number
+  /** 创建时间 */
+  created_at?: string
+  /** 更新时间 */
+  updated_at?: string
+  /** 是否已购买（前端使用） */
+  is_purchased?: boolean
+  /** 用户课程ID（前端使用） */
+  user_course_id?: number | null
+  /** 上课次数（前端使用） */
+  attend_count?: number
+  /** 购买日期（前端使用） */
+  purchase_date?: string
+  /** 类型名称（前端使用） */
+  type_name?: string
 }
 
 /**
@@ -269,3 +293,34 @@ export interface GetMaterialListParams extends PaginationParams {
  * 获取资料列表响应数据
  */
 export interface GetMaterialListResponse extends PaginationResponse<Material> {}
+
+/**
+ * 日历课程信息
+ */
+export interface CalendarCourseInfo {
+  /** 课程ID */
+  courseId: number
+  /** 课程昵称 */
+  nickname: string
+  /** 课程名称 */
+  courseName: string
+  /** 上课时间 */
+  classTime: string
+  /** 排期ID */
+  classRecordId: number
+}
+
+/**
+ * 日历数据（key为日期字符串，value为课程信息）
+ */
+export type CalendarData = Record<string, CalendarCourseInfo>
+
+/**
+ * 获取日历排课请求参数
+ */
+export interface GetCalendarScheduleParams {
+  /** 开始日期 YYYY-MM-DD */
+  startDate: string
+  /** 结束日期 YYYY-MM-DD */
+  endDate: string
+}

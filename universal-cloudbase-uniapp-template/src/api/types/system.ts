@@ -146,10 +146,28 @@ export interface Announcement {
   title: string
   /** 公告内容 */
   content: string
-  /** 公告类型 */
-  type: string
+  /** 公告摘要 */
+  summary?: string
+  /** 封面图片 */
+  cover_image?: string
+  /** 分类 */
+  category: string
+  /** 分类文本 */
+  category_text?: string
+  /** 目标用户类型 */
+  target_type: number
+  /** 目标用户文本 */
+  target_type_text?: string
   /** 是否置顶 */
-  is_pinned: boolean
+  is_top: number
+  /** 开始时间 */
+  start_time?: string
+  /** 结束时间 */
+  end_time?: string
+  /** 浏览次数 */
+  view_count: number
+  /** 排序 */
+  sort_order: number
   /** 发布状态（0-草稿，1-已发布） */
   status: number
   /** 发布时间 */
@@ -172,6 +190,45 @@ export interface GetAnnouncementListParams extends PaginationParams {
  * 获取公告列表响应数据
  */
 export interface GetAnnouncementListResponse extends PaginationResponse<Announcement> {}
+
+/**
+ * 轮播图信息
+ */
+export interface Banner {
+  /** 轮播图ID */
+  id: number
+  /** 标题 */
+  title: string
+  /** 副标题 */
+  subtitle?: string
+  /** 封面图片 */
+  cover_image: string
+  /** 跳转链接 */
+  link?: string
+  /** 排序 */
+  sort_order: number
+}
+
+/**
+ * 获取轮播图列表响应数据
+ */
+export interface GetBannerListResponse {
+  list: Banner[]
+}
+
+/**
+ * 用户积分信息
+ */
+export interface UserPoints {
+  /** 功德积分 */
+  meritPoints: number
+  /** 可用现金积分 */
+  cashPointsAvailable: number
+  /** 冻结现金积分 */
+  cashPointsFrozen: number
+  /** 待结算现金积分 */
+  cashPointsPending: number
+}
 
 /**
  * 系统配置项

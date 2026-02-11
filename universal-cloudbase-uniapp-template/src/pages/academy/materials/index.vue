@@ -190,6 +190,7 @@ import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
+import { CourseApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'

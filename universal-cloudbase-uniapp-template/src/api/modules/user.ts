@@ -11,6 +11,8 @@ import type {
   UpdateProfileResponse,
   UpdateRefereeParams,
   RefereeInfo,
+  SearchRefereesParams,
+  SearchRefereesResponse,
   MeritPointsInfo,
   GetMeritPointsHistoryParams,
   GetMeritPointsHistoryResponse,
@@ -96,6 +98,20 @@ export class UserApi {
       name: 'user',
       action: 'getRefereeInfo',
       data: { referralCode },
+      showLoading: false
+    })
+  }
+
+  /**
+   * 5.1 搜索推荐人列表
+   * @param params 搜索参数
+   * @returns 推荐人列表
+   */
+  static async searchReferees(params: SearchRefereesParams): Promise<SearchRefereesResponse> {
+    return callCloudFunction<SearchRefereesResponse>({
+      name: 'user',
+      action: 'searchReferees',
+      data: params,
       showLoading: false
     })
   }

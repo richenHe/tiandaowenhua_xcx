@@ -7,11 +7,11 @@ const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user, OPENID } = context;
-  const { realName, phone, city, avatar, gender, industry, birthday } = event;
+  const { realName, phone, city, avatar, gender, industry, birthday, nickname } = event;
 
   try {
     console.log('[updateProfile] 更新个人资料:', user.id);
-    console.log('[updateProfile] 接收到的参数:', { realName, phone, city, avatar, gender, industry, birthday });
+    console.log('[updateProfile] 接收到的参数:', { realName, phone, city, avatar, gender, industry, birthday, nickname });
 
     // 参数验证
     const err = utils.validateRequired(event, ['realName', 'phone']);
@@ -30,6 +30,9 @@ module.exports = async (event, context) => {
     };
 
     // 添加可选字段
+    if (nickname) {
+      updateData.nickname = nickname;
+    }
     if (gender) {
       // 转换性别为数字: 男=1, 女=2
       updateData.gender = gender === '男' ? 1 : gender === '女' ? 2 : 0;

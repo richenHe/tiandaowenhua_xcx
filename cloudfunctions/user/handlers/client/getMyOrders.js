@@ -16,12 +16,12 @@ module.exports = async (event, context) => {
 
     const { offset, limit } = utils.getPagination(page, pageSize);
 
-    // 构建查询
+    // 构建查询（使用外键 fk_orders_referee）
     let queryBuilder = db
       .from('orders')
       .select(`
         *,
-        referee:users!orders_referee_id_fkey(id, real_name, nickname)
+        referee:users!fk_orders_referee(id, real_name, nickname)
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -29,7 +29,7 @@ module.exports = async (event, context) => {
 
     // 添加状态过滤
     if (status !== undefined) {
-      queryBuilder = queryBuilder.eq('order_status', status);
+      queryBuilder = queryBuilder.eq('pay_status', status);
     }
 
     const { data: orders, error, count: total } = await queryBuilder;

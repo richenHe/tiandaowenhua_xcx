@@ -10,25 +10,25 @@
       <view class="page-content">
         
         <!-- 公告列表 -->
-        <view class="announcement-card" v-for="(item, index) in announcements" :key="index" @tap="goToDetail(item)">
+        <view class="announcement-card" v-for="item in announcements" :key="item.id" @tap="goToDetail(item)">
           <view class="announcement-header">
-            <view class="announcement-icon" :class="item.type">
-              {{ item.icon }}
+            <view class="announcement-icon" :class="getAnnouncementType(item.category)">
+              {{ getAnnouncementIcon(item.category) }}
             </view>
             <view class="announcement-info">
               <view class="announcement-title">{{ item.title }}</view>
-              <view class="announcement-date">{{ item.date }}</view>
+              <view class="announcement-date">{{ formatDate(item.published_at || item.created_at) }}</view>
             </view>
-            <view class="announcement-badge" v-if="item.isNew">NEW</view>
+            <view class="announcement-badge" v-if="isNewAnnouncement(item.published_at)">NEW</view>
           </view>
-          <view class="announcement-content">{{ item.summary }}</view>
+          <view class="announcement-content">{{ item.summary || item.content }}</view>
           <view class="announcement-footer">
             <text class="read-more">查看详情 ›</text>
           </view>
         </view>
 
         <!-- 空状态 -->
-        <view class="empty-state" v-if="announcements.length === 0">
+        <view class="empty-state" v-if="announcements.length === 0 && !loading">
           <view class="empty-icon">📢</view>
           <view class="empty-text">暂无公告</view>
         </view>
@@ -41,74 +41,91 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { SystemApi } from '@/api'
+import type { Announcement } from '@/api/types/system'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
 })
 
-const announcements = ref([
-  {
-    id: 1,
-    type: 'important',
-    icon: '📢',
-    title: '2024年春季课程安排通知',
-    summary: '各位学员，2024年春季课程安排已确定，初探班将于2月1日开课，密训班将于2月15日开课...',
-    date: '2024-01-20',
-    isNew: true
-  },
-  {
-    id: 2,
-    type: 'info',
-    icon: '💡',
-    title: '传播大使升级政策调整',
-    summary: '为了更好地激励传播大使，我们对升级政策进行了优化调整，新增鸿鹄大使快速通道...',
-    date: '2024-01-18',
-    isNew: true
-  },
-  {
-    id: 3,
-    type: 'success',
-    icon: '🎉',
-    title: '学员突破5000人里程碑',
-    summary: '热烈祝贺天道文化学员总数突破5000人！感谢每一位学员的信任与支持，我们将继续为大家提供优质的学习体验...',
-    date: '2024-01-15',
-    isNew: false
-  },
-  {
-    id: 4,
-    type: 'warning',
-    icon: '⚠️',
-    title: '春节假期服务安排',
-    summary: '春节期间（2月10日-2月17日）客服响应时间调整为10:00-18:00，请各位学员提前安排好学习计划...',
-    date: '2024-01-12',
-    isNew: false
-  },
-  {
-    id: 5,
-    type: 'info',
-    icon: '📚',
-    title: '新增商学院学习资料',
-    summary: '商学院新增了一批学习资料，包括课程讲义、案例分析、学习笔记等，欢迎大家下载学习...',
-    date: '2024-01-10',
-    isNew: false
-  },
-  {
-    id: 6,
-    type: 'success',
-    icon: '🏆',
-    title: '2023年度优秀学员表彰',
-    summary: '2023年度优秀学员评选结果已公布，共有50位学员获得表彰，感谢大家的积极参与和努力学习...',
-    date: '2024-01-05',
-    isNew: false
-  }
-])
+// 公告列表
+const announcements = ref<Announcement[]>([])
+const loading = ref(false)
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const finished = ref(false)
 
-const goToDetail = (item: any) => {
-  uni.showToast({
-    title: '公告详情功能开发中',
-    icon: 'none'
+onMounted(() => {
+  loadAnnouncements()
+})
+
+// 加载公告列表
+const loadAnnouncements = async () => {
+  if (loading.value || finished.value) return
+
+  try {
+    loading.value = true
+    const result = await SystemApi.getAnnouncementList({
+      page: page.value,
+      page_size: pageSize.value
+    })
+
+    announcements.value.push(...result.list)
+    total.value = result.total
+    page.value++
+
+    if (announcements.value.length >= total.value) {
+      finished.value = true
+    }
+  } catch (error) {
+    console.error('获取公告列表失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取公告图标
+const getAnnouncementIcon = (category: string) => {
+  const iconMap: Record<string, string> = {
+    'important': '📢',
+    'urgent': '⚠️',
+    'general': '💡'
+  }
+  return iconMap[category] || '📢'
+}
+
+// 获取公告类型样式
+const getAnnouncementType = (category: string) => {
+  const typeMap: Record<string, string> = {
+    'important': 'important',
+    'urgent': 'warning',
+    'general': 'info'
+  }
+  return typeMap[category] || 'info'
+}
+
+// 判断是否为新公告（3天内）
+const isNewAnnouncement = (publishedAt: string | null) => {
+  if (!publishedAt) return false
+  const publishDate = new Date(publishedAt)
+  const now = new Date()
+  const diffDays = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 3
+}
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  return dateStr.split(' ')[0]
+}
+
+// 跳转到公告详情
+const goToDetail = (item: Announcement) => {
+  uni.navigateTo({
+    url: `/pages/common/announcement-detail/index?id=${item.id}`
   })
 }
 </script>
@@ -237,6 +254,8 @@ const goToDetail = (item: any) => {
   color: #999;
 }
 </style>
+
+
 
 
 

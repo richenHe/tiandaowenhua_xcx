@@ -157,7 +157,7 @@ const loadPageData = async () => {
       id: course.id,
       name: course.name,
       description: course.description || '',
-      price: course.price,
+      price: course.current_price || 0, // 使用 current_price 而不是 price
       icon: getCourseIcon(course.type),
       gradient: getCourseGradient(course.type)
     };

@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
     // 查询积分明细
     const { data: records, error, count: total } = await db
       .from('cash_points_records')
-      .select('id, change_amount, balance_after, change_type, related_id, remark, created_at', { count: 'exact' })
+      .select('id, type, amount, frozen_after, available_after, order_no, withdraw_no, referee_user_id, referee_user_name, remark, created_at', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -26,12 +26,25 @@ module.exports = async (event, context) => {
       throw error;
     }
 
+    // 格式化返回数据
+    const list = (records || []).map(record => ({
+      id: record.id,
+      change_amount: record.type === 1 ? record.amount : -record.amount, // type: 1=收入(正数), 2=支出(负数)
+      balance_after: record.available_after, // 使用 available_after 作为余额
+      change_type: record.type, // 1=收入, 2=支出
+      related_id: record.order_no || record.withdraw_no, // 关联订单号或提现单号
+      referee_user_id: record.referee_user_id,
+      referee_user_name: record.referee_user_name,
+      remark: record.remark,
+      created_at: record.created_at
+    }));
+
     console.log('[getCashPointsHistory] 查询成功，共', total, '条');
     return response.success({
       total,
       page,
       pageSize,
-      list: records || []
+      list
     });
 
   } catch (error) {

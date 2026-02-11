@@ -126,7 +126,7 @@ const loadCourseDetail = async (courseId: number) => {
     courseInfo.value.id = course.id;
     courseInfo.value.name = course.name;
     courseInfo.value.type = course.type;
-    courseInfo.value.price = course.current_price || course.price;
+    courseInfo.value.price = course.current_price || 0;
     courseInfo.value.soldCount = course.sold_count || 0;
     courseInfo.value.description = course.description || '';
     courseInfo.value.instructor = course.teacher || '';
@@ -155,8 +155,10 @@ onMounted(() => {
   const currentPage = pages[pages.length - 1];
   const options = (currentPage as any).options || {};
 
-  if (options.course_id) {
-    loadCourseDetail(Number(options.course_id));
+  // 支持多种参数名：id、courseId、course_id（兼容性）
+  const courseId = options.id || options.courseId || options.course_id;
+  if (courseId) {
+    loadCourseDetail(Number(courseId));
   }
 });
 
@@ -172,15 +174,24 @@ const buttonText = computed(() => {
  * 立即购买/预约
  */
 const handleBuy = () => {
+  // 验证课程ID是否有效
+  if (!courseInfo.value.id) {
+    uni.showToast({
+      title: '课程信息加载中，请稍候',
+      icon: 'none'
+    });
+    return;
+  }
+
   if (courseInfo.value.is_purchased) {
     // 已购买,跳转到预约确认页
     uni.navigateTo({
-      url: `/pages/course/appointment-confirm/index?user_course_id=${courseInfo.value.user_course_id}&course_id=${courseInfo.value.id}`,
+      url: `/pages/course/appointment-confirm/index?userCourseId=${courseInfo.value.user_course_id}&courseId=${courseInfo.value.id}`,
     });
   } else {
     // 未购买,跳转到订单确认页
     uni.navigateTo({
-      url: `/pages/order/confirm/index?course_id=${courseInfo.value.id}`,
+      url: `/pages/order/confirm/index?courseId=${courseInfo.value.id}`,
     });
   }
 };

@@ -79,30 +79,36 @@ export interface UpgradeAmbassadorResponse {
  * 升级指南信息
  */
 export interface UpgradeGuide {
-  /** 当前等级 */
-  current_level: number
-  /** 当前等级名称 */
-  current_level_name: string
-  /** 下一等级 */
-  next_level: number
-  /** 下一等级名称 */
-  next_level_name: string
-  /** 升级条件 */
-  upgrade_conditions: {
-    payment_amount: number
-    required_level: number
+  /** 当前等级信息 */
+  current_level: {
+    level: number
+    name: string
+    benefits: string[]
   }
-  /** 权益说明 */
-  benefits: {
-    commission_rate: number
-    quotas: number
-    description: string
+  /** 目标等级信息 */
+  target_level: {
+    level: number
+    name: string
+    benefits: string[]
   }
-  /** 当前进度 */
-  current_progress: {
-    referrals: number
-    team_size: number
+  /** 升级选项 */
+  upgrade_options: Array<{
+    type: 'payment' | 'contract'
+    name: string
+    eligible: boolean
+    fee?: number
+    requirements?: string[]
+    reason?: string
+  }>
+  /** 当前统计数据 */
+  current_stats: {
+    referee_count: number
+    order_count: number
+    merit_points: number
+    cash_points: number
   }
+  /** 升级要求 */
+  requirements: Record<string, any>
 }
 
 /**

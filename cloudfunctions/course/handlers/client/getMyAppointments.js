@@ -1,72 +1,95 @@
 /**
  * 获取我的预约列表（客户端接口）
  */
-const { rawQuery } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { status, page = 1, page_size = 10 } = event;
   const { user } = context;
 
   try {
-    const { offset, limit } = getPagination(page, page_size);
+    console.log(`[Course/getMyAppointments] 收到请求:`, { user_id: user.id, status, page });
 
-    // 构建查询条件
-    let whereClause = 'WHERE a.user_id = ? AND a.deleted_at IS NULL';
-    const params = [user.id];
+    // 计算分页参数
+    const limit = parseInt(page_size) || 10;
+    const offset = (parseInt(page) - 1) * limit;
 
-    if (status) {
-      whereClause += ' AND a.status = ?';
-      params.push(status);
+    // 构建基础查询 - 使用外键 JOIN
+    let queryBuilder = db
+      .from('appointments')
+      .select(`
+        id,
+        course_id,
+        class_record_id,
+        status,
+        checkin_code,
+        checkin_time,
+        created_at,
+        cancel_reason,
+        cancel_time,
+        course:courses!fk_appointments_course(
+          name,
+          type
+        ),
+        class_record:class_records!fk_appointments_class_record(
+          class_date,
+          class_time,
+          class_location,
+          teacher
+        )
+      `, { count: 'exact' })
+      .eq('user_id', user.id);
+
+    // 添加状态过滤
+    if (status !== undefined && status !== null && status !== '') {
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
-    // 查询总数
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM appointments a
-      ${whereClause}
-    `;
-    const countResult = await rawQuery(countSql, params);
-    const total = countResult[0].total;
+    // 排序和分页
+    queryBuilder = queryBuilder
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // 查询列表
-    const listSql = `
-      SELECT
-        a.id,
-        a.course_id,
-        c.name as course_name,
-        c.type as course_type,
-        a.class_record_id,
-        cr.class_date,
-        cr.start_time,
-        cr.end_time,
-        cr.location,
-        cr.teacher,
-        a.status,
-        CASE a.status
-          WHEN 1 THEN '待上课'
-          WHEN 2 THEN '已签到'
-          WHEN 3 THEN '已取消'
-          ELSE '未知'
-        END as status_name,
-        a.checkin_code,
-        a.checkin_at,
-        a.appointed_at,
-        a.cancelled_at
-      FROM appointments a
-      INNER JOIN courses c ON c.id = a.course_id
-      INNER JOIN class_records cr ON cr.id = a.class_record_id
-      ${whereClause}
-      ORDER BY cr.class_date DESC, cr.start_time DESC
-      LIMIT ? OFFSET ?
-    `;
-    params.push(limit, offset);
+    // 执行查询
+    const { data: appointments, error, count: total } = await queryBuilder;
 
-    const list = await rawQuery(listSql, params);
+    if (error) {
+      throw error;
+    }
+
+    // 格式化数据
+    const getStatusName = (status) => {
+      const statusMap = {
+        0: '待上课',
+        1: '已签到',
+        2: '缺席',
+        3: '已取消'
+      };
+      return statusMap[status] || '未知';
+    };
+
+    const list = (appointments || []).map(a => ({
+      id: a.id,
+      course_id: a.course_id,
+      course_name: a.course?.name,
+      course_type: a.course?.type,
+      class_record_id: a.class_record_id,
+      class_date: a.class_record?.class_date,
+      class_time: a.class_record?.class_time,
+      location: a.class_record?.class_location,
+      teacher: a.class_record?.teacher,
+      status: a.status,
+      status_name: getStatusName(a.status),
+      checkin_code: a.checkin_code,
+      checkin_at: a.checkin_time,
+      appointed_at: a.created_at,
+      cancelled_at: a.cancel_time
+    }));
+
+    console.log(`[Course/getMyAppointments] 查询成功，共 ${total} 条预约`);
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
       list

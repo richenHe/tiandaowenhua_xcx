@@ -12,22 +12,23 @@
         <!-- 二维码展示 -->
         <view class="qrcode-section">
           <view class="qrcode-box">
-            <view class="qrcode-placeholder">📱</view>
+            <image v-if="qrcodeInfo.qrcode_url" :src="qrcodeInfo.qrcode_url" class="qrcode-image" mode="aspectFit" />
+            <view v-else class="qrcode-placeholder">📱</view>
           </view>
           <view class="qrcode-title">我的推广二维码</view>
-          <view class="qrcode-code">邀请码: TDWH8888</view>
+          <view class="qrcode-code">邀请码: {{ qrcodeInfo.referee_code || '加载中...' }}</view>
         </view>
 
         <!-- 推广统计 -->
         <view class="stats-card">
           <view class="stats-item">
             <view class="stats-label">✅ 已推荐</view>
-            <view class="stats-value">8人</view>
+            <view class="stats-value">{{ stats.referralCount }}人</view>
           </view>
           <view class="divider-vertical"></view>
           <view class="stats-item">
             <view class="stats-label">💰 累计收益</view>
-            <view class="stats-value">¥15,250</view>
+            <view class="stats-value">¥{{ stats.totalEarnings }}</view>
           </view>
         </view>
 
@@ -70,26 +71,98 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi, UserApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
 })
 
+// 二维码信息
+const qrcodeInfo = ref({
+  qrcode_url: '',
+  referee_code: '',
+  share_text: ''
+})
+
+// 推广统计
+const stats = ref({
+  referralCount: 0,
+  totalEarnings: 0
+})
+
+// 加载二维码
+const loadQRCode = async () => {
+  try {
+    const result = await AmbassadorApi.generateQRCode({ scene_type: 'share' })
+
+    qrcodeInfo.value.qrcode_url = result.qrcode_url
+    qrcodeInfo.value.referee_code = result.referee_code
+    qrcodeInfo.value.share_text = result.share_text
+  } catch (error) {
+    console.error('加载二维码失败:', error)
+  }
+}
+
+// 加载推广统计
+const loadStats = async () => {
+  try {
+    const referees = await UserApi.getMyReferees({ page: 1, pageSize: 1 })
+    stats.value.referralCount = referees.total || 0
+
+    // 累计收益需要从其他接口获取
+    const profile = await UserApi.getProfile()
+    stats.value.totalEarnings = profile.cash_points_available || 0
+  } catch (error) {
+    console.error('加载统计失败:', error)
+  }
+}
+
 const saveQrcode = () => {
-  uni.showToast({
-    title: '保存成功',
-    icon: 'success'
+  if (!qrcodeInfo.value.qrcode_url) {
+    uni.showToast({
+      title: '二维码加载中',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.downloadFile({
+    url: qrcodeInfo.value.qrcode_url,
+    success: (res) => {
+      uni.saveImageToPhotosAlbum({
+        filePath: res.tempFilePath,
+        success: () => {
+          uni.showToast({
+            title: '保存成功',
+            icon: 'success'
+          })
+        },
+        fail: () => {
+          uni.showToast({
+            title: '保存失败',
+            icon: 'none'
+          })
+        }
+      })
+    }
   })
 }
 
 const shareQrcode = () => {
-  uni.showToast({
-    title: '分享功能开发中',
-    icon: 'none'
+  uni.showShareMenu({
+    withShareTicket: true,
+    success: () => {
+      console.log('分享成功')
+    }
   })
 }
+
+onMounted(() => {
+  loadQRCode()
+  loadStats()
+})
 </script>
 
 <style scoped lang="scss">

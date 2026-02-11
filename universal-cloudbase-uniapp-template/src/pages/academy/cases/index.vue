@@ -205,6 +205,7 @@ import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
+import { CourseApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'
@@ -215,14 +216,6 @@ const pageHeaderHeight = ref(64)
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
-
-onMounted(() => {
-  // 计算页面头部高度
-  const systemInfo = uni.getSystemInfoSync()
-  const statusBarHeight = systemInfo.statusBarHeight || 20
-  const navbarHeight = 44
-  pageHeaderHeight.value = statusBarHeight + navbarHeight
-})
 
 // 处理滚动事件
 const handleScroll = (e: any) => {
@@ -240,8 +233,27 @@ const tabs = ref([
 
 const activeTab = ref('all')
 
+// 案例列表
+const caseList = ref<any[]>([])
+
+// 加载案例列表
+const loadCaseList = async (category?: string) => {
+  try {
+    const params: any = { page: 1, page_size: 100 }
+    if (category && category !== 'all') {
+      params.category = category
+    }
+
+    const result = await CourseApi.getCaseList(params)
+    caseList.value = result.list || []
+  } catch (error) {
+    console.error('加载案例列表失败:', error)
+  }
+}
+
 const onTabChange = (value: string) => {
   activeTab.value = value
+  loadCaseList(value)
 }
 
 const goToCourseDetail = () => {
@@ -249,6 +261,17 @@ const goToCourseDetail = () => {
     url: '/pages/course/detail/index'
   })
 }
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  const navbarHeight = 44
+  pageHeaderHeight.value = statusBarHeight + navbarHeight
+
+  // 加载案例列表
+  loadCaseList()
+})
 </script>
 
 <style scoped lang="scss">

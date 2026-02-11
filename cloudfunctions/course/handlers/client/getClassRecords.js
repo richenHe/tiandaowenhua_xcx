@@ -1,9 +1,8 @@
 /**
  * 获取上课排期列表（客户端接口）
  */
-const { rawQuery } = require('../../common/db');
-const { response } = require('../../common');
-const { validateRequired, getPagination } = require('../../common/utils');
+const { db, response } = require('../../common');
+const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { course_id, start_date, end_date, page = 1, page_size = 10 } = event;
@@ -16,60 +15,86 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
-    const { offset, limit } = getPagination(page, page_size);
+    console.log(`[Course/getClassRecords] 收到请求:`, { course_id, start_date, end_date, page });
 
-    // 构建查询条件
-    let whereClause = 'WHERE cr.course_id = ? AND cr.status = 1 AND cr.deleted_at IS NULL';
-    const params = [course_id];
+    // 计算分页参数
+    const limit = parseInt(page_size) || 10;
+    const offset = (parseInt(page) - 1) * limit;
 
+    // 构建查询
+    let queryBuilder = db
+      .from('class_records')
+      .select(`
+        id,
+        course_id,
+        course_name,
+        course_type,
+        period,
+        class_date,
+        class_time,
+        class_location,
+        teacher,
+        total_quota,
+        booked_quota
+      `, { count: 'exact' })
+      .eq('course_id', course_id)
+      .eq('status', 1);
+
+    // 日期过滤
     if (start_date) {
-      whereClause += ' AND cr.class_date >= ?';
-      params.push(start_date);
+      queryBuilder = queryBuilder.gte('class_date', start_date);
     }
 
     if (end_date) {
-      whereClause += ' AND cr.class_date <= ?';
-      params.push(end_date);
+      queryBuilder = queryBuilder.lte('class_date', end_date);
     }
 
-    // 查询总数
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM class_records cr
-      ${whereClause}
-    `;
-    const countResult = await rawQuery(countSql, params);
-    const total = countResult[0].total;
+    // 排序和分页
+    queryBuilder = queryBuilder
+      .order('class_date', { ascending: true })
+      .range(offset, offset + limit - 1);
 
-    // 查询列表
-    const listSql = `
-      SELECT
-        cr.id,
-        cr.course_id,
-        c.name as course_name,
-        cr.class_date,
-        cr.start_time,
-        cr.end_time,
-        cr.location,
-        cr.teacher,
-        cr.max_students,
-        cr.current_students,
-        (cr.max_students - cr.current_students) as available_quota,
-        CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END as is_appointed
-      FROM class_records cr
-      INNER JOIN courses c ON c.id = cr.course_id
-      LEFT JOIN appointments a ON a.class_record_id = cr.id AND a.user_id = ? AND a.status IN (1,2) AND a.deleted_at IS NULL
-      ${whereClause}
-      ORDER BY cr.class_date ASC, cr.start_time ASC
-      LIMIT ? OFFSET ?
-    `;
-    params.unshift(user.id);
-    params.push(limit, offset);
+    // 执行查询
+    const { data: classRecords, error, count: total } = await queryBuilder;
 
-    const list = await rawQuery(listSql, params);
+    if (error) {
+      throw error;
+    }
+
+    // 查询当前用户的预约记录
+    const classRecordIds = (classRecords || []).map(cr => cr.id);
+    let userAppointments = [];
+    
+    if (classRecordIds.length > 0) {
+      const { data: appointments } = await db
+        .from('appointments')
+        .select('class_record_id')
+        .eq('user_id', user.id)
+        .in('class_record_id', classRecordIds)
+        .in('status', [1, 2]); // 1=待上课, 2=已签到
+      
+      userAppointments = (appointments || []).map(a => a.class_record_id);
+    }
+
+    // 格式化数据
+    const list = (classRecords || []).map(cr => ({
+      id: cr.id,
+      course_id: cr.course_id,
+      course_name: cr.course_name,
+      class_date: cr.class_date,
+      class_time: cr.class_time,
+      location: cr.class_location,
+      teacher: cr.teacher,
+      max_students: cr.total_quota,
+      current_students: cr.booked_quota,
+      available_quota: cr.total_quota - cr.booked_quota,
+      is_appointed: userAppointments.includes(cr.id) ? 1 : 0
+    }));
+
+    console.log(`[Course/getClassRecords] 查询成功，共 ${total} 条排期`);
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
       list

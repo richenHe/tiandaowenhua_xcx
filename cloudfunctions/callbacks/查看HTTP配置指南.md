@@ -100,3 +100,5 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message
 HTTP 访问功能由"访问服务"提供，而不是云函数本身的触发器类型。
 
 
+
+

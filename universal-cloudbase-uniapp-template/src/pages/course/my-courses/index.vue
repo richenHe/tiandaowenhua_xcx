@@ -166,7 +166,7 @@ const filteredCourses = computed(() => {
 const goToCourseDetail = (courseId: string) => {
   console.log('前往课程详情:', courseId);
   uni.navigateTo({
-    url: '/pages/course/detail/index?id=' + courseId,
+    url: '/pages/course/detail/index?courseId=' + courseId,
   });
 };
 

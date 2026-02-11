@@ -19,7 +19,9 @@ import type {
   ExchangeGoodsParams,
   ExchangeGoodsResponse,
   GetExchangeRecordsParams,
-  GetExchangeRecordsResponse
+  GetExchangeRecordsResponse,
+  GetMallCoursesParams,
+  GetMallCoursesResponse
 } from '../types/order'
 
 /**
@@ -139,6 +141,20 @@ export class OrderApi {
       showLoading: false
     })
   }
+
+  /**
+   * 9. 获取商城课程列表
+   * @param params 查询参数
+   * @returns 课程列表
+   */
+  static async getMallCourses(params?: GetMallCoursesParams): Promise<GetMallCoursesResponse> {
+    return callCloudFunction<GetMallCoursesResponse>({
+      name: 'order',
+      action: 'getMallCourses',
+      data: params,
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -150,7 +166,8 @@ export const {
   cancel,
   getMallGoods,
   exchangeGoods,
-  getExchangeRecords
+  getExchangeRecords,
+  getMallCourses
 } = OrderApi
 
 // 默认导出

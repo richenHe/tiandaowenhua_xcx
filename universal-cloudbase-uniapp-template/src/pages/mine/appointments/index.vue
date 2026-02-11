@@ -95,20 +95,13 @@ import { ref, computed, onMounted } from 'vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { CourseApi } from '@/api'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
-
-onMounted(() => {
-  // 计算页面头部高度
-  const systemInfo = uni.getSystemInfoSync()
-  const statusBarHeight = systemInfo.statusBarHeight || 20
-  const navbarHeight = 44
-  pageHeaderHeight.value = statusBarHeight + navbarHeight
-})
 
 // 处理滚动事件
 const handleScroll = (e: any) => {
@@ -118,7 +111,6 @@ const handleScroll = (e: any) => {
 }
 
 // Tab 标签
-const tabs = ['全部', '待上课', '已完成', '已取消']
 const activeTab = ref(0)
 const tabOptions = [
   { label: '全部', value: 0 },
@@ -127,32 +119,45 @@ const tabOptions = [
   { label: '已取消', value: 3 }
 ]
 
-// Mock 预约数据
-const appointments = ref([
-  {
-    id: 1,
-    title: '初探班 第12期',
-    time: '2024-02-01 09:00',
-    location: '北京市朝阳区天道文化中心',
-    teacher: '张老师',
-    phone: '010-12345678',
-    status: '待上课',
-    statusType: 'warning',
-    appointmentStatus: 'pending'
-  },
-  {
-    id: 2,
-    title: '初探班 第11期（复训）',
-    time: '2024-01-15 09:00',
-    location: '北京市朝阳区天道文化中心',
-    teacher: '张老师',
-    phone: '',
-    status: '已完成',
-    statusType: 'success',
-    appointmentStatus: 'completed',
-    rating: '⭐⭐⭐⭐⭐'
+// 预约数据
+const appointments = ref<any[]>([])
+
+// 状态映射
+const statusMap: Record<number, { text: string; type: string; appointmentStatus: string }> = {
+  1: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
+  2: { text: '已签到', type: 'success', appointmentStatus: 'completed' },
+  3: { text: '已取消', type: 'default', appointmentStatus: 'cancelled' }
+}
+
+// 加载预约列表
+const loadAppointments = async (status?: number) => {
+  try {
+    const params: any = { page: 1, page_size: 100 }
+    if (status && status > 0) {
+      params.status = status
+    }
+
+    const result = await CourseApi.getMyAppointments(params)
+
+    appointments.value = result.list.map((item: any) => {
+      const statusInfo = statusMap[item.status] || statusMap[1]
+      return {
+        id: item.id,
+        title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
+        time: `${item.class_date} ${item.start_time || ''}`,
+        location: item.location,
+        teacher: item.teacher,
+        phone: '',
+        status: statusInfo.text,
+        statusType: statusInfo.type,
+        appointmentStatus: statusInfo.appointmentStatus,
+        rating: item.status === 2 ? '⭐⭐⭐⭐⭐' : ''
+      }
+    })
+  } catch (error) {
+    console.error('加载预约列表失败:', error)
   }
-])
+}
 
 // 过滤预约
 const filteredAppointments = computed(() => {
@@ -171,11 +176,9 @@ const filteredAppointments = computed(() => {
 // 切换 Tab
 const handleTabChange = (value: number) => {
   activeTab.value = value
-}
-
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
+  // 根据状态加载数据
+  const statusValue = value === 0 ? undefined : value
+  loadAppointments(statusValue)
 }
 
 // 跳转到预约详情
@@ -186,20 +189,40 @@ const goToAppointmentDetail = (id: number) => {
 }
 
 // 取消预约
-const handleCancel = (id: number) => {
+const handleCancel = async (id: number) => {
   uni.showModal({
     title: '提示',
     content: '确定要取消预约吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        uni.showToast({
-          title: '取消成功',
-          icon: 'success'
-        })
+        try {
+          await CourseApi.cancelAppointment({ appointment_id: id })
+
+          uni.showToast({
+            title: '取消成功',
+            icon: 'success'
+          })
+
+          // 重新加载列表
+          loadAppointments()
+        } catch (error) {
+          console.error('取消预约失败:', error)
+        }
       }
     }
   })
 }
+
+onMounted(() => {
+  // 计算页面头部高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 20
+  const navbarHeight = 44
+  pageHeaderHeight.value = statusBarHeight + navbarHeight
+
+  // 加载预约列表
+  loadAppointments()
+})
 </script>
 
 <style lang="scss" scoped>

@@ -16,20 +16,23 @@ module.exports = async (event, context) => {
 
     const { offset, limit } = utils.getPagination(page, pageSize);
 
-    // 一次查询获取所有数据（利用外键 user_courses.course_id → courses.id）
+    // 一次查询获取所有数据（利用外键 fk_user_courses_course）
     const { data: courses, error, count: total } = await db
       .from('user_courses')
       .select(`
         *,
-        course:courses(
+        course:courses!fk_user_courses_course(
           id,
           name,
           type,
           cover_image,
-          price,
+          original_price,
+          current_price,
+          retrain_price,
           description,
-          duration_days,
-          total_lessons
+          duration,
+          teacher,
+          outline
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
@@ -54,10 +57,13 @@ module.exports = async (event, context) => {
       title: uc.course?.name,
       cover_image: uc.course?.cover_image,
       type: uc.course?.type,
-      price: uc.course?.price,
+      original_price: uc.course?.original_price,
+      current_price: uc.course?.current_price,
+      retrain_price: uc.course?.retrain_price,
       description: uc.course?.description,
-      duration_days: uc.course?.duration_days,
-      total_lessons: uc.course?.total_lessons
+      duration: uc.course?.duration,
+      teacher: uc.course?.teacher,
+      outline: uc.course?.outline
     }));
 
     console.log('[getMyCourses] 查询成功，共', total, '条');

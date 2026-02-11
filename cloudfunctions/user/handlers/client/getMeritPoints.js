@@ -11,14 +11,11 @@ module.exports = async (event, context) => {
   try {
     console.log('[getMeritPoints] 获取功德分:', user.id);
 
-    // ⚠️ 聚合查询暂时使用 db 实例直接查询
-    // CloudBase SDK 的查询构建器可能不支持复杂聚合
-    const statsQuery = await db
+    // 查询功德分记录
+    const { data: records, error } = await db
       .from('merit_points_records')
-      .select('change_amount')
+      .select('type, amount')
       .eq('user_id', user.id);
-
-    const { data: records, error } = statsQuery;
 
     if (error) {
       throw new Error(error.message);
@@ -27,11 +24,13 @@ module.exports = async (event, context) => {
     let total_earned = 0;
     let total_spent = 0;
 
+    // type: 1=收入, 2=支出
     (records || []).forEach(record => {
-      if (record.change_amount > 0) {
-        total_earned += parseFloat(record.change_amount);
-      } else {
-        total_spent += Math.abs(parseFloat(record.change_amount));
+      const amount = parseFloat(record.amount) || 0;
+      if (record.type === 1) {
+        total_earned += amount;
+      } else if (record.type === 2) {
+        total_spent += amount;
       }
     });
 

@@ -23,7 +23,9 @@ import type {
   GetMaterialListResponse,
   AcademyContent,
   AcademyProgress,
-  RecordAcademyProgressParams
+  RecordAcademyProgressParams,
+  CalendarData,
+  GetCalendarScheduleParams
 } from '../types/course'
 
 /**
@@ -128,10 +130,24 @@ export class CourseApi {
     })
   }
 
+  /**
+   * 8. 获取日历排课数据
+   * @param params 查询参数（开始日期和结束日期）
+   * @returns 日历数据
+   */
+  static async getCalendarSchedule(params: GetCalendarScheduleParams): Promise<CalendarData> {
+    return callCloudFunction<CalendarData>({
+      name: 'course',
+      action: 'getCalendarSchedule',
+      data: params,
+      showLoading: false
+    })
+  }
+
   // ==================== 客户端接口 ====================
 
   /**
-   * 8. 获取上课排期列表
+   * 9. 获取上课排期列表
    * @param params 查询参数
    * @returns 上课排期列表
    */
@@ -145,7 +161,7 @@ export class CourseApi {
   }
 
   /**
-   * 9. 创建预约
+   * 10. 创建预约
    * @param params 预约参数
    * @returns 预约信息
    */
@@ -236,6 +252,7 @@ export const {
   getMaterialList,
   getAcademyList,
   getAcademyDetail,
+  getCalendarSchedule,
   getClassRecords,
   createAppointment,
   cancelAppointment,

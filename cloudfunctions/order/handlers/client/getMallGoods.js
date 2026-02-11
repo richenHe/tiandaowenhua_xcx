@@ -2,9 +2,7 @@
  * 客户端接口：商城商品列表
  * Action: getMallGoods
  */
-const { from } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -13,30 +11,34 @@ module.exports = async (event, context) => {
   try {
     console.log(`[getMallGoods] 查询商城商品:`, { keyword, page });
 
-    // 1. 构建查询
-    let queryBuilder = from('mall_goods')
-      .where('status', 1); // 只查询上架商品
+    // 1. 计算分页参数
+    const limit = parseInt(page_size) || 10;
+    const offset = (parseInt(page) - 1) * limit;
 
-    // 2. 关键词过滤
-    if (keyword) {
-      queryBuilder = queryBuilder.and(qb => {
-        qb.where('goods_name', 'like', `%${keyword}%`)
-          .orWhere('description', 'like', `%${keyword}%`);
-      });
+    // 2. 构建基础查询
+    let queryBuilder = db
+      .from('mall_goods')
+      .select('*', { count: 'exact' })
+      .eq('status', 1) // 只查询上架商品
+      .order('sort_order', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    // 3. 关键词过滤
+    if (keyword && keyword.trim()) {
+      queryBuilder = queryBuilder.or(
+        `goods_name.ilike.%${keyword}%,description.ilike.%${keyword}%`
+      );
     }
 
-    // 3. 查询总数
-    const { total } = await queryBuilder.clone().count('* as total').then(res => res[0] || { total: 0 });
+    // 4. 执行查询
+    const { data: goods, error, count: total } = await queryBuilder;
 
-    // 4. 获取分页参数并查询列表
-    const { limit, offset } = getPagination(page, page_size);
-    const goods = await queryBuilder
-      .orderBy('sort_order', 'asc')
-      .limit(limit)
-      .offset(offset);
+    if (error) {
+      throw error;
+    }
 
     // 5. 格式化商品列表
-    const list = goods.map(item => ({
+    const list = (goods || []).map(item => ({
       id: item.id,
       goods_name: item.goods_name,
       goods_image: item.goods_image,
@@ -51,7 +53,7 @@ module.exports = async (event, context) => {
     console.log(`[getMallGoods] 查询成功，共 ${total} 件商品`);
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
       list

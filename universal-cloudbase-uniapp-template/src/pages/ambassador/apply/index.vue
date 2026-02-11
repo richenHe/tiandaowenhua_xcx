@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
@@ -152,8 +153,9 @@ const onWillingnessChange = (e: any) => {
   formData.value.willingness = willingnessOptions[e.detail.value]
 }
 
-const handleSubmit = () => {
-  // 验证表单
+// 提交申请
+const handleSubmit = async () => {
+  // 验证必填项
   if (!formData.value.name) {
     uni.showToast({ title: '请输入真实姓名', icon: 'none' })
     return
@@ -162,45 +164,30 @@ const handleSubmit = () => {
     uni.showToast({ title: '请输入手机号', icon: 'none' })
     return
   }
-  if (!formData.value.wechat) {
-    uni.showToast({ title: '请输入微信号', icon: 'none' })
-    return
-  }
-  if (!formData.value.city) {
-    uni.showToast({ title: '请输入所在城市', icon: 'none' })
-    return
-  }
-  if (!formData.value.occupation) {
-    uni.showToast({ title: '请输入职业', icon: 'none' })
-    return
-  }
   if (!formData.value.reason) {
-    uni.showToast({ title: '请填写申请原因', icon: 'none' })
-    return
-  }
-  if (!formData.value.understanding) {
-    uni.showToast({ title: '请填写对天道文化的理解', icon: 'none' })
-    return
-  }
-  if (!formData.value.willingness) {
-    uni.showToast({ title: '请选择是否愿意帮助他人', icon: 'none' })
-    return
-  }
-  if (!formData.value.plan) {
-    uni.showToast({ title: '请填写推广计划', icon: 'none' })
+    uni.showToast({ title: '请填写申请理由', icon: 'none' })
     return
   }
 
-  // 提交成功
-  uni.showToast({
-    title: '申请已提交',
-    icon: 'success',
-    duration: 2000
-  })
-  
-  setTimeout(() => {
-    uni.navigateBack()
-  }, 2000)
+  try {
+    await AmbassadorApi.apply({
+      real_name: formData.value.name,
+      phone: formData.value.phone,
+      reason: `${formData.value.reason}\n\n理解：${formData.value.understanding}\n\n意愿：${formData.value.willingness}\n\n计划：${formData.value.plan}`
+    })
+
+    uni.showToast({
+      title: '申请提交成功',
+      icon: 'success',
+      duration: 2000
+    })
+
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 2000)
+  } catch (error) {
+    console.error('提交申请失败:', error)
+  }
 }
 </script>
 

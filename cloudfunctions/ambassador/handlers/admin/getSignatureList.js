@@ -21,20 +21,20 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select(`
         *,
-        user:users!user_id(real_name, phone, avatar_url),
-        template:contract_templates(title, level, version)
+        user:users!fk_contract_signatures_user(id, real_name, phone, avatar),
+        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `, { count: 'exact' })
-      .order('signed_at', { ascending: false })
+      .order('sign_time', { ascending: false })
       .range(offset, offset + limit - 1);
 
     // 模板筛选
     if (template_id) {
-      queryBuilder = queryBuilder.eq('template_id', template_id);
+      queryBuilder = queryBuilder.eq('contract_template_id', template_id);
     }
 
     // 等级筛选
     if (level !== undefined && level !== null) {
-      queryBuilder = queryBuilder.eq('template_level', level);
+      queryBuilder = queryBuilder.eq('ambassador_level', level);
     }
 
     // 状态筛选
@@ -52,16 +52,18 @@ module.exports = async (event, context) => {
       user_id: sig.user_id,
       user_name: sig.user?.real_name,
       phone: sig.user?.phone,
-      avatar_url: sig.user?.avatar_url,
-      template_id: sig.template_id,
-      template_title: sig.template?.title,
-      template_level: sig.template_level,
-      template_version: sig.template_version,
-      signed_at: sig.signed_at,
+      avatar: sig.user?.avatar,
+      template_id: sig.contract_template_id,
+      contract_name: sig.template?.contract_name || sig.contract_name,
+      ambassador_level: sig.ambassador_level,
+      contract_version: sig.contract_version,
+      sign_time: sig.sign_time,
+      contract_start: sig.contract_start,
+      contract_end: sig.contract_end,
       status: sig.status,
-      status_text: sig.status === 1 ? '已签署' : sig.status === 2 ? '已过期' : '已撤销',
-      ip_address: sig.ip_address,
-      device_info: sig.device_info
+      status_text: sig.status === 1 ? '有效' : sig.status === 2 ? '已过期' : sig.status === 3 ? '已续签' : '已作废',
+      sign_ip: sig.sign_ip,
+      sign_device: sig.sign_device
     }));
 
     return response.success({

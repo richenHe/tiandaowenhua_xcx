@@ -17,6 +17,11 @@
             <text>{{ userInfo.name }}</text>
             <text class="level-badge">{{ userInfo.levelBadge }}</text>
           </view>
+          <!-- 积分显示 -->
+          <view class="user-points">
+            <text class="points-item">💎 功德分: {{ userPoints.meritPoints }}</text>
+            <text class="points-item">💰 积分: {{ userPoints.cashPointsAvailable }}</text>
+          </view>
         </view>
         <text class="arrow-icon">›</text>
       </view>
@@ -88,9 +93,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { UserApi } from '@/api';
-import { ref, computed, onMounted } from 'vue';
-import { UserApi } from '@/api';
+import { UserApi, SystemApi } from '@/api';
 
 // 用户信息
 const userInfo = ref({
@@ -101,8 +104,12 @@ const userInfo = ref({
   isAmbassador: false,
   ambassadorLevel: '',
   ambassador_level: 0
-  ambassadorLevel: '',
-  ambassador_level: 0
+});
+
+// 用户积分信息
+const userPoints = ref({
+  meritPoints: 0,
+  cashPointsAvailable: 0
 });
 
 // 数据统计
@@ -130,6 +137,19 @@ const loadUserProfile = async () => {
     };
   } catch (error) {
     console.error('加载用户信息失败:', error);
+  }
+};
+
+// 加载用户积分
+const loadUserPoints = async () => {
+  try {
+    const points = await SystemApi.getUserPoints();
+    userPoints.value = {
+      meritPoints: points.meritPoints || 0,
+      cashPointsAvailable: points.cashPointsAvailable || 0
+    };
+  } catch (error) {
+    console.error('加载用户积分失败:', error);
   }
 };
 
@@ -182,6 +202,7 @@ const getLevelName = (level: number): string => {
 // 页面加载时获取数据
 onMounted(() => {
   loadUserProfile();
+  loadUserPoints();
   loadStats();
 });
 
@@ -244,7 +265,8 @@ const handleMenuClick = (type: string) => {
     'referee-manage': '/pages/mine/referee-manage/index',
     'ambassador': '/pages/ambassador/level/index',
     'profile': '/pages/mine/profile/index',
-    'consultation': '/pages/mine/consultation/index',
+    // TODO: 下个版本开发 - 在线客服功能（通过WebSocket实现，不需要数据库）
+    // 'consultation': '/pages/mine/consultation/index',
     'feedback': '/pages/mine/feedback/index',
     'announcement': '/pages/common/announcement/index'
   };
@@ -320,6 +342,20 @@ const handleMenuClick = (type: string) => {
 
 .level-badge {
   font-size: 32rpx;
+}
+
+.user-points {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 8rpx;
+}
+
+.points-item {
+  font-size: 24rpx;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
 }
 
 .user-phone {

@@ -30,7 +30,7 @@ module.exports = async (event, context) => {
         pay_time,
         is_reward_granted,
         created_at,
-        expires_at,
+        expire_at,
         referee:users!orders_referee_id_fkey(real_name)
       `, { count: 'exact' })
       .eq('user_id', user.id)
@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
       referee_name: order.referee?.real_name || null,
       is_reward_granted: order.is_reward_granted,
       created_at: order.created_at,
-      expires_at: order.expires_at
+      expires_at: order.expire_at
     }));
 
     console.log(`[getList] 查询成功，共 ${total} 条`);

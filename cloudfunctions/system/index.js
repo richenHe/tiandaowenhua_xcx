@@ -15,7 +15,8 @@ business.init(app);
 
 // 导入公开接口处理器（无需登录）
 const publicHandlers = {
-  getAnnouncementList: require('./handlers/client/getAnnouncementList')
+  getAnnouncementList: require('./handlers/client/getAnnouncementList'),
+  getBannerList: require('./handlers/public/getBannerList')
 };
 
 // 导入客户端处理器
@@ -25,7 +26,8 @@ const clientHandlers = {
   submitFeedback: require('./handlers/client/submitFeedback'),
   getMyFeedback: require('./handlers/client/getMyFeedback'),
   getNotificationConfigs: require('./handlers/client/getNotificationConfigs'),
-  subscribeNotification: require('./handlers/client/subscribeNotification')
+  subscribeNotification: require('./handlers/client/subscribeNotification'),
+  getUserPoints: require('./handlers/client/getUserPoints')
 };
 
 // 导入管理端处理器

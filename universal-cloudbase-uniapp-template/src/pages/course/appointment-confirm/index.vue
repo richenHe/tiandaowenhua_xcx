@@ -44,97 +44,116 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { CourseApi } from '@/api';
 
-// 课程信息（Mock）
+// 课程信息
 const courseInfo = ref({
+  classRecordId: 0,
   courseId: 0,
   courseName: '初探班',
-  period: 12,
+  period: '',
   startDate: '2024-02-01',
   endDate: '2024-02-03',
   location: '北京市朝阳区',
-  userAttendCount: 0, // 用户已上课次数
-  retrainPrice: 500, // 复训费用
+  userAttendCount: 0,
+  retrainPrice: 500,
 });
 
 // 按钮文本
 const buttonText = computed(() => {
-  if (courseInfo.value.userAttendCount === 1) {
+  if (courseInfo.value.userAttendCount === 0) {
     return '确认预约';
-  } else if (courseInfo.value.userAttendCount > 1) {
+  } else if (courseInfo.value.userAttendCount > 0) {
     return `确认预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
   }
-  return '确认预约'; // 默认值
+  return '确认预约';
 });
 
-// 页面加载时获取排期信息
-onMounted(() => {
-  const instance = getCurrentInstance();
-  const query = (instance?.proxy as any)?.$route?.query;
-  const courseId = query?.courseId;
-  const userAttendCount = parseInt(query?.userAttendCount || '0');
+// 加载排期详情
+const loadClassRecordDetail = async (classRecordId: number) => {
+  try {
+    const result = await CourseApi.getClassRecords({
+      course_id: courseInfo.value.courseId,
+      page: 1,
+      page_size: 100
+    });
 
-  if (courseId) {
-    courseInfo.value.courseId = parseInt(courseId);
-    courseInfo.value.userAttendCount = userAttendCount;
-    fetchCourseDetail(courseInfo.value.courseId);
+    const record = result.list.find((item: any) => item.id === classRecordId);
+    if (record) {
+      courseInfo.value.courseName = record.course_name;
+      courseInfo.value.startDate = record.class_date;
+      courseInfo.value.location = record.location;
+    }
+  } catch (error) {
+    console.error('加载排期详情失败:', error);
   }
-});
-
-// 模拟获取课程详情
-const fetchCourseDetail = (id: number) => {
-  console.log(`Fetching course detail for ID: ${id}`);
-  // 模拟API请求
-  setTimeout(() => {
-    courseInfo.value = {
-      ...courseInfo.value,
-      courseId: id,
-      courseName: id === 1 ? '初探班' : '密训班',
-      retrainPrice: id === 1 ? 500 : 800, // 模拟复训费用
-    };
-  }, 500);
 };
 
-// 提交预约 - 使用弹窗确认
-const handleSubmit = () => {
-  // 根据上课次数显示不同的弹窗内容
-  const isFirstTime = courseInfo.value.userAttendCount === 1;
-  const modalContent = isFirstTime
-    ? '确定要预约该课程吗？'
-    : `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`;
+// 提交预约
+const handleSubmit = async () => {
+  const isRetrain = courseInfo.value.userAttendCount > 0;
+  const modalContent = isRetrain
+    ? `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`
+    : '确定要预约该课程吗？';
 
   uni.showModal({
     title: '预约确认',
     content: modalContent,
     confirmText: '确定',
     cancelText: '取消',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        // 用户点击确定
-        if (courseInfo.value.userAttendCount > 1) {
-          // 需要支付复训费,跳转到支付页面
+        if (isRetrain) {
+          // 需要支付复训费，跳转到订单确认页
           uni.navigateTo({
-            url: `/pages/order/payment/index?orderNo=RETRAIN_${Date.now()}`, // 模拟生成复训订单号
+            url: `/pages/order/confirm/index?classRecordId=${courseInfo.value.classRecordId}&isRetrain=1`,
           });
         } else {
-          // 首次预约,直接成功
-          // TODO: 调用预约接口
-          uni.showToast({
-            title: '预约成功',
-            icon: 'success',
-            duration: 2000,
-          });
+          // 首次预约，直接调用预约接口
+          try {
+            await CourseApi.createAppointment({
+              class_record_id: courseInfo.value.classRecordId
+            });
 
-          setTimeout(() => {
-            uni.navigateBack();
-          }, 2000);
+            uni.showToast({
+              title: '预约成功',
+              icon: 'success',
+              duration: 2000,
+            });
+
+            setTimeout(() => {
+              uni.navigateBack();
+            }, 2000);
+          } catch (error) {
+            console.error('预约失败:', error);
+          }
         }
       }
     },
   });
 };
+
+onMounted(() => {
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = (currentPage as any).options || {};
+
+  if (options.classRecordId) {
+    courseInfo.value.classRecordId = Number(options.classRecordId);
+  }
+  if (options.courseId) {
+    courseInfo.value.courseId = Number(options.courseId);
+  }
+  if (options.userCourseId) {
+    // 可以通过 userCourseId 获取用户上课次数
+  }
+
+  if (courseInfo.value.classRecordId && courseInfo.value.courseId) {
+    loadClassRecordDetail(courseInfo.value.classRecordId);
+  }
+});
 </script>
 
 <style lang="scss" scoped>

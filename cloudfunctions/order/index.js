@@ -1,6 +1,6 @@
 /**
  * Order 云函数入口
- * 订单模块 - 13个action
+ * 订单模块 - 14个action
  */
 const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth } = require('./common');
@@ -25,6 +25,7 @@ const clientHandlers = {
   getList: require('./handlers/client/getList'),
   cancel: require('./handlers/client/cancel'),
   getMallGoods: require('./handlers/client/getMallGoods'),
+  getMallCourses: require('./handlers/client/getMallCourses'),
   exchangeGoods: require('./handlers/client/exchangeGoods'),
   getExchangeRecords: require('./handlers/client/getExchangeRecords')
 };

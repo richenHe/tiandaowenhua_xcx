@@ -290,9 +290,9 @@ const regionValue = ref<string[]>([])
 // 加载用户资料
 const loadProfile = async () => {
   try {
-    console.log('开始加载用户资料...')
+    // console.log('开始加载用户资料...')
     const profile = await UserApi.getProfile()
-    console.log('获取到的profile数据:', profile)
+    // console.log('获取到的profile数据:', profile)
 
     // 填充表单数据
     formData.value.avatar = profile.avatar || ''
@@ -358,10 +358,10 @@ const loadProfile = async () => {
       refereeInfo.value.status = ''
     }
 
-    console.log('加载的表单数据:', formData.value)
-    console.log('推荐人信息:', refereeInfo.value)
+    // console.log('加载的表单数据:', formData.value)
+    // console.log('推荐人信息:', refereeInfo.value)
   } catch (error) {
-    console.error('加载用户资料失败:', error)
+    // console.error('加载用户资料失败:', error)
   }
 }
 
@@ -457,7 +457,7 @@ const handleSave = async () => {
       uni.navigateBack()
     }, 1500)
   } catch (error) {
-    console.error('保存失败:', error)
+    // console.error('保存失败:', error)
   }
 }
 </script>

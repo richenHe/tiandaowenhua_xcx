@@ -15,7 +15,9 @@ import type {
   SubscribeNotificationResponse,
   Announcement,
   GetAnnouncementListParams,
-  GetAnnouncementListResponse
+  GetAnnouncementListResponse,
+  GetBannerListResponse,
+  UserPoints
 } from '../types/system'
 
 /**
@@ -129,6 +131,32 @@ export class SystemApi {
       showLoading: false
     })
   }
+
+  // ==================== 公开接口 ====================
+
+  /**
+   * 9. 获取轮播图列表
+   * @returns 轮播图列表
+   */
+  static async getBannerList(): Promise<GetBannerListResponse> {
+    return callCloudFunction<GetBannerListResponse>({
+      name: 'system',
+      action: 'getBannerList',
+      showLoading: false
+    })
+  }
+
+  /**
+   * 10. 获取用户积分信息
+   * @returns 用户积分信息
+   */
+  static async getUserPoints(): Promise<UserPoints> {
+    return callCloudFunction<UserPoints>({
+      name: 'system',
+      action: 'getUserPoints',
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -140,7 +168,9 @@ export const {
   getNotificationConfigs,
   subscribeNotification,
   getAnnouncementList,
-  getAnnouncementDetail
+  getAnnouncementDetail,
+  getBannerList,
+  getUserPoints
 } = SystemApi
 
 // 默认导出

@@ -13,15 +13,15 @@
         <!-- 功德分余额卡片 -->
         <view class="balance-card">
           <view class="balance-label">💎 功德分余额</view>
-          <view class="balance-value">2,566.4</view>
+          <view class="balance-value">{{ formatAmount(meritPointsInfo.balance) }}</view>
           <view class="balance-stats">
             <view class="stat-item">
               <view class="stat-label">累计获得</view>
-              <view class="stat-value">3,580.0</view>
+              <view class="stat-value">{{ formatAmount(meritPointsInfo.total_earned) }}</view>
             </view>
             <view class="stat-item">
               <view class="stat-label">累计兑换</view>
-              <view class="stat-value">1,013.6</view>
+              <view class="stat-value">{{ formatAmount(meritPointsInfo.total_spent) }}</view>
             </view>
           </view>
         </view>
@@ -83,111 +83,44 @@
         <!-- 功德分明细列表 -->
         <view class="t-section-title t-section-title--simple">💎 明细记录</view>
 
-        <!-- 推荐奖励记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            📚
+        <!-- 记录列表 -->
+        <view v-for="record in recordsList" :key="record.id" class="record-card">
+          <view class="record-icon" :style="{ background: getRecordStyle(record.change_type).gradient }">
+            {{ getRecordStyle(record.change_type).icon }}
           </view>
           <view class="record-content">
             <view class="record-header">
               <view class="record-info">
-                <view class="record-title">推荐初探班课程</view>
-                <view class="record-desc">学员：王五</view>
+                <view class="record-title">{{ record.remark || '功德分变动' }}</view>
+                <view class="record-desc" v-if="record.related_id">关联ID: {{ record.related_id }}</view>
               </view>
-              <view class="record-amount success">+506.4</view>
+              <view class="record-amount" :class="record.change_amount > 0 ? 'success' : 'error'">
+                {{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}
+              </view>
             </view>
             <view class="record-footer">
-              <text>订单号: 202401150001</text>
-              <text>2024-01-15</text>
+              <text>余额: {{ formatAmount(record.balance_after) }}</text>
+              <text>{{ record.created_at }}</text>
             </view>
           </view>
         </view>
 
-        <!-- 推荐密训班记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-            🎓
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">推荐密训班课程</view>
-                <view class="record-desc">学员：李四</view>
-              </view>
-              <view class="record-amount success">+7,777.6</view>
-            </view>
-            <view class="record-footer">
-              <text>订单号: 202401120001</text>
-              <text>2024-01-12</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 辅导员活动记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-            👨‍🏫
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">担任辅导员</view>
-                <view class="record-desc">初探班第11期</view>
-              </view>
-              <view class="record-amount success">+500.0</view>
-            </view>
-            <view class="record-footer">
-              <text>活动地点：北京市</text>
-              <text>2024-01-10</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 义工活动记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-            🤝
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">会务义工</view>
-                <view class="record-desc">商学院年度总结会</view>
-              </view>
-              <view class="record-amount success">+300.0</view>
-            </view>
-            <view class="record-footer">
-              <text>活动地点：北京市</text>
-              <text>2024-01-08</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 兑换记录 -->
-        <view class="record-card">
-          <view class="record-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
-            🎁
-          </view>
-          <view class="record-content">
-            <view class="record-header">
-              <view class="record-info">
-                <view class="record-title">兑换复训费</view>
-                <view class="record-desc">初探班第12期复训</view>
-              </view>
-              <view class="record-amount error">-500.0</view>
-            </view>
-            <view class="record-footer">
-              <text>兑换单号: DH202401050001</text>
-              <text>2024-01-05</text>
-            </view>
-          </view>
+        <!-- 空状态 -->
+        <view v-if="recordsList.length === 0 && !loading" class="empty-state">
+          <text class="empty-icon">📝</text>
+          <text class="empty-text">暂无功德分记录</text>
         </view>
 
         <!-- 加载更多 -->
-        <view class="load-more">
-          <button class="t-button t-button--theme-default t-button--variant-text">
-            <span class="t-button__text">加载更多</span>
+        <view v-if="!finished && recordsList.length > 0" class="load-more">
+          <button class="t-button t-button--theme-default t-button--variant-text" @tap="loadMore">
+            <span class="t-button__text">{{ loading ? '加载中...' : '加载更多' }}</span>
           </button>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="finished && recordsList.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
 
         <!-- 底部留白 -->
@@ -198,10 +131,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
+import { UserApi } from '@/api'
+import type { MeritPointsInfo, MeritPointsRecord } from '@/api/types/user'
 
 const activeTab = ref('all')
 
@@ -218,11 +153,81 @@ const tabs = ref([
   { label: '兑换', value: 'exchange' }
 ])
 
+// 功德分信息
+const meritPointsInfo = ref<MeritPointsInfo>({
+  balance: 0,
+  total_earned: 0,
+  total_spent: 0
+})
+
+// 功德分明细列表
+const recordsList = ref<MeritPointsRecord[]>([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
+// 获取功德分余额
+const loadMeritPoints = async () => {
+  try {
+    const result = await UserApi.getMeritPoints()
+    meritPointsInfo.value = result
+  } catch (error) {
+    console.error('获取功德分余额失败:', error)
+  }
+}
+
+// 获取功德分明细
+const loadRecords = async (reset = false) => {
+  if (loading.value || finished.value) return
+
+  if (reset) {
+    page.value = 1
+    recordsList.value = []
+    finished.value = false
+  }
+
+  try {
+    loading.value = true
+    const result = await UserApi.getMeritPointsHistory({
+      page: page.value,
+      pageSize: pageSize.value
+    })
+
+    recordsList.value.push(...result.list)
+    total.value = result.total
+    page.value++
+
+    if (recordsList.value.length >= result.total) {
+      finished.value = true
+    }
+  } catch (error) {
+    console.error('获取功德分明细失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  loadRecords()
+}
+
+// 监听Tab切换，重新加载数据
+watch(activeTab, () => {
+  loadRecords(true)
+})
+
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   // 计算页面头部高度（状态栏 + 导航栏）
   pageHeaderHeight.value = statusBarHeight + 44
+
+  // 加载数据
+  loadMeritPoints()
+  loadRecords()
 })
 
 const scrollHeight = computed(() => {
@@ -246,6 +251,24 @@ const goToExchangeRecords = () => {
   uni.navigateTo({
     url: '/pages/ambassador/exchange-records/index'
   })
+}
+
+// 格式化金额
+const formatAmount = (amount: number | string) => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  return isNaN(num) ? '0.0' : num.toFixed(1)
+}
+
+// 获取记录图标和渐变色
+const getRecordStyle = (changeType: string) => {
+  const styleMap: Record<string, { icon: string; gradient: string }> = {
+    'referral_course': { icon: '📚', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    'referral_advanced': { icon: '🎓', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+    'tutor': { icon: '👨‍🏫', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+    'volunteer': { icon: '🤝', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+    'exchange': { icon: '🎁', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' }
+  }
+  return styleMap[changeType] || { icon: '💎', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
 }
 </script>
 
@@ -453,6 +476,30 @@ const goToExchangeRecords = () => {
 .load-more {
   text-align: center;
   padding: 40rpx 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.finished-text {
+  font-size: 24rpx;
+  color: #999;
 }
 
 </style>
