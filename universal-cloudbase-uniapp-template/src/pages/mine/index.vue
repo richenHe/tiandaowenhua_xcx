@@ -89,6 +89,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { UserApi } from '@/api';
+import { ref, computed, onMounted } from 'vue';
+import { UserApi } from '@/api';
 
 // 用户信息
 const userInfo = ref({
@@ -97,6 +99,8 @@ const userInfo = ref({
   avatar: '',
   levelBadge: '🌿',
   isAmbassador: false,
+  ambassadorLevel: '',
+  ambassador_level: 0
   ambassadorLevel: '',
   ambassador_level: 0
 });
