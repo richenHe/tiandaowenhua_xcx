@@ -1,7 +1,7 @@
 /**
  * 获取案例列表（公开接口）
  */
-const { from, rawQuery } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
 
@@ -11,54 +11,31 @@ module.exports = async (event, context) => {
   try {
     const { offset, limit } = getPagination(page, page_size);
 
-    // 构建查询条件
-    let whereClause = 'WHERE status = 1 AND deleted_at IS NULL';
-    const params = [];
+    // 构建查询（注意：academy_cases 表没有 deleted_at 字段）
+    let queryBuilder = db.from('academy_cases')
+      .select('id, title, student_name, student_avatar, student_title, summary, video_url, course_name, view_count, like_count, created_at', { count: 'exact' })
+      .eq('status', 1);
 
-    if (category) {
-      whereClause += ' AND category = ?';
-      params.push(category);
-    }
-
+    // 添加关键词搜索
     if (keyword) {
-      whereClause += ' AND (title LIKE ? OR summary LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,summary.ilike.%${keyword}%,student_name.ilike.%${keyword}%`);
     }
 
-    // 查询总数
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM academy_cases
-      ${whereClause}
-    `;
-    const countResult = await rawQuery(countSql, params);
-    const total = countResult[0].total;
+    // 执行查询（带总数和分页）
+    const { data: list, error, count: total } = await queryBuilder
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // 查询列表
-    const listSql = `
-      SELECT
-        id,
-        title,
-        category,
-        cover_image,
-        summary,
-        author,
-        view_count,
-        created_at
-      FROM academy_cases
-      ${whereClause}
-      ORDER BY sort_order ASC, created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    params.push(limit, offset);
-
-    const list = await rawQuery(listSql, params);
+    if (error) {
+      throw error;
+    }
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
-      list
+      list: list || []
     });
 
   } catch (error) {

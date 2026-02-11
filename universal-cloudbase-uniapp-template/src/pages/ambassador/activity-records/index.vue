@@ -15,15 +15,15 @@
           <view class="stats-label">📊 活动统计</view>
           <view class="stats-grid">
             <view class="stats-item">
-              <view class="stats-value">12</view>
+              <view class="stats-value">{{ activityStats.total_count }}</view>
               <view class="stats-text">累计活动</view>
             </view>
             <view class="stats-item">
-              <view class="stats-value">3,850</view>
+              <view class="stats-value">{{ activityStats.total_merit_points }}</view>
               <view class="stats-text">功德分</view>
             </view>
             <view class="stats-item">
-              <view class="stats-value">5</view>
+              <view class="stats-value">{{ activityStats.month_count }}</view>
               <view class="stats-text">本月活动</view>
             </view>
           </view>
@@ -47,22 +47,22 @@
           <view class="type-card">
             <view class="type-icon">👨‍🏫</view>
             <view class="type-label">辅导员</view>
-            <view class="type-count">5次</view>
+            <view class="type-count">{{ activityStats.type_stats[1] || 0 }}次</view>
           </view>
           <view class="type-card">
             <view class="type-icon">🤝</view>
             <view class="type-label">会务义工</view>
-            <view class="type-count">4次</view>
+            <view class="type-count">{{ activityStats.type_stats[2] || 0 }}次</view>
           </view>
           <view class="type-card">
             <view class="type-icon">🎉</view>
             <view class="type-label">沙龙组织</view>
-            <view class="type-count">2次</view>
+            <view class="type-count">{{ activityStats.type_stats[3] || 0 }}次</view>
           </view>
           <view class="type-card">
             <view class="type-icon">✨</view>
             <view class="type-label">其他活动</view>
-            <view class="type-count">1次</view>
+            <view class="type-count">{{ activityStats.type_stats[4] || 0 }}次</view>
           </view>
         </view>
 
@@ -80,126 +80,44 @@
         <!-- 活动记录列表 -->
         <view class="t-section-title t-section-title--simple">📝 活动明细</view>
 
-        <!-- 辅导员记录 -->
-        <view class="activity-card">
-          <view class="activity-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            👨‍🏫
+        <!-- 动态活动记录 -->
+        <view v-for="record in activityRecords" :key="record.id" class="activity-card">
+          <view class="activity-icon" :style="{ background: getActivityGradient(record.activity_type) }">
+            {{ getActivityIcon(record.activity_type) }}
           </view>
           <view class="activity-content">
             <view class="activity-header">
               <view class="activity-info">
-                <view class="activity-title">担任辅导员</view>
-                <view class="activity-desc">初探班第12期</view>
+                <view class="activity-title">{{ record.activity_name }}</view>
+                <view class="activity-desc">{{ record.activity_desc }}</view>
               </view>
               <view class="activity-right">
-                <view class="activity-amount">+500.0</view>
+                <view class="activity-amount">+{{ record.merit_points }}</view>
                 <view class="activity-label">功德分</view>
               </view>
             </view>
             <view class="activity-meta">
-              <view class="meta-item">📍 北京市朝阳区</view>
-              <view class="meta-item">⏰ 2024-01-15 09:00</view>
-              <view class="meta-item">⏱️ 时长: 3天</view>
-              <view class="meta-item">👥 学员: 30人</view>
+              <view v-if="record.location" class="meta-item">📍 {{ record.location }}</view>
+              <view class="meta-item">⏰ {{ record.start_time }}</view>
+              <view v-if="record.duration" class="meta-item">⏱️ 时长: {{ record.duration }}</view>
+              <view v-if="record.participant_count" class="meta-item">👥 参与: {{ record.participant_count }}人</view>
             </view>
-            <view class="activity-note">
-              协助讲师教学，解答学员疑问，组织课堂讨论，效果良好
+            <view v-if="record.note" class="activity-note">
+              {{ record.note }}
             </view>
           </view>
         </view>
 
-        <!-- 会务义工记录 -->
-        <view class="activity-card">
-          <view class="activity-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            🤝
-          </view>
-          <view class="activity-content">
-            <view class="activity-header">
-              <view class="activity-info">
-                <view class="activity-title">会务义工</view>
-                <view class="activity-desc">商学院年度总结会</view>
-              </view>
-              <view class="activity-right">
-                <view class="activity-amount">+300.0</view>
-                <view class="activity-label">功德分</view>
-              </view>
-            </view>
-            <view class="activity-meta">
-              <view class="meta-item">📍 北京国际会议中心</view>
-              <view class="meta-item">⏰ 2024-01-10 14:00</view>
-              <view class="meta-item">⏱️ 时长: 5小时</view>
-              <view class="meta-item">👥 参会: 200人</view>
-            </view>
-            <view class="activity-note">
-              负责签到、场地布置、茶歇服务、会场秩序维护等工作
-            </view>
-          </view>
-        </view>
-
-        <!-- 沙龙组织记录 -->
-        <view class="activity-card">
-          <view class="activity-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-            🎉
-          </view>
-          <view class="activity-content">
-            <view class="activity-header">
-              <view class="activity-info">
-                <view class="activity-title">组织沙龙活动</view>
-                <view class="activity-desc">天道文化学习沙龙（第3期）</view>
-              </view>
-              <view class="activity-right">
-                <view class="activity-amount">+800.0</view>
-                <view class="activity-label">功德分</view>
-              </view>
-            </view>
-            <view class="activity-meta">
-              <view class="meta-item">📍 北京市海淀区</view>
-              <view class="meta-item">⏰ 2024-01-08 15:00</view>
-              <view class="meta-item">⏱️ 时长: 3小时</view>
-              <view class="meta-item">👥 参与: 25人</view>
-            </view>
-            <view class="activity-note">
-              策划组织线下学习沙龙，分享天道文化学习心得，促进学员交流
-            </view>
-            <view class="activity-badges">
-              <view class="badge success">活动圆满</view>
-              <view class="badge primary">好评率95%</view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 其他活动记录 -->
-        <view class="activity-card">
-          <view class="activity-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-            ✨
-          </view>
-          <view class="activity-content">
-            <view class="activity-header">
-              <view class="activity-info">
-                <view class="activity-title">协助推广活动</view>
-                <view class="activity-desc">春季招生推广</view>
-              </view>
-              <view class="activity-right">
-                <view class="activity-amount">+200.0</view>
-                <view class="activity-label">功德分</view>
-              </view>
-            </view>
-            <view class="activity-meta">
-              <view class="meta-item">📍 线上活动</view>
-              <view class="meta-item">⏰ 2024-01-05</view>
-              <view class="meta-item">⏱️ 持续: 7天</view>
-              <view class="meta-item">📈 转化: 12人</view>
-            </view>
-            <view class="activity-note">
-              制作宣传素材，朋友圈推广，社群维护，成功转化12位学员
-            </view>
-          </view>
+        <!-- 空状态 -->
+        <view v-if="!loading && activityRecords.length === 0" class="empty-state">
+          <text class="empty-icon">📦</text>
+          <text class="empty-text">暂无活动记录</text>
         </view>
 
         <!-- 加载更多 -->
-        <view class="load-more">
-          <button class="t-button t-button--theme-default t-button--variant-text">
-            <span class="t-button__text">加载更多</span>
+        <view v-if="hasMore && activityRecords.length > 0" class="load-more">
+          <button class="t-button t-button--theme-default t-button--variant-text" @click="loadActivityRecords(getActivityTypeValue(activeTab))">
+            <span class="t-button__text">{{ loading ? '加载中...' : '加载更多' }}</span>
           </button>
         </view>
 
@@ -215,6 +133,8 @@ import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
+import { AmbassadorApi } from '@/api'
+import type { ActivityRecord, ActivityStats } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'
@@ -226,12 +146,79 @@ const pageHeaderHeight = ref(64)
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 
+// 活动统计数据
+const activityStats = ref<ActivityStats>({
+  total_count: 0,
+  total_merit_points: 0,
+  month_count: 0,
+  type_stats: {}
+})
+
+// 活动记录列表
+const activityRecords = ref<ActivityRecord[]>([])
+const loading = ref(false)
+const page = ref(1)
+const pageSize = ref(10)
+const hasMore = ref(true)
+
+// 加载活动统计
+const loadActivityStats = async () => {
+  try {
+    const stats = await AmbassadorApi.getActivityStats()
+    activityStats.value = stats
+  } catch (error) {
+    console.error('加载活动统计失败:', error)
+  }
+}
+
+// 加载活动记录
+const loadActivityRecords = async (activityType?: number) => {
+  if (loading.value || !hasMore.value) return
+
+  try {
+    loading.value = true
+    const result = await AmbassadorApi.getActivityRecords({
+      activity_type: activityType || 0,
+      page: page.value,
+      page_size: pageSize.value
+    })
+
+    if (page.value === 1) {
+      activityRecords.value = result.list
+    } else {
+      activityRecords.value.push(...result.list)
+    }
+
+    hasMore.value = activityRecords.value.length < result.total
+    page.value++
+  } catch (error) {
+    console.error('加载活动记录失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取活动类型对应的值
+const getActivityTypeValue = (tabValue: string): number => {
+  const typeMap: Record<string, number> = {
+    'all': 0,
+    'tutor': 1,
+    'volunteer': 2,
+    'salon': 3
+  }
+  return typeMap[tabValue] || 0
+}
+
 onMounted(() => {
   // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
+
+  // 加载数据
+  loadActivityStats()
+  loadActivityRecords()
 })
 
 // 处理滚动事件
@@ -252,6 +239,32 @@ const activeTab = ref('all')
 
 const onTabChange = (value: string) => {
   activeTab.value = value
+  page.value = 1
+  hasMore.value = true
+  activityRecords.value = []
+  loadActivityRecords(getActivityTypeValue(value))
+}
+
+// 获取活动类型图标
+const getActivityIcon = (type: number): string => {
+  const iconMap: Record<number, string> = {
+    1: '👨‍🏫',
+    2: '🤝',
+    3: '🎉',
+    4: '✨'
+  }
+  return iconMap[type] || '✨'
+}
+
+// 获取活动类型渐变色
+const getActivityGradient = (type: number): string => {
+  const gradientMap: Record<number, string> = {
+    1: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    2: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    3: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+    4: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+  }
+  return gradientMap[type] || 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
 }
 </script>
 

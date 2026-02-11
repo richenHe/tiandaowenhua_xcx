@@ -239,13 +239,6 @@
       }
     },
 		{
-			"path": "pages/academy/intro/index",
-			"style": {
-        "navigationBarTitleText": "商学院",
-        "navigationStyle": "custom"
-      }
-    },
-		{
 			"path": "pages/academy/cases/index",
 			"style": {
         "navigationBarTitleText": "学员案例",

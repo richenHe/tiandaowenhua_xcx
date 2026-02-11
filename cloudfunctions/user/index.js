@@ -25,7 +25,8 @@ const clientHandlers = {
   getCashPointsHistory: require('./handlers/client/getCashPointsHistory'),
   applyWithdraw: require('./handlers/client/applyWithdraw'),
   getWithdrawRecords: require('./handlers/client/getWithdrawRecords'),
-  getMyReferees: require('./handlers/client/getMyReferees')
+  getMyReferees: require('./handlers/client/getMyReferees'),
+  getReferralStats: require('./handlers/client/getReferralStats')
 };
 
 // 导入管理端处理器

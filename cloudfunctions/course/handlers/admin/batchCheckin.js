@@ -1,7 +1,7 @@
 /**
  * 批量签到（管理端接口）
  */
-const { rawQuery, from } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -19,40 +19,56 @@ module.exports = async (event, context) => {
       return response.paramError('user_ids 必须是非空数组');
     }
 
-    // 查询待签到的预约记录
-    const placeholders = user_ids.map(() => '?').join(',');
-    const appointmentsSql = `
-      SELECT id, user_id, course_id
-      FROM appointments
-      WHERE class_record_id = ?
-        AND user_id IN (${placeholders})
-        AND status = 1
-        AND deleted_at IS NULL
-    `;
-    const appointments = await rawQuery(appointmentsSql, [class_record_id, ...user_ids]);
+    // 查询待签到的预约记录（注意：appointments 表没有 deleted_at 字段，status=0或1 表示待上课）
+    const { data: appointments, error: queryError } = await db
+      .from('appointments')
+      .select('id, user_id, course_id')
+      .eq('class_record_id', parseInt(class_record_id))
+      .in('user_id', user_ids)
+      .in('status', [0, 1]);  // 0 或 1 都表示待上课
 
-    if (appointments.length === 0) {
+    if (queryError) {
+      throw queryError;
+    }
+
+    if (!appointments || appointments.length === 0) {
       return response.error('没有找到待签到的预约记录');
     }
 
-    // 批量更新签到状态
+    // 批量更新签到状态（注意：字段是 checkin_time 而非 checkin_at）
     const appointmentIds = appointments.map(a => a.id);
-    const updatePlaceholders = appointmentIds.map(() => '?').join(',');
-    const updateSql = `
-      UPDATE appointments
-      SET status = 2, checkin_at = NOW()
-      WHERE id IN (${updatePlaceholders})
-    `;
-    await rawQuery(updateSql, appointmentIds);
+    const now = new Date().toISOString();
+    
+    const { error: updateError } = await db
+      .from('appointments')
+      .update({
+        status: 2,  // 2 = 已签到
+        checkin_time: now
+      })
+      .in('id', appointmentIds);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     // 更新用户课程上课次数
     for (const appointment of appointments) {
-      const userCourseSql = `
-        UPDATE user_courses
-        SET attend_count = attend_count + 1
-        WHERE user_id = ? AND course_id = ?
-      `;
-      await rawQuery(userCourseSql, [appointment.user_id, appointment.course_id]);
+      const { data: userCourse } = await db
+        .from('user_courses')
+        .select('attend_count')
+        .eq('user_id', appointment.user_id)
+        .eq('course_id', appointment.course_id)
+        .single();
+
+      if (userCourse) {
+        await db
+          .from('user_courses')
+          .update({
+            attend_count: (userCourse.attend_count || 0) + 1
+          })
+          .eq('user_id', appointment.user_id)
+          .eq('course_id', appointment.course_id);
+      }
     }
 
     return response.success({

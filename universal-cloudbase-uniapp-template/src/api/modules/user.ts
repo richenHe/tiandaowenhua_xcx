@@ -243,6 +243,18 @@ export class UserApi {
       showLoading: false
     })
   }
+
+  /**
+   * 15. 获取推荐统计信息
+   * @returns 推荐统计信息
+   */
+  static async getReferralStats(): Promise<ReferralStats> {
+    return callCloudFunction<ReferralStats>({
+      name: 'user',
+      action: 'getReferralStats',
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -260,7 +272,8 @@ export const {
   getCashPointsHistory,
   applyWithdraw,
   getWithdrawRecords,
-  getMyReferees
+  getMyReferees,
+  getReferralStats
 } = UserApi
 
 // 默认导出

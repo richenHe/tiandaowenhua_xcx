@@ -340,3 +340,19 @@ export interface AdminLoginResponse {
   token: string
   admin: AdminUser
 }
+
+/**
+ * 获取系统配置请求参数
+ */
+export interface GetSystemConfigParams {
+  /** 配置键 */
+  key: string
+}
+
+/**
+ * 获取系统配置响应数据
+ */
+export interface GetSystemConfigResponse {
+  /** 配置值 */
+  value: string
+}

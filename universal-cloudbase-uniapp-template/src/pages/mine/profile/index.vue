@@ -1,6 +1,6 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="个人资料" :showBack="true" />
+    <TdPageHeader title="个人资料" :showBack="false" />
 
     <scroll-view scroll-y class="scroll-area scroll-area--with-header-footer" style="height: calc(100vh - 88rpx - 136rpx);">
       <view class="page-content page-content--with-bg" style="padding-bottom: 480rpx;">

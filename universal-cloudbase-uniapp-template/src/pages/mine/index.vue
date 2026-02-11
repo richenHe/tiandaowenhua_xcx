@@ -15,6 +15,7 @@
         <view class="user-info">
           <view class="user-name">
             <text>{{ userInfo.name }}</text>
+            <text class="growth-level">{{ growthLevelDisplay }}</text>
             <text class="level-badge">{{ userInfo.levelBadge }}</text>
           </view>
           <!-- 积分显示 -->
@@ -94,6 +95,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { UserApi, SystemApi } from '@/api';
+import { getGrowthLevelDisplay } from '@/utils/growth-level';
+
+// 成长等级显示
+const growthLevelDisplay = ref('🍃');
+
+// 推荐统计信息
+const referralStats = ref({
+  total_referrals: 0,
+  ambassador_start_date: null as string | null,
+  total_activity_count: 0
+});
 
 // 用户信息
 const userInfo = ref({
@@ -135,8 +147,24 @@ const loadUserProfile = async () => {
       ambassadorLevel: getLevelName(profile.ambassador_level),
       ambassador_level: profile.ambassador_level
     };
+
+    // 加载推荐统计信息
+    await loadReferralStats();
   } catch (error) {
     console.error('加载用户信息失败:', error);
+  }
+};
+
+// 加载推荐统计信息
+const loadReferralStats = async () => {
+  try {
+    const stats = await UserApi.getReferralStats();
+    referralStats.value = stats;
+
+    // 更新成长等级显示
+    growthLevelDisplay.value = getGrowthLevelDisplay(stats.total_activity_count);
+  } catch (error) {
+    console.error('加载推荐统计失败:', error);
   }
 };
 
@@ -208,24 +236,24 @@ onMounted(() => {
 
 // 推荐与设置菜单
 const settingsMenu = computed(() => [
-  { 
-    type: 'referral-list', 
-    icon: '🏇', 
-    label: '引荐人列表', 
-    badge: '5人', 
-    badgeTheme: 'primary' 
+  {
+    type: 'referral-list',
+    icon: '🏇',
+    label: '引荐人列表',
+    badge: referralStats.value.total_referrals > 0 ? `${referralStats.value.total_referrals}人` : '',
+    badgeTheme: 'primary'
   },
-  { 
-    type: 'ambassador', 
-    icon: '🎖️', 
+  {
+    type: 'ambassador',
+    icon: '🎖️',
     label: '传播大使',
     badge: userInfo.value.ambassadorLevel || '准青鸾大使',
     badgeTheme: 'warning'
   },
-  { 
-    type: 'profile', 
-    icon: '👤', 
-    label: '个人资料' 
+  {
+    type: 'profile',
+    icon: '👤',
+    label: '个人资料'
   }
 ]);
 
@@ -233,7 +261,7 @@ const settingsMenu = computed(() => [
 const helpMenu = ref([
   // { type: 'consultation', icon: '💬', label: '在线咨询' }, // 暂时隐藏在线咨询功能
   { type: 'feedback', icon: '📝', label: '意见反馈' },
-  { type: 'announcement', icon: '📢', label: '平台公告', badge: '3', badgeTheme: 'error' }
+  { type: 'announcement', icon: '📢', label: '平台公告' }
 ]);
 
 // 跳转到个人资料

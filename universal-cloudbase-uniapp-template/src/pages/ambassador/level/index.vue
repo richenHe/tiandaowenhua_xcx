@@ -12,11 +12,11 @@
         <!-- 当前等级卡片 -->
         <view class="t-card t-card--bordered mb-l" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
           <view class="t-card__body">
-            <view style="font-size: 48rpx; font-weight: 700; margin-bottom: 16rpx;">🐦 青鸾大使</view>
-            <view style="opacity: 0.95; font-size: 28rpx; margin-bottom: 32rpx;">当前等级 · 已推荐2人</view>
+            <view style="font-size: 48rpx; font-weight: 700; margin-bottom: 16rpx;">{{ getLevelIcon(userInfo.ambassador_level) }} {{ userInfo.level_name }}</view>
+            <view style="opacity: 0.95; font-size: 28rpx; margin-bottom: 32rpx;">当前等级 · 已推荐{{ referralStats.total_referrals }}人</view>
             <view style="padding: 24rpx; background: rgba(255,255,255,0.2); border-radius: 12rpx;">
               <view style="font-size: 24rpx; opacity: 0.9; margin-bottom: 8rpx;">成为大使时间</view>
-              <view style="font-size: 28rpx; font-weight: 500;">2024-01-15</view>
+              <view style="font-size: 28rpx; font-weight: 500;">{{ referralStats.ambassador_start_date || '暂无' }}</view>
             </view>
           </view>
         </view>
@@ -28,7 +28,7 @@
             <view class="t-card t-card--bordered" style="cursor: pointer; transition: all 0.3s;">
               <view class="t-card__body" style="text-align: center; padding: 40rpx 24rpx;">
                 <view style="font-size: 64rpx; margin-bottom: 16rpx;">🙏</view>
-                <view style="font-size: 48rpx; font-weight: 600; color: var(--td-brand-color); margin-bottom: 8rpx;">1250.0</view>
+                <view style="font-size: 48rpx; font-weight: 600; color: var(--td-brand-color); margin-bottom: 8rpx;">{{ meritPoints }}</view>
                 <view style="font-size: 26rpx; color: var(--td-text-color-secondary);">功德分</view>
               </view>
             </view>
@@ -37,7 +37,7 @@
             <view class="t-card t-card--bordered" style="cursor: pointer; transition: all 0.3s;">
               <view class="t-card__body" style="text-align: center; padding: 40rpx 24rpx;">
                 <view style="font-size: 64rpx; margin-bottom: 16rpx;">💰</view>
-                <view style="font-size: 48rpx; font-weight: 600; color: var(--td-success-color); margin-bottom: 8rpx;">1250.0</view>
+                <view style="font-size: 48rpx; font-weight: 600; color: var(--td-success-color); margin-bottom: 8rpx;">{{ cashPoints }}</view>
                 <view style="font-size: 26rpx; color: var(--td-text-color-secondary);">可提现积分</view>
               </view>
             </view>
@@ -214,6 +214,13 @@ const userInfo = ref({
   created_at: ''
 })
 
+// 推荐统计信息
+const referralStats = ref({
+  total_referrals: 0,
+  ambassador_start_date: null as string | null,
+  total_activity_count: 0
+})
+
 // 功德分和积分
 const meritPoints = ref(0)
 const cashPoints = ref(0)
@@ -229,6 +236,16 @@ const loadUserInfo = async () => {
     }
   } catch (error) {
     console.error('加载用户信息失败:', error)
+  }
+}
+
+// 加载推荐统计信息
+const loadReferralStats = async () => {
+  try {
+    const stats = await UserApi.getReferralStats()
+    referralStats.value = stats
+  } catch (error) {
+    console.error('加载推荐统计失败:', error)
   }
 }
 
@@ -258,9 +275,22 @@ const getLevelName = (level: number): string => {
   return levelMap[level] || '普通用户'
 }
 
+// 获取等级图标
+const getLevelIcon = (level: number): string => {
+  const iconMap: Record<number, string> = {
+    0: '🌿',
+    1: '🥚',
+    2: '🐦',
+    3: '🦅',
+    4: '🦚'
+  }
+  return iconMap[level] || '🌿'
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   loadUserInfo()
+  loadReferralStats()
   loadPoints()
 })
 

@@ -31,137 +31,84 @@
           </template>
         </StickyTabs>
 
-        <!-- 素材分类 -->
-        <view class="t-section-title t-section-title--simple">🎨 课程推广海报</view>
-
-        <!-- 初探班海报 -->
-        <view class="material-card">
-          <view class="material-image">📚</view>
-          <view class="material-title">初探班招生海报</view>
-          <view class="material-desc">适用于初探班课程推广，包含课程亮点和报名方式</view>
-          <view class="material-actions">
-            <view @tap="saveMaterial">
-              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
-                <span class="t-button__text">💾 保存图片</span>
-              </button>
-            </view>
-            <view>
-              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
-                <span class="t-button__text">📤</span>
-              </button>
-            </view>
-          </view>
+        <!-- 加载中 -->
+        <view v-if="loading" class="loading-container">
+          <text>加载中...</text>
         </view>
 
-        <!-- 密训班海报 -->
-        <view class="material-card">
-          <view class="material-image purple">🎓</view>
-          <view class="material-title">密训班招生海报</view>
-          <view class="material-desc">适用于密训班课程推广，突出深度学习和VIP服务</view>
-          <view class="material-actions">
-            <view @tap="saveMaterial">
-              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
-                <span class="t-button__text">💾 保存图片</span>
-              </button>
-            </view>
-            <view>
-              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
-                <span class="t-button__text">📤</span>
-              </button>
+        <!-- 海报列表 -->
+        <template v-if="!loading && (activeTab === 'all' || activeTab === 'poster')">
+          <view v-if="posterList.length > 0">
+            <view class="t-section-title t-section-title--simple">🎨 课程推广海报</view>
+            <view v-for="item in posterList" :key="item.id" class="material-card">
+              <image v-if="item.image_url" :src="item.image_url" class="material-image" mode="aspectFill"></image>
+              <view v-else class="material-image placeholder">📚</view>
+              <view class="material-title">{{ item.title }}</view>
+              <view v-if="item.content" class="material-desc">{{ item.content }}</view>
+              <view class="material-actions">
+                <view @tap="saveMaterial(item)">
+                  <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+                    <span class="t-button__text">💾 保存图片</span>
+                  </button>
+                </view>
+                <view>
+                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                    <span class="t-button__text">📤</span>
+                  </button>
+                </view>
+              </view>
             </view>
           </view>
-        </view>
+        </template>
 
-        <!-- 学员见证海报 -->
-        <view class="material-card">
-          <view class="material-image orange">⭐</view>
-          <view class="material-title">学员见证海报</view>
-          <view class="material-desc">真实学员反馈和成长故事，增强可信度</view>
-          <view class="material-actions">
-            <view @tap="saveMaterial">
-              <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
-                <span class="t-button__text">💾 保存图片</span>
-              </button>
-            </view>
-            <view>
-              <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
-                <span class="t-button__text">📤</span>
-              </button>
-            </view>
-          </view>
-        </view>
-
-        <!-- 宣传文案 -->
-        <view class="t-section-title t-section-title--simple">✍️ 推广文案</view>
-
-        <!-- 文案1 -->
-        <view class="copywriting-card">
-          <view class="copywriting-header">
-            <view class="copywriting-icon blue">📝</view>
-            <view class="copywriting-info">
-              <view class="copywriting-title">初探班推广文案</view>
+        <!-- 文案列表 -->
+        <template v-if="!loading && (activeTab === 'all' || activeTab === 'copywriting')">
+          <view v-if="copywritingList.length > 0">
+            <view class="t-section-title t-section-title--simple">✍️ 推广文案</view>
+            <view v-for="item in copywritingList" :key="item.id" class="copywriting-card">
+              <view class="copywriting-header">
+                <view class="copywriting-icon blue">📝</view>
+                <view class="copywriting-info">
+                  <view class="copywriting-title">{{ item.title }}</view>
+                </view>
+              </view>
+              <view class="copywriting-content" v-html="item.content"></view>
+              <view @tap="copyText(item)">
+                <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+                  <span class="t-button__text">📋 复制文案</span>
+                </button>
+              </view>
             </view>
           </view>
-          <view class="copywriting-content">
-            🌟 天道文化初探班即将开课！<br/><br/>
-            ✨ 系统学习国学智慧<br/>
-            ✨ 掌握天道思维模式<br/>
-            ✨ 提升人生格局境界<br/><br/>
-            📅 开课时间：2024年2月1日<br/>
-            📍 地点：北京市朝阳区<br/>
-            💰 限时优惠：¥1688<br/><br/>
-            🎯 名额有限，扫码报名！
-          </view>
-          <view @tap="copyText('初探班推广文案')">
-            <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
-              <span class="t-button__text">📋 复制文案</span>
-            </button>
-          </view>
-        </view>
+        </template>
 
-        <!-- 文案2 -->
-        <view class="copywriting-card">
-          <view class="copywriting-header">
-            <view class="copywriting-icon pink">📝</view>
-            <view class="copywriting-info">
-              <view class="copywriting-title">学员见证文案</view>
+        <!-- 视频列表 -->
+        <template v-if="!loading && (activeTab === 'all' || activeTab === 'video')">
+          <view v-if="videoList.length > 0">
+            <view class="t-section-title t-section-title--simple">🎬 推广视频</view>
+            <view v-for="item in videoList" :key="item.id" class="material-card">
+              <video v-if="item.video_url" :src="item.video_url" class="material-video" controls></video>
+              <view class="material-title">{{ item.title }}</view>
+              <view v-if="item.content" class="material-desc">{{ item.content }}</view>
+              <view class="material-actions">
+                <view @tap="saveVideo(item)">
+                  <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
+                    <span class="t-button__text">💾 保存视频</span>
+                  </button>
+                </view>
+                <view>
+                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
+                    <span class="t-button__text">📤</span>
+                  </button>
+                </view>
+              </view>
             </view>
           </view>
-          <view class="copywriting-content">
-            💫 学习天道文化，改变从这里开始！<br/><br/>
-            👤 学员王总分享：<br/>
-            "通过初探班的学习，我重新认识了自己，找到了企业发展的新方向。天道思维让我豁然开朗，强烈推荐！"<br/><br/>
-            🎓 已有5000+学员受益<br/>
-            ⭐ 好评率98%<br/><br/>
-            📲 扫码了解更多精彩课程
-          </view>
-          <button class="copy-btn" @tap="copyText('学员见证文案')">📋 复制文案</button>
-        </view>
+        </template>
 
-        <!-- 活动通知 -->
-        <view class="t-section-title t-section-title--simple">📢 活动通知</view>
-
-        <!-- 活动文案 -->
-        <view class="copywriting-card">
-          <view class="copywriting-header">
-            <view class="copywriting-icon purple">🎉</view>
-            <view class="copywriting-info">
-              <view class="copywriting-title">沙龙活动通知</view>
-            </view>
-          </view>
-          <view class="copywriting-content">
-            🍵 天道文化学习沙龙邀请函<br/><br/>
-            📅 时间：本周六下午3点<br/>
-            📍 地点：北京市海淀区文化空间<br/>
-            👥 人数：限25人<br/><br/>
-            💬 活动内容：<br/>
-            • 天道文化主题分享<br/>
-            • 学员经验交流<br/>
-            • 茶歇社交<br/><br/>
-            🎁 参与即送精美礼品<br/>
-            报名请私信或扫码！
-          </view>
-          <button class="copy-btn" @tap="copyText('沙龙活动通知')">📋 复制文案</button>
+        <!-- 空状态 -->
+        <view v-if="!loading && allMaterials.length === 0" class="empty-container">
+          <text>暂无素材</text>
         </view>
 
         <!-- 使用技巧 -->
@@ -191,6 +138,7 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import { CourseApi } from '@/api'
+import type { Material } from '@/api/types/course'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'
@@ -208,6 +156,9 @@ onMounted(() => {
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
+  
+  // 加载素材数据
+  loadMaterials()
 })
 
 // 处理滚动事件
@@ -225,26 +176,96 @@ const tabs = ref([
 ])
 
 const activeTab = ref('all')
+const loading = ref(false)
+const allMaterials = ref<Material[]>([])
+
+// 按分类过滤素材
+const posterList = computed(() => allMaterials.value.filter(m => m.category === 'poster'))
+const copywritingList = computed(() => allMaterials.value.filter(m => m.category === 'copywriting'))
+const videoList = computed(() => allMaterials.value.filter(m => m.category === 'video'))
+
+// 加载素材数据
+const loadMaterials = async () => {
+  try {
+    loading.value = true
+    const result = await CourseApi.getMaterialList({ page: 1, page_size: 100 })
+    allMaterials.value = result.list
+  } catch (error) {
+    console.error('加载素材失败:', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
 
 const onTabChange = (value: string) => {
   activeTab.value = value
 }
 
-const saveMaterial = () => {
-  uni.showToast({
-    title: '保存成功',
-    icon: 'success'
+const saveMaterial = (item: Material) => {
+  if (!item.image_url) {
+    uni.showToast({ title: '图片链接无效', icon: 'none' })
+    return
+  }
+  
+  uni.downloadFile({
+    url: item.image_url,
+    success: (res) => {
+      if (res.statusCode === 200) {
+        uni.saveImageToPhotosAlbum({
+          filePath: res.tempFilePath,
+          success: () => {
+            uni.showToast({ title: '保存成功', icon: 'success' })
+          },
+          fail: () => {
+            uni.showToast({ title: '保存失败', icon: 'none' })
+          }
+        })
+      }
+    },
+    fail: () => {
+      uni.showToast({ title: '下载失败', icon: 'none' })
+    }
   })
 }
 
-const copyText = (type: string) => {
+const saveVideo = (item: Material) => {
+  if (!item.video_url) {
+    uni.showToast({ title: '视频链接无效', icon: 'none' })
+    return
+  }
+  
+  uni.downloadFile({
+    url: item.video_url,
+    success: (res) => {
+      if (res.statusCode === 200) {
+        uni.saveVideoToPhotosAlbum({
+          filePath: res.tempFilePath,
+          success: () => {
+            uni.showToast({ title: '保存成功', icon: 'success' })
+          },
+          fail: () => {
+            uni.showToast({ title: '保存失败', icon: 'none' })
+          }
+        })
+      }
+    },
+    fail: () => {
+      uni.showToast({ title: '下载失败', icon: 'none' })
+    }
+  })
+}
+
+const copyText = (item: Material) => {
+  if (!item.content) {
+    uni.showToast({ title: '文案内容为空', icon: 'none' })
+    return
+  }
+  
   uni.setClipboardData({
-    data: `${type}已复制`,
+    data: item.content,
     success: () => {
-      uni.showToast({
-        title: '文案已复制',
-        icon: 'success'
-      })
+      uni.showToast({ title: '文案已复制', icon: 'success' })
     }
   })
 }
@@ -332,6 +353,27 @@ const copyText = (type: string) => {
   &.orange {
     background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
   }
+  
+  &.placeholder {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+}
+
+.material-video {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.loading-container,
+.empty-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80rpx 0;
+  color: #999;
+  font-size: 28rpx;
 }
 
 .material-title {

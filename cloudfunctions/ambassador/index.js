@@ -24,7 +24,9 @@ const clientHandlers = {
   getContractTemplate: require('./handlers/client/getContractTemplate'),
   signContract: require('./handlers/client/signContract'),
   getMyContracts: require('./handlers/client/getMyContracts'),
-  getContractDetail: require('./handlers/client/getContractDetail')
+  getContractDetail: require('./handlers/client/getContractDetail'),
+  getActivityRecords: require('./handlers/client/getActivityRecords'),
+  getActivityStats: require('./handlers/client/getActivityStats')
 };
 
 const adminHandlers = {

@@ -354,3 +354,15 @@ export interface GetMyOrdersParams extends PaginationParams {
  * 获取我的订单响应数据
  */
 export interface GetMyOrdersResponse extends PaginationResponse<MyOrder> {}
+
+/**
+ * 推荐统计信息
+ */
+export interface ReferralStats {
+  /** 总推荐人数 */
+  total_referrals: number
+  /** 成为大使时间 */
+  ambassador_start_date: string | null
+  /** 累计活动次数 */
+  total_activity_count: number
+}

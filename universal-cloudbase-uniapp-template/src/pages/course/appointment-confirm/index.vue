@@ -25,7 +25,7 @@
           <view class="tips-content">
             <view class="tips-item">1. 系统将自动获取您的注册信息进行预约</view>
             <view class="tips-item">2. 预约成功后，工作人员会在3个工作日内与您联系</view>
-            <view class="tips-item">3. 如有疑问，请联系客服：400-123-4567</view>
+            <view class="tips-item">3. 如有疑问，请联系客服：{{ customerServicePhone }}</view>
           </view>
         </view>
       </view>
@@ -46,7 +46,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi } from '@/api';
+import { CourseApi, SystemApi } from '@/api';
+
+// 客服电话
+const customerServicePhone = ref('400-123-4567');
 
 // 课程信息
 const courseInfo = ref({
@@ -54,12 +57,15 @@ const courseInfo = ref({
   courseId: 0,
   courseName: '初探班',
   period: '',
-  startDate: '2024-02-01',
-  endDate: '2024-02-03',
-  location: '北京市朝阳区',
+  startDate: '',
+  endDate: '',
+  location: '',
   userAttendCount: 0,
   retrainPrice: 500,
 });
+
+// 加载状态
+const loading = ref(true);
 
 // 按钮文本
 const buttonText = computed(() => {
@@ -74,6 +80,7 @@ const buttonText = computed(() => {
 // 加载排期详情
 const loadClassRecordDetail = async (classRecordId: number) => {
   try {
+    loading.value = true;
     const result = await CourseApi.getClassRecords({
       course_id: courseInfo.value.courseId,
       page: 1,
@@ -83,11 +90,42 @@ const loadClassRecordDetail = async (classRecordId: number) => {
     const record = result.list.find((item: any) => item.id === classRecordId);
     if (record) {
       courseInfo.value.courseName = record.course_name;
-      courseInfo.value.startDate = record.class_date;
+      courseInfo.value.period = record.period || '';
+      courseInfo.value.startDate = record.start_date || record.class_date;
+      courseInfo.value.endDate = record.end_date || '';
       courseInfo.value.location = record.location;
     }
   } catch (error) {
     console.error('加载排期详情失败:', error);
+    uni.showToast({
+      title: '加载失败',
+      icon: 'none'
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 加载用户上课次数
+const loadUserAttendCount = async (userCourseId: number) => {
+  try {
+    const result = await CourseApi.getAcademyProgress();
+    const userCourse = result.find((item: any) => item.id === userCourseId);
+    if (userCourse) {
+      courseInfo.value.userAttendCount = userCourse.attend_count || 0;
+    }
+  } catch (error) {
+    console.error('加载用户上课次数失败:', error);
+  }
+};
+
+// 加载客服电话
+const loadCustomerServicePhone = async () => {
+  try {
+    const result = await SystemApi.getSystemConfig({ key: 'customer_service_phone' });
+    customerServicePhone.value = result.value;
+  } catch (error) {
+    console.error('加载客服电话失败:', error);
   }
 };
 
@@ -146,13 +184,18 @@ onMounted(() => {
   if (options.courseId) {
     courseInfo.value.courseId = Number(options.courseId);
   }
-  if (options.userCourseId) {
-    // 可以通过 userCourseId 获取用户上课次数
-  }
+
+  const userCourseId = options.userCourseId ? Number(options.userCourseId) : 0;
 
   if (courseInfo.value.classRecordId && courseInfo.value.courseId) {
     loadClassRecordDetail(courseInfo.value.classRecordId);
+    if (userCourseId) {
+      loadUserAttendCount(userCourseId);
+    }
   }
+
+  // 加载客服电话
+  loadCustomerServicePhone();
 });
 </script>
 

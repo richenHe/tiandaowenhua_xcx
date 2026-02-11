@@ -313,8 +313,92 @@ export interface GetAmbassadorListParams extends PaginationParams {
 export interface GetAmbassadorListResponse extends PaginationResponse<Ambassador> {}
 
 /**
+ * 活动类型枚举
+ */
+export enum ActivityType {
+  /** 辅导员 */
+  TUTOR = 1,
+  /** 会务义工 */
+  VOLUNTEER = 2,
+  /** 沙龙组织 */
+  SALON = 3,
+  /** 其他活动 */
+  OTHER = 4
+}
+
+/**
  * 活动记录
  */
+export interface ActivityRecord {
+  /** 活动记录ID */
+  id: number
+  /** 活动类型 */
+  activity_type: ActivityType
+  /** 活动名称 */
+  activity_name: string
+  /** 活动描述 */
+  activity_desc: string | null
+  /** 活动地点 */
+  location: string | null
+  /** 活动开始时间 */
+  start_time: string
+  /** 活动时长 */
+  duration: string | null
+  /** 参与人数 */
+  participant_count: number | null
+  /** 获得功德分 */
+  merit_points: number
+  /** 活动备注 */
+  note: string | null
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * 活动统计信息
+ */
+export interface ActivityStats {
+  /** 累计活动次数 */
+  total_count: number
+  /** 累计功德分 */
+  total_merit_points: number
+  /** 本月活动次数 */
+  month_count: number
+  /** 活动类型统计 */
+  type_stats: {
+    [key: number]: number
+  }
+}
+
+/**
+ * 获取活动记录请求参数
+ */
+export interface GetActivityRecordsParams extends PaginationParams {
+  /** 活动类型筛选：0全部/1辅导员/2义工/3沙龙/4其他 */
+  activityType?: number
+}
+
+/**
+ * 获取活动记录响应数据
+ */
+export interface GetActivityRecordsResponse extends PaginationResponse<ActivityRecord> {
+  /** 统计信息 */
+  stats: ActivityStats
+}
+
+/**
+ * 推荐统计信息
+ */
+export interface ReferralStats {
+  /** 总推荐人数 */
+  total_referrals: number
+  /** 成为大使时间 */
+  ambassador_start_date: string | null
+  /** 累计活动次数 */
+  total_activity_count: number
+}
+
+// 兼容旧的类型定义
 export interface Activity {
   id: number
   user_id: number
@@ -325,15 +409,8 @@ export interface Activity {
   created_at: string
 }
 
-/**
- * 获取活动记录请求参数
- */
 export interface GetActivityListParams extends PaginationParams {
-  /** 活动类型筛选 */
   activity_type?: string
 }
 
-/**
- * 获取活动记录响应数据
- */
 export interface GetActivityListResponse extends PaginationResponse<Activity> {}

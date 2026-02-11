@@ -20,7 +20,7 @@
         </StickyTabs>
 
         <!-- 预约列表 -->
-        <view class="appointment-list">
+        <view v-if="filteredAppointments.length > 0" class="appointment-list">
           <view 
             v-for="appointment in filteredAppointments" 
             :key="appointment.id"
@@ -73,14 +73,20 @@
               </view>
             </view>
           </view>
+
+          <!-- 提示信息 -->
+          <view class="t-alert">
+            <text class="alert-icon">💡</text>
+            <view class="alert-content">
+              <text class="alert-message">可复训课程支持多次预约上课</text>
+            </view>
+          </view>
         </view>
 
-        <!-- 提示信息 -->
-        <view class="t-alert">
-          <text class="alert-icon">💡</text>
-          <view class="alert-content">
-            <text class="alert-message">可复训课程支持多次预约上课</text>
-          </view>
+        <!-- 空状态 -->
+        <view v-else class="empty-state">
+          <text class="empty-icon">📦</text>
+          <text class="empty-text">暂无预约</text>
         </view>
       </view>
 
@@ -253,7 +259,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
-  margin-bottom: 48rpx;
 }
 
 // 卡片样式
@@ -407,7 +412,7 @@ onMounted(() => {
   padding: 24rpx;
   background-color: $td-info-color-light;
   border-radius: $td-radius-default;
-  margin-top: 24rpx;
+  margin-top: 32rpx;
 }
 
 .alert-icon {
@@ -428,6 +433,26 @@ onMounted(() => {
 // 底部留白
 .bottom-spacing {
   height: 120rpx;
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: $td-text-color-placeholder;
 }
 </style>
 

@@ -8,7 +8,7 @@ const WHITE_LIST_PAGES = [
   '/pages/index/index',
   '/pages/course/list/index',
   '/pages/course/detail/index',
-  '/pages/academy/intro/index',
+  // '/pages/academy/intro/index', // 已注释，该页面无入口
   '/pages/academy/materials/index',
   '/pages/academy/cases/index',
   '/pages/auth/login/index',

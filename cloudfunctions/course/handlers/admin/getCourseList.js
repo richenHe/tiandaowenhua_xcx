@@ -1,7 +1,7 @@
 /**
  * 获取课程列表（管理端接口）
  */
-const { from, rawQuery } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
 
@@ -11,64 +11,75 @@ module.exports = async (event, context) => {
   try {
     const { offset, limit } = getPagination(page, page_size);
 
-    // 构建查询条件
-    let whereClause = 'WHERE deleted_at IS NULL';
-    const params = [];
-
-    if (type) {
-      whereClause += ' AND type = ?';
-      params.push(type);
-    }
-
-    if (status !== undefined) {
-      whereClause += ' AND status = ?';
-      params.push(status);
-    }
-
-    if (keyword) {
-      whereClause += ' AND (name LIKE ? OR description LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
-    }
-
-    // 查询总数
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM courses
-      ${whereClause}
-    `;
-    const countResult = await rawQuery(countSql, params);
-    const total = countResult[0].total;
-
-    // 查询列表
-    const listSql = `
-      SELECT
+    // 构建查询（注意：courses 表没有 deleted_at 字段）
+    let queryBuilder = db
+      .from('courses')
+      .select(`
         id,
         name,
         type,
-        CASE type
-          WHEN 1 THEN '初探班'
-          WHEN 2 THEN '密训班'
-          WHEN 3 THEN '咨询服务'
-          ELSE '未知'
-        END as type_name,
         cover_image,
         description,
-        current_price,
+        content,
+        outline,
+        teacher,
+        duration,
         original_price,
+        current_price,
         retrain_price,
         allow_retrain,
-        status,
+        included_course_ids,
+        stock,
+        sold_count,
         sort_order,
+        status,
         created_at,
-        updated_at
-      FROM courses
-      ${whereClause}
-      ORDER BY sort_order ASC, created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    params.push(limit, offset);
+        updated_at,
+        nickname
+      `, { count: 'exact' });
 
-    const list = await rawQuery(listSql, params);
+    // 添加类型过滤
+    if (type) {
+      queryBuilder = queryBuilder.eq('type', parseInt(type));
+    }
+
+    // 添加状态过滤
+    if (status !== undefined) {
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
+    }
+
+    // 添加关键词搜索
+    if (keyword) {
+      queryBuilder = queryBuilder.or(`name.ilike.%${keyword}%,description.ilike.%${keyword}%`);
+    }
+
+    // 排序和分页
+    queryBuilder = queryBuilder
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // 执行查询
+    const { data: courses, error, count: total } = await queryBuilder;
+
+    if (error) {
+      throw error;
+    }
+
+    // 格式化数据（添加 type_name）
+    const getTypeName = (type) => {
+      switch (type) {
+        case 1: return '初探班';
+        case 2: return '密训班';
+        case 3: return '咨询服务';
+        default: return '未知';
+      }
+    };
+
+    const list = (courses || []).map(course => ({
+      ...course,
+      type_name: getTypeName(course.type)
+    }));
 
     return response.success({
       total,

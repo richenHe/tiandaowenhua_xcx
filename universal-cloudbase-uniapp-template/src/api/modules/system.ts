@@ -157,6 +157,20 @@ export class SystemApi {
       showLoading: false
     })
   }
+
+  /**
+   * 11. 获取系统配置
+   * @param params 配置参数
+   * @returns 系统配置
+   */
+  static async getSystemConfig(params: GetSystemConfigParams): Promise<GetSystemConfigResponse> {
+    return callCloudFunction<GetSystemConfigResponse>({
+      name: 'system',
+      action: 'getSystemConfig',
+      data: params,
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -170,7 +184,8 @@ export const {
   getAnnouncementList,
   getAnnouncementDetail,
   getBannerList,
-  getUserPoints
+  getUserPoints,
+  getSystemConfig
 } = SystemApi
 
 // 默认导出

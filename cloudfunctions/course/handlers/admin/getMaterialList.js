@@ -1,80 +1,69 @@
 /**
  * 获取资料列表（管理端接口）
  */
-const { from, rawQuery } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { type, status, keyword, page = 1, page_size = 10 } = event;
+  const { category, status, keyword, page = 1, page_size = 10 } = event;
 
   try {
     const { offset, limit } = getPagination(page, page_size);
 
-    // 构建查询条件
-    let whereClause = 'WHERE deleted_at IS NULL';
-    const params = [];
-
-    if (type) {
-      whereClause += ' AND type = ?';
-      params.push(type);
-    }
-
-    if (status !== undefined) {
-      whereClause += ' AND status = ?';
-      params.push(status);
-    }
-
-    if (keyword) {
-      whereClause += ' AND (title LIKE ? OR description LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
-    }
-
-    // 查询总数
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM academy_materials
-      ${whereClause}
-    `;
-    const countResult = await rawQuery(countSql, params);
-    const total = countResult[0].total;
-
-    // 查询列表
-    const listSql = `
-      SELECT
+    // 构建查询（注意：academy_materials 表没有 deleted_at、type、description、file_url 等字段）
+    let queryBuilder = db
+      .from('academy_materials')
+      .select(`
         id,
         title,
-        type,
-        CASE type
-          WHEN 1 THEN '文档'
-          WHEN 2 THEN '视频'
-          WHEN 3 THEN '音频'
-          WHEN 4 THEN '图片'
-          ELSE '其他'
-        END as type_name,
-        cover_image,
-        description,
-        file_url,
-        file_size,
+        category,
+        image_url,
+        video_url,
+        content,
+        tags,
+        view_count,
         download_count,
+        share_count,
         sort_order,
         status,
         created_at,
         updated_at
-      FROM academy_materials
-      ${whereClause}
-      ORDER BY sort_order ASC, created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    params.push(limit, offset);
+      `, { count: 'exact' });
 
-    const list = await rawQuery(listSql, params);
+    // 添加分类过滤
+    if (category) {
+      queryBuilder = queryBuilder.eq('category', category);
+    }
+
+    // 添加状态过滤
+    if (status !== undefined) {
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
+    }
+
+    // 添加关键词搜索
+    if (keyword) {
+      queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+    }
+
+    // 排序和分页
+    queryBuilder = queryBuilder
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // 执行查询
+    const { data: list, error, count: total } = await queryBuilder;
+
+    if (error) {
+      throw error;
+    }
 
     return response.success({
       total,
       page: parseInt(page),
       page_size: parseInt(page_size),
-      list
+      list: list || []
     });
 
   } catch (error) {

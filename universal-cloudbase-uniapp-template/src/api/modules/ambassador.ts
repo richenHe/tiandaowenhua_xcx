@@ -19,7 +19,10 @@ import type {
   SignContractParams,
   SignContractResponse,
   Contract,
-  ContractDetail
+  ContractDetail,
+  GetActivityRecordsParams,
+  GetActivityRecordsResponse,
+  ActivityStats
 } from '../types/ambassador'
 
 /**
@@ -175,6 +178,32 @@ export class AmbassadorApi {
       showLoading: false
     })
   }
+
+  /**
+   * 12. 获取活动记录列表
+   * @param params 查询参数
+   * @returns 活动记录列表
+   */
+  static async getActivityRecords(params?: GetActivityRecordsParams): Promise<GetActivityRecordsResponse> {
+    return callCloudFunction<GetActivityRecordsResponse>({
+      name: 'ambassador',
+      action: 'getActivityRecords',
+      data: params,
+      showLoading: false
+    })
+  }
+
+  /**
+   * 13. 获取活动统计信息
+   * @returns 活动统计信息
+   */
+  static async getActivityStats(): Promise<ActivityStats> {
+    return callCloudFunction<ActivityStats>({
+      name: 'ambassador',
+      action: 'getActivityStats',
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -189,7 +218,9 @@ export const {
   getContractTemplate,
   signContract,
   getMyContracts,
-  getContractDetail
+  getContractDetail,
+  getActivityRecords,
+  getActivityStats
 } = AmbassadorApi
 
 // 默认导出

@@ -2,7 +2,10 @@
  * CloudBase 数据库统一访问层
  * 
  * 使用 @cloudbase/node-sdk 原生 Relational Database API
- * 支持 Supabase 风格的 Query Builder 和原始 SQL 查询
+ * 支持 Supabase 风格的 Query Builder
+ * 
+ * ⚠️ 注意：本模块已完全移除 rawQuery 支持
+ * ⚠️ 所有查询必须使用 Query Builder（db.from()）
  * 
  * @see https://docs.cloudbase.net/database/relational-database
  */
@@ -48,8 +51,18 @@ const db = app.rdb({
  * 
  * 7. 关联查询（需要外键）：
  *    const { data } = await db.from('orders')
- *      .select('*, users(*)')
+ *      .select('*, users:users!fk_orders_user(id, name, email)')
  *      .eq('user_id', 1);
+ * 
+ * 8. 多表关联查询：
+ *    const { data } = await db.from('appointments')
+ *      .select(`
+ *        *,
+ *        user:users!fk_appointments_user(id, real_name, phone),
+ *        course:courses!fk_appointments_course(name, type),
+ *        class_record:class_records!fk_appointments_class_record(class_date, class_time)
+ *      `)
+ *      .eq('status', 1);
  */
 
 /**
@@ -439,4 +452,3 @@ module.exports = {
   rpc,
   transaction
 };
-

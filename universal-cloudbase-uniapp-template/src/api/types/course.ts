@@ -131,23 +131,31 @@ export interface Case {
 }
 
 /**
- * 学习资料
+ * 学习资料/朋友圈素材
  */
 export interface Material {
   /** 资料ID */
   id: number
   /** 资料标题 */
   title: string
-  /** 资料类型（video-视频，document-文档，audio-音频） */
-  type: string
-  /** 封面图片 */
-  cover_image?: string
-  /** 资料URL */
-  url: string
-  /** 资料大小 */
-  size?: number
-  /** 时长（秒） */
-  duration?: number
+  /** 资料分类（poster-海报/copywriting-文案/video-视频） */
+  category: string
+  /** 图片URL */
+  image_url?: string
+  /** 视频URL */
+  video_url?: string
+  /** 文案内容 */
+  content?: string
+  /** 标签列表 */
+  tags?: string[]
+  /** 浏览次数 */
+  view_count?: number
+  /** 下载次数 */
+  download_count?: number
+  /** 分享次数 */
+  share_count?: number
+  /** 排序权重 */
+  sort_order?: number
   /** 创建时间 */
   created_at: string
 }
@@ -285,8 +293,10 @@ export interface GetCaseListResponse extends PaginationResponse<Case> {}
  * 获取资料列表请求参数
  */
 export interface GetMaterialListParams extends PaginationParams {
-  /** 资料类型 */
-  type?: string
+  /** 资料分类（poster-海报/copywriting-文案/video-视频） */
+  category?: string
+  /** 关键词搜索 */
+  keyword?: string
 }
 
 /**
