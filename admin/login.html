@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 天道文化后台管理</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
+  
+  <!-- 自定义样式 -->
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    
+    #app {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 100vh;
+    }
+    
+    .login-container {
+      width: 400px;
+      background: white;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .login-title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      color: #333;
+    }
+    
+    .login-form .t-form__item {
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="login-container">
+      <h1 class="login-title">天道文化后台管理</h1>
+      
+      <t-form
+        ref="form"
+        :data="formData"
+        :rules="rules"
+        label-width="0"
+        class="login-form"
+        @submit="handleLogin"
+      >
+        <t-form-item name="username">
+          <t-input
+            v-model="formData.username"
+            size="large"
+            placeholder="请输入用户名"
+            clearable
+          >
+            <template #prefix-icon>
+              <t-icon name="user" />
+            </template>
+          </t-input>
+        </t-form-item>
+        
+        <t-form-item name="password">
+          <t-input
+            v-model="formData.password"
+            type="password"
+            size="large"
+            placeholder="请输入密码"
+            clearable
+          >
+            <template #prefix-icon>
+              <t-icon name="lock-on" />
+            </template>
+          </t-input>
+        </t-form-item>
+        
+        <t-form-item>
+          <t-button
+            type="submit"
+            theme="primary"
+            size="large"
+            block
+            :loading="loading"
+          >
+            {{ loading ? '登录中...' : '登录' }}
+          </t-button>
+        </t-form-item>
+      </t-form>
+      
+      <div style="text-align: center; color: #999; font-size: 12px; margin-top: 16px;">
+        <p>默认账号：admin / 123456</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue 3.4.21（本地）-->
+  <script src="./assets/libs/vue.global.js"></script>
+  
+  <!-- TDesign Vue（本地）-->
+  <script src="./assets/libs/tdesign.min.js"></script>
+  
+  <!-- CloudBase SDK 2.10.0（本地）-->
+  <script src="./assets/libs/tcb-v2.js"></script>
+  
+  <!-- 配置文件 -->
+  <script src="./assets/js/config.js?v=1707755020"></script>
+  
+  <!-- API 封装 -->
+  <script src="./assets/js/admin-api.js?v=1707755020"></script>
+  
+  <script>
+    // 检查依赖是否正确加载
+    if (!window.Vue) {
+      alert('Vue 未加载，请检查文件路径');
+      throw new Error('Vue 未加载');
+    }
+    if (!window.TDesign) {
+      alert('TDesign 未加载，请检查文件路径');
+      throw new Error('TDesign 未加载');
+    }
+    // 兼容 cloudbase 和 tcb 两种全局变量名
+    if (!window.cloudbase && !window.tcb) {
+      alert('CloudBase SDK 未加载，请检查文件路径');
+      throw new Error('CloudBase SDK 未加载');
+    }
+    if (!window.CONFIG) {
+      alert('配置文件未加载，请检查文件路径');
+      throw new Error('配置文件未加载');
+    }
+    if (!window.AdminAPI) {
+      alert('AdminAPI 未加载，请检查文件路径');
+      throw new Error('AdminAPI 未加载');
+    }
+    
+    console.log('✅ 所有依赖加载完成');
+    console.log('CloudBase SDK:', window.cloudbase ? 'cloudbase' : 'tcb');
+    console.log('CloudBase ENV_ID:', CONFIG.ENV_ID);
+    
+    const { createApp, ref } = Vue;
+    
+    const app = createApp({
+      setup() {
+        const form = ref(null);
+        const loading = ref(false);
+        
+        const formData = ref({
+          username: '',
+          password: ''
+        });
+        
+        const rules = {
+          username: [
+            { required: true, message: '请输入用户名', type: 'error' }
+          ],
+          password: [
+            { required: true, message: '请输入密码', type: 'error' }
+          ]
+        };
+        
+        const handleLogin = async ({ validateResult }) => {
+          if (validateResult !== true) return;
+          
+          loading.value = true;
+          
+          try {
+            console.log('🔐 开始登录:', formData.value.username);
+            console.log('📡 环境ID:', CONFIG.ENV_ID);
+            
+            // 直接调用登录接口（system 云函数已设置为 invoke: true）
+            const result = await AdminAPI.login(
+              formData.value.username,
+              formData.value.password
+            );
+            
+            console.log('登录成功:', result);
+            TDesign.MessagePlugin.success('登录成功');
+            
+            // 跳转到主页
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 500);
+            
+          } catch (error) {
+            console.error('登录失败:', error);
+            TDesign.MessagePlugin.error(error.message || '登录失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        return {
+          form,
+          formData,
+          rules,
+          loading,
+          handleLogin
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

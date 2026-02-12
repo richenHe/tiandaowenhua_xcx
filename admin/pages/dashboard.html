@@ -1,0 +1,89 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>数据概览</title><link rel="stylesheet" href="../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto}.t{font-size:24px;font-weight:600;margin-bottom:24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}.card{background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.card.gradient1{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white}.card.gradient2{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:white}.card.gradient3{background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);color:white}.card.gradient4{background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);color:white}.card-label{font-size:14px;opacity:0.9;margin-bottom:12px}.card-value{font-size:36px;font-weight:600;margin-bottom:4px}.card-desc{font-size:12px;opacity:0.8}.chart-card{background:white;border-radius:8px;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.chart-title{font-size:18px;font-weight:600;margin-bottom:16px}</style></head><body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="dashboard"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="c"><h1 class="t">数据概览</h1><div class="grid"><div class="card gradient1"><div class="card-label">总用户数</div><div class="card-value">{{stats.totalUsers||0}}</div><div class="card-desc">较昨日 +{{stats.newUsersToday||0}}</div></div><div class="card gradient2"><div class="card-label">总订单数</div><div class="card-value">{{stats.totalOrders||0}}</div><div class="card-desc">待处理 {{stats.pendingOrders||0}} 单</div></div><div class="card gradient3"><div class="card-label">总收入（元）</div><div class="card-value">{{((stats.totalRevenue||0)/100).toFixed(2)}}</div><div class="card-desc">本月 ¥{{((stats.monthRevenue||0)/100).toFixed(2)}}</div></div><div class="card gradient4"><div class="card-label">大使总数</div><div class="card-value">{{stats.totalAmbassadors||0}}</div><div class="card-desc">活跃 {{stats.activeAmbassadors||0}} 人</div></div></div><div class="chart-card"><div class="chart-title">最近订单</div><t-table :data="recentOrders" :columns="orderCols" :pagination="false" size="small" bordered stripe><template #status="{row}"><t-tag v-if="row.status===1" theme="warning">待支付</t-tag><t-tag v-else-if="row.status===2" theme="primary">已支付</t-tag><t-tag v-else-if="row.status===3" theme="success">已完成</t-tag><t-tag v-else theme="danger">已取消</t-tag></template></t-table></div><div class="chart-card"><div class="chart-title">待处理事项</div><t-list><t-list-item><span>待审核退款申请：<strong>{{pendingTasks.refunds||0}}</strong> 条</span></t-list-item><t-list-item><span>待审核提现申请：<strong>{{pendingTasks.withdraws||0}}</strong> 条</span></t-list-item><t-list-item><span>待审核大使申请：<strong>{{pendingTasks.ambassadorApps||0}}</strong> 条</span></t-list-item><t-list-item><span>待处理反馈：<strong>{{pendingTasks.feedbacks||0}}</strong> 条</span></t-list-item></t-list></div></div></div><script src="../assets/libs/vue.global.js"></script><script src="../assets/libs/tdesign.min.js"></script><script src="../assets/js/config.js"></script><script src="../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const stats=ref({});const recentOrders=ref([]);const pendingTasks=ref({});const orderCols=[{colKey:'order_no',title:'订单号',width:180},{colKey:'user_name',title:'用户',width:120},{colKey:'course_name',title:'课程',ellipsis:true},{colKey:'amount',title:'金额',width:120},{colKey:'created_at',title:'下单时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'}];const ld=async()=>{try{const data=await AdminAPI.getDashboardStats();stats.value=data.stats||{};recentOrders.value=data.recentOrders||[];pendingTasks.value=data.pendingTasks||{};}catch(e){TDesign.MessagePlugin.error(e.message||'获取数据失败');}};onMounted(ld);return{stats,recentOrders,pendingTasks,orderCols};}}).use(TDesign).mount('#app');</script></body></html>
+

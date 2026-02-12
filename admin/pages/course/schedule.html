@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排期管理</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <style>
+    body { margin: 0; padding: 20px; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .page-container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .page-header { margin-bottom: 24px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0 0 8px 0; }
+    .page-desc { font-size: 14px; color: #999; margin: 0; }
+    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="schedule-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+    <div class="page-container">
+      <div class="page-header">
+        <h1 class="page-title">排期管理</h1>
+        <p class="page-desc">管理课程排期，设置上课时间和地点</p>
+      </div>
+
+      <div class="search-bar">
+        <t-select v-model="filters.courseId" :options="courseOptions" placeholder="选择课程" clearable style="width: 200px;" />
+        <t-date-range-picker v-model="filters.dateRange" clearable placeholder="上课时间" style="width: 280px;" />
+        <t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width: 150px;" />
+        <t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search" /></template>查询</t-button>
+        <t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh" /></template>重置</t-button>
+        <t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add" /></template>新增排期</t-button>
+      </div>
+
+      <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
+        <template #status="{ row }">
+          <t-tag v-if="row.status === 1" theme="success">可预约</t-tag>
+          <t-tag v-else-if="row.status === 2" theme="warning">已满额</t-tag>
+          <t-tag v-else theme="default">已结束</t-tag>
+        </template>
+        <template #operation="{ row }">
+          <t-space size="small">
+            <t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+            <t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button>
+          </t-space>
+        </template>
+      </t-table>
+    </div>
+
+    <t-dialog v-model:visible="formVisible" :header="formMode === 'add' ? '新增排期' : '编辑排期'" width="600px" @confirm="handleSubmit">
+      <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
+        <t-form-item label="课程" name="course_id">
+          <t-select v-model="formData.course_id" :options="courseOptions" placeholder="选择课程" />
+        </t-form-item>
+        <t-form-item label="上课日期" name="class_date">
+          <t-date-picker v-model="formData.class_date" clearable style="width: 100%;" />
+        </t-form-item>
+        <t-form-item label="开始时间" name="start_time">
+          <t-time-picker v-model="formData.start_time" clearable style="width: 100%;" />
+        </t-form-item>
+        <t-form-item label="结束时间" name="end_time">
+          <t-time-picker v-model="formData.end_time" clearable style="width: 100%;" />
+        </t-form-item>
+        <t-form-item label="上课地点" name="location">
+          <t-input v-model="formData.location" placeholder="请输入上课地点" />
+        </t-form-item>
+        <t-form-item label="最大人数" name="max_students">
+          <t-input-number v-model="formData.max_students" :min="1" :max="100" style="width: 100%;" />
+        </t-form-item>
+        <t-form-item label="备注" name="note">
+          <t-textarea v-model="formData.note" placeholder="选填" :maxlength="200" />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+          </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const formVisible = ref(false);
+        const formMode = ref('add');
+        const formData = ref({});
+        const filters = ref({ courseId: null, dateRange: [], status: null });
+        const courseOptions = ref([]);
+        const statusOptions = [
+          { label: '可预约', value: 1 },
+          { label: '已满额', value: 2 },
+          { label: '已结束', value: 0 }
+        ];
+        const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+        const columns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'course_name', title: '课程名称', width: 200 },
+          { colKey: 'class_date', title: '上课日期', width: 120 },
+          { colKey: 'start_time', title: '开始时间', width: 100 },
+          { colKey: 'end_time', title: '结束时间', width: 100 },
+          { colKey: 'location', title: '上课地点', ellipsis: true },
+          { colKey: 'current_students', title: '当前人数', width: 100 },
+          { colKey: 'max_students', title: '最大人数', width: 100 },
+          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
+          { colKey: 'operation', title: '操作', width: 150, fixed: 'right', cell: 'operation' }
+        ];
+        const rules = {
+          course_id: [{ required: true, message: '请选择课程', type: 'error' }],
+          class_date: [{ required: true, message: '请选择上课日期', type: 'error' }],
+          start_time: [{ required: true, message: '请选择开始时间', type: 'error' }],
+          end_time: [{ required: true, message: '请选择结束时间', type: 'error' }],
+          location: [{ required: true, message: '请输入上课地点', type: 'error' }],
+          max_students: [{ required: true, message: '请输入最大人数', type: 'error' }]
+        };
+
+        const fetchData = async () => {
+          loading.value = true;
+          try {
+            const params = { page: pagination.value.current, pageSize: pagination.value.pageSize, ...filters.value };
+            const data = await AdminAPI.getScheduleList(params);
+            tableData.value = data.list;
+            pagination.value.total = data.total;
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取数据失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const fetchCourses = async () => {
+          try {
+            const data = await AdminAPI.getAllCourses();
+            courseOptions.value = data.map(c => ({ label: c.name, value: c.id }));
+          } catch (error) {
+            console.error('获取课程列表失败', error);
+          }
+        };
+
+        const handleSearch = () => { pagination.value.current = 1; fetchData(); };
+        const handleReset = () => { filters.value = { courseId: null, dateRange: [], status: null }; handleSearch(); };
+        const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
+        const handleAdd = () => { formMode.value = 'add'; formData.value = {}; formVisible.value = true; };
+        const handleEdit = (row) => { formMode.value = 'edit'; formData.value = { ...row }; formVisible.value = true; };
+        const handleDelete = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({ header: '确认删除', body: '确认删除该排期吗？', theme: 'warning' });
+          if (!confirmed) return;
+          try {
+            await AdminAPI.deleteSchedule({ scheduleId: row.id });
+            TDesign.MessagePlugin.success('删除成功');
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '删除失败');
+          }
+        };
+        const handleSubmit = async () => {
+          try {
+            if (formMode.value === 'add') {
+              await AdminAPI.createSchedule(formData.value);
+            } else {
+              await AdminAPI.updateSchedule(formData.value);
+            }
+            TDesign.MessagePlugin.success('保存成功');
+            formVisible.value = false;
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '保存失败');
+          }
+        };
+
+        onMounted(() => {
+          if (checkAuth()) { fetchData(); fetchCourses(); }
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange, loading, tableData, formVisible, formMode, formData, filters, courseOptions, statusOptions, pagination, columns, rules, handleSearch, handleReset, handlePageChange, handleAdd, handleEdit, handleDelete, handleSubmit };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推荐关系查询</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .page-content {
+      height: 100%;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 24px;
+    }
+    
+    .page-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 8px 0;
+    }
+    .page-desc {
+      font-size: 14px;
+      color: #999;
+      margin: 0;
+    }
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tree-container {
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      padding: 20px;
+      background: #fafafa;
+      min-height: 400px;
+    }
+    .user-node {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    .user-node:hover {
+      border-color: #0052d9;
+      box-shadow: 0 2px 8px rgba(0,82,217,0.1);
+    }
+    .user-info {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .user-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+    .child-nodes {
+      margin-left: 40px;
+      border-left: 2px dashed #e5e5e5;
+      padding-left: 20px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="user-referee"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+          <div class="page-container">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <h1 class="page-title">推荐关系查询</h1>
+        <p class="page-desc">查看用户推荐树状关系，支持按用户ID或手机号查询</p>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <t-input 
+          v-model="searchQuery" 
+          placeholder="输入用户ID或手机号"
+          clearable
+          style="width: 300px;"
+          @enter="handleSearch"
+        >
+          <template #prefix-icon>
+            <t-icon name="search" />
+          </template>
+        </t-input>
+        
+        <t-button theme="primary" @click="handleSearch" :loading="loading">
+          <template #icon><t-icon name="search" /></template>
+          查询
+        </t-button>
+        
+        <t-button theme="default" @click="handleReset">
+          <template #icon><t-icon name="refresh" /></template>
+          重置
+        </t-button>
+
+        <t-select 
+          v-model="treeDirection" 
+          :options="directionOptions"
+          style="width: 150px;"
+          @change="handleDirectionChange"
+        />
+      </div>
+
+      <!-- 推荐树展示 -->
+      <div class="tree-container">
+        <div v-if="!treeData && !loading" class="empty-state">
+          <t-icon name="search" size="48px" style="color: #ddd; margin-bottom: 12px;" />
+          <p>请输入用户ID或手机号查询推荐关系</p>
+        </div>
+
+        <div v-else-if="loading" class="empty-state">
+          <t-loading size="large" />
+          <p style="margin-top: 12px;">加载中...</p>
+        </div>
+
+        <div v-else-if="treeData">
+          <user-tree-node 
+            :node="treeData" 
+            :direction="treeDirection"
+            :level="0"
+            @expand="handleExpand"
+          />
+        </div>
+
+        <div v-else class="empty-state">
+          <t-icon name="info-circle" size="48px" style="color: #ddd; margin-bottom: 12px;" />
+          <p>未找到相关用户</p>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div v-if="treeData && stats" style="margin-top: 20px; padding: 16px; background: #f5f5f5; border-radius: 4px;">
+        <t-row :gutter="16">
+          <t-col :span="3">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: #0052d9;">{{ stats.totalUsers }}</div>
+              <div style="font-size: 14px; color: #666; margin-top: 4px;">总用户数</div>
+            </div>
+          </t-col>
+          <t-col :span="3">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: #00a870;">{{ stats.directReferrals }}</div>
+              <div style="font-size: 14px; color: #666; margin-top: 4px;">直接推荐</div>
+            </div>
+          </t-col>
+          <t-col :span="3">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: #e37318;">{{ stats.indirectReferrals }}</div>
+              <div style="font-size: 14px; color: #666; margin-top: 4px;">间接推荐</div>
+            </div>
+          </t-col>
+          <t-col :span="3">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: #0052d9;">{{ stats.maxDepth }}</div>
+              <div style="font-size: 14px; color: #666; margin-top: 4px;">最大层级</div>
+            </div>
+          </t-col>
+        </t-row>
+      </div>
+          </div>
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    // 树节点组件
+    const UserTreeNode = {
+      name: 'UserTreeNode',
+      props: {
+        node: Object,
+        direction: String,
+        level: Number
+      },
+      template: `
+        <div>
+          <div class="user-node">
+            <div class="user-info">
+              <t-avatar :image="node.avatar" size="40px">{{ node.real_name?.[0] || node.nickname?.[0] || '用' }}</t-avatar>
+              <div>
+                <div style="font-weight: 600; color: #333;">
+                  {{ node.real_name || node.nickname || '未命名用户' }}
+                  <t-tag v-if="node.ambassador_level" size="small" theme="primary" style="margin-left: 8px;">
+                    {{ getLevelName(node.ambassador_level) }}
+                  </t-tag>
+                </div>
+                <div style="font-size: 12px; color: #999; margin-top: 4px;">
+                  ID: {{ node.id }} | 手机: {{ node.phone || '未绑定' }}
+                </div>
+              </div>
+            </div>
+            <div class="user-stats">
+              <span>直推: <strong>{{ node.referral_count || 0 }}</strong></span>
+              <span>总推: <strong>{{ node.total_referral_count || 0 }}</strong></span>
+              <span>订单: <strong>{{ node.order_count || 0 }}</strong></span>
+            </div>
+          </div>
+          
+          <div v-if="node.children && node.children.length > 0" class="child-nodes">
+            <user-tree-node 
+              v-for="child in node.children" 
+              :key="child.id"
+              :node="child"
+              :direction="direction"
+              :level="level + 1"
+            />
+          </div>
+        </div>
+      `,
+      methods: {
+        getLevelName(level) {
+          const levels = {
+            0: '普通用户',
+            1: '云雀',
+            2: '青鸾',
+            3: '鸿鹄'
+          };
+          return levels[level] || '未知';
+        }
+      }
+    };
+
+    const app = createApp({
+      components: {
+        UserTreeNode
+      },
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        const searchQuery = ref('');
+        const loading = ref(false);
+        const treeData = ref(null);
+        const treeDirection = ref('down'); // 'down' 向下查看推荐的人, 'up' 向上查看推荐人
+        
+        const directionOptions = [
+          { label: '向下查看（查看推荐的用户）', value: 'down' },
+          { label: '向上查看（查看推荐人链）', value: 'up' }
+        ];
+
+        const stats = computed(() => {
+          if (!treeData.value) return null;
+          
+          let totalUsers = 0;
+          let directReferrals = 0;
+          let indirectReferrals = 0;
+          let maxDepth = 0;
+
+          const traverse = (node, depth = 0) => {
+            totalUsers++;
+            maxDepth = Math.max(maxDepth, depth);
+            
+            if (depth === 1) {
+              directReferrals++;
+            } else if (depth > 1) {
+              indirectReferrals++;
+            }
+
+            if (node.children) {
+              node.children.forEach(child => traverse(child, depth + 1));
+            }
+          };
+
+          traverse(treeData.value);
+
+          return {
+            totalUsers,
+            directReferrals,
+            indirectReferrals,
+            maxDepth
+          };
+        });
+
+        const handleSearch = async () => {
+          if (!searchQuery.value.trim()) {
+            TDesign.MessagePlugin.warning('请输入用户ID或手机号');
+            return;
+          }
+
+          loading.value = true;
+
+          try {
+            const data = await AdminAPI.getReferralTree(
+              searchQuery.value.trim(),
+              treeDirection.value
+            );
+            
+            treeData.value = data;
+            
+            if (!data) {
+              TDesign.MessagePlugin.warning('未找到相关用户');
+            }
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '查询失败');
+            treeData.value = null;
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const handleReset = () => {
+          searchQuery.value = '';
+          treeData.value = null;
+          treeDirection.value = 'down';
+        };
+
+        const handleDirectionChange = () => {
+          if (treeData.value) {
+            handleSearch();
+          }
+        };
+
+        const handleExpand = (nodeId) => {
+          // 展开/折叠节点逻辑（如果需要懒加载）
+          console.log('Expand node:', nodeId);
+        };
+
+        // 页面初始化
+        checkAuth();
+        
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          searchQuery,
+          loading,
+          treeData,
+          treeDirection,
+          directionOptions,
+          stats,
+          handleSearch,
+          handleReset,
+          handleDirectionChange,
+          handleExpand
+        };
+      }
+    });
+
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

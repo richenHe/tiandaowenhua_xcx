@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程列表 - 天道文化后台</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .page-content {
+      height: 100%;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 24px;
+    }
+    
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    
+    .type-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    .type-initial { background: #e3f2fd; color: #1976d2; }
+    .type-intensive { background: #fce4ec; color: #c2185b; }
+    .type-consultation { background: #f3e5f5; color: #7b1fa2; }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    .status-active { background: #e8f5e9; color: #388e3c; }
+    .status-inactive { background: #cfd8dc; color: #546e7a; }
+    
+    .course-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="course-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">课程列表</h1>
+      <t-space>
+        <t-button theme="primary" @click="showAddDialog">新增课程</t-button>
+        
+      </t-space>
+    </div>
+
+    <!-- 搜索表单 -->
+    <div class="search-form">
+      <t-form :data="searchForm" layout="inline" @submit="handleSearch" @reset="handleReset">
+        <t-form-item label="课程名称" name="name">
+          <t-input v-model="searchForm.name" placeholder="请输入课程名称" />
+        </t-form-item>
+        
+        <t-form-item label="课程类型" name="type">
+          <t-select v-model="searchForm.type" placeholder="请选择课程类型" clearable>
+            <t-option value="initial" label="初探班" />
+            <t-option value="intensive" label="密训班" />
+            <t-option value="consultation" label="咨询服务" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item label="状态" name="status">
+          <t-select v-model="searchForm.status" placeholder="请选择状态" clearable>
+            <t-option :value="1" label="启用" />
+            <t-option :value="0" label="停用" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item>
+          <t-button theme="primary" type="submit">查询</t-button>
+          <t-button theme="default" type="reset">重置</t-button>
+        </t-form-item>
+      </t-form>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card">
+      <t-table 
+        :data="courses" 
+        :columns="columns" 
+        :loading="loading"
+        :pagination="pagination"
+        row-key="id"
+        @page-change="handlePageChange"
+      >
+        <!-- 课程图片 -->
+        <template #image="{ row }">
+          <img 
+            v-if="row.cover_image" 
+            :src="row.cover_image" 
+            class="course-image" 
+            :alt="row.name"
+          />
+          <span v-else>-</span>
+        </template>
+        
+        <!-- 课程类型 -->
+        <template #type="{ row }">
+          <span :class="['type-tag', getTypeClass(row.type)]">
+            {{ getTypeText(row.type) }}
+          </span>
+        </template>
+        
+        <!-- 状态 -->
+        <template #status="{ row }">
+          <span :class="['status-tag', row.status === 1 ? 'status-active' : 'status-inactive']">
+            {{ row.status === 1 ? '启用' : '停用' }}
+          </span>
+        </template>
+        
+        <!-- 操作列 -->
+        <template #operation="{ row }">
+          <t-space>
+            <t-link theme="primary" @click="editCourse(row)">编辑</t-link>
+            <t-link 
+              :theme="row.status === 1 ? 'warning' : 'success'" 
+              @click="toggleStatus(row)"
+            >
+              {{ row.status === 1 ? '停用' : '启用' }}
+            </t-link>
+            <t-link theme="danger" @click="deleteCourse(row)">删除</t-link>
+          </t-space>
+        </template>
+      </t-table>
+    </div>
+
+    <!-- 新增/编辑课程对话框 -->
+    <t-dialog 
+      v-model:visible="editDialogVisible" 
+      :header="editMode === 'add' ? '新增课程' : '编辑课程'" 
+      width="800px"
+      @confirm="handleSave"
+    >
+      <t-form :data="editForm" ref="editFormRef" label-width="120px">
+        <t-form-item label="课程名称" name="name" :rules="[{ required: true, message: '请输入课程名称' }]">
+          <t-input v-model="editForm.name" placeholder="请输入课程名称" />
+        </t-form-item>
+        
+        <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
+          <t-select v-model="editForm.type" placeholder="请选择课程类型">
+            <t-option value="initial" label="初探班" />
+            <t-option value="intensive" label="密训班" />
+            <t-option value="consultation" label="咨询服务" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item label="课程封面" name="coverImage">
+          <t-input v-model="editForm.coverImage" placeholder="请输入课程封面图片URL" />
+        </t-form-item>
+        
+        <t-form-item label="课程价格（元）" name="price" :rules="[{ required: true, message: '请输入课程价格' }]">
+          <t-input-number v-model="editForm.price" :min="0" :step="0.01" />
+        </t-form-item>
+        
+        <t-form-item label="课程时长" name="duration">
+          <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
+        </t-form-item>
+        
+        <t-form-item label="课程人数" name="maxStudents">
+          <t-input-number v-model="editForm.maxStudents" :min="1" />
+        </t-form-item>
+        
+        <t-form-item label="课程简介" name="description">
+          <t-textarea v-model="editForm.description" placeholder="请输入课程简介" :maxlength="500" />
+        </t-form-item>
+        
+        <t-form-item label="课程详情" name="content">
+          <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" />
+        </t-form-item>
+        
+        <t-form-item label="排序" name="sortOrder">
+          <t-input-number v-model="editForm.sortOrder" :min="0" />
+        </t-form-item>
+        
+        <t-form-item label="状态" name="status">
+          <t-switch v-model="editForm.status" :true-value="1" :false-value="0" />
+          <span style="margin-left: 8px;">{{ editForm.status === 1 ? '启用' : '停用' }}</span>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+  </div>
+
+  <!-- Vue 3 -->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <!-- TDesign -->
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <!-- CloudBase SDK -->
+  <script src="../../assets/libs/tcb-v2.js"></script>
+  <!-- 配置 -->
+  <script src="../../assets/js/config.js"></script>
+  <!-- API 封装 -->
+  <script src="../../assets/js/admin-api.js"></script>
+
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        
+        const loading = ref(false);
+        const courses = ref([]);
+        const searchForm = reactive({
+          name: '',
+          type: '',
+          status: ''
+        });
+        
+        const pagination = reactive({
+          current: 1,
+          pageSize: CONFIG.PAGE_SIZE,
+          total: 0
+        });
+
+        const editDialogVisible = ref(false);
+        const editMode = ref('add');
+        const editFormRef = ref(null);
+        const editForm = reactive({
+          id: null,
+          name: '',
+          type: '',
+          coverImage: '',
+          price: 0,
+          duration: '',
+          maxStudents: 30,
+          description: '',
+          content: '',
+          sortOrder: 0,
+          status: 1
+        });
+
+        // 表格列配置
+        const columns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'image', title: '课程图片', width: 100 },
+          { colKey: 'name', title: '课程名称', width: 200 },
+          { colKey: 'type', title: '课程类型', width: 120 },
+          { colKey: 'price', title: '价格（元）', width: 120 },
+          { colKey: 'duration', title: '课程时长', width: 120 },
+          { colKey: 'max_students', title: '最大人数', width: 100 },
+          { colKey: 'sort_order', title: '排序', width: 80 },
+          { colKey: 'status', title: '状态', width: 100 },
+          { colKey: 'created_at', title: '创建时间', width: 180 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' }
+        ];
+
+        // 获取课程列表
+        const fetchCourses = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              ...searchForm
+            };
+
+            const data = await AdminAPI.getCourseList(params);
+            courses.value = data.list || [];
+            pagination.total = data.total || 0;
+          } catch (error) {
+            console.error('获取课程列表失败:', error);
+            TDesign.Message.error('获取课程列表失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        // 搜索
+        const handleSearch = () => {
+          pagination.current = 1;
+          fetchCourses();
+        };
+
+        // 重置
+        const handleReset = () => {
+          Object.assign(searchForm, {
+            name: '',
+            type: '',
+            status: ''
+          });
+          handleSearch();
+        };
+
+        // 分页变化
+        const handlePageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          fetchCourses();
+        };
+
+        // 显示新增对话框
+        const showAddDialog = () => {
+          editMode.value = 'add';
+          Object.assign(editForm, {
+            id: null,
+            name: '',
+            type: '',
+            coverImage: '',
+            price: 0,
+            duration: '',
+            maxStudents: 30,
+            description: '',
+            content: '',
+            sortOrder: 0,
+            status: 1
+          });
+          editDialogVisible.value = true;
+        };
+
+        // 编辑课程
+        const editCourse = (course) => {
+          editMode.value = 'edit';
+          Object.assign(editForm, {
+            id: course.id,
+            name: course.name,
+            type: course.type,
+            coverImage: course.cover_image,
+            price: course.price,
+            duration: course.duration,
+            maxStudents: course.max_students,
+            description: course.description,
+            content: course.content,
+            sortOrder: course.sort_order,
+            status: course.status
+          });
+          editDialogVisible.value = true;
+        };
+
+        // 保存课程
+        const handleSave = async () => {
+          try {
+            const params = {
+              name: editForm.name,
+              type: editForm.type,
+              coverImage: editForm.coverImage,
+              price: editForm.price,
+              duration: editForm.duration,
+              maxStudents: editForm.maxStudents,
+              description: editForm.description,
+              content: editForm.content,
+              sortOrder: editForm.sortOrder,
+              status: editForm.status
+            };
+
+            if (editMode.value === 'add') {
+              await AdminAPI.createCourse(params);
+              TDesign.Message.success('课程创建成功');
+            } else {
+              params.courseId = editForm.id;
+              await AdminAPI.updateCourse(params);
+              TDesign.Message.success('课程更新成功');
+            }
+
+            editDialogVisible.value = false;
+            fetchCourses();
+          } catch (error) {
+            TDesign.Message.error('保存失败: ' + error.message);
+          }
+        };
+
+        // 切换状态
+        const toggleStatus = async (course) => {
+          try {
+            await AdminAPI.updateCourse({
+              courseId: course.id,
+              status: course.status === 1 ? 0 : 1
+            });
+            TDesign.Message.success('状态更新成功');
+            fetchCourses();
+          } catch (error) {
+            TDesign.Message.error('状态更新失败: ' + error.message);
+          }
+        };
+
+        // 删除课程
+        const deleteCourse = async (course) => {
+          const confirmed = await TDesign.Dialog.confirm({
+            header: '删除课程',
+            body: `确认删除课程"${course.name}"？`,
+            confirmBtn: '确认',
+            cancelBtn: '取消'
+          });
+          
+          if (confirmed) {
+            try {
+              await AdminAPI.deleteCourse({ courseId: course.id });
+              TDesign.Message.success('课程删除成功');
+              fetchCourses();
+            } catch (error) {
+              TDesign.Message.error('删除失败: ' + error.message);
+            }
+          }
+        };
+
+        // 获取类型文本
+        const getTypeText = (type) => {
+          const typeMap = {
+            initial: '初探班',
+            intensive: '密训班',
+            consultation: '咨询服务'
+          };
+          return typeMap[type] || type;
+        };
+
+        // 获取类型样式类
+        const getTypeClass = (type) => {
+          const classMap = {
+            initial: 'type-initial',
+            intensive: 'type-intensive',
+            consultation: 'type-consultation'
+          };
+          return classMap[type] || '';
+        };
+
+        // 返回上一页
+        
+
+        onMounted(() => {
+          if (checkAuth()) {
+          fetchCourses();
+        }
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          courses,
+          searchForm,
+          pagination,
+          columns,
+          editDialogVisible,
+          editMode,
+          editFormRef,
+          editForm,
+          handleSearch,
+          handleReset,
+          handlePageChange,
+          showAddDialog,
+          editCourse,
+          handleSave,
+          toggleStatus,
+          deleteCourse,
+          getTypeText,
+          getTypeClass,
+          };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>
+

@@ -3,7 +3,7 @@
  * 系统管理模块：管理员登录、系统配置、统计、反馈、通知、公告
  */
 const cloudbase = require('@cloudbase/node-sdk');
-const { response, checkClientAuth, checkAdminAuth } = require('./common');
+const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
 // 初始化 CloudBase
@@ -66,8 +66,48 @@ const ROUTES = {
   admin: Object.keys(adminHandlers)
 };
 
+// HTTP Access Service 响应包装器
+function wrapHttpResponse(data) {
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+    },
+    body: JSON.stringify(data)
+  };
+}
+
 exports.main = async (event, context) => {
-  const { action, test_openid } = event;
+  // 检测是否是 HTTP 请求（检测多种可能的方式）
+  const isHttpRequest = 
+    (context && context.SOURCE === 'wx_http') || 
+    event.httpMethod || 
+    event.method ||
+    event.body; // 如果有 body 字段，很可能是 HTTP 请求
+  
+  // 处理 OPTIONS 预检请求
+  if (event.httpMethod === 'OPTIONS' || event.method === 'OPTIONS') {
+    return wrapHttpResponse({ message: 'OK' });
+  }
+
+  // 解析 HTTP 请求 body（如果 body 是字符串）
+  let requestData = event;
+  if (event.body && typeof event.body === 'string') {
+    try {
+      requestData = JSON.parse(event.body);
+    } catch (e) {
+      return wrapHttpResponse({
+        success: false,
+        code: 400,
+        message: '请求参数格式错误'
+      });
+    }
+  }
+
+  const { action, test_openid } = requestData;
   
   // 获取用户信息
   let OPENID = test_openid; // 测试模式支持
@@ -84,35 +124,49 @@ exports.main = async (event, context) => {
     }
   }
 
-  console.log(`[${action}] 收到请求:`, { openid: OPENID?.slice(-6) || 'undefined' });
 
   try {
+    let result;
+
     // 公开接口（无需登录）
     if (ROUTES.public.includes(action)) {
-      return await publicHandlers[action](event, { OPENID });
+      result = await publicHandlers[action](requestData, { OPENID });
     }
-
     // 客户端接口（需用户鉴权）
-    if (ROUTES.client.includes(action)) {
+    else if (ROUTES.client.includes(action)) {
       const user = await checkClientAuth(OPENID);
-      return await clientHandlers[action](event, { OPENID, user });
+      result = await clientHandlers[action](requestData, { OPENID, user });
     }
-
     // 管理端接口（需管理员鉴权）
-    if (ROUTES.admin.includes(action)) {
+    else if (ROUTES.admin.includes(action)) {
       // login 接口特殊处理，不需要提前验证
       if (action === 'login') {
-        return await adminHandlers[action](event, { OPENID });
+        result = await adminHandlers[action](requestData, { OPENID });
+      } else {
+        // 支持两种鉴权方式：
+        // 1. Web端：通过 jwtToken 鉴权（推荐）
+        // 2. 小程序端：通过 OPENID 鉴权（保留兼容）
+        let admin;
+        if (requestData.jwtToken) {
+          // Web管理后台：JWT Token 鉴权
+          admin = checkAdminAuthByToken(requestData.jwtToken);
+        } else {
+          // 小程序管理端：OPENID 鉴权
+          admin = await checkAdminAuth(OPENID);
+        }
+        
+        result = await adminHandlers[action](requestData, { OPENID, admin });
       }
-      
-      const admin = await checkAdminAuth(OPENID);
-      return await adminHandlers[action](event, { OPENID, admin });
+    } else {
+      result = response.paramError(`未知的操作: ${action}`);
     }
 
-    return response.paramError(`未知的操作: ${action}`);
+    // 如果是 HTTP 请求，包装为 HTTP 响应
+    return isHttpRequest ? wrapHttpResponse(result) : result;
 
   } catch (error) {
     console.error(`[${action}] 执行失败:`, error);
-    return response.error(error.message, error, error.code || 500);
+    const errorResult = response.error(error.message, error, error.code || 500);
+    return isHttpRequest ? wrapHttpResponse(errorResult) : errorResult;
   }
 };

@@ -10,7 +10,7 @@
  */
 const { findOne } = require('../../common/db');
 const { response, generateAdminToken } = require('../../common');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 module.exports = async (event, context) => {
   const { username, password } = event;
@@ -34,9 +34,9 @@ module.exports = async (event, context) => {
       return response.error('账号已被禁用', null, 403);
     }
 
-    // 验证密码（MD5加密）
-    const passwordHash = crypto.createHash('md5').update(password).digest('hex');
-    if (admin.password !== passwordHash) {
+    // 验证密码（bcrypt）
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
       return response.error('用户名或密码错误', null, 401);
     }
 
@@ -50,6 +50,7 @@ module.exports = async (event, context) => {
     // 更新最后登录时间
     // await update('admin_users', { last_login_at: new Date() }, { id: admin.id });
 
+    // 返回登录结果
     return response.success({
       token,
       admin: {
@@ -57,7 +58,10 @@ module.exports = async (event, context) => {
         username: admin.username,
         real_name: admin.real_name,
         role: admin.role,
-        permissions: admin.permissions ? JSON.parse(admin.permissions) : []
+        // permissions 字段可能是 JSON 类型（已解析）或字符串
+        permissions: Array.isArray(admin.permissions) 
+          ? admin.permissions 
+          : (admin.permissions ? JSON.parse(admin.permissions) : [])
       }
     }, '登录成功');
 

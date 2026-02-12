@@ -1,0 +1,98 @@
+<!-- 侧边导航栏布局模板 -->
+<!-- 使用方式: 将此模板复制到页面的 <div id="app"> 内 -->
+<!-- 1. 替换 MENU_VALUE 为对应的菜单激活值 -->
+<!-- 2. 将原有页面内容放在 <t-content class="page-content"> 内 -->
+
+<t-layout style="height: 100vh;">
+  <!-- 顶部导航 -->
+  <t-header height="64px" style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    background: #fff;
+    border-bottom: 1px solid #dcdcdc;
+  ">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+      <t-button size="small" @click="handleLogout">退出</t-button>
+    </div>
+  </t-header>
+  
+  <t-layout>
+    <!-- 侧边菜单 -->
+    <t-aside width="240px" style="
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      overflow-y: auto;
+    ">
+      <t-menu
+        value="MENU_VALUE"
+        :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+        theme="light"
+        @change="handleMenuChange"
+      >
+        <t-menu-item value="dashboard">
+          <template #icon><t-icon name="dashboard" /></template>
+          数据概览
+        </t-menu-item>
+        
+        <t-submenu value="user">
+          <template #icon><t-icon name="user" /></template>
+          <template #title>用户管理</template>
+          <t-menu-item value="user-list">学员列表</t-menu-item>
+          <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+        </t-submenu>
+        
+        <t-submenu value="order">
+          <template #icon><t-icon name="order" /></template>
+          <template #title>订单管理</template>
+          <t-menu-item value="order-list">订单列表</t-menu-item>
+          <t-menu-item value="order-refund">退款管理</t-menu-item>
+          <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+        </t-submenu>
+        
+        <t-submenu value="course">
+          <template #icon><t-icon name="file" /></template>
+          <template #title>课程管理</template>
+          <t-menu-item value="course-list">课程列表</t-menu-item>
+          <t-menu-item value="schedule-list">排期管理</t-menu-item>
+          <t-menu-item value="appointment-list">预约管理</t-menu-item>
+          <t-menu-item value="case-list">案例管理</t-menu-item>
+          <t-menu-item value="material-list">资料管理</t-menu-item>
+        </t-submenu>
+        
+        <t-submenu value="ambassador">
+          <template #icon><t-icon name="usergroup" /></template>
+          <template #title>大使管理</template>
+          <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+          <t-menu-item value="application-audit">申请审核</t-menu-item>
+          <t-menu-item value="activity-list">活动管理</t-menu-item>
+          <t-menu-item value="contract-list">合约管理</t-menu-item>
+        </t-submenu>
+        
+        <t-submenu value="system">
+          <template #icon><t-icon name="setting" /></template>
+          <template #title>系统管理</template>
+          <t-menu-item value="admin-list">管理员管理</t-menu-item>
+          <t-menu-item value="config">系统配置</t-menu-item>
+          <t-menu-item value="announcement-list">公告管理</t-menu-item>
+          <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+          <t-menu-item value="notification-list">通知管理</t-menu-item>
+          <t-menu-item value="level-config">等级配置</t-menu-item>
+        </t-submenu>
+      </t-menu>
+    </t-aside>
+    
+    <!-- 主内容区 -->
+    <t-content class="page-content">
+      <!-- 页面内容从这里开始 -->
+      
+      <!-- 页面内容到这里结束 -->
+    </t-content>
+  </t-layout>
+</t-layout>
+

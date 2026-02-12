@@ -4,7 +4,7 @@
  */
 const cloudbase = require('@cloudbase/node-sdk');
 const { response } = require('./common');
-const { checkClientAuth, checkAdminAuth } = require('./common');
+const { checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 
 // 初始化 CloudBase
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
@@ -88,7 +88,13 @@ exports.main = async (event, context) => {
 
     // 管理端接口（需管理员权限）
     if (ROUTES.admin.includes(action)) {
-      const admin = await checkAdminAuth(OPENID);
+      // 支持两种鉴权方式：Web端JWT Token 和 小程序端OPENID
+      let admin;
+      if (event.jwtToken) {
+        admin = checkAdminAuthByToken(event.jwtToken);
+      } else {
+        admin = await checkAdminAuth(OPENID);
+      }
       return await adminHandlers[action](event, { OPENID, admin });
     }
 

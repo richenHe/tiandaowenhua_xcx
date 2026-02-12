@@ -3,7 +3,7 @@
  * 课程模块 - 35个action
  */
 const cloudbase = require('@cloudbase/node-sdk');
-const { response, checkClientAuth, checkAdminAuth } = require('./common');
+const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
 // 初始化 CloudBase
@@ -101,7 +101,13 @@ exports.main = async (event, context) => {
 
     // 管理端接口（需管理员鉴权）
     if (ROUTES.admin.includes(action)) {
-      const admin = await checkAdminAuth(OPENID);
+      // 支持两种鉴权方式：Web端JWT Token 和 小程序端OPENID
+      let admin;
+      if (event.jwtToken) {
+        admin = checkAdminAuthByToken(event.jwtToken);
+      } else {
+        admin = await checkAdminAuth(OPENID);
+      }
       return await adminHandlers[action](event, { OPENID, admin });
     }
 

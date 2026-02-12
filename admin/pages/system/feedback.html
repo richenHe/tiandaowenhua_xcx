@@ -1,0 +1,94 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>反馈管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}</style></head><body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="feedback-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="c"><h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">反馈管理</h1><div style="display:flex;gap:12px;margin-bottom:20px;"><t-select v-model="st" :options="stOpts" placeholder="状态" clearable style="width:150px;"/><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" bordered stripe><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待处理</t-tag><t-tag v-else theme="success">已处理</t-tag></template><template #op="{row}"><t-button size="small" variant="text" @click="view(row)">查看</t-button><t-button v-if="row.status===0" size="small" variant="text" theme="success" @click="handle(row)">标记已处理</t-button></template></t-table></div><t-dialog v-model:visible="v" header="反馈详情" width="600px" :footer="false"><t-descriptions v-if="cr" bordered><t-descriptions-item label="用户姓名">{{cr.user_name}}</t-descriptions-item><t-descriptions-item label="手机号">{{cr.phone}}</t-descriptions-item><t-descriptions-item label="反馈内容" :span="2">{{cr.content}}</t-descriptions-item><t-descriptions-item label="提交时间" :span="2">{{cr.created_at}}</t-descriptions-item><t-descriptions-item label="状态" :span="2"><t-tag v-if="cr.status===0" theme="warning">待处理</t-tag><t-tag v-else theme="success">已处理</t-tag></t-descriptions-item></t-descriptions></t-dialog>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const st=ref(null);const pg=ref({current:1,pageSize:20,total:0});const stOpts=[{label:'待处理',value:0},{label:'已处理',value:1}];const cols=[{colKey:'user_name',title:'用户姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'content',title:'反馈内容',ellipsis:true},{colKey:'created_at',title:'提交时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:150,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getFeedbackList({page:pg.value.current,pageSize:pg.value.pageSize,status:st.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{st.value=null;ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};const handle=async row=>{try{await AdminAPI.handleFeedback({feedbackId:row.id});TDesign.MessagePlugin.success('已标记为已处理');ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return{lg,d,v,cr,st,pg,stOpts,cols,ld,rs,chg,view,handle};}}).use(TDesign).mount('#app');</script></body></html>
+

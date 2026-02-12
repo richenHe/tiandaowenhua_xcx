@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学员列表 - 天道文化后台</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .page-content {
+      height: 100%;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 24px;
+    }
+    
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 侧边导航栏布局 -->
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="user-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+          <!-- 页面头部 -->
+          <div class="page-header">
+            <h1 class="page-title">学员列表</h1>
+          </div>
+    
+    <!-- 搜索表单 -->
+    <div class="search-form">
+      <t-form layout="inline">
+        <t-form-item label="关键词">
+          <t-input v-model="searchForm.keyword" placeholder="姓名/手机号" clearable style="width: 200px;"></t-input>
+        </t-form-item>
+        
+        <t-form-item label="大使等级">
+          <t-select v-model="searchForm.ambassadorLevel" clearable placeholder="全部" style="width: 150px;">
+            <t-option value="0" label="普通用户"></t-option>
+            <t-option value="1" label="青鸾使者"></t-option>
+            <t-option value="2" label="青鸾大使"></t-option>
+            <t-option value="3" label="鸿鹄使者"></t-option>
+            <t-option value="4" label="鸿鹄大使"></t-option>
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item>
+          <t-space>
+            <t-button theme="primary" @click="handleSearch">查询</t-button>
+            <t-button theme="default" @click="handleReset">重置</t-button>
+          </t-space>
+        </t-form-item>
+      </t-form>
+    </div>
+    
+    <!-- 数据表格 -->
+    <div class="table-card">
+      <t-table
+        :data="tableData"
+        :columns="columns"
+        :loading="loading"
+        row-key="id"
+        :pagination="pagination"
+        @page-change="onPageChange"
+      >
+        <template #avatar="{ row }">
+          <t-avatar :image="row.avatar" size="40px"></t-avatar>
+        </template>
+        
+        <template #ambassadorLevel="{ row }">
+          <t-tag v-if="row.ambassador_level === 0" theme="default">普通用户</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+        </template>
+        
+        <template #meritPoints="{ row }">
+          {{ row.merit_points || 0 }}
+        </template>
+        
+        <template #cashPoints="{ row }">
+          ¥{{ ((row.cash_points_available || 0) / 100).toFixed(2) }}
+        </template>
+        
+        <template #createdAt="{ row }">
+          {{ formatDateTime(row.created_at) }}
+        </template>
+        
+        <template #action="{ row }">
+          <t-space>
+            <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">详情</t-button>
+            <t-button theme="default" size="small" variant="text" @click="editReferee(row)">修改推荐人</t-button>
+          </t-space>
+        </template>
+      </t-table>
+    </div>
+    
+    <!-- 用户详情对话框 -->
+    <t-dialog
+      v-model:visible="detailVisible"
+      header="学员详情"
+      width="800px"
+      :footer="false"
+    >
+      <t-loading :loading="detailLoading">
+        <t-descriptions v-if="currentUser" :column="2" bordered>
+          <t-descriptions-item label="姓名">{{ currentUser.real_name || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="手机号">{{ currentUser.phone || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="性别">{{ currentUser.gender || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="城市">{{ currentUser.city || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="大使等级">
+            <t-tag v-if="currentUser.ambassador_level === 0">普通用户</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 2" theme="success">青鸾大使</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+          </t-descriptions-item>
+          <t-descriptions-item label="功德积分">{{ currentUser.merit_points || 0 }}</t-descriptions-item>
+          <t-descriptions-item label="现金积分">¥{{ ((currentUser.cash_points_available || 0) / 100).toFixed(2) }}</t-descriptions-item>
+          <t-descriptions-item label="推荐人">{{ currentUser.referee_name || '无' }}</t-descriptions-item>
+          <t-descriptions-item label="注册时间" :span="2">{{ formatDateTime(currentUser.created_at) }}</t-descriptions-item>
+        </t-descriptions>
+      </t-loading>
+    </t-dialog>
+    
+    <!-- 修改推荐人对话框 -->
+    <t-dialog
+      v-model:visible="refereeVisible"
+      header="修改推荐人"
+      @confirm="submitReferee"
+      :confirm-btn="{ loading: refereeLoading }"
+    >
+      <t-form :data="refereeForm">
+        <t-form-item label="当前推荐人">
+          <t-input :value="refereeForm.currentRefereeName" disabled></t-input>
+        </t-form-item>
+        
+        <t-form-item label="新推荐人ID" required>
+          <t-input v-model="refereeForm.newRefereeId" placeholder="请输入用户ID"></t-input>
+        </t-form-item>
+        
+        <t-form-item label="修改原因" required>
+          <t-textarea v-model="refereeForm.reason" placeholder="请输入修改原因" :maxlength="200"></t-textarea>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <!-- Vue 3（本地）-->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <!-- TDesign Vue（本地）-->
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <!-- CloudBase SDK（本地）-->
+  <script src="../../assets/libs/tcb.js"></script>
+  <!-- 配置 -->
+  <script src="../../assets/js/config.js"></script>
+  <!-- API -->
+  <script src="../../assets/js/admin-api.js"></script>
+  
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const pagination = reactive({
+          current: 1,
+          pageSize: 20,
+          total: 0,
+        });
+        
+        const searchForm = reactive({
+          keyword: '',
+          ambassadorLevel: '',
+        });
+        
+        const columns = [
+          { colKey: 'avatar', title: '头像', width: 80 },
+          { colKey: 'real_name', title: '姓名', width: 100 },
+          { colKey: 'phone', title: '手机号', width: 130 },
+          { colKey: 'ambassadorLevel', title: '大使等级', width: 120 },
+          { colKey: 'meritPoints', title: '功德积分', width: 100 },
+          { colKey: 'cashPoints', title: '现金积分', width: 100 },
+          { colKey: 'createdAt', title: '注册时间', width: 160 },
+          { colKey: 'action', title: '操作', width: 180, fixed: 'right' },
+        ];
+        
+        // 用户详情
+        const detailVisible = ref(false);
+        const detailLoading = ref(false);
+        const currentUser = ref(null);
+        
+        // 修改推荐人
+        const refereeVisible = ref(false);
+        const refereeLoading = ref(false);
+        const refereeForm = reactive({
+          userId: '',
+          currentRefereeName: '',
+          newRefereeId: '',
+          reason: '',
+        });
+        
+        // 加载数据
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const result = await AdminAPI.getUserList({
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              keyword: searchForm.keyword,
+              ambassadorLevel: searchForm.ambassadorLevel,
+            });
+            
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 搜索
+        const handleSearch = () => {
+          pagination.current = 1;
+          loadData();
+        };
+        
+        // 重置
+        const handleReset = () => {
+          searchForm.keyword = '';
+          searchForm.ambassadorLevel = '';
+          handleSearch();
+        };
+        
+        // 分页
+        const onPageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+        
+        // 查看详情
+        const viewDetail = async (row) => {
+          detailVisible.value = true;
+          detailLoading.value = true;
+          try {
+            currentUser.value = await AdminAPI.getUserDetail(row.id);
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载详情失败: ' + error.message);
+          } finally {
+            detailLoading.value = false;
+          }
+        };
+        
+        // 修改推荐人
+        const editReferee = (row) => {
+          refereeForm.userId = row.id;
+          refereeForm.currentRefereeName = row.referee_name || '无';
+          refereeForm.newRefereeId = '';
+          refereeForm.reason = '';
+          refereeVisible.value = true;
+        };
+        
+        // 提交推荐人修改
+        const submitReferee = async () => {
+          if (!refereeForm.newRefereeId || !refereeForm.reason) {
+            TDesign.MessagePlugin.warning('请填写完整信息');
+            return;
+          }
+          
+          refereeLoading.value = true;
+          try {
+            await AdminAPI.updateUserReferee(
+              refereeForm.userId,
+              refereeForm.newRefereeId,
+              refereeForm.reason
+            );
+            TDesign.MessagePlugin.success('修改成功');
+            refereeVisible.value = false;
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('修改失败: ' + error.message);
+          } finally {
+            refereeLoading.value = false;
+          }
+        };
+        
+        // 格式化时间
+        const formatDateTime = (datetime) => {
+          if (!datetime) return '-';
+          return new Date(datetime).toLocaleString('zh-CN');
+        };
+        
+        onMounted(() => {
+          if (checkAuth()) {
+            loadData();
+          }
+        });
+        
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          tableData,
+          pagination,
+          searchForm,
+          columns,
+          detailVisible,
+          detailLoading,
+          currentUser,
+          refereeVisible,
+          refereeLoading,
+          refereeForm,
+          handleSearch,
+          handleReset,
+          onPageChange,
+          viewDetail,
+          editReferee,
+          submitReferee,
+          formatDateTime,
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

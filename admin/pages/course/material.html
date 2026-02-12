@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>资料管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-header{margin-bottom:24px}.page-title{font-size:20px;font-weight:600;color:#333;margin:0 0 8px 0}.page-desc{font-size:14px;color:#999;margin:0}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}</style></head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="material-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">资料管理</h1><p class="page-desc">管理课程学习资料和文档</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="资料名称" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/><t-select v-model="filters.type" :options="typeOptions" placeholder="资料类型" clearable style="width:150px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button><t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add"/></template>上传资料</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.type==='pdf'" theme="primary">PDF</t-tag><t-tag v-else-if="row.type==='doc'" theme="success">文档</t-tag><t-tag v-else-if="row.type==='video'" theme="warning">视频</t-tag><t-tag v-else theme="default">其他</t-tag></template><template #size="{ row }">{{(row.size/(1024*1024)).toFixed(2)}} MB</template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传资料':'编辑资料'" width="600px" @confirm="handleSubmit"><t-form ref="form" :data="formData" :rules="rules" label-width="100px"><t-form-item label="资料名称" name="title"><t-input v-model="formData.title" placeholder="请输入资料名称"/></t-form-item><t-form-item label="关联课程" name="course_id"><t-select v-model="formData.course_id" :options="courseOptions" placeholder="选择课程"/></t-form-item><t-form-item label="资料类型" name="type"><t-select v-model="formData.type" :options="typeOptions" placeholder="选择类型"/></t-form-item><t-form-item label="文件URL" name="file_url"><t-input v-model="formData.file_url" placeholder="文件存储URL"/></t-form-item><t-form-item label="文件大小(B)" name="size"><t-input-number v-model="formData.size" :min="0" style="width:100%;"/></t-form-item><t-form-item label="资料描述" name="description"><t-textarea v-model="formData.description" placeholder="选填" :maxlength="200" :autosize="{minRows:3,maxRows:6}"/></t-form-item></t-form></t-dialog>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const loading=ref(false);const tableData=ref([]);const formVisible=ref(false);const formMode=ref('add');const formData=ref({});const filters=ref({keyword:'',courseId:null,type:null});const courseOptions=ref([]);const typeOptions=[{label:'PDF',value:'pdf'},{label:'文档',value:'doc'},{label:'视频',value:'video'},{label:'其他',value:'other'}];const pagination=ref({current:1,pageSize:20,total:0});const columns=[{colKey:'title',title:'资料名称',width:250},{colKey:'course_name',title:'关联课程',width:150},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'size',title:'大小',width:120,cell:'size'},{colKey:'download_count',title:'下载次数',width:100},{colKey:'created_at',title:'上传时间',width:160},{colKey:'operation',title:'操作',width:180,fixed:'right',cell:'operation'}];const rules={title:[{required:true,message:'请输入资料名称',type:'error'}],course_id:[{required:true,message:'请选择关联课程',type:'error'}],type:[{required:true,message:'请选择资料类型',type:'error'}],file_url:[{required:true,message:'请输入文件URL',type:'error'}]};const fetchData=async()=>{loading.value=true;try{const params={page:pagination.value.current,pageSize:pagination.value.pageSize,...filters.value};const data=await AdminAPI.getMaterialList(params);tableData.value=data.list;pagination.value.total=data.total;}catch(error){TDesign.MessagePlugin.error(error.message||'获取数据失败');}finally{loading.value=false;}};const fetchCourses=async()=>{try{const data=await AdminAPI.getAllCourses();courseOptions.value=data.map(c=>({label:c.name,value:c.id}));}catch(error){console.error('获取课程列表失败',error);}};const handleSearch=()=>{pagination.value.current=1;fetchData();};const handleReset=()=>{filters.value={keyword:'',courseId:null,type:null};handleSearch();};const handlePageChange=(pageInfo)=>{pagination.value.current=pageInfo.current;pagination.value.pageSize=pageInfo.pageSize;fetchData();};const handleAdd=()=>{formMode.value='add';formData.value={};formVisible.value=true;};const handleEdit=(row)=>{formMode.value='edit';formData.value={...row};formVisible.value=true;};const handleDelete=async(row)=>{const confirmed=await TDesign.DialogPlugin.confirm({header:'确认删除',body:'确认删除该资料吗？',theme:'warning'});if(!confirmed)return;try{await AdminAPI.deleteMaterial({materialId:row.id});TDesign.MessagePlugin.success('删除成功');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'删除失败');}};const handleDownload=(row)=>{window.open(row.file_url,'_blank');};const handleSubmit=async()=>{try{if(formMode.value==='add'){await AdminAPI.createMaterial(formData.value);}else{await AdminAPI.updateMaterial(formData.value);}TDesign.MessagePlugin.success('保存成功');formVisible.value=false;fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'保存失败');}};onMounted(()=>{fetchData();fetchCourses();});return{loading,tableData,formVisible,formMode,formData,filters,courseOptions,typeOptions,pagination,columns,rules,handleSearch,handleReset,handlePageChange,handleAdd,handleEdit,handleDelete,handleDownload,handleSubmit};}}).use(TDesign).mount('#app');</script></body></html>
+

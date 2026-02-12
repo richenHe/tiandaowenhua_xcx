@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单列表 - 天道文化后台</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .page-content {
+      height: 100%;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 24px;
+    }
+    
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    .status-pending { background: #fff3e0; color: #f57c00; }
+    .status-paid { background: #e8f5e9; color: #388e3c; }
+    .status-refunding { background: #fff9c4; color: #f9a825; }
+    .status-refunded { background: #cfd8dc; color: #546e7a; }
+    .status-cancelled { background: #ffebee; color: #c62828; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="order-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">订单列表</h1>
+      
+    </div>
+
+    <!-- 搜索表单 -->
+    <div class="search-form">
+      <t-form :data="searchForm" layout="inline" @submit="handleSearch" @reset="handleReset">
+        <t-form-item label="订单编号" name="orderNo">
+          <t-input v-model="searchForm.orderNo" placeholder="请输入订单编号" />
+        </t-form-item>
+        
+        <t-form-item label="用户ID" name="userId">
+          <t-input v-model="searchForm.userId" placeholder="请输入用户ID" />
+        </t-form-item>
+        
+        <t-form-item label="订单类型" name="orderType">
+          <t-select v-model="searchForm.orderType" placeholder="请选择订单类型" clearable>
+            <t-option value="course" label="课程订单" />
+            <t-option value="retrain" label="复训订单" />
+            <t-option value="upgrade" label="升级订单" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item label="订单状态" name="status">
+          <t-select v-model="searchForm.status" placeholder="请选择订单状态" clearable>
+            <t-option :value="0" label="待支付" />
+            <t-option :value="1" label="已支付" />
+            <t-option :value="2" label="退款中" />
+            <t-option :value="3" label="已退款" />
+            <t-option :value="-1" label="已取消" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item label="支付方式" name="paymentMethod">
+          <t-select v-model="searchForm.paymentMethod" placeholder="请选择支付方式" clearable>
+            <t-option value="wechat" label="微信支付" />
+            <t-option value="alipay" label="支付宝" />
+            <t-option value="points" label="积分兑换" />
+            <t-option value="offline" label="线下支付" />
+          </t-select>
+        </t-form-item>
+        
+        <t-form-item label="创建时间" name="dateRange">
+          <t-date-range-picker 
+            v-model="searchForm.dateRange" 
+            placeholder="选择日期范围" 
+            clearable 
+          />
+        </t-form-item>
+        
+        <t-form-item>
+          <t-button theme="primary" type="submit">查询</t-button>
+          <t-button theme="default" type="reset">重置</t-button>
+        </t-form-item>
+      </t-form>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card">
+      <t-table 
+        :data="orders" 
+        :columns="columns" 
+        :loading="loading"
+        :pagination="pagination"
+        row-key="id"
+        @page-change="handlePageChange"
+      >
+        <!-- 订单类型 -->
+        <template #orderType="{ row }">
+          <span v-if="row.order_type === 'course'">课程订单</span>
+          <span v-else-if="row.order_type === 'retrain'">复训订单</span>
+          <span v-else-if="row.order_type === 'upgrade'">升级订单</span>
+          <span v-else>{{ row.order_type }}</span>
+        </template>
+        
+        <!-- 订单状态 -->
+        <template #status="{ row }">
+          <span :class="['status-tag', getStatusClass(row.status)]">
+            {{ getStatusText(row.status) }}
+          </span>
+        </template>
+        
+        <!-- 支付方式 -->
+        <template #paymentMethod="{ row }">
+          <span v-if="row.payment_method === 'wechat'">微信支付</span>
+          <span v-else-if="row.payment_method === 'alipay'">支付宝</span>
+          <span v-else-if="row.payment_method === 'points'">积分兑换</span>
+          <span v-else-if="row.payment_method === 'offline'">线下支付</span>
+          <span v-else>{{ row.payment_method || '-' }}</span>
+        </template>
+        
+        <!-- 操作列 -->
+        <template #operation="{ row }">
+          <t-space>
+            <t-link theme="primary" @click="viewDetail(row)">查看详情</t-link>
+            <t-link 
+              v-if="row.status === 0" 
+              theme="success" 
+              @click="confirmPayment(row)"
+            >
+              确认支付
+            </t-link>
+            <t-link 
+              v-if="row.status === 1" 
+              theme="warning" 
+              @click="initiateRefund(row)"
+            >
+              发起退款
+            </t-link>
+            <t-link 
+              v-if="row.status === 0" 
+              theme="danger" 
+              @click="cancelOrder(row)"
+            >
+              取消订单
+            </t-link>
+          </t-space>
+        </template>
+      </t-table>
+    </div>
+
+    <!-- 订单详情对话框 -->
+    <t-dialog 
+      v-model:visible="detailDialogVisible" 
+      header="订单详情" 
+      width="800px"
+      @confirm="detailDialogVisible = false"
+    >
+      <div v-if="currentOrder">
+        <t-descriptions bordered>
+          <t-descriptions-item label="订单编号">{{ currentOrder.order_no }}</t-descriptions-item>
+          <t-descriptions-item label="用户昵称">{{ currentOrder.user_nickname }}</t-descriptions-item>
+          <t-descriptions-item label="订单类型">
+            <span v-if="currentOrder.order_type === 'course'">课程订单</span>
+            <span v-else-if="currentOrder.order_type === 'retrain'">复训订单</span>
+            <span v-else-if="currentOrder.order_type === 'upgrade'">升级订单</span>
+          </t-descriptions-item>
+          <t-descriptions-item label="商品名称">{{ currentOrder.item_name }}</t-descriptions-item>
+          <t-descriptions-item label="订单金额">¥{{ currentOrder.total_amount }}</t-descriptions-item>
+          <t-descriptions-item label="实付金额">¥{{ currentOrder.paid_amount }}</t-descriptions-item>
+          <t-descriptions-item label="使用积分">{{ currentOrder.points_used || 0 }}</t-descriptions-item>
+          <t-descriptions-item label="订单状态">
+            <span :class="['status-tag', getStatusClass(currentOrder.status)]">
+              {{ getStatusText(currentOrder.status) }}
+            </span>
+          </t-descriptions-item>
+          <t-descriptions-item label="支付方式">
+            {{ currentOrder.payment_method || '-' }}
+          </t-descriptions-item>
+          <t-descriptions-item label="支付时间">
+            {{ currentOrder.paid_at || '-' }}
+          </t-descriptions-item>
+          <t-descriptions-item label="推荐人">{{ currentOrder.referee_name || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="备注" span="2">{{ currentOrder.remark || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="创建时间">{{ currentOrder.created_at }}</t-descriptions-item>
+          <t-descriptions-item label="更新时间">{{ currentOrder.updated_at }}</t-descriptions-item>
+        </t-descriptions>
+      </div>
+    </t-dialog>
+  </div>
+
+  <!-- Vue 3 -->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <!-- TDesign -->
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <!-- CloudBase SDK -->
+  <script src="../../assets/libs/tcb-v2.js"></script>
+  <!-- 配置 -->
+  <script src="../../assets/js/config.js"></script>
+  <!-- API 封装 -->
+  <script src="../../assets/js/admin-api.js"></script>
+
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        
+        const loading = ref(false);
+        const orders = ref([]);
+        const searchForm = reactive({
+          orderNo: '',
+          userId: '',
+          orderType: '',
+          status: '',
+          paymentMethod: '',
+          dateRange: []
+        });
+        
+        const pagination = reactive({
+          current: 1,
+          pageSize: CONFIG.PAGE_SIZE,
+          total: 0
+        });
+
+        const detailDialogVisible = ref(false);
+        const currentOrder = ref(null);
+
+        // 表格列配置
+        const columns = [
+          { colKey: 'order_no', title: '订单编号', width: 180 },
+          { colKey: 'user_nickname', title: '用户昵称', width: 120 },
+          { colKey: 'orderType', title: '订单类型', width: 100 },
+          { colKey: 'item_name', title: '商品名称', width: 200 },
+          { colKey: 'total_amount', title: '订单金额（元）', width: 120 },
+          { colKey: 'paid_amount', title: '实付金额（元）', width: 120 },
+          { colKey: 'status', title: '订单状态', width: 100 },
+          { colKey: 'paymentMethod', title: '支付方式', width: 100 },
+          { colKey: 'created_at', title: '创建时间', width: 180 },
+          { colKey: 'operation', title: '操作', width: 240, fixed: 'right' }
+        ];
+
+        // 获取订单列表
+        const fetchOrders = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              ...searchForm
+            };
+            
+            // 处理日期范围
+            if (searchForm.dateRange && searchForm.dateRange.length === 2) {
+              params.startDate = searchForm.dateRange[0];
+              params.endDate = searchForm.dateRange[1];
+            }
+
+            const data = await AdminAPI.getOrderList(params);
+            orders.value = data.list || [];
+            pagination.total = data.total || 0;
+          } catch (error) {
+            console.error('获取订单列表失败:', error);
+            TDesign.Message.error('获取订单列表失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        // 搜索
+        const handleSearch = () => {
+          pagination.current = 1;
+          fetchOrders();
+        };
+
+        // 重置
+        const handleReset = () => {
+          Object.assign(searchForm, {
+            orderNo: '',
+            userId: '',
+            orderType: '',
+            status: '',
+            paymentMethod: '',
+            dateRange: []
+          });
+          handleSearch();
+        };
+
+        // 分页变化
+        const handlePageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          fetchOrders();
+        };
+
+        // 查看详情
+        const viewDetail = (order) => {
+          currentOrder.value = order;
+          detailDialogVisible.value = true;
+        };
+
+        // 确认支付
+        const confirmPayment = async (order) => {
+          const confirmed = await TDesign.Dialog.confirm({
+            header: '确认支付',
+            body: `确认订单 ${order.order_no} 已支付？`,
+            confirmBtn: '确认',
+            cancelBtn: '取消'
+          });
+          
+          if (confirmed) {
+            try {
+              await AdminAPI.updateOrderStatus({
+                orderId: order.id,
+                status: 1,
+                paidAt: new Date().toISOString()
+              });
+              TDesign.Message.success('支付确认成功');
+              fetchOrders();
+            } catch (error) {
+              TDesign.Message.error('支付确认失败: ' + error.message);
+            }
+          }
+        };
+
+        // 发起退款
+        const initiateRefund = async (order) => {
+          const confirmed = await TDesign.Dialog.confirm({
+            header: '发起退款',
+            body: `确认为订单 ${order.order_no} 发起退款？`,
+            confirmBtn: '确认',
+            cancelBtn: '取消'
+          });
+          
+          if (confirmed) {
+            try {
+              await AdminAPI.updateOrderStatus({
+                orderId: order.id,
+                status: 2
+              });
+              TDesign.Message.success('退款申请已提交');
+              fetchOrders();
+            } catch (error) {
+              TDesign.Message.error('退款申请失败: ' + error.message);
+            }
+          }
+        };
+
+        // 取消订单
+        const cancelOrder = async (order) => {
+          const confirmed = await TDesign.Dialog.confirm({
+            header: '取消订单',
+            body: `确认取消订单 ${order.order_no}？`,
+            confirmBtn: '确认',
+            cancelBtn: '取消'
+          });
+          
+          if (confirmed) {
+            try {
+              await AdminAPI.updateOrderStatus({
+                orderId: order.id,
+                status: -1
+              });
+              TDesign.Message.success('订单已取消');
+              fetchOrders();
+            } catch (error) {
+              TDesign.Message.error('取消订单失败: ' + error.message);
+            }
+          }
+        };
+
+        // 获取状态文本
+        const getStatusText = (status) => {
+          const statusMap = {
+            0: '待支付',
+            1: '已支付',
+            2: '退款中',
+            3: '已退款',
+            '-1': '已取消'
+          };
+          return statusMap[status] || '未知';
+        };
+
+        // 获取状态样式类
+        const getStatusClass = (status) => {
+          const classMap = {
+            0: 'status-pending',
+            1: 'status-paid',
+            2: 'status-refunding',
+            3: 'status-refunded',
+            '-1': 'status-cancelled'
+          };
+          return classMap[status] || '';
+        };
+
+        // 返回上一页
+        
+
+        onMounted(() => {
+          if (checkAuth()) {
+          fetchOrders();
+        }
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          orders,
+          searchForm,
+          pagination,
+          columns,
+          detailDialogVisible,
+          currentOrder,
+          handleSearch,
+          handleReset,
+          handlePageChange,
+          viewDetail,
+          confirmPayment,
+          initiateRefund,
+          cancelOrder,
+          getStatusText,
+          getStatusClass,
+          };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>
+

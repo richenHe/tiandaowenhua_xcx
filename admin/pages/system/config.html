@@ -1,0 +1,94 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>系统配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:900px;margin:0 auto;background:white;border-radius:8px;padding:24px}.t{font-size:20px;font-weight:600;margin-bottom:24px}</style></head><body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="config"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="c"><h1 class="t">系统配置</h1><t-form :data="cfg" label-width="150px"><t-form-item label="系统名称"><t-input v-model="cfg.system_name"/></t-form-item><t-form-item label="客服电话"><t-input v-model="cfg.service_phone"/></t-form-item><t-form-item label="客服微信"><t-input v-model="cfg.service_wechat"/></t-form-item><t-form-item label="积分兑换比例"><t-input-number v-model="cfg.points_rate" :min="0.01" :step="0.01"/><template #help>1积分 = ? 元</template></t-form-item><t-form-item label="提现最低金额"><t-input-number v-model="cfg.withdraw_min_amount" :min="1"/><template #help>单位：元</template></t-form-item><t-form-item label="推荐奖励积分"><t-input-number v-model="cfg.referral_reward_points" :min="0"/></t-form-item><t-form-item label="关于我们"><t-textarea v-model="cfg.about_us" :autosize="{minRows:6}"/></t-form-item><t-form-item><t-button theme="primary" @click="save" :loading="lg">保存配置</t-button></t-form-item></t-form></div>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const cfg=ref({});const ld=async()=>{try{cfg.value=await AdminAPI.getSystemConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}};const save=async()=>{lg.value=true;try{await AdminAPI.updateSystemConfig(cfg.value);TDesign.MessagePlugin.success('保存成功');}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};onMounted(ld);return{lg,cfg,save};}}).use(TDesign).mount('#app');</script></body></html>
+

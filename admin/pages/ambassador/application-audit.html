@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>申请审核</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-title{font-size:20px;font-weight:600;margin-bottom:8px}.page-desc{font-size:14px;color:#999;margin-bottom:24px}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}</style></head><body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="application-audit"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="page-container"><h1 class="page-title">申请审核</h1><p class="page-desc">审核大使升级申请</p><div class="search-bar"><t-input v-model="filters.keyword" placeholder="姓名/手机号" clearable style="width:200px;"/><t-select v-model="filters.targetLevel" :options="levelOptions" placeholder="目标等级" clearable style="width:150px;"/><t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width:150px;"/><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe><template #targetLevel="{row}"><t-tag v-if="row.target_level===1">云雀</t-tag><t-tag v-else-if="row.target_level===2" theme="primary">青鸾</t-tag><t-tag v-else theme="warning">鸿鹄</t-tag></template><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待审核</t-tag><t-tag v-else-if="row.status===1" theme="success">已通过</t-tag><t-tag v-else theme="danger">已驳回</t-tag></template><template #operation="{row}"><t-space v-if="row.status===0"><t-button theme="success" size="small" variant="text" @click="handleApprove(row)">通过</t-button><t-button theme="danger" size="small" variant="text" @click="handleReject(row)">驳回</t-button></t-space><t-button v-else theme="primary" size="small" variant="text" @click="handleView(row)">查看详情</t-button></template></t-table></div><t-dialog v-model:visible="rejectVisible" header="驳回申请" @confirm="confirmReject"><t-textarea v-model="rejectReason" placeholder="请输入驳回原因" :maxlength="200" :autosize="{minRows:4}"/></t-dialog>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const loading=ref(false);const tableData=ref([]);const rejectVisible=ref(false);const rejectReason=ref('');const rejectTarget=ref(null);const filters=ref({keyword:'',targetLevel:null,status:null});const levelOptions=[{label:'云雀',value:1},{label:'青鸾',value:2},{label:'鸿鹄',value:3}];const statusOptions=[{label:'待审核',value:0},{label:'已通过',value:1},{label:'已驳回',value:2}];const pagination=ref({current:1,pageSize:20,total:0});const columns=[{colKey:'user_name',title:'申请人',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'current_level',title:'当前等级',width:100},{colKey:'targetLevel',title:'目标等级',width:100,cell:'targetLevel'},{colKey:'reason',title:'申请理由',ellipsis:true},{colKey:'created_at',title:'申请时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'operation',title:'操作',width:150,fixed:'right',cell:'operation'}];const fetchData=async()=>{loading.value=true;try{const data=await AdminAPI.getAmbassadorApplicationList({page:pagination.value.current,pageSize:pagination.value.pageSize,...filters.value});tableData.value=data.list;pagination.value.total=data.total;}catch(error){TDesign.MessagePlugin.error(error.message||'获取失败');}finally{loading.value=false;}};const handleSearch=()=>{pagination.value.current=1;fetchData();};const handleReset=()=>{filters.value={keyword:'',targetLevel:null,status:null};handleSearch();};const handlePageChange=(pi)=>{pagination.value.current=pi.current;pagination.value.pageSize=pi.pageSize;fetchData();};const handleApprove=async(row)=>{const confirmed=await TDesign.DialogPlugin.confirm({header:'确认通过',body:`确认通过 ${row.user_name} 的升级申请吗？`});if(!confirmed)return;try{await AdminAPI.approveAmbassadorApplication({applicationId:row.id});TDesign.MessagePlugin.success('已通过');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'操作失败');}};const handleReject=(row)=>{rejectTarget.value=row.id;rejectVisible.value=true;};const confirmReject=async()=>{if(!rejectReason.value.trim()){TDesign.MessagePlugin.warning('请输入驳回原因');return;}try{await AdminAPI.rejectAmbassadorApplication({applicationId:rejectTarget.value,rejectReason:rejectReason.value});TDesign.MessagePlugin.success('已驳回');rejectVisible.value=false;rejectReason.value='';fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'操作失败');}};const handleView=(row)=>{TDesign.MessagePlugin.info('查看详情功能');};onMounted(fetchData);return{loading,tableData,rejectVisible,rejectReason,filters,levelOptions,statusOptions,pagination,columns,handleSearch,handleReset,handlePageChange,handleApprove,handleReject,confirmReject,handleView};}}).use(TDesign).mount('#app');</script></body></html>
+

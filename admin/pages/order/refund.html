@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>退款审核</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .page-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 8px 0;
+    }
+    .page-desc {
+      font-size: 14px;
+      color: #999;
+      margin: 0;
+    }
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-card:nth-child(2) {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .stat-card:nth-child(3) {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .stat-card:nth-child(4) {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+      margin: 8px 0;
+    }
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="order-refund"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+    <div class="page-container">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <h1 class="page-title">退款审核</h1>
+        <p class="page-desc">处理用户退款申请，支持批量审核和驳回</p>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="stats-cards">
+        <div class="stat-card">
+          <div class="stat-label">待审核</div>
+          <div class="stat-value">{{ statistics.pending || 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已通过</div>
+          <div class="stat-value">{{ statistics.approved || 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已驳回</div>
+          <div class="stat-value">{{ statistics.rejected || 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总金额（元）</div>
+          <div class="stat-value">{{ (statistics.totalAmount / 100).toFixed(2) || '0.00' }}</div>
+        </div>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <t-input 
+          v-model="filters.keyword" 
+          placeholder="订单号/用户手机号"
+          clearable
+          style="width: 220px;"
+        >
+          <template #prefix-icon>
+            <t-icon name="search" />
+          </template>
+        </t-input>
+        
+        <t-select 
+          v-model="filters.status" 
+          :options="statusOptions"
+          placeholder="退款状态"
+          clearable
+          style="width: 150px;"
+        />
+
+        <t-date-range-picker
+          v-model="filters.dateRange"
+          clearable
+          placeholder="申请时间"
+          style="width: 280px;"
+        />
+        
+        <t-button theme="primary" @click="handleSearch">
+          <template #icon><t-icon name="search" /></template>
+          查询
+        </t-button>
+        
+        <t-button theme="default" @click="handleReset">
+          <template #icon><t-icon name="refresh" /></template>
+          重置
+        </t-button>
+
+        <t-button 
+          theme="success" 
+          @click="handleBatchApprove"
+          :disabled="selectedRowKeys.length === 0"
+        >
+          <template #icon><t-icon name="check-circle" /></template>
+          批量通过
+        </t-button>
+
+        <t-button 
+          theme="danger" 
+          @click="handleBatchReject"
+          :disabled="selectedRowKeys.length === 0"
+        >
+          <template #icon><t-icon name="close-circle" /></template>
+          批量驳回
+        </t-button>
+      </div>
+
+      <!-- 数据表格 -->
+      <t-table
+        :data="tableData"
+        :columns="columns"
+        :loading="loading"
+        :pagination="pagination"
+        row-key="id"
+        :selected-row-keys="selectedRowKeys"
+        @select-change="handleSelectChange"
+        @page-change="handlePageChange"
+        bordered
+        stripe
+        hover
+      >
+        <template #status="{ row }">
+          <t-tag v-if="row.refund_status === 0" theme="warning">待审核</t-tag>
+          <t-tag v-else-if="row.refund_status === 1" theme="success">已通过</t-tag>
+          <t-tag v-else-if="row.refund_status === 2" theme="danger">已驳回</t-tag>
+        </template>
+
+        <template #amount="{ row }">
+          <span style="color: #e37318; font-weight: 600;">¥{{ (row.amount / 100).toFixed(2) }}</span>
+        </template>
+
+        <template #operation="{ row }">
+          <t-space size="small">
+            <t-button 
+              theme="primary" 
+              size="small" 
+              variant="text"
+              @click="handleViewDetail(row)"
+            >
+              查看详情
+            </t-button>
+            <t-button 
+              v-if="row.refund_status === 0"
+              theme="success" 
+              size="small" 
+              variant="text"
+              @click="handleApprove(row)"
+            >
+              通过
+            </t-button>
+            <t-button 
+              v-if="row.refund_status === 0"
+              theme="danger" 
+              size="small" 
+              variant="text"
+              @click="handleReject(row)"
+            >
+              驳回
+            </t-button>
+          </t-space>
+        </template>
+      </t-table>
+    </div>
+
+    <!-- 详情对话框 -->
+    <t-dialog
+      v-model:visible="detailVisible"
+      header="退款详情"
+      width="600px"
+      :footer="false"
+    >
+      <div v-if="currentRecord" style="padding: 16px 0;">
+        <t-descriptions bordered :column="2">
+          <t-descriptions-item label="订单号">{{ currentRecord.order_no }}</t-descriptions-item>
+          <t-descriptions-item label="退款金额">
+            <span style="color: #e37318; font-weight: 600;">¥{{ (currentRecord.amount / 100).toFixed(2) }}</span>
+          </t-descriptions-item>
+          <t-descriptions-item label="用户姓名">{{ currentRecord.user_name }}</t-descriptions-item>
+          <t-descriptions-item label="用户手机">{{ currentRecord.user_phone }}</t-descriptions-item>
+          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
+          <t-descriptions-item label="退款原因" :span="2">{{ currentRecord.refund_reason || '无' }}</t-descriptions-item>
+          <t-descriptions-item label="审核状态" :span="2">
+            <t-tag v-if="currentRecord.refund_status === 0" theme="warning">待审核</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 1" theme="success">已通过</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 2" theme="danger">已驳回</t-tag>
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.reject_reason" label="驳回原因" :span="2">
+            {{ currentRecord.reject_reason }}
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.approved_at" label="审核时间" :span="2">
+            {{ currentRecord.approved_at }}
+          </t-descriptions-item>
+        </t-descriptions>
+      </div>
+    </t-dialog>
+
+    <!-- 驳回原因对话框 -->
+    <t-dialog
+      v-model:visible="rejectVisible"
+      header="驳回退款申请"
+      width="500px"
+      @confirm="confirmReject"
+      @close="rejectReason = ''"
+    >
+      <t-textarea
+        v-model="rejectReason"
+        placeholder="请输入驳回原因（必填）"
+        :maxlength="200"
+        :autosize="{ minRows: 4, maxRows: 8 }"
+      />
+    </t-dialog>
+          </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const selectedRowKeys = ref([]);
+        const detailVisible = ref(false);
+        const rejectVisible = ref(false);
+        const currentRecord = ref(null);
+        const rejectReason = ref('');
+        const rejectTarget = ref(null); // 单个或批量
+
+        const statistics = ref({
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          totalAmount: 0
+        });
+
+        const filters = ref({
+          keyword: '',
+          status: null,
+          dateRange: []
+        });
+
+        const statusOptions = [
+          { label: '全部', value: null },
+          { label: '待审核', value: 0 },
+          { label: '已通过', value: 1 },
+          { label: '已驳回', value: 2 }
+        ];
+
+        const pagination = ref({
+          current: 1,
+          pageSize: 20,
+          total: 0
+        });
+
+        const columns = [
+          { colKey: 'row-select', type: 'multiple', width: 50, fixed: 'left' },
+          { colKey: 'order_no', title: '订单号', width: 180 },
+          { colKey: 'user_name', title: '用户姓名', width: 120 },
+          { colKey: 'user_phone', title: '手机号', width: 130 },
+          { colKey: 'amount', title: '退款金额', width: 120, cell: 'amount' },
+          { colKey: 'refund_reason', title: '退款原因', ellipsis: true },
+          { colKey: 'created_at', title: '申请时间', width: 160 },
+          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
+        ];
+
+        const fetchData = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+              ...filters.value
+            };
+
+            const data = await AdminAPI.getRefundList(params);
+            
+            tableData.value = data.list;
+            pagination.value.total = data.total;
+            statistics.value = data.statistics;
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取数据失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const handleSearch = () => {
+          pagination.value.current = 1;
+          fetchData();
+        };
+
+        const handleReset = () => {
+          filters.value = {
+            keyword: '',
+            status: null,
+            dateRange: []
+          };
+          handleSearch();
+        };
+
+        const handleSelectChange = (value) => {
+          selectedRowKeys.value = value;
+        };
+
+        const handlePageChange = (pageInfo) => {
+          pagination.value.current = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          fetchData();
+        };
+
+        const handleViewDetail = (row) => {
+          currentRecord.value = row;
+          detailVisible.value = true;
+        };
+
+        const handleApprove = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认通过',
+            body: `确认通过订单 ${row.order_no} 的退款申请吗？`,
+            theme: 'success'
+          });
+
+          if (!confirmed) return;
+
+          try {
+            await AdminAPI.approveRefund({ refundIds: [row.id] });
+            TDesign.MessagePlugin.success('审核通过');
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '操作失败');
+          }
+        };
+
+        const handleReject = (row) => {
+          rejectTarget.value = [row.id];
+          rejectVisible.value = true;
+        };
+
+        const handleBatchApprove = async () => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '批量通过',
+            body: `确认通过选中的 ${selectedRowKeys.value.length} 条退款申请吗？`,
+            theme: 'success'
+          });
+
+          if (!confirmed) return;
+
+          try {
+            await AdminAPI.approveRefund({ refundIds: selectedRowKeys.value });
+            TDesign.MessagePlugin.success('批量审核通过');
+            selectedRowKeys.value = [];
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '操作失败');
+          }
+        };
+
+        const handleBatchReject = () => {
+          rejectTarget.value = selectedRowKeys.value;
+          rejectVisible.value = true;
+        };
+
+        const confirmReject = async () => {
+          if (!rejectReason.value.trim()) {
+            TDesign.MessagePlugin.warning('请输入驳回原因');
+            return;
+          }
+
+          try {
+            await AdminAPI.rejectRefund({
+              refundIds: rejectTarget.value,
+              rejectReason: rejectReason.value
+            });
+
+            TDesign.MessagePlugin.success('已驳回');
+            rejectVisible.value = false;
+            rejectReason.value = '';
+            selectedRowKeys.value = [];
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '操作失败');
+          }
+        };
+
+        onMounted(() => {
+          if (checkAuth()) {
+          fetchData();
+        }
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          tableData,
+          selectedRowKeys,
+          detailVisible,
+          rejectVisible,
+          currentRecord,
+          rejectReason,
+          statistics,
+          filters,
+          statusOptions,
+          pagination,
+          columns,
+          handleSearch,
+          handleReset,
+          handleSelectChange,
+          handlePageChange,
+          handleViewDetail,
+          handleApprove,
+          handleReject,
+          handleBatchApprove,
+          handleBatchReject,
+          confirmReject
+        };
+      }
+    });
+
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+
