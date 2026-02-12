@@ -22,7 +22,8 @@ import type {
   ContractDetail,
   GetActivityRecordsParams,
   GetActivityRecordsResponse,
-  ActivityStats
+  ActivityStats,
+  LevelSystemResponse
 } from '../types/ambassador'
 
 /**
@@ -204,6 +205,18 @@ export class AmbassadorApi {
       showLoading: false
     })
   }
+
+  /**
+   * 14. 获取大使等级体系配置
+   * @returns 等级体系配置
+   */
+  static async getLevelSystem(): Promise<LevelSystemResponse> {
+    return callCloudFunction<LevelSystemResponse>({
+      name: 'ambassador',
+      action: 'getLevelSystem',
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -220,7 +233,8 @@ export const {
   getMyContracts,
   getContractDetail,
   getActivityRecords,
-  getActivityStats
+  getActivityStats,
+  getLevelSystem
 } = AmbassadorApi
 
 // 默认导出

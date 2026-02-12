@@ -432,3 +432,4 @@ ADD COLUMN images TEXT NULL COMMENT '截图（JSON数组）' AFTER content;
 - ✅ 商城系统完整（浏览→兑换→查看记录）
 - ✅ API测试通过率 > 95%
 
+

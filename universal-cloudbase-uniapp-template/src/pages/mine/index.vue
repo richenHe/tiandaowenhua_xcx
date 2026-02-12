@@ -1,7 +1,13 @@
 <template>
   <view class="page-container">
     <!-- 用户信息头部 -->
-    <view class="profile-header" @click="goToProfile">
+    <view 
+      class="profile-header" 
+      :style="{ backgroundImage: userInfo.backgroundImage ? `url(${userInfo.backgroundImage})` : '' }"
+      @click="goToProfile"
+    >
+      <!-- 背景图片遮罩层 -->
+      <view v-if="userInfo.backgroundImage" class="background-mask"></view>
       <view class="profile-content">
         <view class="user-avatar">
           <image 
@@ -16,7 +22,6 @@
           <view class="user-name">
             <text>{{ userInfo.name }}</text>
             <text class="growth-level">{{ growthLevelDisplay }}</text>
-            <text class="level-badge">{{ userInfo.levelBadge }}</text>
           </view>
           <!-- 积分显示 -->
           <view class="user-points">
@@ -94,8 +99,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { UserApi, SystemApi } from '@/api';
-import { getGrowthLevelDisplay } from '@/utils/growth-level';
+import StorageApi from '@/api/modules/storage';
+
+// 获取成长等级显示（根据活动次数）
+// 规则：5绿叶=1花朵，5花朵=1果实，5果实=1大树
+const getGrowthLevelDisplay = (activityCount: number): string => {
+  if (activityCount < 5) return '🍃'; // 等级一：绿叶（新生、起点，初级成员）
+  if (activityCount < 25) return '🌸'; // 等级二：花朵（绽放、活跃，进阶贡献）5*5=25
+  if (activityCount < 125) return '🍎'; // 等级三：果实（沉淀、价值，核心成员）5*25=125
+  return '🌳'; // 等级四：大树（成熟、庇荫，领袖或资深专家）125+
+};
 
 // 成长等级显示
 const growthLevelDisplay = ref('🍃');
@@ -112,6 +127,7 @@ const userInfo = ref({
   name: '加载中...',
   phone: '',
   avatar: '',
+  backgroundImage: '', // 背景图片
   levelBadge: '🌿',
   isAmbassador: false,
   ambassadorLevel: '',
@@ -137,11 +153,24 @@ const loadUserProfile = async () => {
   try {
     const profile = await UserApi.getProfile();
 
+    // 获取头像和背景图片临时URL
+    let avatarUrl = '';
+    let backgroundImageUrl = '';
+    
+    if (profile.avatar) {
+      avatarUrl = await StorageApi.getSingleTempFileURL(profile.avatar);
+    }
+    
+    if (profile.background_image) {
+      backgroundImageUrl = await StorageApi.getSingleTempFileURL(profile.background_image);
+    }
+
     // 更新用户信息
     userInfo.value = {
       name: profile.real_name || '未设置',
       phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '',
-      avatar: profile.avatar || '',
+      avatar: avatarUrl,
+      backgroundImage: backgroundImageUrl,
       levelBadge: getLevelBadge(profile.ambassador_level),
       isAmbassador: profile.ambassador_level > 0,
       ambassadorLevel: getLevelName(profile.ambassador_level),
@@ -234,6 +263,13 @@ onMounted(() => {
   loadStats();
 });
 
+// 每次进入页面时刷新数据
+onShow(() => {
+  loadUserProfile();
+  loadUserPoints();
+  loadStats();
+});
+
 // 推荐与设置菜单
 const settingsMenu = computed(() => [
   {
@@ -260,8 +296,8 @@ const settingsMenu = computed(() => [
 // 帮助与反馈菜单
 const helpMenu = ref([
   // { type: 'consultation', icon: '💬', label: '在线咨询' }, // 暂时隐藏在线咨询功能
-  { type: 'feedback', icon: '📝', label: '意见反馈' },
-  { type: 'announcement', icon: '📢', label: '平台公告' }
+  { type: 'feedback', icon: '📝', label: '意见反馈', badge: undefined },
+  { type: 'announcement', icon: '📢', label: '平台公告', badge: undefined }
 ]);
 
 // 跳转到个人资料
@@ -317,13 +353,31 @@ const handleMenuClick = (type: string) => {
 
 // 用户信息头部
 .profile-header {
+  position: relative;
   background: linear-gradient(135deg, $td-brand-color, $td-brand-color-light);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 48rpx 32rpx;
   padding-top: calc(48rpx + var(--status-bar-height));
   color: white;
+  overflow: hidden;
+}
+
+// 背景图片遮罩层
+.background-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 0;
 }
 
 .profile-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 32rpx;

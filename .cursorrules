@@ -660,3 +660,131 @@ Error: failed to find relationship between orders and users
    - 必须明确指定外键名称（格式：`fk_表名_字段名`）
    - 所有外键信息参考 `docs/database/数据库详细信息.md` 文档
    - 示例：`db.from('orders').select('*, referee:users!fk_orders_referee(id, real_name)')`
+
+---
+
+## 公共代码同步部署规范 ⚠️
+
+### 强制执行规则
+
+**当修改以下公共代码目录时，必须同步更新所有云函数（除 callbacks）：**
+
+1. **`cloudfunctions/common/`** - 公共工具层
+   - 包含：`db.js`, `auth.js`, `response.js`, `utils.js`, `storage.js`
+   - 影响：所有云函数的数据库操作、权限验证、响应格式等
+
+2. **`cloudfunctions/business-logic/`** - 业务逻辑层
+   - 包含：`payment.js`, `points.js`, `ambassador.js`, `notification.js`, `order.js` 等
+   - 影响：所有云函数的业务逻辑处理
+
+### 同步部署流程
+
+#### 1. 识别需要更新的云函数
+
+**当前项目云函数列表：**
+- ✅ `user` - 用户模块
+- ✅ `order` - 订单模块
+- ✅ `course` - 课程模块
+- ✅ `ambassador` - 大使模块
+- ✅ `system` - 系统模块
+- ❌ `callbacks` - 回调函数（**排除，不同步**）
+
+#### 2. 自动同步命令（强制执行）
+
+**每次修改 `common/` 或 `business-logic/` 后，必须执行以下操作：**
+
+```bash
+# 步骤1：同步公共代码到各云函数（手动复制或脚本）
+# common/ 和 business-logic/ 已复制到各云函数目录中
+
+# 步骤2：使用 MCP 工具批量更新云函数代码
+# 注意：必须使用 updateFunctionCode，不要使用 updateFunctionConfig
+```
+
+#### 3. MCP 批量更新指令
+
+**标准更新流程（按顺序执行）：**
+
+1. **更新 user 云函数：**
+   ```
+   使用 mcp_cloudbase_updateFunctionCode 更新云函数：
+   - name: user
+   - functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
+   ```
+
+2. **更新 order 云函数：**
+   ```
+   使用 mcp_cloudbase_updateFunctionCode 更新云函数：
+   - name: order
+   - functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
+   ```
+
+3. **更新 course 云函数：**
+   ```
+   使用 mcp_cloudbase_updateFunctionCode 更新云函数：
+   - name: course
+   - functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
+   ```
+
+4. **更新 ambassador 云函数：**
+   ```
+   使用 mcp_cloudbase_updateFunctionCode 更新云函数：
+   - name: ambassador
+   - functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
+   ```
+
+5. **更新 system 云函数：**
+   ```
+   使用 mcp_cloudbase_updateFunctionCode 更新云函数：
+   - name: system
+   - functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
+   ```
+
+#### 4. 同步检查清单
+
+**修改公共代码后必须检查：**
+- [ ] 已复制 `common/` 最新代码到所有云函数（除 callbacks）
+- [ ] 已复制 `business-logic/` 最新代码到所有云函数（除 callbacks）
+- [ ] 已使用 `updateFunctionCode` 更新所有云函数代码
+- [ ] 未更新 `callbacks` 云函数（该函数独立维护）
+- [ ] 更新完成后测试关键接口是否正常
+
+### 注意事项 ⚠️
+
+1. **updateFunctionCode vs updateFunctionConfig**：
+   - ✅ `updateFunctionCode`：仅更新云函数代码，不修改配置（推荐）
+   
+
+2. **callbacks 云函数特殊说明**：
+   - `callbacks` 云函数用于接收微信支付回调、消息推送等
+   - 该云函数采用 HTTP 触发器，部署方式与其他云函数不同
+   - **禁止同步更新 callbacks**，该云函数需独立维护
+
+3. **functionRootPath 路径说明**：
+   - Windows: `D:\project\cursor\work\xcx\cloudfunctions`
+   - Linux/Mac: `/path/to/project/cloudfunctions`
+   - 路径必须指向 `cloudfunctions` 目录（云函数的父目录）
+
+4. **批量更新顺序**：
+   - 建议按照：user → order → course → ambassador → system 的顺序更新
+   - 如果某个云函数更新失败，不影响其他云函数继续更新
+
+5. **更新失败处理**：
+   - 检查云函数名称是否正确
+   - 检查 functionRootPath 路径是否正确
+   - 检查云函数目录结构是否完整（必须包含 index.js）
+   - 如持续失败，尝试在 CloudBase 控制台手动上传
+
+### 快速参考
+
+**公共代码修改触发条件：**
+- 修改 `cloudfunctions/common/` 下任何文件 → 触发同步
+- 修改 `cloudfunctions/business-logic/` 下任何文件 → 触发同步
+
+**同步目标云函数：**
+- `user`, `order`, `course`, `ambassador`, `system`（5个）
+- 排除：`callbacks`
+
+**同步方式：**
+- 工具：`mcp_cloudbase_updateFunctionCode`
+- 参数：`name`（云函数名）, `functionRootPath`（云函数父目录）

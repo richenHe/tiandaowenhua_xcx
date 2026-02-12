@@ -20,6 +20,8 @@ export interface UserProfile {
   city: string
   /** 头像URL */
   avatar: string
+  /** 背景图片URL */
+  background_image?: string
   /** 推荐码 */
   referral_code: string
   /** 推荐人ID */
@@ -78,6 +80,8 @@ export interface UpdateProfileParams {
   city?: string
   /** 头像URL */
   avatar?: string
+  /** 背景图片URL */
+  backgroundImage?: string
   /** 微信昵称 */
   nickname?: string
   /** 性别 */

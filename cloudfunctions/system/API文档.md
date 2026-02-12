@@ -98,8 +98,8 @@
 **请求参数**：
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | Number | 是 | 反馈类型（1-5） |
-| course_id | Number | 否 | 课程ID |
+| feedbackType | Number | 是 | 反馈类型（1-5）【驼峰命名】 |
+| courseId | Number | 否 | 课程ID【驼峰命名】 |
 | content | String | 是 | 反馈内容（5-500字） |
 | images | Array | 否 | 图片列表 |
 | contact | String | 否 | 联系方式 |

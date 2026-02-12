@@ -26,7 +26,8 @@ const clientHandlers = {
   getMyContracts: require('./handlers/client/getMyContracts'),
   getContractDetail: require('./handlers/client/getContractDetail'),
   getActivityRecords: require('./handlers/client/getActivityRecords'),
-  getActivityStats: require('./handlers/client/getActivityStats')
+  getActivityStats: require('./handlers/client/getActivityStats'),
+  getLevelSystem: require('./handlers/client/getLevelSystem')
 };
 
 const adminHandlers = {

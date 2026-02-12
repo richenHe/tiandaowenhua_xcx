@@ -66,15 +66,15 @@
             <view class="t-form-item__control">
               <view class="image-upload">
                 <view 
-                  v-for="(image, index) in formData.images" 
+                  v-for="(imageUrl, index) in formData.imageUrls" 
                   :key="index"
                   class="image-item"
                 >
-                  <image :src="image" mode="aspectFill" class="image-preview" />
+                  <image :src="imageUrl" mode="aspectFill" class="image-preview" />
                   <view class="image-delete" @click="handleDeleteImage(index)">×</view>
                 </view>
                 <view 
-                  v-if="formData.images.length < 3"
+                  v-if="formData.imageUrls.length < 3"
                   class="image-upload-btn"
                   @click="handleUploadImage"
                 >
@@ -123,6 +123,7 @@
 import { ref, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { SystemApi } from '@/api'
+import StorageApi, { StoragePathHelper } from '@/api/modules/storage'
 import type { FeedbackType, FeedbackCourse } from '@/api/types/system'
 
 // 表单数据
@@ -132,7 +133,8 @@ const formData = ref({
   typeValue: 2, // 默认功能建议
   typeLabel: '功能建议',
   content: '',
-  images: [] as string[],
+  images: [] as string[], // 存储 fileID
+  imageUrls: [] as string[], // 存储临时 URL（用于显示）
   contact: ''
 })
 
@@ -205,18 +207,76 @@ const handleSelectType = () => {
 // 上传图片
 const handleUploadImage = () => {
   uni.chooseImage({
-    count: 3 - formData.value.images.length,
+    count: 3 - formData.value.imageUrls.length,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: (res) => {
-      formData.value.images.push(...res.tempFilePaths)
+    success: async (res) => {
+      try {
+        // 先显示本地预览图片
+        res.tempFilePaths.forEach(tempPath => {
+          formData.value.imageUrls.push(tempPath)
+        })
+        
+        uni.showLoading({ title: '上传中...', mask: true })
+        
+        // 逐个上传图片到云存储
+        for (let i = 0; i < res.tempFilePaths.length; i++) {
+          const tempFilePath = res.tempFilePaths[i]
+          
+          // 生成云存储路径
+          const timestamp = Date.now() + i
+          const ext = tempFilePath.substring(tempFilePath.lastIndexOf('.'))
+          const cloudPath = `feedbacks/images/temp_${timestamp}${ext}`
+          
+          console.log('开始上传图片:', cloudPath)
+          
+          // 上传到云存储
+          const uploadResult = await StorageApi.uploadFile({ cloudPath, filePath: tempFilePath })
+          
+          console.log('上传成功，fileID:', uploadResult.fileID)
+          
+          // 保存 fileID
+          formData.value.images.push(uploadResult.fileID)
+        }
+        
+        uni.hideLoading()
+        uni.showToast({ title: '上传成功', icon: 'success' })
+      } catch (error) {
+        uni.hideLoading()
+        uni.showToast({ title: '上传失败，请重试', icon: 'none' })
+        console.error('上传图片失败:', error)
+        
+        // 上传失败时，移除本次添加的预览图
+        formData.value.imageUrls.splice(formData.value.imageUrls.length - res.tempFilePaths.length)
+      }
+    },
+    fail: (err) => {
+      console.error('选择图片失败:', err)
+      uni.showToast({ title: '选择图片失败', icon: 'none' })
     }
   })
 }
 
 // 删除图片
-const handleDeleteImage = (index: number) => {
-  formData.value.images.splice(index, 1)
+const handleDeleteImage = async (index: number) => {
+  try {
+    // 删除云存储文件
+    const fileID = formData.value.images[index]
+    if (fileID) {
+      await StorageApi.deleteFile([fileID])
+    }
+    
+    // 删除本地引用
+    formData.value.images.splice(index, 1)
+    formData.value.imageUrls.splice(index, 1)
+    
+    uni.showToast({ title: '删除成功', icon: 'success' })
+  } catch (error) {
+    console.error('删除图片失败:', error)
+    // 即使删除云存储失败，也删除本地引用
+    formData.value.images.splice(index, 1)
+    formData.value.imageUrls.splice(index, 1)
+  }
 }
 
 // 提交反馈
@@ -239,8 +299,8 @@ const handleSubmit = async () => {
 
   try {
     await SystemApi.submitFeedback({
-      type: formData.value.typeValue,
-      course_id: formData.value.courseId,
+      feedbackType: formData.value.typeValue, // 驼峰命名
+      courseId: formData.value.courseId, // 驼峰命名
       content: formData.value.content,
       images: formData.value.images.length > 0 ? formData.value.images : undefined,
       contact: formData.value.contact || undefined

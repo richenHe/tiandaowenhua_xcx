@@ -2,9 +2,9 @@
  * 云存储模块 API
  */
 
-import { getApp } from '@/utils/cloudbase'
-import { ensureLogin } from '@/utils/cloudbase'
+import { app } from '@/utils/cloudbase'
 import { callCloudFunction } from '@/api/request'
+import { StoragePathHelper, STORAGE_PATHS } from '@/utils/storage-path'
 
 /**
  * 上传文件选项
@@ -55,7 +55,7 @@ interface TempFileURLResult {
  */
 export class StorageApi {
   /**
-   * 上传单个文件（通过云函数中转）
+   * 上传单个文件（通过云函数）
    * @param options 上传选项
    * @returns 上传结果
    */
@@ -72,7 +72,7 @@ export class StorageApi {
         })
       })
 
-      // 通过云函数上传（不显示 loading，由调用方控制）
+      // 通过云函数上传
       const result = await callCloudFunction<{ fileID: string; tempFileURL: string }>({
         name: 'system',
         action: 'uploadFile',
@@ -80,7 +80,7 @@ export class StorageApi {
           cloudPath: options.cloudPath,
           fileContent
         },
-        showLoading: false  // 由调用方控制 loading
+        showLoading: false
       })
 
       return {
@@ -99,8 +99,6 @@ export class StorageApi {
    * @returns 临时链接列表
    */
   static async getTempFileURL(options: GetTempFileURLOptions): Promise<TempFileURLResult[]> {
-    const app = getApp()
-    
     return new Promise((resolve, reject) => {
       app.getTempFileURL({
         fileList: options.fileList
@@ -124,8 +122,6 @@ export class StorageApi {
    * @returns 删除结果
    */
   static async deleteFile(fileList: string[]): Promise<{ success: boolean; fileList: any[] }> {
-    const app = getApp()
-    
     return new Promise((resolve, reject) => {
       app.deleteFile({
         fileList
@@ -276,6 +272,89 @@ export class StorageApi {
       return []
     }
   }
+
+  /**
+   * 选择并上传视频
+   * @param cloudPathPrefix 云存储路径前缀（如 'academy/cases/videos/'）
+   * @returns 上传结果
+   */
+  static async chooseAndUploadVideo(cloudPathPrefix: string): Promise<UploadFileResult> {
+    return new Promise((resolve, reject) => {
+      uni.chooseVideo({
+        sourceType: ['album', 'camera'],
+        compressed: true,
+        maxDuration: 300, // 最长 5 分钟
+        success: async (res: any) => {
+          try {
+            const filePath = res.tempFilePath
+            const timestamp = Date.now()
+            const random = Math.random().toString(36).substring(2, 8)
+            const cloudPath = `${cloudPathPrefix}${timestamp}_${random}.mp4`
+            
+            const result = await this.uploadFile({ cloudPath, filePath })
+            resolve(result)
+          } catch (error) {
+            console.error('上传视频失败:', error)
+            reject(error)
+          }
+        },
+        fail: (err: any) => {
+          console.error('选择视频失败:', err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  /**
+   * 批量上传图片
+   * @param cloudPathPrefix 云存储路径前缀
+   * @param filePaths 本地文件路径列表
+   * @returns 上传结果列表
+   */
+  static async uploadBatchImages(
+    cloudPathPrefix: string,
+    filePaths: string[]
+  ): Promise<UploadFileResult[]> {
+    const uploadPromises = filePaths.map((filePath, index) => {
+      const timestamp = Date.now()
+      const random = Math.random().toString(36).substring(2, 8)
+      const ext = filePath.substring(filePath.lastIndexOf('.'))
+      const cloudPath = `${cloudPathPrefix}${timestamp}_${index}_${random}${ext}`
+      
+      return this.uploadFile({ cloudPath, filePath })
+    })
+    
+    return Promise.all(uploadPromises)
+  }
+
+  /**
+   * 替换文件（删除旧文件，上传新文件）
+   * @param oldFileID 旧文件 ID（如果存在）
+   * @param newFilePath 新文件本地路径
+   * @param cloudPath 云存储路径
+   * @returns 上传结果
+   */
+  static async replaceFile(
+    oldFileID: string | null,
+    newFilePath: string,
+    cloudPath: string
+  ): Promise<UploadFileResult> {
+    // 上传新文件
+    const result = await this.uploadFile({ cloudPath, filePath: newFilePath })
+    
+    // 删除旧文件
+    if (oldFileID && oldFileID.startsWith('cloud://')) {
+      try {
+        await this.deleteFile([oldFileID])
+      } catch (error) {
+        console.warn('删除旧文件失败:', error)
+        // 不影响主流程，仅记录警告
+      }
+    }
+    
+    return result
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -286,8 +365,14 @@ export const {
   chooseAndUploadImage,
   getSingleTempFileURL,
   getBatchTempFileURLs,
-  uploadFileWithUrl
+  uploadFileWithUrl,
+  chooseAndUploadVideo,
+  uploadBatchImages,
+  replaceFile
 } = StorageApi
+
+// 导出路径生成工具
+export { StoragePathHelper, STORAGE_PATHS }
 
 // 默认导出
 export default StorageApi

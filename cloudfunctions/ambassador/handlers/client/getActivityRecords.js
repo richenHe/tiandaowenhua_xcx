@@ -5,6 +5,7 @@
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -36,6 +37,7 @@ module.exports = async (event, context) => {
         participant_count,
         merit_points,
         note,
+        images,
         created_at
       `, { count: 'exact' })
       .eq('user_id', user.id)
@@ -55,6 +57,55 @@ module.exports = async (event, context) => {
 
     if (listError) {
       throw listError;
+    }
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (list && list.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      list.forEach(record => {
+        // images 是 JSON 数组，包含多个 fileID
+        if (record.images) {
+          try {
+            const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
+            if (Array.isArray(imagesArray)) {
+              imagesArray.forEach(imgFileID => {
+                if (imgFileID) fileIDs.push(imgFileID);
+              });
+            }
+          } catch (e) {
+            console.error('[getActivityRecords] JSON解析失败:', e);
+          }
+        }
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换 list 中的 fileID 为临时 URL
+      list.forEach(record => {
+        if (record.images) {
+          try {
+            const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
+            if (Array.isArray(imagesArray)) {
+              record.images = imagesArray.map(imgFileID => 
+                urlMap[imgFileID] || imgFileID
+              );
+            }
+          } catch (e) {
+            console.error('[getActivityRecords] JSON转换失败:', e);
+            record.images = [];
+          }
+        }
+      });
     }
 
     // 查询统计信息（所有有效记录）

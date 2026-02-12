@@ -4,6 +4,7 @@
 const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { category, status, keyword, page = 1, page_size = 10 } = event;
@@ -57,6 +58,37 @@ module.exports = async (event, context) => {
 
     if (error) {
       throw error;
+    }
+
+    // 🔥 转换云存储 fileID 为临时 URL（管理端也需要显示）
+    if (list && list.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      list.forEach(item => {
+        if (item.image_url) fileIDs.push(item.image_url);
+        if (item.video_url) fileIDs.push(item.video_url);
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换 list 中的 fileID 为临时 URL
+      list.forEach(item => {
+        if (item.image_url && urlMap[item.image_url]) {
+          item.image_url = urlMap[item.image_url];
+        }
+        if (item.video_url && urlMap[item.video_url]) {
+          item.video_url = urlMap[item.video_url];
+        }
+      });
     }
 
     return response.success({

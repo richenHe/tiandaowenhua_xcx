@@ -43,136 +43,68 @@
         <!-- 案例列表 -->
         <view class="t-section-title t-section-title--simple">⭐ 优秀学员</view>
 
-        <!-- 案例1：企业家 -->
-        <view class="case-card">
+        <!-- 动态渲染案例列表 -->
+        <view v-for="caseItem in caseList" :key="caseItem.id" class="case-card">
           <view class="case-header">
-            <view class="case-avatar">王</view>
-            <view class="case-info">
-              <view class="case-name">王总</view>
-              <view class="case-desc">某科技公司CEO · 初探班+密训班学员</view>
+            <view 
+              class="case-avatar" 
+              :class="caseItem.avatar_theme || 'default'"
+            >
+              {{ caseItem.student_surname || caseItem.student_name?.[0] || '学' }}
             </view>
-            <view class="case-badge warning">企业家</view>
+            <view class="case-info">
+              <view class="case-name">{{ caseItem.student_name }}</view>
+              <view class="case-desc">{{ caseItem.student_desc || caseItem.student_title }}</view>
+            </view>
+            <view 
+              class="case-badge" 
+              :class="caseItem.badge_theme || 'primary'"
+            >
+              {{ caseItem.category_label || '学员' }}
+            </view>
           </view>
 
           <view class="divider"></view>
 
-          <view class="case-section">
-            <view class="section-label">💡 学习感悟</view>
-            <view class="quote-box">
-              "天道文化的学习让我重新认识了企业管理的本质。以前总是追求短期利益，学习后明白了顺应天道、厚德载物的重要性。现在公司发展更稳健，员工更有凝聚力，营收增长了300%。"
-            </view>
-          </view>
+      <!-- 视频见证 - 动态显示 -->
+      <view class="case-section" v-if="caseItem.video_url">
+        <view class="section-label">🎬 视频见证</view>
+        <video 
+          :src="caseItem.video_url" 
+          class="case-video"
+          controls
+          :poster="caseItem.cover_image || ''"
+          :show-center-play-btn="true"
+          :enable-progress-gesture="true"
+        ></video>
+      </view>
 
-          <view class="case-section">
+      <view class="case-section" v-if="caseItem.quote">
+        <view class="section-label">💡 学习感悟</view>
+        <view class="quote-box">
+          "{{ caseItem.quote }}"
+        </view>
+      </view>
+
+      <view class="case-section" v-if="caseItem.achievements && caseItem.achievements.length > 0">
             <view class="section-label">📈 成长成果</view>
             <view class="achievement-list">
-              <view class="achievement-item">
+              <view 
+                v-for="(achievement, index) in caseItem.achievements" 
+                :key="index" 
+                class="achievement-item"
+              >
                 <text class="check-icon">✓</text>
-                <text class="achievement-text">企业营收3年增长300%</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">成功转型升级，开拓新业务</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">获得行业优秀企业家称号</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">成为金凤大使，帮助更多学员</text>
+                <text class="achievement-text">{{ achievement }}</text>
               </view>
             </view>
           </view>
         </view>
 
-        <!-- 案例2：创业者 -->
-        <view class="case-card">
-          <view class="case-header">
-            <view class="case-avatar success">李</view>
-            <view class="case-info">
-              <view class="case-name">李女士</view>
-              <view class="case-desc">连续创业者 · 密训班学员</view>
-            </view>
-            <view class="case-badge success">创业者</view>
-          </view>
-
-          <view class="divider"></view>
-
-          <view class="case-section">
-            <view class="section-label">💡 学习感悟</view>
-            <view class="quote-box">
-              "之前创业两次都失败了，非常迷茫。学习天道文化后，我找到了失败的根本原因——没有顺势而为。现在第三次创业，运用天道思维，半年就实现盈利，团队士气高涨！"
-            </view>
-          </view>
-
-          <view class="case-section">
-            <view class="section-label">📈 成长成果</view>
-            <view class="achievement-list">
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">创业项目半年实现盈利</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">获得天使轮融资500万</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">团队规模扩大到30人</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 案例3：职场人 -->
-        <view class="case-card">
-          <view class="case-header">
-            <view class="case-avatar primary">张</view>
-            <view class="case-info">
-              <view class="case-name">张先生</view>
-              <view class="case-desc">某大厂产品经理 · 初探班学员</view>
-            </view>
-            <view class="case-badge primary">职场人</view>
-          </view>
-
-          <view class="divider"></view>
-
-          <view class="case-section">
-            <view class="section-label">💡 学习感悟</view>
-            <view class="quote-box">
-              "在大厂工作压力很大，经常焦虑。学习天道文化后，我学会了顺应变化、调整心态。不再为一时得失焦虑，而是着眼长远。现在工作更从容，也得到了晋升机会。"
-            </view>
-          </view>
-
-          <view class="case-section">
-            <view class="section-label">📈 成长成果</view>
-            <view class="achievement-list">
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">晋升为高级产品经理</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">主导的产品MAU增长200%</text>
-              </view>
-              <view class="achievement-item">
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">工作生活平衡，家庭更和谐</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 视频见证 -->
-        <view class="t-section-title t-section-title--simple">🎬 视频见证</view>
-        <view class="video-card">
-          <view class="video-placeholder">
-            <view class="play-icon">▶️</view>
-            <view class="play-text">点击播放学员见证视频</view>
-          </view>
-          <view class="video-title">学员真实反馈合集</view>
-          <view class="video-desc">30位学员的真实学习感悟和成长故事</view>
+        <!-- 空状态 -->
+        <view v-if="caseList.length === 0" class="empty-state">
+          <view class="empty-icon">📋</view>
+          <view class="empty-text">暂无案例</view>
         </view>
 
         <!-- 行动号召 -->
@@ -457,49 +389,6 @@ onMounted(() => {
   flex: 1;
 }
 
-.video-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 32rpx;
-  margin-bottom: 48rpx;
-}
-
-.video-placeholder {
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24rpx;
-}
-
-.play-icon {
-  font-size: 96rpx;
-  color: #fff;
-  margin-bottom: 16rpx;
-}
-
-.play-text {
-  font-size: 28rpx;
-  color: #fff;
-  opacity: 0.9;
-}
-
-.video-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 8rpx;
-}
-
-.video-desc {
-  font-size: 24rpx;
-  color: #999;
-}
-
 .alert-box {
   border-radius: 16rpx;
   padding: 24rpx;
@@ -532,6 +421,15 @@ onMounted(() => {
   font-size: 24rpx;
   color: #666;
   line-height: 1.6;
+}
+
+/* 动态视频播放器样式 */
+.case-video {
+  width: 100%;
+  height: 400rpx;
+  border-radius: 12rpx;
+  background-color: #000;
+  margin-top: 16rpx;
 }
 
 </style>

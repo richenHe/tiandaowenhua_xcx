@@ -3,8 +3,8 @@
  * Action: submitFeedback
  *
  * 参数：
- * - type: 反馈类型（1-5）
- * - courseId/course_id: 课程ID（可选）
+ * - feedbackType: 反馈类型（1-5）【驼峰命名】
+ * - courseId: 课程ID（可选）【驼峰命名】
  * - content: 反馈内容
  * - images: 图片数组（可选）
  * - contact: 联系方式（可选）
@@ -14,16 +14,15 @@ const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { type, courseId, course_id, content, images, contact } = event;
-  const finalCourseId = courseId || course_id; // 支持两种命名
+  const { feedbackType, courseId, content, images, contact } = event;
 
   try {
     // 参数验证
-    if (!type || !content) {
-      return response.paramError('缺少必要参数: type, content');
+    if (!feedbackType || !content) {
+      return response.paramError('缺少必要参数: feedbackType, content');
     }
 
-    if (type < 1 || type > 5) {
+    if (feedbackType < 1 || feedbackType > 5) {
       return response.paramError('反馈类型无效');
     }
 
@@ -33,16 +32,19 @@ module.exports = async (event, context) => {
 
     console.log(`[submitFeedback] 用户 ${user.id} 提交反馈`);
 
-    // 创建反馈记录
+    // 创建反馈记录（驼峰转下划线）
     const feedbackData = {
       user_id: user.id,
-      type,
+      user_uid: user.uid,
+      user_name: user.real_name || user.nickname,
+      user_phone: user.phone,
+      feedback_type: feedbackType, // 驼峰转下划线
       content,
       status: 0 // 待处理
     };
 
-    if (finalCourseId) {
-      feedbackData.course_id = finalCourseId;
+    if (courseId) {
+      feedbackData.course_id = courseId;
     }
 
     // images 字段应该是 TEXT 类型，存储 JSON 字符串

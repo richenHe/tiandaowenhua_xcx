@@ -118,14 +118,38 @@ export interface Case {
   id: number
   /** 案例标题 */
   title: string
-  /** 案例分类 */
+  /** 案例分类 (entrepreneur/startup/workplace) */
   category: string
+  /** 案例分类标签名称 */
+  category_label?: string
+  /** 徽章主题色 (warning/success/primary) */
+  badge_theme?: string
+  /** 学员姓氏（如：王） */
+  student_surname?: string
+  /** 学员称呼（如：王总） */
+  student_name: string
+  /** 学员描述 */
+  student_desc?: string
+  /** 学员头像 */
+  student_avatar?: string
+  /** 学员头衔/职业 */
+  student_title?: string
+  /** 头像主题色 */
+  avatar_theme?: string
   /** 封面图片 */
-  cover_image: string
+  cover_image?: string
   /** 案例摘要 */
   summary: string
-  /** 案例内容 */
+  /** 案例内容（HTML） */
   content?: string
+  /** 学习感悟（引用文字） */
+  quote?: string
+  /** 成果列表 */
+  achievements?: string[]
+  /** 是否精选 */
+  is_featured?: boolean
+  /** 排序权重 */
+  sort_order?: number
   /** 创建时间 */
   created_at: string
 }

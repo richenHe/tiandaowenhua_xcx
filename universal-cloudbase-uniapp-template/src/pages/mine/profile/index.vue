@@ -1,6 +1,6 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="个人资料" :showBack="false" />
+    <TdPageHeader title="个人资料" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area scroll-area--with-header-footer" style="height: calc(100vh - 88rpx - 136rpx);">
       <view class="page-content page-content--with-bg" style="padding-bottom: 480rpx;">
@@ -25,6 +25,30 @@
                 />
                 <text v-else style="font-size: 72rpx; color: #DCDCDC; font-weight: 300;">+</text>
               </button>
+            </view>
+          </view>
+
+          <!-- 背景图片 -->
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>个人主页背景</text>
+            </view>
+            <view class="t-form-item__control" style="display: flex; justify-content: center; margin-top: 16rpx;">
+              <view 
+                class="t-background-picker"
+                @click="chooseBackgroundImage"
+              >
+                <image 
+                  v-if="formData.backgroundImage" 
+                  :src="formData.backgroundImage" 
+                  mode="aspectFill"
+                  style="width: 100%; height: 100%;"
+                />
+                <view v-else class="t-background-picker__placeholder">
+                  <text style="font-size: 48rpx; color: #DCDCDC; font-weight: 300;">+</text>
+                  <text style="font-size: 24rpx; color: #999999; margin-top: 8rpx;">点击上传背景图片</text>
+                </view>
+              </view>
             </view>
           </view>
 
@@ -181,10 +205,14 @@
 import { ref, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
+import StorageApi, { StoragePathHelper } from '@/api/modules/storage'
 
 // 表单数据
 const formData = ref({
   avatar: '',
+  avatarFileID: '', // 头像 fileID
+  backgroundImage: '', // 背景图片临时 URL（用于显示）
+  backgroundImageFileID: '', // 背景图片 fileID（用于保存）
   realName: '',
   phone: '',
   gender: 'male',
@@ -295,10 +323,21 @@ const loadProfile = async () => {
     // console.log('获取到的profile数据:', profile)
 
     // 填充表单数据
-    formData.value.avatar = profile.avatar || ''
     formData.value.realName = profile.real_name || ''
     formData.value.phone = profile.phone || ''
     formData.value.region = profile.city || ''
+
+    // 加载头像
+    if (profile.avatar) {
+      formData.value.avatarFileID = profile.avatar
+      formData.value.avatar = await StorageApi.getSingleTempFileURL(profile.avatar)
+    }
+
+    // 加载背景图片
+    if (profile.background_image) {
+      formData.value.backgroundImageFileID = profile.background_image
+      formData.value.backgroundImage = await StorageApi.getSingleTempFileURL(profile.background_image)
+    }
     
     // 解析性别
     if (profile.gender === '男') {
@@ -379,8 +418,74 @@ const goToRefereeManage = () => {
 /**
  * 选择头像
  */
-const onChooseAvatar = (e: any) => {
-  formData.value.avatar = e.detail.avatarUrl
+const onChooseAvatar = async (e: any) => {
+  try {
+    uni.showLoading({ title: '上传中...' })
+
+    const tempPath = e.detail.avatarUrl
+    const userInfoData = uni.getStorageSync('userInfo')
+    const cloudPath = StoragePathHelper.userAvatar(userInfoData.uid, tempPath)
+
+    // 上传到云存储
+    const result = await StorageApi.replaceFile(
+      formData.value.avatarFileID || null,
+      tempPath,
+      cloudPath
+    )
+
+    // 保存 fileID 和临时 URL
+    formData.value.avatarFileID = result.fileID
+    formData.value.avatar = await StorageApi.getSingleTempFileURL(result.fileID)
+
+    uni.hideLoading()
+    uni.showToast({ title: '上传成功', icon: 'success' })
+  } catch (error) {
+    uni.hideLoading()
+    uni.showToast({ title: '上传失败', icon: 'error' })
+    console.error('上传头像失败:', error)
+  }
+}
+
+/**
+ * 选择背景图片
+ */
+const chooseBackgroundImage = () => {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      try {
+        uni.showLoading({ title: '上传中...' })
+
+        const filePath = res.tempFilePaths[0]
+        const userInfoData = uni.getStorageSync('userInfo')
+        const cloudPath = StoragePathHelper.userBackground(userInfoData.uid, filePath)
+
+        // 上传到云存储
+        const result = await StorageApi.replaceFile(
+          formData.value.backgroundImageFileID || null,
+          filePath,
+          cloudPath
+        )
+
+        // 保存 fileID 和临时 URL
+        formData.value.backgroundImageFileID = result.fileID
+        formData.value.backgroundImage = await StorageApi.getSingleTempFileURL(result.fileID)
+
+        uni.hideLoading()
+        uni.showToast({ title: '上传成功', icon: 'success' })
+      } catch (error) {
+        uni.hideLoading()
+        uni.showToast({ title: '上传失败', icon: 'error' })
+        console.error('上传背景图片失败:', error)
+      }
+    },
+    fail: (err) => {
+      console.error('选择图片失败:', err)
+      uni.showToast({ title: '选择图片失败', icon: 'error' })
+    }
+  })
 }
 
 /**
@@ -442,7 +547,8 @@ const handleSave = async () => {
       realName: formData.value.realName,
       phone: formData.value.phone,
       city: formData.value.region || '',
-      avatar: formData.value.avatar || '',
+      avatar: formData.value.avatarFileID || '', // 使用 fileID 而不是临时URL
+      backgroundImage: formData.value.backgroundImageFileID || '', // 使用 fileID
       gender: formData.value.gender === 'male' ? '男' : '女',
       industry: formData.value.industry || '',
       birthday: birthday
@@ -491,6 +597,27 @@ button::after {
   justify-content: center;
   box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+// 背景图片选择器（长方形卡片样式）
+.t-background-picker {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 16rpx;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.t-background-picker__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 // 推荐人信息展示（白色卡片样式）

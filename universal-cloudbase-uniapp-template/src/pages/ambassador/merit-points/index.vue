@@ -53,21 +53,6 @@
           </view>
         </view>
 
-        <!-- 获得途径统计 -->
-        <view class="t-section-title t-section-title--simple">📊 获得途径统计</view>
-        <view class="stats-card">
-          <view class="stats-grid">
-            <view class="stats-item">
-              <view class="stats-value primary">1,850.0</view>
-              <view class="stats-label">推荐课程</view>
-            </view>
-            <view class="stats-item">
-              <view class="stats-value success">1,730.0</view>
-              <view class="stats-label">辅导员/义工</view>
-            </view>
-          </view>
-        </view>
-
         <!-- Tab切换 - 吸顶 -->
         <view class="tabs-wrapper">
           <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight">

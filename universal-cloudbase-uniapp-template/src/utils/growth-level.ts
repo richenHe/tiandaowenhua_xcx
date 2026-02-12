@@ -55,3 +55,4 @@ export function getGrowthLevelDesc(activityCount: number): string {
   return '新生、起点,代表初级成员'
 }
 
+

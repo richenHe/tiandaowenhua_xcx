@@ -414,3 +414,57 @@ export interface GetActivityListParams extends PaginationParams {
 }
 
 export interface GetActivityListResponse extends PaginationResponse<Activity> {}
+
+/**
+ * 大使等级配置信息
+ */
+export interface LevelConfig {
+  /** 等级ID */
+  id: number
+  /** 等级值（0-普通用户，1-准青鸾，2-青鸾，3-鸿鹄） */
+  level: number
+  /** 等级名称 */
+  level_name: string
+  /** 等级图标 */
+  level_icon?: string
+  /** 等级描述 */
+  level_desc?: string
+  /** 升级条件列表 */
+  upgrade_conditions?: string[]
+  /** 等级权益列表 */
+  benefits?: string[]
+  /** 推荐初探班功德分比例 */
+  merit_rate_basic?: number
+  /** 推荐密训班功德分比例 */
+  merit_rate_advanced?: number
+  /** 推荐初探班可提现积分比例 */
+  cash_rate_basic?: number
+  /** 推荐密训班可提现积分比例 */
+  cash_rate_advanced?: number
+  /** 升级时发放的冻结积分 */
+  frozen_points?: number
+  /** 每次推荐解冻积分金额 */
+  unfreeze_per_referral?: number
+  /** 支付升级所需金额 */
+  upgrade_payment_amount?: number
+  /** 升级赠送初探班名额 */
+  gift_quota_basic?: number
+  /** 升级赠送密训班名额 */
+  gift_quota_advanced?: number
+  /** 是否可获得推荐奖励 */
+  can_earn_reward?: boolean
+  /** 状态 */
+  status?: number
+}
+
+/**
+ * 大使等级体系响应数据
+ */
+export interface LevelSystemResponse {
+  /** 等级配置列表 */
+  levels: LevelConfig[]
+  /** 当前用户等级 */
+  current_level?: number
+  /** 下一等级 */
+  next_level?: LevelConfig | null
+}

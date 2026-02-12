@@ -34,10 +34,10 @@ export interface FeedbackCourse {
  * 提交反馈请求参数
  */
 export interface SubmitFeedbackParams {
-  /** 反馈类型（1-5） */
-  type: number
-  /** 课程ID */
-  course_id?: number
+  /** 反馈类型（1-5）【驼峰命名】 */
+  feedbackType: number
+  /** 课程ID【驼峰命名】 */
+  courseId?: number
   /** 反馈内容 */
   content: string
   /** 图片列表 */
