@@ -35,7 +35,7 @@
 
 ### 基础访问路径
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks
 ```
 
 ### 实际回调路径
@@ -49,14 +49,14 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks
 
 ### 测试基础路径（浏览器访问）
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks
 ```
 
 预期返回：路由错误提示（因为没有指定具体回调类型）
 
 ### 测试消息推送路径（浏览器访问）
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message-push
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/message-push
 ```
 
 预期返回：接入验证相关信息
@@ -98,6 +98,7 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message
 **在云函数列表中看到"普通触发"是正常的**，这不影响 HTTP 访问功能！
 
 HTTP 访问功能由"访问服务"提供，而不是云函数本身的触发器类型。
+
 
 
 

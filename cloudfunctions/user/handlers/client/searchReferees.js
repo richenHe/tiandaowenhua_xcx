@@ -2,7 +2,7 @@
  * 客户端接口：搜索推荐人列表
  * Action: searchReferees
  */
-const { query } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -18,39 +18,22 @@ module.exports = async (event, context) => {
 
     const searchKeyword = keyword.trim();
 
-    // 构建查询条件：搜索姓名或手机号，且必须是大使（ambassador_level >= 1）
-    const whereConditions = [
-      'ambassador_level >= 1',
-      '(real_name LIKE ? OR phone LIKE ?)'
-    ];
+    // 查询推荐人列表（搜索姓名或手机号，且必须是大使 ambassador_level >= 1）
+    const { data: referees, error } = await db
+      .from('users')
+      .select('id, uid, real_name, phone, avatar, ambassador_level, referee_code')
+      .gte('ambassador_level', 1)
+      .or(`real_name.like.%${searchKeyword}%,phone.like.%${searchKeyword}%`)
+      .order('ambassador_level', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-    const params = [
-      `%${searchKeyword}%`,
-      `%${searchKeyword}%`
-    ];
-
-    // 查询推荐人列表
-    const referees = await query(
-      'users',
-      whereConditions.join(' AND '),
-      params,
-      {
-        fields: [
-          'id',
-          'uid',
-          'real_name',
-          'phone',
-          'avatar',
-          'ambassador_level',
-          'referee_code'
-        ],
-        orderBy: 'ambassador_level DESC, created_at DESC',
-        limit: 50 // 最多返回50条
-      }
-    );
+    if (error) {
+      throw error;
+    }
 
     // 格式化返回数据
-    const formattedReferees = referees.map(referee => {
+    const formattedReferees = (referees || []).map(referee => {
       // 手机号脱敏
       const maskedPhone = referee.phone
         ? referee.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')

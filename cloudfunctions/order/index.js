@@ -2,16 +2,15 @@
  * Order 云函数入口
  * 订单模块 - 14个action
  */
-const cloudbase = require('@cloudbase/node-sdk');
+const cloud = require('wx-server-sdk');
 const { response, checkClientAuth, checkAdminAuth } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase
-const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
+// 初始化 wx-server-sdk (用于微信支付)
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 // 初始化 business-logic 层
-business.init(app);
+business.init(cloud);
 
 // 导入处理器
 const publicHandlers = {
@@ -47,20 +46,8 @@ const ROUTES = {
 exports.main = async (event, context) => {
   const { action, test_openid } = event;
   
-  // 获取用户信息
-  let OPENID = test_openid; // 测试模式支持
-  
-  // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
-  if (!OPENID) {
-    const userInfo = auth.getUserInfo();
-    if (userInfo && userInfo.openId) {
-      OPENID = userInfo.openId;
-    } else if (userInfo && userInfo.uid) {
-      OPENID = userInfo.uid;
-    } else if (userInfo && userInfo.customUserId) {
-      OPENID = userInfo.customUserId;
-    }
-  }
+  // 获取用户 OPENID
+  const OPENID = test_openid || cloud.getWXContext().OPENID;
 
   console.log(`[${action}] 收到请求:`, { openid: OPENID?.slice(-6) || 'undefined' });
 

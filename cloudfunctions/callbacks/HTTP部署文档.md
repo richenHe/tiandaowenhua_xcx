@@ -13,14 +13,14 @@
 
 ### 基础路径
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks
 ```
 
 ### 微信回调地址
 
 #### 1. 微信消息推送回调
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message-push
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/message-push
 ```
 
 **用途**: 接收微信消息推送通知
@@ -33,7 +33,7 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message
 
 #### 2. 微信支付回调
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/payment
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/payment
 ```
 
 **用途**: 接收微信支付成功通知
@@ -49,7 +49,7 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/payment
 
 #### 3. 微信退款回调
 ```
-https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/refund
+https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/refund
 ```
 
 **用途**: 接收微信退款结果通知
@@ -67,7 +67,7 @@ https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/refund
 | 变量名 | 说明 | 配置状态 |
 |--------|------|---------|
 | `WECHAT_TOKEN` | 微信服务器配置 Token | ✅ 已配置: tiandao_wechat_2026 |
-| `MCH_KEY` | 微信支付商户密钥 | ⚠️ 待配置（需在微信支付商户平台获取） |
+| `MCH_KEY` | 微信支付商户密钥（32位） | ✅ **已配置**: e6f4c2a8b1d5973820fedcba56789012 |
 
 ### 配置 MCH_KEY
 1. 登录 [微信支付商户平台](https://pay.weixin.qq.com/)
@@ -123,7 +123,7 @@ if (url.includes('/refund')) {
 ### 1. 微信消息推送测试
 ```bash
 # GET 请求测试（接入验证）
-curl "https://cloud1-0gnn3mn17b581124.ap-shanghai.app.tcloudbase.com/callbacks/message-push?signature=xxx&timestamp=xxx&nonce=xxx&echostr=test"
+curl "https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/message-push?signature=xxx&timestamp=xxx&nonce=xxx&echostr=test"
 ```
 
 ### 2. 微信支付回调测试（需要微信服务器发送真实回调）
@@ -171,6 +171,7 @@ mcp_cloudbase_updateFunctionCode({
 - [README.md](./README.md) - 云函数功能说明
 - [API文档.md](./API文档.md) - 接口详细说明
 - [开发报告.md](./开发报告.md) - 开发过程记录
+
 
 
 

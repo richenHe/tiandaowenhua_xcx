@@ -17,6 +17,7 @@ const clientHandlers = {
   updateProfile: require('./handlers/client/updateProfile'),
   updateReferee: require('./handlers/client/updateReferee'),
   getRefereeInfo: require('./handlers/client/getRefereeInfo'),
+  searchReferees: require('./handlers/client/searchReferees'),
   getMyCourses: require('./handlers/client/getMyCourses'),
   getMyOrders: require('./handlers/client/getMyOrders'),
   getMeritPoints: require('./handlers/client/getMeritPoints'),

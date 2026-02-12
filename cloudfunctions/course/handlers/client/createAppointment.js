@@ -1,51 +1,65 @@
 /**
  * 创建预约（客户端接口）
  */
-const { findOne, insert, transaction } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { class_record_id } = event;
+  const { classRecordId, class_record_id } = event;
+  const finalClassRecordId = classRecordId || class_record_id; // 支持两种命名
   const { user } = context;
 
   try {
     // 参数验证
-    const validation = validateRequired({ class_record_id }, ['class_record_id']);
-    if (!validation.valid) {
-      return response.paramError(validation.message);
+    if (!finalClassRecordId) {
+      return response.paramError('缺少必填参数: classRecordId');
     }
 
-    // 查询上课记录
-    const classRecord = await findOne(
-      'class_records',
-      'id = ? AND status = 1 AND deleted_at IS NULL',
-      [class_record_id]
-    );
+    console.log('[Course/createAppointment] 创建预约:', {
+      user_id: user.id,
+      class_record_id: finalClassRecordId
+    });
 
-    if (!classRecord) {
+    // 查询上课记录
+    const { data: classRecords, error: classError } = await db
+      .from('class_records')
+      .select('*')
+      .eq('id', finalClassRecordId)
+      .eq('status', 1)
+      .is('deleted_at', null)
+      .single();
+
+    if (classError || !classRecords) {
+      console.error('[Course/createAppointment] 查询上课记录失败:', classError);
       return response.notFound('上课记录不存在或已取消');
     }
 
-    // 验证用户是否已购买该课程
-    const userCourse = await findOne(
-      'user_courses',
-      'user_id = ? AND course_id = ? AND deleted_at IS NULL',
-      [user.id, classRecord.course_id]
-    );
+    const classRecord = classRecords;
 
-    if (!userCourse) {
+    // 验证用户是否已购买该课程
+    const { data: userCourses, error: courseError } = await db
+      .from('user_courses')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('course_id', classRecord.course_id)
+      .is('deleted_at', null)
+      .single();
+
+    if (courseError || !userCourses) {
       return response.forbidden('您还未购买该课程');
     }
 
     // 检查是否已预约
-    const existingAppointment = await findOne(
-      'appointments',
-      'user_id = ? AND class_record_id = ? AND status IN (1,2) AND deleted_at IS NULL',
-      [user.id, class_record_id]
-    );
+    const { data: existingAppointments } = await db
+      .from('appointments')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('class_record_id', finalClassRecordId)
+      .in('status', [1, 2])
+      .is('deleted_at', null)
+      .single();
 
-    if (existingAppointment) {
+    if (existingAppointments) {
       return response.error('您已预约该课程，请勿重复预约');
     }
 
@@ -54,36 +68,45 @@ module.exports = async (event, context) => {
       return response.error('该课程名额已满');
     }
 
-    // 事务处理：创建预约 + 扣减名额
-    await transaction(async (conn) => {
-      // 创建预约记录
-      const appointmentId = await insert(
-        'appointments',
-        {
-          user_id: user.id,
-          course_id: classRecord.course_id,
-          class_record_id: class_record_id,
-          status: 1, // 待上课
-          appointed_at: new Date()
-        },
-        conn
-      );
+    // 创建预约记录
+    const { data: newAppointment, error: insertError } = await db
+      .from('appointments')
+      .insert({
+        user_id: user.id,
+        course_id: classRecord.course_id,
+        class_record_id: finalClassRecordId,
+        status: 1, // 待上课
+        appointed_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-      // 扣减名额（使用原始 SQL）
-      await conn.query(
-        'UPDATE class_records SET current_students = current_students + 1 WHERE id = ?',
-        [class_record_id]
-      );
+    if (insertError) {
+      console.error('[Course/createAppointment] 创建预约失败:', insertError);
+      throw insertError;
+    }
 
-      return appointmentId;
-    });
+    // 更新班级人数（注意：这里可能存在并发问题，生产环境建议使用数据库事务或乐观锁）
+    const { error: updateError } = await db
+      .from('class_records')
+      .update({ current_students: classRecord.current_students + 1 })
+      .eq('id', finalClassRecordId);
+
+    if (updateError) {
+      console.error('[Course/createAppointment] 更新班级人数失败:', updateError);
+      // 回滚：删除刚创建的预约
+      await db.from('appointments').delete().eq('id', newAppointment.id);
+      throw updateError;
+    }
+
+    console.log('[Course/createAppointment] 预约成功:', newAppointment.id);
 
     return response.success({
-      message: '预约成功',
-      class_record_id,
+      appointment_id: newAppointment.id,
+      class_record_id: finalClassRecordId,
       class_date: classRecord.class_date,
       start_time: classRecord.start_time
-    });
+    }, '预约成功');
 
   } catch (error) {
     console.error('[Course/createAppointment] 创建失败:', error);

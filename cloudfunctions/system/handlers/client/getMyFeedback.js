@@ -29,8 +29,8 @@ module.exports = async (event, context) => {
         images,
         contact,
         status,
-        reply_content,
-        reply_at,
+        reply,
+        reply_time,
         created_at,
         course:courses(name, cover_image)
       `)

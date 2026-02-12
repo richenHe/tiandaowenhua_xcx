@@ -3,13 +3,8 @@
  * Action: client:getActivityRecords
  * @description 获取用户的活动记录列表，支持分页和类型筛选
  */
-const cloudbase = require('@cloudbase/node-sdk');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
-
-// 初始化 CloudBase
-const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const db = app.database();
-const _ = db.command;
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -23,59 +18,59 @@ module.exports = async (event, context) => {
       pageSize
     });
 
-    // 构建查询条件
-    const where = {
-      user_id: user.id,
-      status: 1  // 只查询有效记录
-    };
+    // 计算分页参数
+    const limit = parseInt(pageSize) || 10;
+    const offset = (parseInt(page) - 1) * limit;
+
+    // 构建查询
+    let queryBuilder = db
+      .from('ambassador_activity_records')
+      .select(`
+        id,
+        activity_type,
+        activity_name,
+        activity_desc,
+        location,
+        start_time,
+        duration,
+        participant_count,
+        merit_points,
+        note,
+        created_at
+      `, { count: 'exact' })
+      .eq('user_id', user.id)
+      .eq('status', 1);
 
     // 如果指定了活动类型，添加类型筛选
     if (activityType > 0) {
-      where.activity_type = activityType;
+      queryBuilder = queryBuilder.eq('activity_type', activityType);
     }
 
-    // 1. 查询活动记录列表（分页）
-    const listResult = await db.collection('ambassador_activity_records')
-      .where(where)
-      .field({
-        id: true,
-        activity_type: true,
-        activity_name: true,
-        activity_desc: true,
-        location: true,
-        start_time: true,
-        duration: true,
-        participant_count: true,
-        merit_points: true,
-        note: true,
-        created_at: true
-      })
-      .orderBy('start_time', 'desc')
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .get();
+    // 执行分页查询
+    queryBuilder = queryBuilder
+      .order('start_time', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // 2. 查询总数
-    const countResult = await db.collection('ambassador_activity_records')
-      .where(where)
-      .count();
+    const { data: list, error: listError, count: total } = await queryBuilder;
 
-    // 3. 查询统计信息
-    const statsResult = await db.collection('ambassador_activity_records')
-      .where({
-        user_id: user.id,
-        status: 1
-      })
-      .field({
-        activity_type: true,
-        merit_points: true,
-        start_time: true
-      })
-      .get();
+    if (listError) {
+      throw listError;
+    }
+
+    // 查询统计信息（所有有效记录）
+    const { data: allRecords, error: statsError } = await db
+      .from('ambassador_activity_records')
+      .select('activity_type, merit_points, start_time')
+      .eq('user_id', user.id)
+      .eq('status', 1);
+
+    if (statsError) {
+      throw statsError;
+    }
 
     // 计算统计数据
     const stats = {
-      total_count: statsResult.data.length,
+      total_count: allRecords?.length || 0,
       total_merit_points: 0,
       month_count: 0,
       type_stats: {
@@ -89,7 +84,7 @@ module.exports = async (event, context) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    statsResult.data.forEach(record => {
+    (allRecords || []).forEach(record => {
       // 累计功德分
       stats.total_merit_points += parseFloat(record.merit_points) || 0;
 
@@ -106,8 +101,8 @@ module.exports = async (event, context) => {
     });
 
     const result = {
-      list: listResult.data || [],
-      total: countResult.total || 0,
+      list: list || [],
+      total: total || 0,
       stats
     };
 

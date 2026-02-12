@@ -3,26 +3,24 @@
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { content_id, content_type } = event;
+  const { courseId, course_id, lessonId, lesson_id } = event;
   const { user } = context;
 
-  try {
-    if (content_id && content_type) {
-      // 查询单个内容的学习进度
-      const validation = validateRequired({ content_id, content_type }, ['content_id', 'content_type']);
-      if (!validation.valid) {
-        return response.paramError(validation.message);
-      }
+  // 统一参数格式
+  const finalCourseId = courseId || course_id;
+  const finalLessonId = lessonId || lesson_id;
 
+  try {
+    if (finalCourseId && finalLessonId) {
+      // 查询单个课时的学习进度
       const { data, error } = await db
         .from('academy_progress')
-        .select('id, content_id, content_type, progress, duration, last_learn_at, created_at')
+        .select('id, course_id, lesson_id, progress_percent, watch_duration, last_position, completed, completed_at, created_at, updated_at')
         .eq('user_id', user.id)
-        .eq('content_id', parseInt(content_id))
-        .eq('content_type', parseInt(content_type))
+        .eq('course_id', parseInt(finalCourseId))
+        .eq('lesson_id', parseInt(finalLessonId))
         .single();
 
       if (error && error.code !== 'PGRST116') {  // PGRST116 = 没有找到记录
@@ -30,49 +28,50 @@ module.exports = async (event, context) => {
       }
 
       return response.success(data || {
-        progress: 0,
-        duration: 0,
-        last_learn_at: null
-      });
+        progress_percent: 0,
+        watch_duration: 0,
+        last_position: 0,
+        completed: 0
+      }, '查询成功');
 
-    } else {
-      // 查询所有学习进度
+    } else if (finalCourseId) {
+      // 查询某门课程的所有学习进度
       const { data: list, error } = await db
         .from('academy_progress')
-        .select('id, content_id, content_type, progress, duration, last_learn_at, created_at')
+        .select('id, course_id, lesson_id, progress_percent, watch_duration, last_position, completed, completed_at, updated_at')
         .eq('user_id', user.id)
-        .order('last_learn_at', { ascending: false });
+        .eq('course_id', parseInt(finalCourseId))
+        .order('updated_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      // 格式化数据（添加 content_type_name）
-      const getContentTypeName = (type) => {
-        const map = {
-          1: '商学院介绍',
-          2: '案例',
-          3: '资料'
-        };
-        return map[type] || '未知';
-      };
+      return response.success(list || [], '查询成功');
 
-      const formattedList = (list || []).map(item => ({
-        ...item,
-        content_type_name: getContentTypeName(item.content_type)
-      }));
+    } else {
+      // 查询所有学习进度
+      const { data: list, error } = await db
+        .from('academy_progress')
+        .select('id, course_id, lesson_id, progress_percent, watch_duration, completed, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
 
       // 统计学习情况
       const stats = {
-        total_contents: formattedList.length,
-        completed_contents: formattedList.filter(item => item.progress >= 100).length,
-        total_duration: formattedList.reduce((sum, item) => sum + (item.duration || 0), 0)
+        total_lessons: list ? list.length : 0,
+        completed_lessons: list ? list.filter(item => item.completed === 1).length : 0,
+        total_watch_duration: list ? list.reduce((sum, item) => sum + (item.watch_duration || 0), 0) : 0
       };
 
       return response.success({
         stats,
-        list: formattedList
-      });
+        list: list || []
+      }, '查询成功');
     }
 
   } catch (error) {

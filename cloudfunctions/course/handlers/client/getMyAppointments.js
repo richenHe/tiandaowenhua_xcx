@@ -1,7 +1,8 @@
 /**
  * 获取我的预约列表（客户端接口）
  */
-const { db, response } = require('../../common');
+const { db } = require('../../common/db');
+const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { status, page = 1, page_size = 10 } = event;

@@ -14,30 +14,34 @@ module.exports = async (event, context) => {
 
     const { offset, limit } = utils.getPagination(page, pageSize);
 
-    // 构建查询条件
-    const where = { user_id: user.id };
+    // 构建查询
+    let queryBuilder = db
+      .from('withdrawals')
+      .select('id, withdraw_no, amount, account_type, account_info, status, audit_remark, apply_time, audit_time', { count: 'exact' })
+      .eq('user_id', user.id);
+
+    // 添加状态筛选
     if (status !== undefined) {
-      where.status = status;
+      queryBuilder = queryBuilder.eq('status', status);
     }
 
-    // 查询提现记录
-    const records = await query('withdrawals', {
-      columns: 'id, withdraw_no, amount, withdraw_type, account_info, status, audit_remark, created_at, audited_at',
-      where,
-      limit,
-      offset,
-      orderBy: { column: 'created_at', ascending: false }
-    });
+    // 执行查询
+    queryBuilder = queryBuilder
+      .order('apply_time', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // 查询总数
-    const total = await count('withdrawals', where);
+    const { data: records, error, count: total } = await queryBuilder;
+
+    if (error) {
+      throw error;
+    }
 
     console.log('[getWithdrawRecords] 查询成功，共', total, '条');
     return response.success({
-      total,
-      page,
-      pageSize,
-      list: records
+      total: total || 0,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      list: records || []
     });
 
   } catch (error) {

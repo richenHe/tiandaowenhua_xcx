@@ -2,7 +2,7 @@
  * 客户端接口：兑换记录列表
  * Action: getExchangeRecords
  */
-const { from } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
 
@@ -13,28 +13,47 @@ module.exports = async (event, context) => {
   try {
     console.log(`[getExchangeRecords] 查询兑换记录:`, { user_id: user.id, status, page });
 
-    // 1. 构建查询
-    let queryBuilder = from('mall_exchange_records')
-      .where('user_id', user.id);
+    // 获取分页参数
+    const { limit, offset } = getPagination(page, page_size);
 
+    // 构建查询（包含商品信息的 JOIN）
+    let queryBuilder = db
+      .from('mall_exchange_records')
+      .select(`
+        exchange_no,
+        goods_name,
+        goods_image,
+        quantity,
+        merit_points_used,
+        cash_points_used,
+        total_cost,
+        status,
+        created_at,
+        goods:mall_goods!fk_mall_exchange_records_goods(goods_name, goods_image)
+      `, { count: 'exact' })
+      .eq('user_id', user.id);
+
+    // 添加状态筛选
     if (status !== undefined && status !== null && status !== '') {
-      queryBuilder = queryBuilder.where('status', parseInt(status));
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
-    // 2. 查询总数
-    const { total } = await queryBuilder.clone().count('* as total').then(res => res[0] || { total: 0 });
+    // 执行查询
+    queryBuilder = queryBuilder
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // 3. 获取分页参数并查询列表
-    const { limit, offset } = getPagination(page, page_size);
-    const records = await queryBuilder
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .offset(offset);
+    const { data: records, error, count: total } = await queryBuilder;
 
-    // 4. 格式化记录列表
-    const list = records.map(record => ({
+    if (error) {
+      throw error;
+    }
+
+    // 格式化记录列表
+    const list = (records || []).map(record => ({
       exchange_no: record.exchange_no,
       goods_name: record.goods_name,
+      goods_image: record.goods_image,
       quantity: record.quantity,
       merit_points_used: record.merit_points_used,
       cash_points_used: record.cash_points_used,
@@ -47,7 +66,7 @@ module.exports = async (event, context) => {
     console.log(`[getExchangeRecords] 查询成功，共 ${total} 条`);
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
       list

@@ -5,20 +5,41 @@ const { db, response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { course_id, start_date, end_date, page = 1, page_size = 10 } = event;
+  // 支持驼峰和下划线两种参数格式
+  const { 
+    courseId, 
+    course_id, 
+    startDate, 
+    start_date, 
+    endDate, 
+    end_date, 
+    page = 1, 
+    pageSize, 
+    page_size 
+  } = event;
+  
+  // 统一转换为下划线格式
+  const finalCourseId = courseId || course_id;
+  const finalStartDate = startDate || start_date;
+  const finalEndDate = endDate || end_date;
+  const finalPageSize = pageSize || page_size || 10;
   const { user } = context;
 
   try {
     // 参数验证
-    const validation = validateRequired({ course_id }, ['course_id']);
-    if (!validation.valid) {
-      return response.paramError(validation.message);
+    if (!finalCourseId) {
+      return response.paramError('缺少必填参数: courseId');
     }
 
-    console.log(`[Course/getClassRecords] 收到请求:`, { course_id, start_date, end_date, page });
+    console.log(`[Course/getClassRecords] 收到请求:`, { 
+      course_id: finalCourseId, 
+      start_date: finalStartDate, 
+      end_date: finalEndDate, 
+      page 
+    });
 
     // 计算分页参数
-    const limit = parseInt(page_size) || 10;
+    const limit = parseInt(finalPageSize) || 10;
     const offset = (parseInt(page) - 1) * limit;
 
     // 构建查询
@@ -37,16 +58,16 @@ module.exports = async (event, context) => {
         total_quota,
         booked_quota
       `, { count: 'exact' })
-      .eq('course_id', course_id)
+      .eq('course_id', finalCourseId)
       .eq('status', 1);
 
     // 日期过滤
-    if (start_date) {
-      queryBuilder = queryBuilder.gte('class_date', start_date);
+    if (finalStartDate) {
+      queryBuilder = queryBuilder.gte('class_date', finalStartDate);
     }
 
-    if (end_date) {
-      queryBuilder = queryBuilder.lte('class_date', end_date);
+    if (finalEndDate) {
+      queryBuilder = queryBuilder.lte('class_date', finalEndDate);
     }
 
     // 排序和分页

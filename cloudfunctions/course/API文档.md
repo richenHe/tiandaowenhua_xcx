@@ -220,29 +220,53 @@
 **请求参数**：
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| course_id | Number | 是 | 课程ID |
+| course_id | Number | **是** | 课程ID（必填参数） |
+| start_date | String | 否 | 开始日期过滤（格式：YYYY-MM-DD） |
+| end_date | String | 否 | 结束日期过滤（格式：YYYY-MM-DD） |
+| page | Number | 否 | 页码（默认1） |
+| page_size | Number | 否 | 每页数量（默认10） |
 
 **返回数据**：
 ```json
 {
   "code": 0,
-  "message": "获取成功",
-  "data": [
-    {
-      "id": 1,
-      "course_id": 1,
-      "course_name": "初探班",
-      "start_time": "2026-03-01T09:00:00.000Z",
-      "end_time": "2026-03-03T18:00:00.000Z",
-      "location": "北京",
-      "max_students": 30,
-      "current_students": 15,
-      "available_slots": 15,
-      "status": 1
-    }
-  ]
+  "message": "查询成功",
+  "data": {
+    "total": 20,
+    "page": 1,
+    "page_size": 10,
+    "list": [
+      {
+        "id": 1,
+        "course_id": 1,
+        "course_name": "初探班",
+        "class_date": "2026-03-01",
+        "class_time": "09:00-18:00",
+        "location": "北京",
+        "teacher": "老师姓名",
+        "max_students": 30,
+        "current_students": 15,
+        "available_quota": 15,
+        "is_appointed": 1
+      }
+    ]
+  }
 }
 ```
+
+**错误响应**：
+```json
+{
+  "code": 400,
+  "message": "缺少必填参数: course_id",
+  "success": false
+}
+```
+
+**说明**：
+- `course_id` 为必填参数，缺少该参数将返回400错误
+- `is_appointed` 表示当前用户是否已预约该排期（1=已预约，0=未预约）
+- 仅返回状态为启用（status=1）的排期
 
 ---
 

@@ -28,7 +28,8 @@ const clientHandlers = {
   getNotificationConfigs: require('./handlers/client/getNotificationConfigs'),
   subscribeNotification: require('./handlers/client/subscribeNotification'),
   getUserPoints: require('./handlers/client/getUserPoints'),
-  getSystemConfig: require('./handlers/client/getSystemConfig')
+  getSystemConfig: require('./handlers/client/getSystemConfig'),
+  getAnnouncementDetail: require('./handlers/client/getAnnouncementDetail')
 };
 
 // 导入管理端处理器

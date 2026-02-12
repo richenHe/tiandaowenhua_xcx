@@ -2,31 +2,37 @@
  * 客户端接口：发起支付
  * Action: createPayment
  */
-const { findOne, update } = require('../../common/db');
+const cloud = require('wx-server-sdk');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
-const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
-  const { order_no } = event;
+  const { orderNo, order_no } = event;
+  const finalOrderNo = orderNo || order_no; // 支持两种命名
 
   try {
-    console.log(`[createPayment] 发起支付:`, { user_id: user.id, order_no });
+    console.log(`[createPayment] 发起支付:`, { user_id: user.id, order_no: finalOrderNo });
 
     // 1. 参数验证
-    if (!order_no) {
+    if (!finalOrderNo) {
       return response.paramError('缺少订单号');
     }
 
     // 2. 查询订单信息
-    const order = await findOne('orders', {
-      order_no,
-      user_id: user.id
-    });
+    const { data: orders, error: queryError } = await db
+      .from('orders')
+      .select('*')
+      .eq('order_no', finalOrderNo)
+      .eq('user_id', user.id)
+      .single();
 
-    if (!order) {
+    if (queryError || !orders) {
+      console.error('[createPayment] 订单查询失败:', queryError);
       return response.notFound('订单不存在');
     }
+
+    const order = orders;
 
     // 3. 验证订单状态
     if (order.pay_status === 1) {
@@ -44,10 +50,11 @@ module.exports = async (event, context) => {
     const expiresAt = new Date(order.expire_at);
     if (now > expiresAt) {
       // 更新订单状态为已关闭
-      await update('orders',
-        { pay_status: 3 },
-        { order_no }
-      );
+      await db
+        .from('orders')
+        .update({ pay_status: 3 })
+        .eq('order_no', finalOrderNo);
+
       return response.error('订单已超时，请重新下单');
     }
 
@@ -56,28 +63,60 @@ module.exports = async (event, context) => {
       return response.error('订单金额异常');
     }
 
-    // 5. 调用 business-logic 层创建微信支付
-    const payParams = await business.createWechatPayment({
-      orderNo: order.order_no,
-      amount: order.final_amount,
-      description: order.order_name
-    }, OPENID);
+    // 6. 调用微信支付统一下单
+    const totalFee = Math.round(parseFloat(order.final_amount) * 100); // 元转分
+    const nonceStr = generateNonceStr();
 
-    // 6. 更新订单 prepay_id
-    await update('orders',
-      { prepay_id: payParams.prepayId },
-      { order_no }
-    );
+    console.log(`[createPayment] 调用统一下单:`, {
+      orderNo: finalOrderNo,
+      totalFee,
+      openid: OPENID
+    });
 
-    console.log(`[createPayment] 支付参数生成成功:`, { order_no, prepay_id: payParams.prepayId });
+    const payResult = await cloud.cloudPay.unifiedOrder({
+      body: order.order_name || '道天文化课程',
+      outTradeNo: finalOrderNo,
+      spbillCreateIp: '127.0.0.1',
+      totalFee: totalFee,
+      envId: process.env.TCB_ENV || cloud.DYNAMIC_CURRENT_ENV,
+      functionName: 'callbacks', // 支付回调云函数
+      subMchId: process.env.MCH_ID,
+      nonceStr: nonceStr,
+      tradeType: 'JSAPI',
+      openid: OPENID
+    });
 
+    console.log('[createPayment] 统一下单返回:', {
+      returnCode: payResult.returnCode,
+      resultCode: payResult.resultCode,
+      prepayId: payResult.prepayId
+    });
+
+    if (payResult.returnCode !== 'SUCCESS' || payResult.resultCode !== 'SUCCESS') {
+      const errMsg = payResult.returnMsg || payResult.errCodeDes || '统一下单失败';
+      console.error('[createPayment] 微信支付统一下单失败:', payResult);
+      throw new Error(`微信支付下单失败: ${errMsg}`);
+    }
+
+    // 7. 更新订单 prepay_id
+    await db
+      .from('orders')
+      .update({ prepay_id: payResult.prepayId || '' })
+      .eq('order_no', finalOrderNo);
+
+    console.log(`[createPayment] 支付参数生成成功:`, {
+      order_no: finalOrderNo,
+      prepay_id: payResult.prepayId
+    });
+
+    // 8. 返回小程序支付参数
     return response.success({
-      timeStamp: payParams.timeStamp,
-      nonceStr: payParams.nonceStr,
-      package: payParams.package,
-      signType: payParams.signType,
-      paySign: payParams.paySign,
-      prepay_id: payParams.prepayId
+      timeStamp: payResult.payment.timeStamp,
+      nonceStr: payResult.payment.nonceStr,
+      package: payResult.payment.package,
+      signType: payResult.payment.signType,
+      paySign: payResult.payment.paySign,
+      prepay_id: payResult.prepayId || ''
     }, '支付参数生成成功');
 
   } catch (error) {
@@ -85,3 +124,17 @@ module.exports = async (event, context) => {
     return response.error('发起支付失败', error);
   }
 };
+
+/**
+ * 生成随机字符串
+ * @param {number} length - 字符串长度
+ * @returns {string}
+ */
+function generateNonceStr(length = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return str;
+}

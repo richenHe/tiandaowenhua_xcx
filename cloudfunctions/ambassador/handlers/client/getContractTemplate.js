@@ -2,7 +2,7 @@
  * 客户端接口：获取协议模板
  * Action: getContractTemplate
  */
-const { findOne } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -17,10 +17,8 @@ module.exports = async (event, context) => {
       return response.paramError('缺少必要参数: level');
     }
 
-    const { db } = require('../../common/db');
-
     // 查询指定等级的最新协议模板
-    const { data, error } = await db
+    const { data: templates, error } = await db
       .from('contract_templates')
       .select('*')
       .eq('level', level)
@@ -29,21 +27,25 @@ module.exports = async (event, context) => {
       .limit(1)
       .single();
 
-    if (error && !error.message.includes('0 rows')) {
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
 
-    const template = data;
+    const template = templates;
 
     if (!template) {
       return response.error('该等级暂无可用协议模板');
     }
 
     // 检查用户是否已签署该协议
-    const signature = await findOne('contract_signatures', {
-      user_id: user.id,
-      template_id: template.id
-    });
+    const { data: signatures } = await db
+      .from('contract_signatures')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('template_id', template.id)
+      .single();
+
+    const signature = signatures;
 
     return response.success({
       template: {

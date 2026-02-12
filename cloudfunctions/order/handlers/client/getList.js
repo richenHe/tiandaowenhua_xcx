@@ -31,7 +31,7 @@ module.exports = async (event, context) => {
         is_reward_granted,
         created_at,
         expire_at,
-        referee:users!orders_referee_id_fkey(real_name)
+        referee:users!fk_orders_referee(real_name)
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

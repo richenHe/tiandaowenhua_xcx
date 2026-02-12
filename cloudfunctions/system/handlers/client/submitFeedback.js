@@ -4,17 +4,18 @@
  *
  * 参数：
  * - type: 反馈类型（1-5）
- * - course_id: 课程ID（可选）
+ * - courseId/course_id: 课程ID（可选）
  * - content: 反馈内容
- * - images: 图片列表（可选）
+ * - images: 图片数组（可选）
  * - contact: 联系方式（可选）
  */
-const { insert } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { type, course_id, content, images, contact } = event;
+  const { type, courseId, course_id, content, images, contact } = event;
+  const finalCourseId = courseId || course_id; // 支持两种命名
 
   try {
     // 参数验证
@@ -37,14 +38,14 @@ module.exports = async (event, context) => {
       user_id: user.id,
       type,
       content,
-      status: 0, // 待处理
-      created_at: new Date()
+      status: 0 // 待处理
     };
 
-    if (course_id) {
-      feedbackData.course_id = course_id;
+    if (finalCourseId) {
+      feedbackData.course_id = finalCourseId;
     }
 
+    // images 字段应该是 TEXT 类型，存储 JSON 字符串
     if (images && Array.isArray(images) && images.length > 0) {
       feedbackData.images = JSON.stringify(images);
     }
@@ -53,11 +54,20 @@ module.exports = async (event, context) => {
       feedbackData.contact = contact;
     }
 
-    const [feedback] = await insert('feedbacks', feedbackData);
+    const { data: newFeedback, error } = await db
+      .from('feedbacks')
+      .insert(feedbackData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[submitFeedback] 插入失败:', error);
+      throw error;
+    }
 
     return response.success({
-      id: feedback.id,
-      created_at: feedback.created_at
+      id: newFeedback.id,
+      created_at: newFeedback.created_at
     }, '提交成功，我们会尽快处理');
 
   } catch (error) {
