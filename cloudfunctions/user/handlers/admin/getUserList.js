@@ -20,24 +20,10 @@ module.exports = async (event, context) => {
 
     // ⚠️ 使用 db 实例进行查询（CloudBase SDK 方式）
     // TODO: 复杂查询需要后续优化
+    // 注意：users 表没有 deleted_at 字段，所有用户都是有效的
+    // 注意：CloudBase SDK 不支持在 select 中使用 as 别名，需手动处理
     let queryBuilder = db.from('users')
-      .select(`
-        id,
-        _openid,
-        real_name,
-        phone,
-        city,
-        avatar,
-        referee_code,
-        referee_id,
-        ambassador_level,
-        merit_points,
-        cash_points_available as cash_points,
-        cash_points_frozen as frozen_cash_points,
-        profile_completed,
-        created_at
-      `)
-      .is('deleted_at', null);
+      .select('id, _openid, real_name, phone, city, avatar, referee_code, referee_id, ambassador_level, merit_points, cash_points_available, cash_points_frozen, profile_completed, created_at');
 
     // 关键词搜索（注意：CloudBase SDK 可能不支持 LIKE）
     if (keyword) {
@@ -68,19 +54,26 @@ module.exports = async (event, context) => {
 
     // 查询总数
     const { count: total, error: countError } = await db.from('users')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null);
+      .select('*', { count: 'exact', head: true });
 
     if (countError) {
       throw new Error(countError.message);
     }
 
     console.log('[admin:getUserList] 查询成功，共', total, '条');
+    
+    // 格式化数据，添加字段别名
+    const list = (users || []).map(user => ({
+      ...user,
+      cash_points: user.cash_points_available,
+      frozen_cash_points: user.cash_points_frozen
+    }));
+    
     return response.success({
       total: total || 0,
       page,
       pageSize,
-      list: users || []
+      list
     });
 
   } catch (error) {

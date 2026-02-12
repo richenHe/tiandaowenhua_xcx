@@ -37,8 +37,8 @@ module.exports = async (event, context) => {
       return response.error('不能修改自己的状态');
     }
 
-    // 构建更新数据
-    const updateData = { updated_at: new Date() };
+    // 构建更新数据（updated_at 使用数据库默认值）
+    const updateData = {};
 
     if (password) {
       if (password.length < 6) {
@@ -49,7 +49,7 @@ module.exports = async (event, context) => {
 
     if (real_name) updateData.real_name = real_name;
     if (role) updateData.role = role;
-    if (permissions) updateData.permissions = JSON.stringify(permissions);
+    if (permissions) updateData.permissions = permissions; // JSON 类型无需 stringify
     if (status !== undefined) updateData.status = status;
 
     // 更新管理员

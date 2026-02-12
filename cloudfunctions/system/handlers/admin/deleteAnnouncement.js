@@ -26,10 +26,9 @@ module.exports = async (event, context) => {
       return response.notFound('公告不存在');
     }
 
-    // 软删除（更新状态为0）
+    // 软删除（更新状态为0，updated_at 使用数据库默认值）
     await update('announcements', {
-      status: 0,
-      updated_at: new Date()
+      status: 0
     }, { id });
 
     return response.success({ id }, '删除成功');

@@ -1,8 +1,8 @@
 /**
- * 管理端接口：获取大使详情
+ * 管理端接口：大使详情
  * Action: getAmbassadorDetail
  */
-const { findOne } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -10,120 +10,72 @@ module.exports = async (event, context) => {
   const { user_id } = event;
 
   try {
-    console.log(`[getAmbassadorDetail] 查询大使详情:`, user_id);
+    console.log(`[getAmbassadorDetail] 管理员查询大使详情:`, { admin_id: admin.id, user_id });
 
     // 参数验证
     if (!user_id) {
       return response.paramError('缺少必要参数: user_id');
     }
 
-    // 查询用户信息
-    const user = await findOne('users', { id: user_id });
-    if (!user) {
-      return response.error('用户不存在');
-    }
+    // 查询大使基本信息（users 表没有 deleted_at 字段）
+    const { data: user, error } = await db
+      .from('users')
+      .select('*')
+      .eq('id', user_id)
+      .gt('ambassador_level', 0)
+      .single();
 
-    if (user.ambassador_level === 0) {
-      return response.error('该用户不是大使');
+    if (error || !user) {
+      return response.error('用户不存在或不是大使');
     }
-
-    const { db } = require('../../common/db');
 
     // 统计推荐人数
     const { count: refereeCount } = await db
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('referee_id', user.id)
-      .is('deleted_at', null);
+      .eq('referee_id', user.id);
 
-    // 统计推荐订单
-    const { data: orders, error: orderError } = await db
+    // 查询推荐人列表（前10个）
+    const { data: referees } = await db
+      .from('users')
+      .select('id, real_name, phone, ambassador_level, created_at')
+      .eq('referee_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // 查询订单统计
+    const { count: totalOrders } = await db
       .from('orders')
-      .select('*')
+      .select('*', { count: 'exact', head: true })
       .eq('referee_id', user.id)
       .eq('pay_status', 1);
 
-    if (orderError) throw orderError;
-
-    const orderCount = orders?.length || 0;
-    const totalAmount = (orders || []).reduce((sum, order) => sum + parseFloat(order.final_amount || 0), 0);
-
-    // 查询名额信息
-    const { data: quotas, error: quotaError } = await db
-      .from('ambassador_quotas')
-      .select('*')
+    // 查询功德金统计
+    const { count: meritPointsCount } = await db
+      .from('merit_points_logs')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    if (quotaError) throw quotaError;
+    // 查询现金积分统计
+    const { count: cashPointsCount } = await db
+      .from('cash_points_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
 
-    let totalQuotas = 0;
-    let usedQuotas = 0;
-    (quotas || []).forEach(quota => {
-      totalQuotas += quota.total_count;
-      usedQuotas += quota.used_count;
-    });
-
-    // 查询升级记录
-    const { data: upgradeLogs, error: upgradeError } = await db
-      .from('ambassador_upgrade_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (upgradeError) throw upgradeError;
-
-    // 查询协议签署记录
-    const { data: contracts, error: contractError } = await db
-      .from('contract_signatures')
-      .select(`
-        *,
-        template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
-      `)
-      .eq('user_id', user.id)
-      .order('sign_time', { ascending: false });
-
-    if (contractError) throw contractError;
-
+    console.log('[getAmbassadorDetail] 查询成功');
     return response.success({
-      user: {
-        id: user.id,
-        uid: user.uid,
-        real_name: user.real_name,
-        phone: user.phone,
-        avatar_url: user.avatar_url,
-        referee_code: user.referee_code,
-        ambassador_level: user.ambassador_level,
-        merit_points_available: user.merit_points_available || 0,
-        merit_points_frozen: user.merit_points_frozen || 0,
-        cash_points_available: user.cash_points_available || 0,
-        cash_points_frozen: user.cash_points_frozen || 0,
-        cash_points_pending: user.cash_points_pending || 0,
-        created_at: user.created_at,
-        ambassador_approved_at: user.ambassador_approved_at
+      user,
+      statistics: {
+        refereeCount: refereeCount || 0,
+        totalOrders: totalOrders || 0,
+        meritPointsCount: meritPointsCount || 0,
+        cashPointsCount: cashPointsCount || 0
       },
-      stats: {
-        referee_count: refereeCount || 0,
-        order_count: orderCount,
-        total_amount: totalAmount,
-        total_quotas: totalQuotas,
-        used_quotas: usedQuotas,
-        available_quotas: totalQuotas - usedQuotas
-      },
-      upgrade_logs: upgradeLogs || [],
-      contracts: (contracts || []).map(c => ({
-        id: c.id,
-        contract_name: c.template?.contract_name || c.contract_name,
-        ambassador_level: c.ambassador_level,
-        contract_version: c.contract_version,
-        sign_time: c.sign_time,
-        contract_start: c.contract_start,
-        contract_end: c.contract_end,
-        status: c.status
-      }))
-    });
+      referees: referees || []
+    }, '获取大使详情成功');
 
   } catch (error) {
-    console.error(`[getAmbassadorDetail] 失败:`, error);
-    return response.error('查询大使详情失败', error);
+    console.error('[getAmbassadorDetail] 执行失败:', error);
+    return response.error('获取大使详情失败', error);
   }
 };

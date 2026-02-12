@@ -33,60 +33,45 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.or(`name.ilike.%${keyword}%,description.ilike.%${keyword}%`);
     }
 
-    const { data: courses, error, count: total } = await queryBuilder;
+    const { data: courses, error, count } = await queryBuilder;
 
     if (error) {
-      throw error;
+      console.error('[getList] 查询课程失败:', error);
+      return response.error('获取课程列表失败', error);
     }
 
-    // 如果已登录，查询用户购买记录
+    // 如果用户已登录，查询已购课程
     let userCourseIds = [];
-    if (OPENID && courses && courses.length > 0) {
-      const user = await findOne('users', { openid: OPENID });
+    if (OPENID) {
+      const user = await findOne('users', { _openid: OPENID });
       if (user) {
         const { data: userCourses } = await db
           .from('user_courses')
           .select('course_id')
-          .eq('user_id', user.id)
-          .is('deleted_at', null);
-        
-        userCourseIds = (userCourses || []).map(uc => uc.course_id);
+          .eq('user_id', user.id);
+
+        if (userCourses && userCourses.length > 0) {
+          userCourseIds = userCourses.map(uc => uc.course_id);
+        }
       }
     }
 
-    // 格式化数据
-    const getTypeName = (type) => {
-      switch (type) {
-        case 1: return '初探班';
-        case 2: return '密训班';
-        case 3: return '咨询服务';
-        default: return '未知';
-      }
-    };
-
+    // 添加已购标识
     const list = (courses || []).map(course => ({
-      id: course.id,
-      name: course.name,
-      type: course.type,
-      type_name: getTypeName(course.type),
-      cover_image: course.cover_image,
-      description: course.description,
-      current_price: course.current_price,
-      original_price: course.original_price,
-      status: course.status,
-      sort_order: course.sort_order,
-      is_purchased: userCourseIds.includes(course.id) ? 1 : 0
+      ...course,
+      is_purchased: userCourseIds.includes(course.id)
     }));
 
+    console.log(`[getList] 查询成功，共 ${count} 条`);
     return response.success({
-      total,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
-      list
+      list,
+      total: count || 0,
+      page,
+      page_size
     });
 
   } catch (error) {
-    console.error('[Course/getList] 查询失败:', error);
-    return response.error('查询课程列表失败', error);
+    console.error('[getList] 执行失败:', error);
+    return response.error('获取课程列表失败', error);
   }
 };

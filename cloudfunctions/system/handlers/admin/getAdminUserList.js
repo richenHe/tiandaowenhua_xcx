@@ -22,7 +22,7 @@ module.exports = async (event, context) => {
     // 构建查询
     let query = db
       .from('admin_users')
-      .select('id, username, real_name, role, permissions, status, last_login_at, created_at')
+      .select('id, username, real_name, role, permissions, status, last_login_time, created_at')
       .order('created_at', { ascending: false });
 
     // 状态筛选
@@ -48,10 +48,10 @@ module.exports = async (event, context) => {
 
     const { count: total } = await countQuery;
 
-    // 处理数据（解析 permissions）
+    // 处理数据（permissions 是 JSON 类型，无需解析）
     const processedAdmins = admins.map(a => ({
       ...a,
-      permissions: a.permissions ? JSON.parse(a.permissions) : [],
+      permissions: a.permissions || [],
       role_text: getRoleText(a.role),
       status_text: a.status === 1 ? '启用' : '禁用'
     }));

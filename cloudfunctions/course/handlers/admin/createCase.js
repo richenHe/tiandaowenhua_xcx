@@ -9,37 +9,64 @@ module.exports = async (event, context) => {
   const {
     title,
     category,
-    cover_image,
+    category_label,
+    badge_theme,
+    student_surname,
+    student_name,
+    student_avatar,
+    student_title,
+    student_desc,
+    avatar_theme,
     summary,
     content,
-    author,
+    quote,
+    achievements,
+    video_url,
+    images,
+    course_id,
+    course_name,
     sort_order,
+    is_featured,
     status
   } = event;
 
   try {
     // 参数验证
-    const validation = validateRequired({ title, content }, ['title', 'content']);
+    const validation = validateRequired({ title, student_name }, ['title', 'student_name']);
     if (!validation.valid) {
       return response.paramError(validation.message);
     }
 
     // 创建案例
-    const caseId = await insert('academy_cases', {
+    const [result] = await insert('academy_cases', {
       title,
       category,
-      cover_image,
+      category_label,
+      badge_theme: badge_theme || 'primary',
+      student_surname,
+      student_name,
+      student_avatar,
+      student_title,
+      student_desc,
+      avatar_theme: avatar_theme || 'default',
       summary,
       content,
-      author,
+      quote,
+      achievements, // JSON 类型
+      video_url,
+      images, // JSON 类型
+      course_id,
+      course_name,
       view_count: 0,
+      like_count: 0,
       sort_order: sort_order || 0,
+      is_featured: is_featured || 0,
       status: status !== undefined ? status : 1
     });
 
     return response.success({
       message: '案例创建成功',
-      case_id: caseId
+      case_id: result.id
     });
 
   } catch (error) {

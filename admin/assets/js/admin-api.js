@@ -2,12 +2,10 @@
  * Web 管理后台 API 工具类 - 完整版
  * 包含所有 64 个管理端接口
  * 
- * 基于 CloudBase SDK 调用云函数
+ * 使用 CloudBase HTTP API 调用云函数
  */
 
 class AdminAPI {
-  // 使用 HTTP API，不再需要 SDK 初始化和认证
-
   static async call(name, action, data = {}) {
     const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
     
@@ -16,7 +14,7 @@ class AdminAPI {
     }
 
     try {
-      // 使用 CloudBase HTTP API 调用云函数（标准方法）
+      // 使用 CloudBase HTTP API 调用云函数
       const apiUrl = `https://${CONFIG.ENV_ID}.service.tcloudbase.com/${name}`;
       
       const response = await fetch(apiUrl, {
@@ -45,6 +43,8 @@ class AdminAPI {
           console.error('解析响应 body 失败:', e);
         }
       }
+
+      console.log(`[${name}.${action}] 返回:`, result);
 
       if (!result.success) {
         if (result.code === 401) {

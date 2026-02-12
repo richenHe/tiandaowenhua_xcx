@@ -47,7 +47,7 @@ async function createAcademyIntro(data) {
   }
 
   // 创建介绍
-  const introId = await insert('academy_intro', {
+  const [result] = await insert('academy_intro', {
     title,
     cover_image,
     summary,
@@ -57,9 +57,8 @@ async function createAcademyIntro(data) {
   });
 
   return response.success({
-    message: '商学院介绍创建成功',
-    intro_id: introId
-  });
+    id: result.id
+  }, '商学院介绍创建成功');
 }
 
 // 更新商学院介绍

@@ -37,16 +37,17 @@ module.exports = async (event, context) => {
         { id: userId }
       );
 
-      // 记录变更日志
-      await insert('referee_change_logs', {
-        user_id: userId,
-        old_referee_id: oldRefereeId,
-        new_referee_id: null,
-        change_type: 'admin_clear',
-        operator_type: 'admin',
-        operator_id: admin.id,
-        remark: remark || '管理员清除推荐人'
-      });
+    // 记录变更日志
+    await insert('referee_change_logs', {
+      user_id: userId,
+      user_uid: user.uid,
+      old_referee_id: oldRefereeId,
+      new_referee_id: null,
+      change_type: 3, // 3=管理员清除
+      change_source: 2, // 2=管理员操作
+      admin_id: admin.id,
+      remark: remark || '管理员清除推荐人'
+    });
 
       console.log('[admin:updateUserReferee] 推荐人已清除');
       return response.success(null, '推荐人已清除');
@@ -84,11 +85,14 @@ module.exports = async (event, context) => {
     // 记录变更日志
     await insert('referee_change_logs', {
       user_id: userId,
+      user_uid: user.uid,
       old_referee_id: oldRefereeId,
+      old_referee_uid: user.referee_uid,
       new_referee_id: newRefereeId,
-      change_type: 'admin_update',
-      operator_type: 'admin',
-      operator_id: admin.id,
+      new_referee_uid: newReferee.uid,
+      change_type: 2, // 2=管理员修改
+      change_source: 2, // 2=管理员操作
+      admin_id: admin.id,
       remark: remark || '管理员修改推荐人'
     });
 

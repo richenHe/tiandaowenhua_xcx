@@ -18,19 +18,33 @@ module.exports = async (event, context) => {
 
     const { offset, limit } = utils.getPagination(page, pageSize);
 
-    // 构建查询条件
-    const where = userId ? { user_id: userId } : {};
-
-    // 查询变更日志（⚠️ 简化版，不包含 JOIN）
-    const logs = await query('referee_change_logs', {
-      where,
-      limit,
-      offset,
-      orderBy: { column: 'created_at', ascending: false }
-    });
+    // 查询变更日志（使用 CloudBase Query Builder）
+    let logQuery = db.from('referee_change_logs').select('*');
+    
+    if (userId) {
+      logQuery = logQuery.eq('user_id', userId);
+    }
+    
+    const { data: logs, error: logError } = await logQuery
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    if (logError) {
+      throw new Error(`查询日志失败: ${logError.message}`);
+    }
 
     // 查询总数
-    const total = await count('referee_change_logs', where);
+    let countQuery = db.from('referee_change_logs').select('*', { count: 'exact', head: true });
+    
+    if (userId) {
+      countQuery = countQuery.eq('user_id', userId);
+    }
+    
+    const { count: total, error: countError } = await countQuery;
+    
+    if (countError) {
+      throw new Error(`查询总数失败: ${countError.message}`);
+    }
 
     // ⚠️ 格式化日志数据（简化版，缺少用户名信息）
     const formattedLogs = logs.map(log => {

@@ -34,7 +34,7 @@ module.exports = async (event, context) => {
     }
 
     // 创建课程
-    const courseId = await insert('courses', {
+    const [result] = await insert('courses', {
       name,
       type,
       cover_image,
@@ -52,9 +52,8 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      message: '课程创建成功',
-      course_id: courseId
-    });
+      id: result.id
+    }, '课程创建成功');
 
   } catch (error) {
     console.error('[Course/createCourse] 创建失败:', error);

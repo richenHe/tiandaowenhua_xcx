@@ -4,20 +4,20 @@
  *
  * 参数：
  * - id: 反馈ID
- * - reply_content: 回复内容
+ * - reply: 回复内容
  * - status: 状态（1-已回复，2-已关闭）
  */
 const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { id, reply_content, status = 1 } = event;
+  const { id, reply, status = 1 } = event;
 
   try {
     // 参数验证
-    if (!id || !reply_content) {
-      return response.paramError('缺少必要参数: id, reply_content');
+    if (!id || !reply) {
+      return response.paramError('缺少必要参数: id, reply');
     }
 
     console.log(`[admin:replyFeedback] 管理员 ${admin.id} 回复反馈 ${id}`);
@@ -30,10 +30,11 @@ module.exports = async (event, context) => {
 
     // 更新反馈
     await update('feedbacks', {
-      reply_content,
-      reply_at: new Date(),
-      status,
-      updated_at: new Date()
+      reply,
+      reply_time: formatDateTime(new Date()),
+      reply_admin_id: admin.id,
+      status
+      // updated_at 使用数据库默认值
     }, { id });
 
     // TODO: 发送订阅消息通知用户

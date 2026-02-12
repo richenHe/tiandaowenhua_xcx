@@ -20,58 +20,50 @@ module.exports = async (event, context) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. 用户统计
+    // 1. 用户统计（注意：users 表没有 deleted_at 字段）
     const { count: totalUsers } = await db
       .from('users')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null);
+      .select('*', { count: 'exact', head: true });
 
     const { count: todayUsers } = await db
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', today.toISOString())
-      .is('deleted_at', null);
+      .gte('created_at', today.toISOString());
 
     const { count: ambassadorCount } = await db
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .gt('ambassador_level', 0)
-      .is('deleted_at', null);
+      .gt('ambassador_level', 0);
 
-    // 2. 订单统计
+    // 2. 订单统计（注意：orders 表没有 deleted_at 字段）
     const { count: totalOrders } = await db
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .eq('pay_status', 1)
-      .is('deleted_at', null);
+      .eq('pay_status', 1);
 
     const { count: todayOrders } = await db
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('pay_status', 1)
-      .gte('pay_time', today.toISOString())
-      .is('deleted_at', null);
+      .gte('pay_time', today.toISOString());
 
     // 订单总金额
     const { data: orderAmounts } = await db
       .from('orders')
       .select('final_amount')
-      .eq('pay_status', 1)
-      .is('deleted_at', null);
+      .eq('pay_status', 1);
 
     const totalAmount = orderAmounts.reduce((sum, o) => sum + parseFloat(o.final_amount || 0), 0);
 
-    // 3. 课程统计
+    // 3. 课程统计（注意：appointments 表没有 deleted_at 字段）
     const { count: totalAppointments } = await db
       .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null);
+      .select('*', { count: 'exact', head: true });
 
     const { count: checkedInAppointments } = await db
       .from('appointments')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 2)
-      .is('deleted_at', null);
+      .eq('status', 2);
 
     const checkinRate = totalAppointments > 0
       ? ((checkedInAppointments / totalAppointments) * 100).toFixed(2)
@@ -81,8 +73,7 @@ module.exports = async (event, context) => {
     const { data: ambassadorLevels } = await db
       .from('users')
       .select('ambassador_level')
-      .gt('ambassador_level', 0)
-      .is('deleted_at', null);
+      .gt('ambassador_level', 0);
 
     const levelDistribution = {};
     for (let i = 1; i <= 5; i++) {
@@ -93,8 +84,7 @@ module.exports = async (event, context) => {
     const { count: todayAppointments } = await db
       .from('appointments')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', today.toISOString())
-      .is('deleted_at', null);
+      .gte('created_at', today.toISOString());
 
     const { count: todayFeedbacks } = await db
       .from('feedbacks')

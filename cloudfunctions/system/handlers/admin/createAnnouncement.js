@@ -5,23 +5,39 @@
  * 参数：
  * - title: 公告标题
  * - content: 公告内容
- * - type: 公告类型（1-系统通知，2-活动公告，3-维护公告）
- * - target: 目标用户（all-全部，ambassador-大使，student-学员）
+ * - summary: 摘要（可选）
+ * - category: 公告分类（general-普通，system-系统，course-课程，ambassador-大使）
+ * - target_type: 目标用户类型（0-全部，1-学员，2-大使）
+ * - target_level: 目标大使等级（可选）
+ * - is_top: 是否置顶（0-否，1-是）
+ * - is_popup: 是否弹窗（0-否，1-是）
  * - start_time: 开始时间（可选）
  * - end_time: 结束时间（可选）
  * - sort_order: 排序（可选）
  */
 const { insert } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { title, content, type, target = 'all', start_time, end_time, sort_order = 0 } = event;
+  const { 
+    title, 
+    content, 
+    summary = '',
+    category = 'general', 
+    target_type = 0, 
+    target_level = null,
+    is_top = 0,
+    is_popup = 0,
+    start_time, 
+    end_time, 
+    sort_order = 0 
+  } = event;
 
   try {
     // 参数验证
-    if (!title || !content || !type) {
-      return response.paramError('缺少必要参数: title, content, type');
+    if (!title || !content) {
+      return response.paramError('缺少必要参数: title, content');
     }
 
     console.log(`[admin:createAnnouncement] 管理员 ${admin.id} 创建公告`);
@@ -30,16 +46,20 @@ module.exports = async (event, context) => {
     const announcementData = {
       title,
       content,
-      type,
-      target,
+      summary,
+      category,
+      target_type,
+      target_level,
+      is_top,
+      is_popup,
       sort_order,
       status: 1,
-      created_by: admin.id,
-      created_at: new Date()
+      created_by: admin.id
     };
 
-    if (start_time) announcementData.start_time = new Date(start_time);
-    if (end_time) announcementData.end_time = new Date(end_time);
+    // 时间字段使用 MySQL 格式
+    if (start_time) announcementData.start_time = formatDateTime(start_time);
+    if (end_time) announcementData.end_time = formatDateTime(end_time);
 
     const [announcement] = await insert('announcements', announcementData);
 

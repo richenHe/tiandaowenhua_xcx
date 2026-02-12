@@ -67,11 +67,51 @@ const ROUTES = {
   admin: Object.keys(adminHandlers)
 };
 
+// HTTP Access Service 响应包装器
+function wrapHttpResponse(data) {
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+    },
+    body: JSON.stringify(data)
+  };
+}
+
 exports.main = async (event, context) => {
-  const { action, test_openid } = event;
+  // 检测是否是 HTTP 请求
+  const isHttpRequest = 
+    (context && context.SOURCE === 'wx_http') || 
+    event.httpMethod || 
+    event.method ||
+    event.body;
+  
+  // 处理 OPTIONS 预检请求
+  if (event.httpMethod === 'OPTIONS' || event.method === 'OPTIONS') {
+    return wrapHttpResponse({ message: 'OK' });
+  }
+
+  // 解析 HTTP 请求 body
+  let requestData = event;
+  if (event.body && typeof event.body === 'string') {
+    try {
+      requestData = JSON.parse(event.body);
+    } catch (e) {
+      return wrapHttpResponse({
+        success: false,
+        code: 400,
+        message: '请求参数格式错误'
+      });
+    }
+  }
+
+  const { action, test_openid } = requestData;
   
   // 获取用户信息
-  let OPENID = test_openid; // 测试模式支持
+  let OPENID = test_openid;
   
   // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
   if (!OPENID) {
@@ -88,33 +128,37 @@ exports.main = async (event, context) => {
   console.log(`[Course/${action}] 收到请求:`, { openid: OPENID?.slice(-6) || 'undefined' });
 
   try {
+    let result;
+
     // 公开接口（无需登录）
     if (ROUTES.public.includes(action)) {
-      return await publicHandlers[action](event, { OPENID });
+      result = await publicHandlers[action](requestData, { OPENID });
     }
-
     // 客户端接口（需用户鉴权）
-    if (ROUTES.client.includes(action)) {
+    else if (ROUTES.client.includes(action)) {
       const user = await checkClientAuth(OPENID);
-      return await clientHandlers[action](event, { OPENID, user });
+      result = await clientHandlers[action](requestData, { OPENID, user });
     }
-
     // 管理端接口（需管理员鉴权）
-    if (ROUTES.admin.includes(action)) {
+    else if (ROUTES.admin.includes(action)) {
       // 支持两种鉴权方式：Web端JWT Token 和 小程序端OPENID
       let admin;
-      if (event.jwtToken) {
-        admin = checkAdminAuthByToken(event.jwtToken);
+      if (requestData.jwtToken) {
+        admin = checkAdminAuthByToken(requestData.jwtToken);
       } else {
         admin = await checkAdminAuth(OPENID);
       }
-      return await adminHandlers[action](event, { OPENID, admin });
+      result = await adminHandlers[action](requestData, { OPENID, admin });
+    } else {
+      result = response.paramError(`未知的操作: ${action}`);
     }
 
-    return response.paramError(`未知的操作: ${action}`);
+    // 如果是 HTTP 请求，包装为 HTTP 响应
+    return isHttpRequest ? wrapHttpResponse(result) : result;
 
   } catch (error) {
     console.error(`[Course/${action}] 执行失败:`, error);
-    return response.error(error.message, error, error.code || 500);
+    const errorResult = response.error(error.message, error, error.code || 500);
+    return isHttpRequest ? wrapHttpResponse(errorResult) : errorResult;
   }
 };

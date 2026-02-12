@@ -32,36 +32,43 @@ module.exports = async (event, context) => {
     const typeNames = { 1: '初探班', 2: '密训班', 3: '咨询服务' };
     course.type_name = typeNames[course.type] || '未知';
 
-    // 初始化购买状态
-    course.is_purchased = false;
-    course.user_course_id = null;
-    course.attend_count = 0;
-
-    // 如果已登录，查询购买状态
+    // 如果用户已登录，查询购买状态和上课次数
     if (OPENID) {
-      const user = await findOne('users', { openid: OPENID });
+      const user = await findOne('users', { _openid: OPENID });
       if (user) {
+        // 查询是否已购买
         const { data: userCourse } = await db
           .from('user_courses')
-          .select('id, attend_count, created_at')
+          .select('*')
           .eq('user_id', user.id)
           .eq('course_id', id)
-          .is('deleted_at', null)
           .single();
 
+        course.is_purchased = !!userCourse;
+
         if (userCourse) {
-          course.is_purchased = true;
-          course.user_course_id = userCourse.id;
-          course.attend_count = userCourse.attend_count;
-          course.purchase_date = userCourse.created_at;
+          // 查询上课次数
+          const { count: classCount } = await db
+            .from('appointments')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('course_id', id)
+            .eq('checkin_status', 1);
+
+          course.class_count = classCount || 0;
+        } else {
+          course.class_count = 0;
         }
       }
+    } else {
+      course.is_purchased = false;
+      course.class_count = 0;
     }
 
     return response.success(course);
 
   } catch (error) {
-    console.error('[Course/getDetail] 查询失败:', error);
-    return response.error('查询课程详情失败', error);
+    console.error('[getDetail] 执行失败:', error);
+    return response.error('获取课程详情失败', error);
   }
 };

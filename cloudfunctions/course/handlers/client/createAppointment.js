@@ -1,6 +1,5 @@
 /**
- * 创建预约（客户端接口）
- */
+ * 创建预约（客户端接口�? */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
 
@@ -26,7 +25,6 @@ module.exports = async (event, context) => {
       .select('*')
       .eq('id', finalClassRecordId)
       .eq('status', 1)
-      .is('deleted_at', null)
       .single();
 
     if (classError || !classRecords) {
@@ -42,7 +40,6 @@ module.exports = async (event, context) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('course_id', classRecord.course_id)
-      .is('deleted_at', null)
       .single();
 
     if (courseError || !userCourses) {
@@ -56,7 +53,6 @@ module.exports = async (event, context) => {
       .eq('user_id', user.id)
       .eq('class_record_id', finalClassRecordId)
       .in('status', [1, 2])
-      .is('deleted_at', null)
       .single();
 
     if (existingAppointments) {
@@ -75,8 +71,7 @@ module.exports = async (event, context) => {
         user_id: user.id,
         course_id: classRecord.course_id,
         class_record_id: finalClassRecordId,
-        status: 1, // 待上课
-        appointed_at: new Date().toISOString()
+        status: 1, // 待上�?        appointed_at: new Date().toISOString()
       })
       .select()
       .single();

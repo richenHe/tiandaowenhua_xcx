@@ -20,23 +20,24 @@ module.exports = async (event, context) => {
 
     const { limit, offset } = getPagination(page, page_size);
 
-    // 构建查询
+    // 构建查询（使用外键名进行 JOIN）
     let query = db
       .from('feedbacks')
       .select(`
         id,
         user_id,
-        type,
+        feedback_type,
         course_id,
         content,
         images,
         contact,
         status,
-        reply_content,
-        reply_at,
+        reply,
+        reply_time,
+        reply_admin_id,
         created_at,
-        user:users!user_id(real_name, phone),
-        course:courses(name)
+        user:users!fk_feedbacks_user(real_name, phone),
+        course:courses!fk_feedbacks_course(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -47,7 +48,7 @@ module.exports = async (event, context) => {
 
     // 类型筛选
     if (type) {
-      query = query.eq('type', type);
+      query = query.eq('feedback_type', type);
     }
 
     // 分页
@@ -66,7 +67,7 @@ module.exports = async (event, context) => {
       countQuery = countQuery.eq('status', status);
     }
     if (type) {
-      countQuery = countQuery.eq('type', type);
+      countQuery = countQuery.eq('feedback_type', type);
     }
 
     const { count: total } = await countQuery;
@@ -75,7 +76,7 @@ module.exports = async (event, context) => {
     const processedFeedbacks = feedbacks.map(f => ({
       ...f,
       images: f.images ? JSON.parse(f.images) : [],
-      type_text: getTypeText(f.type),
+      type_text: getTypeText(f.feedback_type),
       status_text: getStatusText(f.status)
     }));
 

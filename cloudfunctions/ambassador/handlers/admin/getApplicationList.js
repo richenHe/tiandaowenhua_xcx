@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
       .from('ambassador_applications')
       .select(`
         *,
-        user:users!user_id(real_name, phone, avatar_url)
+        user:users!fk_ambassador_applications_user(real_name, phone, avatar)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -39,9 +39,10 @@ module.exports = async (event, context) => {
     const list = (applications || []).map(app => ({
       id: app.id,
       user_id: app.user_id,
-      user_name: app.user?.real_name || app.real_name,
-      phone: app.user?.phone || app.phone,
-      avatar_url: app.user?.avatar_url,
+      user_name: app.user?.real_name,
+      phone: app.user?.phone,
+      avatar: app.user?.avatar,
+      target_level: app.target_level,
       reason: app.reason,
       status: app.status,
       status_text: app.status === 0 ? '待审核' : app.status === 1 ? '已通过' : '已拒绝',

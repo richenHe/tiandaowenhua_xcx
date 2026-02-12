@@ -44,8 +44,48 @@ const ROUTES = {
   admin: Object.keys(adminHandlers)
 };
 
+// HTTP Access Service 响应包装器
+function wrapHttpResponse(data) {
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+    },
+    body: JSON.stringify(data)
+  };
+}
+
 exports.main = async (event, context) => {
-  const { action, test_openid } = event;
+  // 检测是否是 HTTP 请求
+  const isHttpRequest = 
+    (context && context.SOURCE === 'wx_http') || 
+    event.httpMethod || 
+    event.method ||
+    event.body;
+  
+  // 处理 OPTIONS 预检请求
+  if (event.httpMethod === 'OPTIONS' || event.method === 'OPTIONS') {
+    return wrapHttpResponse({ message: 'OK' });
+  }
+
+  // 解析 HTTP 请求 body
+  let requestData = event;
+  if (event.body && typeof event.body === 'string') {
+    try {
+      requestData = JSON.parse(event.body);
+    } catch (e) {
+      return wrapHttpResponse({
+        success: false,
+        code: 400,
+        message: '请求参数格式错误'
+      });
+    }
+  }
+
+  const { action, test_openid } = requestData;
   
   // 获取用户信息
   let OPENID = test_openid; // 测试模式支持
@@ -74,34 +114,39 @@ exports.main = async (event, context) => {
       test_mode: !!test_openid
     });
 
+    let result;
+
     // 客户端接口（需用户登录）
     if (ROUTES.client.includes(action)) {
       // login 接口特殊处理，不需要提前验证
       if (action === 'login') {
-        return await clientHandlers[action](event, { OPENID });
+        result = await clientHandlers[action](requestData, { OPENID });
+      } else {
+        // 其他接口需要验证用户身份
+        const user = await checkClientAuth(OPENID);
+        result = await clientHandlers[action](requestData, { OPENID, user });
       }
-
-      // 其他接口需要验证用户身份
-      const user = await checkClientAuth(OPENID);
-      return await clientHandlers[action](event, { OPENID, user });
     }
-
     // 管理端接口（需管理员权限）
-    if (ROUTES.admin.includes(action)) {
+    else if (ROUTES.admin.includes(action)) {
       // 支持两种鉴权方式：Web端JWT Token 和 小程序端OPENID
       let admin;
-      if (event.jwtToken) {
-        admin = checkAdminAuthByToken(event.jwtToken);
+      if (requestData.jwtToken) {
+        admin = checkAdminAuthByToken(requestData.jwtToken);
       } else {
         admin = await checkAdminAuth(OPENID);
       }
-      return await adminHandlers[action](event, { OPENID, admin });
+      result = await adminHandlers[action](requestData, { OPENID, admin });
+    } else {
+      result = response.paramError(`未知的操作: ${action}`);
     }
 
-    return response.paramError(`未知的操作: ${action}`);
+    // 如果是 HTTP 请求，包装为 HTTP 响应
+    return isHttpRequest ? wrapHttpResponse(result) : result;
 
   } catch (error) {
     console.error(`[${action}] 执行失败:`, error);
-    return response.error(error.message, error, error.code || 500);
+    const errorResult = response.error(error.message, error, error.code || 500);
+    return isHttpRequest ? wrapHttpResponse(errorResult) : errorResult;
   }
 };

@@ -16,12 +16,11 @@ module.exports = async (event, context) => {
     const { limit, offset } = getPagination(page, page_size);
     const { db } = require('../../common/db');
 
-    // 构建查询
+    // 构建查询（注意：users 表没有 deleted_at 字段）
     let queryBuilder = db
       .from('users')
       .select('*', { count: 'exact' })
       .gt('ambassador_level', 0)
-      .is('deleted_at', null)
       .order('ambassador_level', { ascending: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -46,8 +45,7 @@ module.exports = async (event, context) => {
       const { count: refereeCount } = await db
         .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('referee_id', ambassador.id)
-        .is('deleted_at', null);
+        .eq('referee_id', ambassador.id);
 
       // 统计推荐订单数
       const { count: orderCount } = await db

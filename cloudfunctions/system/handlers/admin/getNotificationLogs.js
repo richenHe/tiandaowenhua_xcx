@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
 
     const { limit, offset } = getPagination(page, page_size);
 
-    // 构建查询
+    // 构建查询（使用外键名进行 JOIN）
     let query = db
       .from('notification_logs')
       .select(`
@@ -33,7 +33,7 @@ module.exports = async (event, context) => {
         status,
         error_msg,
         created_at,
-        user:users!user_id(real_name, phone)
+        user:users!fk_notification_logs_user(real_name, phone)
       `)
       .order('created_at', { ascending: false });
 
