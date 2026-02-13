@@ -32,7 +32,7 @@
         >
           <text class="date-number" v-if="!date.isEmpty">{{ date.day }}</text>
           <text class="date-price" v-if="date.price && !date.isEmpty">
-            ¥{{ date.price }}
+            {{ date.price }}
           </text>
         </view>
       </view>
@@ -197,7 +197,7 @@ const selectDate = (date) => {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       padding: 12rpx 0;
       border-radius: 12rpx;
       min-height: 96rpx;
@@ -207,12 +207,19 @@ const selectDate = (date) => {
         font-size: 32rpx;
         color: #333;
         font-weight: 500;
+        margin-top: 8rpx;
         margin-bottom: 4rpx;
+        height: 44rpx;
+        line-height: 44rpx;
       }
       
       .date-price {
         font-size: 22rpx;
-        color: #999;
+        color: #0052d9;
+        text-align: center;
+        font-weight: 500;
+        height: 28rpx;
+        line-height: 28rpx;
       }
       
       // 空白格子

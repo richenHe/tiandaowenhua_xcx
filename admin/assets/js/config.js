@@ -2,12 +2,34 @@
  * 系统配置文件
  */
 
+/**
+ * 自动检测基础路径
+ * 本地开发：根据当前 URL 路径自动判断 (/ 或 /admin/)
+ * 云端部署：使用 '/tiandaowenhua/'
+ */
+function getBasePath() {
+  const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+  
+  // 本地开发环境（localhost、127.0.0.1 等）
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+    // 检查当前路径是否包含 /admin/
+    if (pathname.includes('/admin/')) {
+      return '/admin/';
+    }
+    return '/';
+  }
+  
+  // 云端部署环境
+  return '/tiandaowenhua/';
+}
+
 window.CONFIG = {
   // CloudBase 环境 ID
   ENV_ID: 'cloud1-0gnn3mn17b581124',
   
-  // 基础路径（部署路径）
-  BASE_PATH: '/tiandaowenhua/',
+  // 基础路径（自动适配环境）
+  BASE_PATH: getBasePath(),
   
   // 云函数列表
   CLOUD_FUNCTIONS: {

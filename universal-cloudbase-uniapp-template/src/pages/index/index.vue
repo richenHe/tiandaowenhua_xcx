@@ -306,16 +306,11 @@ const loadCalendarPriceData = async () => {
       endDate: lastDayStr
     });
 
-    console.log('接口返回的原始数据:', result);
-
     // 转换数据格式，只保留 nickname 的值
     const transformedData: Record<string, string> = {};
     for (const date in result) {
-      console.log(`日期 ${date} 的数据:`, result[date]);
       transformedData[date] = result[date].nickname;
-      console.log(`转换后的值:`, transformedData[date]);
     }
-    console.log('最终日历数据:', transformedData);
     calendarPriceData.value = transformedData;
   } catch (error) {
     console.error('加载日历数据失败:', error);

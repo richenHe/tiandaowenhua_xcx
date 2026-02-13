@@ -37,7 +37,9 @@ const clientHandlers = {
 const adminHandlers = {
   getOrderList: require('./handlers/admin/getOrderList'),
   getOrderDetail: require('./handlers/admin/getOrderDetail'),
+  getRefundList: require('./handlers/admin/getRefundList'),
   refund: require('./handlers/admin/refund'),
+  getWithdrawList: require('./handlers/admin/getWithdrawList'),
   withdrawAudit: require('./handlers/admin/withdrawAudit')
 };
 
