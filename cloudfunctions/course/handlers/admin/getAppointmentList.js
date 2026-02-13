@@ -8,10 +8,15 @@ const { getPagination } = require('../../common/utils');
 module.exports = async (event, context) => {
   const { course_id, class_record_id, status, keyword, page = 1, page_size = 10 } = event;
 
+  console.log('[getAppointmentList] 开始执行');
+  console.log('[getAppointmentList] 接收参数:', JSON.stringify({ course_id, class_record_id, status, keyword, page, page_size }));
+
   try {
     const { offset, limit } = getPagination(page, page_size);
 
     // 构建查询（暂时去掉 JOIN，测试权限）
+    console.log('[getAppointmentList] 准备查询 appointments 表...');
+    
     let queryBuilder = db
       .from('appointments')
       .select('*', { count: 'exact' });
@@ -27,7 +32,7 @@ module.exports = async (event, context) => {
     }
 
     // 添加状态过滤
-    if (status !== undefined) {
+    if (status !== undefined && status !== null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
@@ -41,12 +46,21 @@ module.exports = async (event, context) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
+    console.log('[getAppointmentList] 执行 Query Builder 查询...');
+    
     // 执行查询
-    const { data: appointments, error, count: total } = await queryBuilder;
+    const result = await queryBuilder;
+    
+    console.log('[getAppointmentList] Query Builder 原始结果:', JSON.stringify(result));
+    
+    const { data: appointments, error, count: total } = result;
 
     if (error) {
+      console.error('[getAppointmentList] Query Builder 错误:', error);
       throw error;
     }
+    
+    console.log('[getAppointmentList] 查询成功:', { total, count: appointments?.length });
 
     // 格式化数据（扁平化嵌套字段）
     const getStatusName = (status) => {
@@ -59,27 +73,10 @@ module.exports = async (event, context) => {
       return map[status] || '未知';
     };
 
+    // 简化数据格式（暂时不做复杂处理，直接返回原始数据）
     const list = (appointments || []).map(apt => ({
-      id: apt.id,
-      user_id: apt.user_id,
-      real_name: apt.user?.real_name || apt.user_name || '',
-      phone: apt.user?.phone || apt.user_phone || '',
-      course_id: apt.course_id,
-      course_name: apt.course?.name || apt.course_name || '',
-      class_record_id: apt.class_record_id,
-      class_date: apt.class_record?.class_date || '',
-      class_time: apt.class_record?.class_time || '',
-      class_location: apt.class_record?.class_location || '',
-      is_retrain: apt.is_retrain,
-      order_no: apt.order_no,
-      status: apt.status,
-      status_name: getStatusName(apt.status),
-      checkin_code: apt.checkin_code,
-      checkin_at: apt.checkin_time,
-      appointed_at: apt.created_at,
-      cancelled_at: apt.cancel_time,
-      cancel_reason: apt.cancel_reason,
-      remark: apt.remark
+      ...apt,
+      status_name: getStatusName(apt.status)
     }));
 
     return response.success({
