@@ -3,7 +3,7 @@
  */
 const { findOne, insert, update } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
+const { validateRequired, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { content_id, content_type, progress, duration } = event;
@@ -38,7 +38,7 @@ module.exports = async (event, context) => {
         {
           progress: Math.max(existingProgress.progress, progress), // 取最大进度
           duration: (existingProgress.duration || 0) + (duration || 0),
-          last_learn_at: new Date()
+          last_learn_at: utils.formatDateTime(new Date())
         },
         'id = ?',
         [existingProgress.id]
@@ -56,7 +56,7 @@ module.exports = async (event, context) => {
         content_type,
         progress,
         duration: duration || 0,
-        last_learn_at: new Date()
+        last_learn_at: utils.formatDateTime(new Date())
       });
 
       return response.success({

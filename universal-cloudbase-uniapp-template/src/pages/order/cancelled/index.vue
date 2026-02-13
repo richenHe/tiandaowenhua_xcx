@@ -59,13 +59,13 @@
     <view class="fixed-bottom">
       <view class="bottom-actions">
         <button 
-          class="t-button t-button--theme-light t-button--size-large back-btn" 
+          class="t-button t-button--theme-default t-button--size-large back-btn" 
           @click="goBack"
         >
           <text class="t-button__text">返回订单列表</text>
         </button>
         <button 
-          class="t-button t-button--theme-primary t-button--size-large reorder-btn" 
+          class="t-button t-button--theme-light t-button--size-large reorder-btn" 
           @click="handleReorder"
         >
           <text class="t-button__text">重新下单</text>
@@ -171,15 +171,15 @@ const loadOrderDetail = async (orderNo: string) => {
     orderInfo.value = {
       orderNo: order.order_no,
       courseName: order.order_name,
-      price: order.final_amount,
+      price: String(order.final_amount || '0.00'),
       createTime: order.created_at,
-      cancelTime: order.updated_at,
+      cancelTime: (order as any).updated_at || order.created_at,
       refereeName: order.referee_name || '',
       icon: style.icon,
       iconBg: style.iconBg,
       payStatus: order.pay_status,
       orderType: order.order_type,
-      itemId: order.item_id
+      itemId: (order as any).item_id || 0
     }
     
     uni.hideLoading()
@@ -263,7 +263,7 @@ onMounted(() => {
 
 /* 状态卡片 */
 .status-card {
-  background: linear-gradient(135deg, $td-error-color-6 0%, $td-error-color-7 100%);
+  background: linear-gradient(135deg, $td-error-color 0%, #C43943 100%);
   border-radius: 16rpx;
   padding: 48rpx 32rpx;
   margin-bottom: 24rpx;
@@ -271,11 +271,11 @@ onMounted(() => {
   color: white;
   
   &--timeout {
-    background: linear-gradient(135deg, $td-warning-color-6 0%, $td-warning-color-7 100%);
+    background: linear-gradient(135deg, $td-warning-color 0%, #C4982A 100%);
   }
   
   &--cancelled {
-    background: linear-gradient(135deg, $td-gray-color-6 0%, $td-gray-color-7 100%);
+    background: linear-gradient(135deg, #999999 0%, #666666 100%);
   }
 }
 
@@ -316,7 +316,7 @@ onMounted(() => {
   padding: 20rpx 0;
   
   &:not(:last-child) {
-    border-bottom: 1rpx solid $td-border-level-1-color;
+    border-bottom: 1rpx solid $td-border-level-1;
   }
 }
 
@@ -397,7 +397,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   background: white;
-  border-top: 1rpx solid $td-border-level-1-color;
+  border-top: 1rpx solid $td-border-level-1;
   padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
   z-index: 100;
 }
@@ -407,18 +407,46 @@ onMounted(() => {
   gap: 24rpx;
 }
 
-.back-btn,
-.reorder-btn {
+// 按钮样式
+.t-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $td-radius-default;
+  border: none;
+
+  &--size-large {
+    height: 88rpx;
+  }
+
+  &--theme-default {
+    background-color: $td-bg-color-container-hover;
+
+    .t-button__text {
+      color: $td-text-color-primary;
+      font-size: 32rpx;
+      font-weight: 500;
+    }
+  }
+
+  &--theme-light {
+    background-color: rgba($td-brand-color, 0.1);
+
+    .t-button__text {
+      color: $td-brand-color;
+      font-size: 32rpx;
+      font-weight: 500;
+    }
+  }
+}
+
+.back-btn {
   flex: 1;
 }
 
-.t-button--theme-default {
-  background-color: $td-bg-color-container-hover;
-  border: 1rpx solid $td-border-level-1-color;
-}
-
-.t-button--theme-primary {
-  background: linear-gradient(135deg, $td-brand-color 0%, $td-brand-color-8 100%);
+.reorder-btn {
+  flex: 2;
 }
 </style>
+
 

@@ -3,7 +3,7 @@
  */
 const { findOne, update, transaction } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
+const { validateRequired, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { appointment_id } = event;
@@ -49,7 +49,7 @@ module.exports = async (event, context) => {
         'appointments',
         {
           status: 3, // 已取消
-          cancelled_at: new Date()
+          cancelled_at: formatDateTime(new Date())
         },
         'id = ?',
         [appointment_id],

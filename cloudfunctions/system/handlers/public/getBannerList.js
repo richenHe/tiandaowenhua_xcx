@@ -4,6 +4,7 @@
  */
 
 const { db, response } = require('common');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   try {
@@ -27,6 +28,33 @@ module.exports = async (event, context) => {
       link: item.link_url || '',
       sort_order: item.sort_order || 0
     }));
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (list && list.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      list.forEach(item => {
+        if (item.cover_image) fileIDs.push(item.cover_image);
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换 list 中的 fileID 为临时 URL
+      list.forEach(item => {
+        if (item.cover_image && urlMap[item.cover_image]) {
+          item.cover_image = urlMap[item.cover_image];
+        }
+      });
+    }
 
     return response.success({
       list,

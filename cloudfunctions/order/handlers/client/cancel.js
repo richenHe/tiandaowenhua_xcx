@@ -3,7 +3,7 @@
  * Action: cancel
  */
 const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -36,8 +36,7 @@ module.exports = async (event, context) => {
     await update('orders',
       {
         pay_status: 2, // 已取消
-        cancel_reason: cancel_reason || '用户取消',
-        cancel_time: new Date()
+        updated_at: utils.formatDateTime(new Date())
       },
       { order_no }
     );

@@ -67,7 +67,6 @@
             <view class="t-alert__message">请在15分钟内完成支付，超时订单将自动取消</view>
           </view>
         </view>
-        </view>
       </view>
     </scroll-view>
 
@@ -193,6 +192,13 @@ onMounted(() => {
   if (options.orderNo) {
     orderInfo.value.orderNo = options.orderNo;
     loadOrderDetail(options.orderNo);
+  } else {
+    // 没有订单号，显示错误并停止加载
+    isLoading.value = false;
+    uni.showToast({
+      title: '订单号不存在',
+      icon: 'none'
+    });
   }
 });
 </script>

@@ -3,7 +3,7 @@
  */
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired, generateRandomCode } = require('../../common/utils');
+const { validateRequired, generateRandomCode, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { appointment_id, checkin_code } = event;
@@ -63,7 +63,7 @@ module.exports = async (event, context) => {
       'appointments',
       {
         status: 2, // 已签到
-        checkin_at: new Date()
+        checkin_at: formatDateTime(new Date())
       },
       'id = ?',
       [appointment_id]
@@ -87,7 +87,7 @@ module.exports = async (event, context) => {
 
     return response.success({
       message: '签到成功',
-      checkin_at: new Date()
+      checkin_at: formatDateTime(new Date())
     });
 
   } catch (error) {

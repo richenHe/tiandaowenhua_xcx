@@ -7,7 +7,7 @@
  * - subscribed: 是否订阅（true/false）
  */
 const { findOne, insert, update, upsert } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
       user_id: user.id,
       config_id,
       subscribed: subscribed ? 1 : 0,
-      updated_at: new Date()
+      updated_at: utils.formatDateTime(new Date())
     }, {
       onConflict: ['user_id', 'config_id']
     });

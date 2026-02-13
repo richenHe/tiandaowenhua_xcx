@@ -3,7 +3,7 @@
  * Action: refund
  */
 const { findOne, update, insert, query, db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
@@ -44,7 +44,7 @@ module.exports = async (event, context) => {
     await update('orders', {
       pay_status: 4, // 已退款
       refund_reason,
-      refund_time: new Date()
+      refund_time: utils.formatDateTime(new Date())
     }, { order_no });
 
     // 6. 回退业务逻辑
@@ -97,7 +97,7 @@ async function rollbackCoursePurchase(order) {
   // 1. 标记用户课程失效
   await update('user_courses', {
     status: 0,
-    refund_time: new Date()
+    refund_time: utils.formatDateTime(new Date())
   }, {
     user_id: order.user_id,
     course_id: order.related_id

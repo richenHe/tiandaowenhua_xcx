@@ -71,7 +71,7 @@ module.exports = async (event, context) => {
     await update('users', { 
       referee_id: newReferee.id,
       referee_uid: newReferee.uid,
-      referee_updated_at: new Date()
+      referee_updated_at: utils.formatDateTime(new Date())
     }, { _openid: OPENID });
 
     console.log('[updateReferee] 修改成功');

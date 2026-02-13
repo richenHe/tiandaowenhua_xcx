@@ -3,7 +3,7 @@
  */
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
+const { validateRequired, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { id, status, notes } = event;
@@ -33,9 +33,9 @@ module.exports = async (event, context) => {
     }
 
     if (status === 2) {
-      updateData.checkin_at = new Date();
+      updateData.checkin_at = formatDateTime(new Date());
     } else if (status === 3) {
-      updateData.cancelled_at = new Date();
+      updateData.cancelled_at = formatDateTime(new Date());
     }
 
     await update('appointments', updateData, 'id = ?', [id]);

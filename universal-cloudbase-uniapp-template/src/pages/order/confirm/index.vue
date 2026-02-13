@@ -86,7 +86,6 @@
             </view>
           </view>
         </view>
-        </view>
       </view>
     </scroll-view>
 
@@ -148,6 +147,7 @@ const loadPageData = async () => {
     const courseId = parseInt(options.courseId || '0');
 
     if (!courseId) {
+      isLoading.value = false;
       uni.showToast({
         title: '课程ID不存在',
         icon: 'none'
@@ -177,18 +177,16 @@ const loadPageData = async () => {
       gradient: getCourseGradient(course.type)
     };
 
-    // 如果有推荐人，加载推荐人信息
-    if (profile.referee_id) {
-      try {
-        const referee = await UserApi.getRefereeInfo(profile.referral_code);
-        refereeInfo.value = {
-          id: referee.id,
-          name: referee.real_name,
-          level: getAmbassadorLevelName(referee.ambassador_level)
-        };
-      } catch (error) {
-        console.error('加载推荐人信息失败:', error);
-      }
+    // 如果有推荐人，直接使用返回的推荐人信息
+    if (profile.referee_id && profile.referee_name) {
+      refereeInfo.value = {
+        id: profile.referee_id,
+        name: profile.referee_name,
+        level: getAmbassadorLevelName(profile.referee_level || 0)
+      };
+      console.log('📌 已设置推荐人:', refereeInfo.value);
+    } else {
+      console.log('📌 未设置推荐人');
     }
   } catch (error) {
     console.error('加载页面数据失败:', error);

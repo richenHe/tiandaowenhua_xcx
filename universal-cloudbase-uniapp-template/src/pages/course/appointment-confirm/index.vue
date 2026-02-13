@@ -192,6 +192,13 @@ onMounted(() => {
     if (userCourseId) {
       loadUserAttendCount(userCourseId);
     }
+  } else {
+    // 缺少必要参数，显示错误并停止加载
+    loading.value = false;
+    uni.showToast({
+      title: '参数缺失',
+      icon: 'none'
+    });
   }
 
   // 加载客服电话

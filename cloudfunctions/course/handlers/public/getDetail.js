@@ -5,6 +5,7 @@
 const { db, findOne } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -63,6 +64,15 @@ module.exports = async (event, context) => {
     } else {
       course.is_purchased = false;
       course.class_count = 0;
+    }
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (course.cover_image) {
+      try {
+        course.cover_image = await getTempFileURL(course.cover_image);
+      } catch (error) {
+        console.error('[getDetail] 转换封面图片失败:', error);
+      }
     }
 
     return response.success(course);

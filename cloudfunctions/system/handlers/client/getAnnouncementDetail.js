@@ -4,6 +4,7 @@
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -25,6 +26,15 @@ module.exports = async (event, context) => {
 
     if (error) throw error;
     if (!data) return response.error('公告不存在或已下架');
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (data.cover_image) {
+      try {
+        data.cover_image = await getTempFileURL(data.cover_image);
+      } catch (error) {
+        console.error('[getAnnouncementDetail] 转换封面图片失败:', error);
+      }
+    }
 
     return response.success(data, '获取成功');
   } catch (error) {

@@ -99,6 +99,13 @@
       }
     },
 	{
+		"path": "pages/order/cancelled/index",
+		"style": {
+        "navigationBarTitleText": "已取消订单",
+        "navigationStyle": "custom"
+      }
+    },
+	{
 		"path": "pages/order/detail/index",
 		"style": {
         "navigationBarTitleText": "订单详情",

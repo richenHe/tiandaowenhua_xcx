@@ -3,7 +3,7 @@
  * Action: withdrawAudit
  */
 const { findOne, update, insert } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
@@ -47,7 +47,7 @@ module.exports = async (event, context) => {
         {
           status: 1,
           audit_admin_id: admin.id,
-          audit_time: new Date(),
+          audit_time: utils.formatDateTime(new Date()),
           audit_remark: '审核通过'
         },
         { id: withdrawal_id }
@@ -86,7 +86,7 @@ module.exports = async (event, context) => {
         {
           status: 2,
           audit_admin_id: admin.id,
-          audit_time: new Date(),
+          audit_time: utils.formatDateTime(new Date()),
           audit_remark: reject_reason
         },
         { id: withdrawal_id }

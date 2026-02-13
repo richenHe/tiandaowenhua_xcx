@@ -5,7 +5,7 @@
  * 微信支付成功回调，根据不同订单类型执行相应业务逻辑
  */
 const { findOne, insert, update, query, db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
@@ -47,7 +47,7 @@ module.exports = async (event, context) => {
     // 5. 更新订单状态
     await update('orders', {
       pay_status: 1,
-      pay_time: new Date(),
+      pay_time: utils.formatDateTime(new Date()),
       transaction_id: transaction_id,
       pay_method: 'wechat'
     }, { order_no: out_trade_no });
@@ -72,7 +72,7 @@ module.exports = async (event, context) => {
     // 7. 标记奖励已发放
     await update('orders', {
       is_reward_granted: true,
-      reward_granted_at: new Date()
+      reward_granted_at: utils.formatDateTime(new Date())
     }, { order_no: out_trade_no });
 
     console.log(`[paymentCallback] 支付回调处理完成:`, out_trade_no);
@@ -101,7 +101,7 @@ async function handleCoursePurchaseSuccess(order, user) {
     // 2. 首次购买：锁定推荐人
     if (!user.referee_confirmed_at) {
       await update('users',
-        { referee_confirmed_at: new Date() },
+        { referee_confirmed_at: utils.formatDateTime(new Date()) },
         { id: user.id }
       );
     }

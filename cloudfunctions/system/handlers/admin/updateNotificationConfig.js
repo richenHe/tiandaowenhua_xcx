@@ -13,7 +13,7 @@
  * - status: 状态（可选）
  */
 const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -34,7 +34,7 @@ module.exports = async (event, context) => {
     }
 
     // 构建更新数据
-    const updateData = { updated_at: new Date() };
+    const updateData = { updated_at: utils.formatDateTime(new Date()) };
     if (name) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (template_id) updateData.template_id = template_id;

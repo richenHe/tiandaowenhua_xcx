@@ -144,11 +144,10 @@ const loadOrders = async (tabValue?: number) => {
         orderStatus: statusInfo.orderStatus
       }
       
-      console.log('订单数据映射:', { 
-        order_no: item.order_no,
-        pay_status: item.pay_status, 
-        orderStatus: orderData.orderStatus 
-      })
+      console.log('🔍 [订单映射] 订单号:', item.order_no, 
+                  '| pay_status:', item.pay_status, 
+                  '| 显示状态:', statusInfo.text,
+                  '| orderStatus:', orderData.orderStatus)
       
       return orderData
     })
@@ -183,17 +182,23 @@ const handleTabChange = (value: number) => {
 
 // 跳转到订单详情
 const goToOrderDetail = (orderNo: string, orderStatus: string) => {
-  console.log('跳转订单详情:', { orderNo, orderStatus })
+  console.log('🚀 [订单跳转] 订单号:', orderNo, '| orderStatus:', orderStatus)
   
   // 待支付订单跳转到待支付页面
   if (orderStatus === 'pending') {
-    console.log('跳转到待支付页面')
+    console.log('✅ 跳转到待支付页面')
     uni.navigateTo({
       url: `/pages/order/pending/index?orderNo=${orderNo}`
     })
+  } else if (orderStatus === 'cancelled') {
+    // 已取消/已超时订单跳转到已取消页面
+    console.log('✅ 跳转到已取消页面')
+    uni.navigateTo({
+      url: `/pages/order/cancelled/index?orderNo=${orderNo}`
+    })
   } else {
-    // 其他状态订单跳转到订单详情页面
-    console.log('跳转到订单详情页面')
+    // 其他状态订单（已完成）跳转到订单详情页面
+    console.log('✅ 跳转到订单详情页面（已完成）| orderStatus:', orderStatus)
     uni.navigateTo({
       url: `/pages/order/detail/index?orderNo=${orderNo}`
     })

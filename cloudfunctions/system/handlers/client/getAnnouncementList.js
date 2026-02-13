@@ -8,6 +8,7 @@
  */
 const { query, count } = require('../../common');
 const { response, getPagination } = require('../../common');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { page = 1, page_size = 10 } = event;
@@ -38,6 +39,33 @@ module.exports = async (event, context) => {
       category_text: getCategoryText(a.category),
       target_type_text: getTargetTypeText(a.target_type)
     }));
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (processedAnnouncements && processedAnnouncements.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      processedAnnouncements.forEach(item => {
+        if (item.cover_image) fileIDs.push(item.cover_image);
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换列表中的 fileID 为临时 URL
+      processedAnnouncements.forEach(item => {
+        if (item.cover_image && urlMap[item.cover_image]) {
+          item.cover_image = urlMap[item.cover_image];
+        }
+      });
+    }
 
     return response.success({
       list: processedAnnouncements,

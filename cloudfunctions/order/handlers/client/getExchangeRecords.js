@@ -5,6 +5,7 @@
 const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { getPagination } = require('../../common/utils');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -62,6 +63,33 @@ module.exports = async (event, context) => {
       status_name: getExchangeStatusName(record.status),
       created_at: record.created_at
     }));
+
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (list && list.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      list.forEach(item => {
+        if (item.goods_image) fileIDs.push(item.goods_image);
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换 list 中的 fileID 为临时 URL
+      list.forEach(item => {
+        if (item.goods_image && urlMap[item.goods_image]) {
+          item.goods_image = urlMap[item.goods_image];
+        }
+      });
+    }
 
     console.log(`[getExchangeRecords] 查询成功，共 ${total} 条`);
 

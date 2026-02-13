@@ -7,6 +7,7 @@
  */
 
 const { db, response } = require('common');
+const { getTempFileURL } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { type, page = 1, pageSize = 10 } = event;
@@ -54,6 +55,33 @@ module.exports = async (event, context) => {
       canBuy: item.stock === -1 || item.stock > 0
     }));
 
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (list && list.length > 0) {
+      // 收集所有需要转换的 fileID
+      const fileIDs = [];
+      list.forEach(item => {
+        if (item.coverImage) fileIDs.push(item.coverImage);
+      });
+
+      // 批量获取临时 URL
+      let urlMap = {};
+      if (fileIDs.length > 0) {
+        const tempURLs = await getTempFileURL(fileIDs);
+        tempURLs.forEach((urlObj, index) => {
+          if (urlObj && urlObj.tempFileURL) {
+            urlMap[fileIDs[index]] = urlObj.tempFileURL;
+          }
+        });
+      }
+
+      // 替换 list 中的 fileID 为临时 URL
+      list.forEach(item => {
+        if (item.coverImage && urlMap[item.coverImage]) {
+          item.coverImage = urlMap[item.coverImage];
+        }
+      });
+    }
+
     return response.success({
       total: total || 0,
       page: parseInt(page),
@@ -66,6 +94,7 @@ module.exports = async (event, context) => {
     return response.error('获取商城课程失败', error);
   }
 };
+
 
 
 
