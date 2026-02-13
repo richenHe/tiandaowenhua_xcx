@@ -1,0 +1,177 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e6]:
+      - generic [ref=e12]:
+        - link "腾讯云" [ref=e13] [cursor=pointer]:
+          - /url: https://cloud.tencent.com
+          - img [ref=e14]
+        - link "控制台" [ref=e17] [cursor=pointer]:
+          - /url: /
+          - img [ref=e18]
+          - generic [ref=e21]: 控制台
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - searchbox "支持通过实例ID、IP、名称等搜索资源" [ref=e31]
+          - paragraph [ref=e32]: 快捷键 /
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - link "集团账号" [ref=e36] [cursor=pointer]:
+              - /url: /organization
+            - link "备案" [ref=e37] [cursor=pointer]:
+              - /url: /beian
+            - paragraph [ref=e39] [cursor=pointer]: 工具
+            - paragraph [ref=e41] [cursor=pointer]: 客服支持
+            - link "费用" [ref=e43] [cursor=pointer]:
+              - /url: /expense/overview
+          - img [ref=e46] [cursor=pointer]
+          - generic [ref=e50] [cursor=pointer]:
+            - img [ref=e51]
+            - paragraph [ref=e54]: "1"
+          - img [ref=e56] [cursor=pointer]
+          - generic [ref=e61] [cursor=pointer]:
+            - generic [ref=e62]:
+              - img [ref=e64]
+              - img [ref=e67]
+              - img [ref=e70]
+              - img [ref=e73]
+              - img [ref=e76]
+              - img [ref=e79]
+            - img
+            - img [ref=e256]
+        - generic [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]:
+            - paragraph [ref=e84]: herichen@100045649673
+            - paragraph [ref=e85]: 子账号
+          - img [ref=e86]:
+            - generic [ref=e89]: 妙
+    - generic [ref=e91]:
+      - insertion [ref=e156]:
+        - iframe [ref=e158]:
+          - generic [active] [ref=f7e1]:
+            - generic [ref=f7e5] [cursor=pointer]:
+              - generic [ref=f7e7]:
+                - img [ref=f7e8]
+                - generic [ref=f7e9]: 云上OpenClaw
+              - generic [ref=f7e11]:
+                - generic [ref=f7e12]: 轻量应用服务器 独家首发 支持 OpenClaw 接入企业微信、QQ！
+                - generic [ref=f7e14]: 查看详情
+            - alert [ref=f7e16]
+      - main [ref=e95]:
+        - generic [ref=e96]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - heading "云开发 CloudBase" [level=2] [ref=e101]
+              - generic [ref=e161] [cursor=pointer]:
+                - generic [ref=e163]:
+                  - img [ref=e164]
+                  - text: 上海 1
+                - img [ref=e168]
+            - generic [ref=e103]:
+              - button "使用云开发2.0新版" [ref=e104] [cursor=pointer]
+              - checkbox [ref=e106] [cursor=pointer]
+              - button "加入云开发交流群" [ref=e108] [cursor=pointer]
+              - link "快速入门" [ref=e109] [cursor=pointer]:
+                - /url: https://cloud.tencent.com/document/product/876/47995
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - img "infoblue" [ref=e114]
+              - generic [ref=e115]:
+                - heading "【公告】关于云开发计费套餐升级通知：" [level=4] [ref=e116]
+                - paragraph [ref=e117]:
+                  - text: 为简化预付费后付费资源包等多种使用概念，云开发将于2022年8月上线新计费套餐，使用“基础套餐+按量付费”模式，需先购买带有一定配额的基础套餐，超出配额部分按使用量付费，
+                  - link "价格文档" [ref=e118] [cursor=pointer]:
+                    - /url: https://cloud.tencent.com/document/product/876/75213
+                - list [ref=e119]:
+                  - listitem [ref=e120]: 正在享受免费版和按量付费的用户，有超过1个月的操作缓冲期去升级切换新计费套餐。
+                  - listitem [ref=e121]: 其他预付费用户在原套餐到期前，您的套餐权益将不变，可正常使用直到原套餐到期。
+            - paragraph
+            - generic [ref=e172]:
+              - button "新建" [ref=e174] [cursor=pointer]
+              - button "refresh" [ref=e176] [cursor=pointer]:
+                - img "refresh" [ref=e177]
+            - generic [ref=e179]:
+              - list [ref=e183]:
+                - listitem [ref=e184]:
+                  - text: 环境
+                  - generic [ref=e186] [cursor=pointer]:
+                    - generic [ref=e187]: 全部(1)
+                    - img "arrowdown" [ref=e188]
+                  - generic [ref=e191]:
+                    - generic [ref=e197] [cursor=pointer]:
+                      - generic [ref=e199]:
+                        - heading "cloud1 续" [level=3] [ref=e201]:
+                          - generic [ref=e202]: cloud1
+                          - generic [ref=e205]: 续
+                        - generic [ref=e207]:
+                          - button "变配" [ref=e208]
+                          - button "续费" [ref=e209]
+                          - button "销毁" [ref=e210]
+                      - generic [ref=e211]:
+                        - generic [ref=e212]:
+                          - paragraph [ref=e213]:
+                            - text: 环境ID：
+                            - generic [ref=e214]:
+                              - text: cloud1-0gnn3mn17b581124
+                              - img "copy" [ref=e215]
+                          - paragraph [ref=e216]: 包年包月环境标准版
+                          - paragraph [ref=e217]: 到期时间：2026-02-27 23:59:59
+                        - generic [ref=e221]: 类型来源 云开发
+                    - generic [ref=e222]:
+                      - generic [ref=e224]:
+                        - text: 共
+                        - strong [ref=e225]: "1"
+                        - text: 条
+                      - generic [ref=e226]:
+                        - generic [ref=e228] [cursor=pointer]:
+                          - generic [ref=e229]: "20"
+                          - img "arrowdown" [ref=e230]
+                        - generic [ref=e231]: 条 / 页
+                        - img "firstpage" [ref=e233]
+                        - img "arrowleft" [ref=e235]
+                        - generic [ref=e236]:
+                          - textbox [ref=e237]: "1"
+                          - generic [ref=e238]: / 1 页
+                        - img "arrowright" [ref=e240]
+                        - img "lastpage" [ref=e242]
+              - generic [ref=e246]:
+                - heading "快速入口" [level=3] [ref=e250]
+                - list [ref=e252]:
+                  - listitem [ref=e253]: 授权管理
+                  - listitem [ref=e254]:
+                    - link "云开发社区官网火热上线" [ref=e255] [cursor=pointer]:
+                      - /url: https://cloudbase.net/
+  - generic [ref=e131]:
+    - generic [ref=e135] [cursor=pointer]: 咨询
+    - generic [ref=e136]:
+      - generic [ref=e140] [cursor=pointer]: 动态
+      - generic [ref=e145] [cursor=pointer]: 文档
+  - generic [ref=e149]: 腾讯云 - 控制台
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - img
+                    - generic:
+                      - generic:
+                        - img
+                    - generic:
+                      - generic:
+                        - img
+                    - generic:
+                      - generic:
+                        - img
+                    - generic:
+                      - generic:
+                        - img
+                - generic:
+                  - generic: 非常不满意
+                  - generic: 非常满意

@@ -25,7 +25,7 @@
             v-for="order in filteredOrders" 
             :key="order.id"
             class="t-card"
-            @click="goToOrderDetail(order.id)"
+            @click="goToOrderDetail(order.id, order.orderStatus)"
           >
             <view class="t-card__body">
               <view class="order-content">
@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
@@ -84,8 +85,9 @@ const handleScroll = (e: any) => {
 const activeTab = ref(0)
 const tabOptions = [
   { label: '全部', value: 0 },
-  { label: '已完成', value: 1 },
-  { label: '已取消', value: 2 }
+  { label: '待支付', value: 1 },
+  { label: '已完成', value: 2 },
+  { label: '已取消', value: 3 }
 ]
 
 // 订单数据
@@ -103,15 +105,25 @@ const statusMap: Record<number, { text: string; type: string; orderStatus: strin
   0: { text: '待支付', type: 'warning', orderStatus: 'pending' },
   1: { text: '已支付', type: 'success', orderStatus: 'completed' },
   2: { text: '已取消', type: 'default', orderStatus: 'cancelled' },
-  3: { text: '已关闭', type: 'default', orderStatus: 'closed' }
+  3: { text: '已超时', type: 'default', orderStatus: 'cancelled' }  // 超时也归类为已取消
 }
 
 // 加载订单列表
-const loadOrders = async (status?: number) => {
+const loadOrders = async (tabValue?: number) => {
   try {
+    // 根据 tab 值设置状态过滤和分页大小
+    // 0-全部（100条）, 1-待支付(20条), 2-已完成(100条), 3-已取消(20条)
     const params: any = { page: 1, pageSize: 100 }
-    if (status && status > 0) {
-      params.status = status === 1 ? 1 : 2 // 1-已完成, 2-已取消
+    
+    if (tabValue === 1) {
+      params.status = 0 // 待支付
+      params.pageSize = 20 // 待支付最多20条
+    } else if (tabValue === 2) {
+      params.status = 1 // 已完成
+      params.pageSize = 100 // 已完成最多100条
+    } else if (tabValue === 3) {
+      params.status = 2 // 已取消
+      params.pageSize = 20 // 已取消最多20条
     }
 
     const result = await UserApi.getMyOrders(params)
@@ -120,7 +132,7 @@ const loadOrders = async (status?: number) => {
       const style = courseStyles[item.order_type] || courseStyles[1]
       const statusInfo = statusMap[item.pay_status] || statusMap[0]
 
-      return {
+      const orderData = {
         id: item.order_no,
         title: item.order_name,
         time: item.created_at,
@@ -131,6 +143,14 @@ const loadOrders = async (status?: number) => {
         iconBg: style.iconBg,
         orderStatus: statusInfo.orderStatus
       }
+      
+      console.log('订单数据映射:', { 
+        order_no: item.order_no,
+        pay_status: item.pay_status, 
+        orderStatus: orderData.orderStatus 
+      })
+      
+      return orderData
     })
   } catch (error) {
     console.error('加载订单列表失败:', error)
@@ -140,10 +160,16 @@ const loadOrders = async (status?: number) => {
 // 过滤订单
 const filteredOrders = computed(() => {
   if (activeTab.value === 0) {
+    // 全部订单
     return orders.value
   } else if (activeTab.value === 1) {
-    return orders.value.filter(order => order.orderStatus === 'completed')
+    // 待支付订单
+    return orders.value.filter(order => order.orderStatus === 'pending')
   } else if (activeTab.value === 2) {
+    // 已完成订单
+    return orders.value.filter(order => order.orderStatus === 'completed')
+  } else if (activeTab.value === 3) {
+    // 已取消订单
     return orders.value.filter(order => order.orderStatus === 'cancelled')
   }
   return orders.value
@@ -156,10 +182,22 @@ const handleTabChange = (value: number) => {
 }
 
 // 跳转到订单详情
-const goToOrderDetail = (orderNo: string) => {
-  uni.navigateTo({
-    url: `/pages/order/detail/index?orderNo=${orderNo}`
-  })
+const goToOrderDetail = (orderNo: string, orderStatus: string) => {
+  console.log('跳转订单详情:', { orderNo, orderStatus })
+  
+  // 待支付订单跳转到待支付页面
+  if (orderStatus === 'pending') {
+    console.log('跳转到待支付页面')
+    uni.navigateTo({
+      url: `/pages/order/pending/index?orderNo=${orderNo}`
+    })
+  } else {
+    // 其他状态订单跳转到订单详情页面
+    console.log('跳转到订单详情页面')
+    uni.navigateTo({
+      url: `/pages/order/detail/index?orderNo=${orderNo}`
+    })
+  }
 }
 
 onMounted(() => {
@@ -171,6 +209,12 @@ onMounted(() => {
 
   // 加载订单列表
   loadOrders()
+})
+
+// 每次页面显示时重新加载订单（确保超时订单状态更新）
+onShow(() => {
+  console.log('[Orders] 页面显示，重新加载订单列表');
+  loadOrders(activeTab.value);
 })
 
 // 返回上一页

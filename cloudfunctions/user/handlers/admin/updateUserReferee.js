@@ -37,14 +37,29 @@ module.exports = async (event, context) => {
         { id: userId }
       );
 
+    // 获取旧推荐人信息
+    let oldRefereeName = null;
+    let oldRefereeUid = null;
+    if (oldRefereeId) {
+      const oldReferee = await findOne('users', { id: oldRefereeId });
+      if (oldReferee) {
+        oldRefereeName = oldReferee.real_name;
+        oldRefereeUid = oldReferee.uid;
+      }
+    }
+
     // 记录变更日志
     await insert('referee_change_logs', {
       user_id: userId,
       user_uid: user.uid,
       old_referee_id: oldRefereeId,
+      old_referee_uid: oldRefereeUid,
+      old_referee_name: oldRefereeName,
       new_referee_id: null,
-      change_type: 3, // 3=管理员清除
-      change_source: 2, // 2=管理员操作
+      new_referee_uid: null,
+      new_referee_name: null,
+      change_type: 3, // 3=管理员修改
+      change_source: 3, // 3=后台管理
       admin_id: admin.id,
       remark: remark || '管理员清除推荐人'
     });
@@ -82,26 +97,32 @@ module.exports = async (event, context) => {
       { id: userId }
     );
 
+    // 获取旧推荐人信息
+    let oldRefereeName = null;
+    let oldRefereeUid = null;
+    if (oldRefereeId) {
+      const oldReferee = await findOne('users', { id: oldRefereeId });
+      if (oldReferee) {
+        oldRefereeName = oldReferee.real_name;
+        oldRefereeUid = oldReferee.uid;
+      }
+    }
+
     // 记录变更日志
     await insert('referee_change_logs', {
       user_id: userId,
       user_uid: user.uid,
       old_referee_id: oldRefereeId,
-      old_referee_uid: user.referee_uid,
+      old_referee_uid: oldRefereeUid,
+      old_referee_name: oldRefereeName,
       new_referee_id: newRefereeId,
       new_referee_uid: newReferee.uid,
-      change_type: 2, // 2=管理员修改
-      change_source: 2, // 2=管理员操作
+      new_referee_name: newReferee.real_name,
+      change_type: 3, // 3=管理员修改
+      change_source: 3, // 3=后台管理
       admin_id: admin.id,
       remark: remark || '管理员修改推荐人'
     });
-
-    // 查询旧推荐人名称
-    let oldRefereeName = null;
-    if (oldRefereeId) {
-      const oldReferee = await findOne('users', { id: oldRefereeId });
-      oldRefereeName = oldReferee?.real_name;
-    }
 
     console.log('[admin:updateUserReferee] 推荐人修改成功');
     return response.success({

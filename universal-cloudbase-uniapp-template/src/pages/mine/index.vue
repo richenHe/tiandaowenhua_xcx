@@ -124,7 +124,7 @@ const referralStats = ref({
 
 // 用户信息
 const userInfo = ref({
-  name: '加载中...',
+  name: '',
   phone: '',
   avatar: '',
   backgroundImage: '', // 背景图片

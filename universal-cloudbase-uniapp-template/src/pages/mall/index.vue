@@ -333,48 +333,61 @@ const handleProductClick = (product: any) => {
 
 // 兑换商品
 const handleExchange = (product: any) => {
-  // 计算混合支付方案
-  const paymentPlan = calculateMixedPayment(
-    product.points,
-    userMeritPoints.value,
-    userCashPoints.value
-  );
+  const productPoints = product.points;
+  const meritPoints = userMeritPoints.value;
+  const cashPoints = userCashPoints.value;
 
-  // 如果需要现金支付，提示用户
-  if (paymentPlan.needsCashPayment) {
+  // 情况1：功德分和积分都不足（单独看都不够）
+  if (meritPoints < productPoints && cashPoints < productPoints) {
     uni.showModal({
-      title: '功德分和积分不足',
-      content: `兑换${product.name}需要${product.points}功德分。您的功德分和积分不足以完成兑换，请先充值或获取更多积分。`,
+      title: '提示',
+      content: '功德分或积分不够',
       showCancel: false,
     });
     return;
   }
 
-  // 构建确认内容
-  let confirmContent = `兑换 ${product.name}\n`;
-  confirmContent += `需要功德分: ${product.points}\n\n`;
-  
-  // 如果需要使用积分抵扣，增加明确提示
-  if (paymentPlan.cashPointsToUse > 0) {
-    confirmContent += `⚠️ 功德分不足，需要积分抵扣\n\n`;
+  // 情况2：功德分不足，但积分足够 - 只用积分支付
+  if (meritPoints < productPoints && cashPoints >= productPoints) {
+    uni.showModal({
+      title: '提示',
+      content: '功德分不足，需要用积分兑换商品吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          // 只用积分支付
+          const paymentPlan = {
+            meritPointsToUse: 0,
+            cashPointsToUse: productPoints,
+            needsCashPayment: false,
+            remainingMeritPoints: meritPoints,
+            remainingCashPoints: cashPoints - productPoints
+          };
+          // 调用后端API兑换
+          performExchange('goods', product.id, paymentPlan);
+        }
+      },
+    });
+    return;
   }
-  
-  confirmContent += `将扣除:\n`;
-  confirmContent += `• 功德分: ${paymentPlan.meritPointsToUse}\n`;
-  if (paymentPlan.cashPointsToUse > 0) {
-    confirmContent += `• 积分(抵扣): ${paymentPlan.cashPointsToUse}\n`;
-  }
-  confirmContent += `\n剩余:\n`;
-  confirmContent += `• 功德分: ${paymentPlan.remainingMeritPoints}\n`;
-  confirmContent += `• 积分: ${paymentPlan.remainingCashPoints}`;
 
+  // 情况3：功德分充足 - 只用功德分支付
   uni.showModal({
-    title: '确认兑换',
-    content: confirmContent,
-    confirmText: '确认兑换',
+    title: '提示',
+    content: '确定用功德分兑换商品吗？',
+    confirmText: '确定',
     cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
+        // 只用功德分支付
+        const paymentPlan = {
+          meritPointsToUse: productPoints,
+          cashPointsToUse: 0,
+          needsCashPayment: false,
+          remainingMeritPoints: meritPoints - productPoints,
+          remainingCashPoints: cashPoints
+        };
         // 调用后端API兑换
         performExchange('goods', product.id, paymentPlan);
       }

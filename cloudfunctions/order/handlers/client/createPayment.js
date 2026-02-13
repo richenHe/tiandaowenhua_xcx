@@ -90,6 +90,9 @@ module.exports = async (event, context) => {
     console.log(`[createPayment] - openid 长度: ${user.openid?.length}`);
     console.log(`[createPayment] ⚠️ 重要：使用数据库中的真实微信 openid，不使用 context.OPENID`);
 
+    // ⚠️ 关键：CloudBase 微信支付使用"普通商户直连模式"
+    // 不需要传递 subMchId 参数，CloudBase 会自动从环境配置中读取商户信息
+    // 参考官方文档：https://docs.cloudbase.net/toolbox/datasource/weixin-pay
     const payResult = await cloud.cloudPay.unifiedOrder({
       body: order.order_name || '道天文化课程',
       outTradeNo: finalOrderNo,
@@ -97,7 +100,6 @@ module.exports = async (event, context) => {
       totalFee: totalFee,
       envId: process.env.TCB_ENV || cloud.DYNAMIC_CURRENT_ENV,
       functionName: 'callbacks', // 支付回调云函数
-      subMchId: process.env.MCH_ID,
       nonceStr: nonceStr,
       tradeType: 'JSAPI',
       openid: user.openid  // ✅ 使用数据库中的真实微信 openid

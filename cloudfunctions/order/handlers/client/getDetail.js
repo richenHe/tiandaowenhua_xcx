@@ -2,7 +2,7 @@
  * 客户端接口：订单详情
  * Action: getDetail
  */
-const { findOne } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -18,33 +18,81 @@ module.exports = async (event, context) => {
     }
 
     // 2. 查询订单信息
-    const order = await findOne('orders', {
-      order_no,
-      user_id: user.id
-    });
+    const { data: orders, error: queryError } = await db
+      .from('orders')
+      .select('*')
+      .eq('order_no', order_no)
+      .eq('user_id', user.id)
+      .single();
 
-    if (!order) {
+    if (queryError || !orders) {
       return response.notFound('订单不存在');
     }
 
-    // 3. 查询推荐人信息
+    let order = orders;
+
+    // 3. 检查订单是否超时（仅检查待支付订单）
+    if (order.pay_status === 0) {
+      const createdTime = new Date(order.created_at).getTime();
+      const now = Date.now();
+      const elapsed = Math.floor((now - createdTime) / 1000);
+      const timeout = 15 * 60; // 15分钟
+
+      if (elapsed >= timeout) {
+        console.log(`[getDetail] 订单已超时，自动关闭:`, { order_no, elapsed, elapsedMinutes: Math.floor(elapsed / 60) });
+        
+        try {
+          // 自动关闭订单
+          const { data: updateResult, error: updateError } = await db
+            .from('orders')
+            .update({ 
+              pay_status: 3,  // 已关闭（超时）
+              updated_at: new Date().toISOString()
+            })
+            .eq('order_no', order_no);
+
+          if (updateError) {
+            console.error('[getDetail] 更新订单状态失败:', updateError);
+          } else {
+            console.log('[getDetail] 成功更新订单状态为已关闭:', updateResult);
+            order.pay_status = 3;
+          }
+        } catch (updateErr) {
+          console.error('[getDetail] 更新订单异常:', updateErr);
+        }
+      }
+    }
+
+    // 4. 查询推荐人信息
     let refereeInfo = null;
     if (order.referee_id) {
-      const referee = await findOne('users', { id: order.referee_id });
+      const { data: referee } = await db
+        .from('users')
+        .select('id, uid, real_name, ambassador_level')
+        .eq('id', order.referee_id)
+        .single();
+
       if (referee) {
         refereeInfo = {
-          referee_id: referee.id,
-          referee_uid: referee.uid,
-          referee_name: referee.real_name,
-          referee_level: referee.ambassador_level
+          referee: {
+            id: referee.id,
+            uid: referee.uid,
+            real_name: referee.real_name,
+            ambassador_level: referee.ambassador_level
+          }
         };
       }
     }
 
-    // 4. 查询关联课程信息（如果是课程订单）
+    // 5. 查询关联课程信息（如果是课程订单）
     let courseInfo = null;
     if (order.order_type === 1 || order.order_type === 2) {
-      const course = await findOne('courses', { id: order.related_id });
+      const { data: course } = await db
+        .from('courses')
+        .select('id, name, type')
+        .eq('id', order.related_id)
+        .single();
+
       if (course) {
         courseInfo = {
           course_id: course.id,
@@ -54,7 +102,7 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 5. 构建响应数据
+    // 6. 构建响应数据
     const orderDetail = {
       order_no: order.order_no,
       user_id: order.user_id,
@@ -78,7 +126,7 @@ module.exports = async (event, context) => {
       ...courseInfo
     };
 
-    console.log(`[getDetail] 查询成功`);
+    console.log(`[getDetail] 查询成功，订单状态: ${order.pay_status}`);
 
     return response.success(orderDetail, '查询成功');
 

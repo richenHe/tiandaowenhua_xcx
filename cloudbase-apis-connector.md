@@ -1,0 +1,164 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7] [cursor=pointer]:
+        - img "云开发平台"
+      - generic [ref=e8]:
+        - button "cloud1 标准版" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+          - generic "cloud1" [ref=e15]
+          - generic [ref=e17]: 标准版
+          - img [ref=e18]
+        - button "接入指引" [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: 接入指引
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e29]:
+            - img [ref=e31]
+            - searchbox "请输入关键词搜索功能、文档或向 Copilot 提问" [ref=e34]
+          - generic [ref=e37]: /
+        - button "1 个事项" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - text: 1 个事项
+        - button [ref=e45] [cursor=pointer]:
+          - img [ref=e46]
+      - button "h" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: h
+    - generic [ref=e51]:
+      - navigation [ref=e52]:
+        - list [ref=e55]:
+          - generic [ref=e56]:
+            - listitem [ref=e57] [cursor=pointer]:
+              - link "icon 概览" [ref=e58]:
+                - /url: "#/overview"
+                - img "icon" [ref=e59]
+                - generic "概览" [ref=e62]
+            - listitem [ref=e63] [cursor=pointer]:
+              - link "icon 模板中心" [ref=e64]:
+                - /url: "#/cloud-template/market"
+                - img "icon" [ref=e65]
+                - generic "模板中心" [ref=e68]
+            - separator [ref=e69]
+            - listitem [ref=e70] [cursor=pointer]:
+              - link "icon SQL型数据库" [ref=e71]:
+                - /url: "#/db/mysql/table/default/"
+                - img "icon" [ref=e72]
+                - generic "SQL型数据库" [ref=e75]
+            - listitem [ref=e76] [cursor=pointer]:
+              - link "icon 文档型数据库" [ref=e77]:
+                - /url: "#/db/doc/collection/"
+                - img "icon" [ref=e78]
+                - generic "文档型数据库" [ref=e81]
+            - listitem [ref=e82] [cursor=pointer]:
+              - link "icon 云函数 / 托管 / 主机" [ref=e83]:
+                - /url: "#/scf"
+                - img "icon" [ref=e84]
+                - generic "云函数 / 托管 / 主机" [ref=e87]
+            - listitem [ref=e88] [cursor=pointer]:
+              - link "icon 云存储" [ref=e89]:
+                - /url: "#/storage"
+                - img "icon" [ref=e90]
+                - generic "云存储" [ref=e93]
+            - listitem [ref=e94] [cursor=pointer]:
+              - link "icon AI" [ref=e95]:
+                - /url: "#/ai"
+                - img "icon" [ref=e96]
+                - generic "AI" [ref=e99]
+            - listitem [ref=e100] [cursor=pointer]:
+              - link "icon 静态网站托管" [ref=e101]:
+                - /url: "#/static-hosting"
+                - img "icon" [ref=e102]
+                - generic "静态网站托管" [ref=e105]
+            - listitem [ref=e106] [cursor=pointer]:
+              - link "icon 身份认证" [ref=e107]:
+                - /url: "#/identity/user-management"
+                - img "icon" [ref=e108]
+                - generic "身份认证" [ref=e111]
+            - listitem [ref=e112] [cursor=pointer]:
+              - link "icon 微搭低代码" [ref=e113]:
+                - /url: "#/lowcode/apps"
+                - img "icon" [ref=e114]
+                - generic "微搭低代码" [ref=e117]
+            - separator [ref=e118]
+            - listitem [ref=e119] [cursor=pointer]:
+              - link "icon 日志监控" [ref=e120]:
+                - /url: "#/devops/log"
+                - img "icon" [ref=e121]
+                - generic "日志监控" [ref=e124]
+            - listitem [ref=e125] [cursor=pointer]:
+              - link "icon 扩展功能" [ref=e126]:
+                - /url: "#/apis"
+                - img "icon" [ref=e127]
+                - generic "扩展功能" [ref=e130]
+            - listitem [ref=e131] [cursor=pointer]:
+              - link "icon 套餐用量" [ref=e132]:
+                - /url: "#/env/package-usage"
+                - img "icon" [ref=e133]
+                - generic "套餐用量" [ref=e136]
+          - generic [ref=e137]:
+            - separator [ref=e138]
+            - generic [ref=e139]:
+              - listitem [ref=e141] [cursor=pointer]:
+                - link "icon 环境管理" [ref=e142]:
+                  - /url: "#/env/http-access"
+                  - img "icon" [ref=e143]
+                  - generic "环境管理" [ref=e146]
+              - listitem [ref=e148] [cursor=pointer]:
+                - img "icon" [ref=e150]
+      - main [ref=e151]:
+        - generic [ref=e152]:
+          - navigation [ref=e154]:
+            - generic [ref=e155]:
+              - heading "扩展功能" [level=2] [ref=e158]
+              - list [ref=e160]:
+                - listitem [ref=e161] [cursor=pointer]:
+                  - generic [ref=e163]: 资源连接
+                - listitem [ref=e164] [cursor=pointer]:
+                  - link "APIs 连接器" [ref=e165]:
+                    - /url: "#/apis"
+                    - generic "APIs 连接器" [ref=e168]
+                - listitem [ref=e169] [cursor=pointer]:
+                  - link "企微集成" [ref=e170]:
+                    - /url: "#/plugin"
+                    - generic "企微集成" [ref=e173]
+                - listitem [ref=e174] [cursor=pointer]:
+                  - link "工作流" [ref=e175]:
+                    - /url: "#/workflow"
+                    - generic "工作流" [ref=e178]
+                - listitem [ref=e179] [cursor=pointer]:
+                  - link "AnyService BETA" [ref=e180]:
+                    - /url: "#/any-service"
+                    - generic "AnyService" [ref=e183]:
+                      - generic [ref=e184]:
+                        - generic [ref=e185]: AnyService
+                        - generic [ref=e186]: BETA
+                - listitem [ref=e187] [cursor=pointer]:
+                  - link "授权管理" [ref=e188]:
+                    - /url: "#/connect-management"
+                    - generic "授权管理" [ref=e191]
+                - listitem [ref=e192] [cursor=pointer]:
+                  - generic [ref=e194]: 云后台管理
+                - listitem [ref=e195] [cursor=pointer]:
+                  - link "云后台" [ref=e196]:
+                    - /url: "#/cloud-admin"
+                    - generic "云后台" [ref=e199]
+          - main [ref=e200]:
+            - generic [ref=e201]:
+              - heading "APIs 连接器" [level=2] [ref=e206]
+              - generic [ref=e212]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: APIs列表
+                    - img [ref=e221] [cursor=pointer]
+                    - img [ref=e227] [cursor=pointer]
+                    - img [ref=e234] [cursor=pointer]
+                  - table [ref=e239]:
+                    - rowgroup [ref=e242]:
+                      - row "暂无APIs，可创建新的APIs" [ref=e243]:
+                        - cell "暂无APIs，可创建新的APIs" [ref=e244]:
+                          - generic [ref=e248]: 暂无APIs，可创建新的APIs
+                - generic [ref=e251]:
+                  - paragraph [ref=e252]: 暂无APIs
+                  - button "新建APIs" [ref=e253] [cursor=pointer]
+      - img [ref=e258] [cursor=pointer]
+  - iframe

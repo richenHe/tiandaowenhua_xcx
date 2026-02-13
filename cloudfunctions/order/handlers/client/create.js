@@ -133,6 +133,11 @@ async function handleCourseOrder(user, course_id, referee_id) {
   const finalRefereeId = referee_id || user.referee_id;
 
   if (finalRefereeId) {
+    // 验证：不能选择自己作为推荐人
+    if (finalRefereeId === user.id) {
+      throw new Error('不能选择自己作为推荐人');
+    }
+
     const referee = await findOne('users', { id: finalRefereeId });
     if (referee) {
       // 验证推荐人资格（根据课程类型）

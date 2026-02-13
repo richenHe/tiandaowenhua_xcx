@@ -3,7 +3,17 @@
     <TdPageHeader title="确认支付" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <view class="page-content">
+      <!-- 加载中占位符 -->
+      <view v-if="isLoading" class="page-content">
+        <view class="t-card t-card--bordered">
+          <view class="t-card__body">
+            <view class="loading-text">加载中...</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 支付内容 -->
+      <view v-else class="page-content">
         <!-- 支付金额 -->
         <view class="payment-amount">
           <view class="amount-label">支付金额</view>
@@ -57,6 +67,7 @@
             <view class="t-alert__message">请在15分钟内完成支付，超时订单将自动取消</view>
           </view>
         </view>
+        </view>
       </view>
     </scroll-view>
 
@@ -77,17 +88,21 @@ import { OrderApi } from '@/api';
 // 订单信息
 const orderInfo = ref({
   orderNo: '',
-  orderName: '初探班',
+  orderName: '',
   orderType: 1,
-  amount: 1688,
+  amount: 0,
 });
 
 // 选中的支付方式
 const selectedPayment = ref('wechat');
 
+// 加载状态
+const isLoading = ref(true);
+
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
   try {
+    isLoading.value = true;
     const order = await OrderApi.getDetail(orderNo);
 
     orderInfo.value.orderNo = order.order_no;
@@ -96,6 +111,12 @@ const loadOrderDetail = async (orderNo: string) => {
     orderInfo.value.amount = order.final_amount;
   } catch (error) {
     console.error('加载订单详情失败:', error);
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    });
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -137,10 +158,24 @@ const handlePay = async () => {
       },
       fail: (err) => {
         console.error('支付失败:', err);
-        uni.showToast({
-          title: '支付失败',
-          icon: 'none',
-        });
+        
+        // 用户取消支付，返回待支付页面
+        if (err.errMsg && err.errMsg.includes('cancel')) {
+          uni.showToast({
+            title: '已取消支付',
+            icon: 'none',
+            duration: 1500
+          });
+          setTimeout(() => {
+            uni.navigateBack();
+          }, 1500);
+        } else {
+          // 其他支付错误
+          uni.showToast({
+            title: '支付失败',
+            icon: 'none',
+          });
+        }
       }
     });
   } catch (error) {
@@ -178,6 +213,14 @@ onMounted(() => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
+}
+
+// 加载占位符
+.loading-text {
+  text-align: center;
+  color: $td-text-color-placeholder;
+  font-size: 28rpx;
+  padding: 64rpx 0;
 }
 
 .mb-l {

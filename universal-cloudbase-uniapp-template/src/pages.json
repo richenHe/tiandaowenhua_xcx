@@ -84,16 +84,23 @@
         "navigationStyle": "custom"
       }
     },
-		{
-			"path": "pages/order/payment/index",
-			"style": {
+	{
+		"path": "pages/order/payment/index",
+		"style": {
         "navigationBarTitleText": "确认支付",
         "navigationStyle": "custom"
       }
     },
-		{
-			"path": "pages/order/detail/index",
-			"style": {
+	{
+		"path": "pages/order/pending/index",
+		"style": {
+        "navigationBarTitleText": "待支付订单",
+        "navigationStyle": "custom"
+      }
+    },
+	{
+		"path": "pages/order/detail/index",
+		"style": {
         "navigationBarTitleText": "订单详情",
         "navigationStyle": "custom"
       }

@@ -3,22 +3,33 @@
     <TdPageHeader title="初探班详情" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <!-- 封面图片 -->
-      <view class="cover-image">📚</view>
-
-      <view class="page-content">
-        <!-- 课程基本信息 -->
+      <!-- 加载中占位符 -->
+      <view v-if="isLoading" class="loading-placeholder">
         <view class="t-card t-card--bordered">
           <view class="t-card__body">
-            <view class="course-title">{{ courseInfo.name }}</view>
-            <view class="course-meta">
-              <text class="course-price">¥{{ courseInfo.price }}</text>
-              <view class="t-badge--standalone t-badge--theme-success">
-                已有{{ courseInfo.soldCount }}人购买
+            <view class="loading-text">加载中...</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 课程内容 -->
+      <view v-else>
+        <!-- 封面图片 -->
+        <view class="cover-image">📚</view>
+
+        <view class="page-content">
+          <!-- 课程基本信息 -->
+          <view class="t-card t-card--bordered">
+            <view class="t-card__body">
+              <view class="course-title">{{ courseInfo.name || '课程名称' }}</view>
+              <view class="course-meta">
+                <text class="course-price">¥{{ courseInfo.price }}</text>
+                <view class="t-badge--standalone t-badge--theme-success">
+                  已有{{ courseInfo.soldCount }}人购买
+                </view>
               </view>
             </view>
           </view>
-        </view>
 
         <!-- 标签页 -->
         <view class="t-tabs">
@@ -72,6 +83,7 @@
             </view>
           </view>
         </view>
+        </view>
       </view>
     </scroll-view>
 
@@ -106,21 +118,25 @@ const tabs = [
 // 课程信息
 const courseInfo = ref({
   id: null as number | null,
-  name: '初探班',
+  name: '',
   type: 1,
-  price: 1688,
-  soldCount: 500,
-  description: '这是一门系统性学习天道文化的课程，帮助学员深入理解国学智慧，传承中华文化。',
+  price: 0,
+  soldCount: 0,
+  description: '',
   outline: [] as string[],
-  instructor: '资深讲师，从事国学教育20余年，有丰富的教学经验。',
+  instructor: '',
   is_purchased: false,
   user_course_id: null as number | null,
   attend_count: 1,
 });
 
+// 加载状态
+const isLoading = ref(true);
+
 // 加载课程详情
 const loadCourseDetail = async (courseId: number) => {
   try {
+    isLoading.value = true;
     const course = await CourseApi.getDetail(courseId);
 
     courseInfo.value.id = course.id;
@@ -146,6 +162,12 @@ const loadCourseDetail = async (courseId: number) => {
     }
   } catch (error) {
     console.error('加载课程详情失败:', error);
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    });
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -159,6 +181,13 @@ onMounted(() => {
   const courseId = options.id || options.courseId || options.course_id;
   if (courseId) {
     loadCourseDetail(Number(courseId));
+  } else {
+    // 没有课程ID，显示错误并停止加载
+    isLoading.value = false;
+    uni.showToast({
+      title: '课程ID不存在',
+      icon: 'none'
+    });
   }
 });
 
@@ -229,6 +258,21 @@ const handleBuy = () => {
   padding-bottom: calc(152rpx + env(safe-area-inset-bottom)); // 为固定底部预留空间 + 额外留白
   background-color: $td-bg-color-page;
   min-height: calc(100vh - 420rpx - var(--td-page-header-height)); // 确保内容区域填满屏幕
+}
+
+// 加载占位符
+.loading-placeholder {
+  padding: 32rpx;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-text {
+  text-align: center;
+  color: $td-text-color-placeholder;
+  font-size: 28rpx;
 }
 
 // 卡片样式

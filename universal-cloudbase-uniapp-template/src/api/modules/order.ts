@@ -46,16 +46,62 @@ export class OrderApi {
 
   /**
    * 2. 发起支付
+   * ⚠️ 特殊处理：微信支付必须使用 wx.cloud.callFunction() 调用
+   * 不能使用 CloudBase JS SDK，否则会报 invalid wx openapi access_token 错误
    * @param params 支付参数
    * @returns 支付信息
    */
   static async createPayment(params: CreatePaymentParams): Promise<CreatePaymentResponse> {
-    return callCloudFunction<CreatePaymentResponse>({
-      name: 'order',
-      action: 'createPayment',
-      data: params,
-      loadingText: '发起支付中...'
+    // 显示加载提示
+    uni.showLoading({
+      title: '发起支付中...',
+      mask: true
     })
+
+    try {
+      // ⚠️ 必须使用 wx.cloud.callFunction() 而不是 CloudBase JS SDK
+      // 原因：微信云调用需要 wxCloudApiToken，只有通过 wx.cloud 才能传递
+      // #ifdef MP-WEIXIN
+      const result: any = await new Promise((resolve, reject) => {
+        wx.cloud.callFunction({
+          name: 'order',
+          data: {
+            action: 'createPayment',
+            ...params
+          },
+          success: (res) => resolve(res),
+          fail: (err) => reject(err)
+        })
+      })
+
+      uni.hideLoading()
+
+      // 检查云函数返回结果
+      const response = result.result as any
+      if (!response || !response.success) {
+        throw new Error(response?.message || '发起支付失败')
+      }
+
+      return response.data
+      // #endif
+
+      // #ifndef MP-WEIXIN
+      uni.hideLoading()
+      throw new Error('微信支付仅支持微信小程序环境')
+      // #endif
+    } catch (error: any) {
+      uni.hideLoading()
+      console.error('发起支付失败:', error)
+      
+      // 显示错误提示
+      uni.showToast({
+        title: error.message || '发起支付失败',
+        icon: 'none',
+        duration: 2000
+      })
+
+      throw error
+    }
   }
 
   /**

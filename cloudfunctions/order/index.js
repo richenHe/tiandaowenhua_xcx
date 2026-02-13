@@ -95,21 +95,28 @@ exports.main = async (event, context) => {
   let OPENID = test_openid;
 
   try {
-    // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
+    // ========== 使用 CloudBase uid 识别用户（双标识体系） ==========
+    // 注意：即使通过 wx.cloud.callFunction() 调用，我们也使用 CloudBase uid
+    // 真实的微信 openid 存储在数据库的 openid 字段中，用于微信支付等 API
     if (!OPENID) {
       const userInfo = auth.getUserInfo();  // 同步方法，直接返回结果
-      if (userInfo && userInfo.openId) {
-        OPENID = userInfo.openId;  // 使用 openId 作为 OPENID
-      } else if (userInfo && userInfo.uid) {
-        OPENID = userInfo.uid;
+      // ⚠️ 优先使用 uid（CloudBase uid），用于用户识别和权限验证
+      if (userInfo && userInfo.uid) {
+        OPENID = userInfo.uid;  // CloudBase uid
       } else if (userInfo && userInfo.customUserId) {
         OPENID = userInfo.customUserId;
+      } else if (userInfo && userInfo.openId) {
+        // 降级方案：如果没有 uid，使用 openId
+        // 注意：通过 wx.cloud.callFunction() 调用时，这里是真实的微信 openid
+        // 但我们的数据库 _openid 字段存储的是 CloudBase uid，所以优先用 uid
+        OPENID = userInfo.openId;
       }
       
       console.log(`[${action}] getUserInfo 返回:`, {
-        openId: userInfo?.openId?.slice(-6),
-        uid: userInfo?.uid?.slice(-6),
-        customUserId: userInfo?.customUserId
+        openId: userInfo?.openId?.slice(-6) || 'none',
+        uid: userInfo?.uid?.slice(-6) || 'none',
+        customUserId: userInfo?.customUserId || 'none',
+        使用标识: OPENID?.slice(-6) || 'undefined'
       });
     }
 

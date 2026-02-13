@@ -49,13 +49,13 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi, SystemApi } from '@/api';
 
 // 客服电话
-const customerServicePhone = ref('400-123-4567');
+const customerServicePhone = ref('');
 
 // 课程信息
 const courseInfo = ref({
   classRecordId: 0,
   courseId: 0,
-  courseName: '初探班',
+  courseName: '',
   period: '',
   startDate: '',
   endDate: '',

@@ -1,7 +1,7 @@
 /**
  * 客户端接口：修改推荐人
  * Action: client:updateReferee
- * 规则：7天内只能修改1次，首次支付后锁定
+ * 规则：首次支付订单后锁定，支付前可随时修改
  */
 const { db, findOne, insert, update } = require('../../common/db');
 const { response, utils } = require('../../common');
@@ -23,47 +23,51 @@ module.exports = async (event, context) => {
       return response.error('推荐人已锁定，无法修改', null, 403);
     }
 
-    // 2. 检查7天内是否已修改过
-    const { data: recentChanges } = await db.from('referee_change_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (recentChanges && recentChanges.length > 0) {
-      const daysDiff = (Date.now() - new Date(recentChanges[0].created_at)) / (1000 * 60 * 60 * 24);
-      if (daysDiff < 7) {
-        return response.error('7天内只能修改1次推荐人', null, 403);
-      }
-    }
-
-    // 3. 查询新推荐人
+    // 2. 查询新推荐人
     const newReferee = await findOne('users', { referee_code: refereeCode });
 
     if (!newReferee) {
       return response.paramError('推荐码不存在');
     }
 
-    // 4. 不能选择自己
+    // 3. 不能选择自己
     if (newReferee.id === user.id) {
       return response.paramError('不能选择自己作为推荐人');
     }
 
-    // 5. 检查是否会形成循环（新推荐人是否是当前用户的下级）
+    // 4. 检查是否会形成循环（新推荐人是否是当前用户的下级）
     const isDownline = await checkIfDownline(user.id, newReferee.id);
     if (isDownline) {
       return response.paramError('不能选择自己的下级作为推荐人');
     }
 
-    // 6. 记录变更日志
+    // 5. 记录变更日志
+    // 获取旧推荐人信息（如果存在）
+    let oldRefereeName = null;
+    let oldRefereeUid = null;
+    if (user.referee_id) {
+      const oldReferee = await findOne('users', { id: user.referee_id });
+      if (oldReferee) {
+        oldRefereeName = oldReferee.real_name;
+        oldRefereeUid = oldReferee.uid;
+      }
+    }
+
     await insert('referee_change_logs', {
       user_id: user.id,
+      user_uid: user.uid,
       old_referee_id: user.referee_id,
+      old_referee_uid: oldRefereeUid,
+      old_referee_name: oldRefereeName,
       new_referee_id: newReferee.id,
-      change_reason: '用户主动修改'
+      new_referee_uid: newReferee.uid,
+      new_referee_name: newReferee.real_name,
+      change_type: 2, // 用户主动修改
+      change_source: 1, // 小程序用户资料
+      remark: '用户主动修改推荐人'
     });
 
-    // 7. 更新推荐人
+    // 6. 更新推荐人
     await update('users', { 
       referee_id: newReferee.id,
       referee_uid: newReferee.uid,

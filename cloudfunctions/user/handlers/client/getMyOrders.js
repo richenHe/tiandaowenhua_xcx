@@ -9,10 +9,10 @@ const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { page = 1, pageSize = 10, status } = event;
+  const { page = 1, pageSize = 100, status } = event;
 
   try {
-    console.log('[getMyOrders] 获取我的订单:', user.id);
+    console.log('[getMyOrders] 获取我的订单:', user.id, { page, pageSize, status });
 
     const { offset, limit } = utils.getPagination(page, pageSize);
 
@@ -28,8 +28,15 @@ module.exports = async (event, context) => {
       .range(offset, offset + limit - 1);
 
     // 添加状态过滤
-    if (status !== undefined) {
-      queryBuilder = queryBuilder.eq('pay_status', status);
+    if (status !== undefined && status !== null && status !== '') {
+      const statusValue = parseInt(status);
+      
+      // 如果查询已取消订单(status=2)，包含已取消(2)和已关闭/超时(3)
+      if (statusValue === 2) {
+        queryBuilder = queryBuilder.in('pay_status', [2, 3]);
+      } else {
+        queryBuilder = queryBuilder.eq('pay_status', statusValue);
+      }
     }
 
     const { data: orders, error, count: total } = await queryBuilder;
@@ -38,13 +45,55 @@ module.exports = async (event, context) => {
       throw error;
     }
 
+    // 检查并自动关闭超时订单
+    const now = Date.now();
+    const timeout = 15 * 60 * 1000; // 15分钟（毫秒）
+    const timeoutOrders = [];
+
+    for (const order of orders || []) {
+      if (order.pay_status === 0) {
+        const createdTime = new Date(order.created_at).getTime();
+        const elapsed = now - createdTime;
+        
+        console.log(`[getMyOrders] 检查订单: ${order.order_no}, created: ${order.created_at}, elapsed: ${Math.floor(elapsed/1000)}秒, timeout: ${elapsed >= timeout}`);
+        
+        if (elapsed >= timeout) {
+          timeoutOrders.push(order.order_no);
+          order.pay_status = 3; // 本地更新状态，用于返回
+        }
+      }
+    }
+
+    // 批量更新超时订单状态
+    if (timeoutOrders.length > 0) {
+      console.log(`[getMyOrders] 发现 ${timeoutOrders.length} 个超时订单，自动关闭:`, timeoutOrders);
+      
+      try {
+        const { data: updateResult, error: updateError } = await db
+          .from('orders')
+          .update({ 
+            pay_status: 3,
+            updated_at: new Date().toISOString()
+          })
+          .in('order_no', timeoutOrders);
+        
+        if (updateError) {
+          console.error('[getMyOrders] 更新超时订单状态失败:', updateError);
+        } else {
+          console.log('[getMyOrders] 成功更新超时订单状态:', updateResult);
+        }
+      } catch (updateErr) {
+        console.error('[getMyOrders] 更新超时订单异常:', updateErr);
+      }
+    }
+
     // 格式化数据
     const list = (orders || []).map(order => ({
       ...order,
       referee_name: order.referee?.real_name || order.referee?.nickname || null
     }));
 
-    console.log('[getMyOrders] 查询成功，共', total, '条');
+    console.log('[getMyOrders] 查询成功，共', total, '条，超时订单:', timeoutOrders.length);
     return response.success({
       total,
       page,

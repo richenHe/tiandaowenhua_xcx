@@ -1,0 +1,288 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7] [cursor=pointer]:
+        - img "云开发平台"
+      - generic [ref=e8]:
+        - button "cloud1 标准版" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+          - generic "cloud1" [ref=e15]
+          - generic [ref=e17]: 标准版
+          - img [ref=e18]
+        - button "接入指引" [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: 接入指引
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e29]:
+            - img [ref=e31]
+            - searchbox "请输入关键词搜索功能、文档或向 Copilot 提问" [ref=e34]
+          - generic [ref=e37]: /
+        - button "1 个事项" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - text: 1 个事项
+        - button [ref=e45] [cursor=pointer]:
+          - img [ref=e46]
+      - button "h" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: h
+    - generic [ref=e51]:
+      - navigation [ref=e52]:
+        - list [ref=e55]:
+          - generic [ref=e56]:
+            - listitem [ref=e57] [cursor=pointer]:
+              - link "icon 概览" [ref=e58]:
+                - /url: "#/overview"
+                - img "icon" [ref=e59]
+                - generic "概览" [ref=e62]
+            - listitem [ref=e63] [cursor=pointer]:
+              - link "icon 模板中心" [ref=e64]:
+                - /url: "#/cloud-template/market"
+                - img "icon" [ref=e65]
+                - generic "模板中心" [ref=e68]
+            - separator [ref=e69]
+            - listitem [ref=e70] [cursor=pointer]:
+              - link "icon SQL型数据库" [ref=e71]:
+                - /url: "#/db/mysql/table/default/"
+                - img "icon" [ref=e72]
+                - generic "SQL型数据库" [ref=e75]
+            - listitem [ref=e76] [cursor=pointer]:
+              - link "icon 文档型数据库" [ref=e77]:
+                - /url: "#/db/doc/collection/"
+                - img "icon" [ref=e78]
+                - generic "文档型数据库" [ref=e81]
+            - listitem [ref=e82] [cursor=pointer]:
+              - link "icon 云函数 / 托管 / 主机" [ref=e83]:
+                - /url: "#/scf"
+                - img "icon" [ref=e84]
+                - generic "云函数 / 托管 / 主机" [ref=e87]
+            - listitem [ref=e88] [cursor=pointer]:
+              - link "icon 云存储" [ref=e89]:
+                - /url: "#/storage"
+                - img "icon" [ref=e90]
+                - generic "云存储" [ref=e93]
+            - listitem [ref=e94] [cursor=pointer]:
+              - link "icon AI" [ref=e95]:
+                - /url: "#/ai"
+                - img "icon" [ref=e96]
+                - generic "AI" [ref=e99]
+            - listitem [ref=e100] [cursor=pointer]:
+              - link "icon 静态网站托管" [ref=e101]:
+                - /url: "#/static-hosting"
+                - img "icon" [ref=e102]
+                - generic "静态网站托管" [ref=e105]
+            - listitem [ref=e106] [cursor=pointer]:
+              - link "icon 身份认证" [ref=e107]:
+                - /url: "#/identity/user-management"
+                - img "icon" [ref=e108]
+                - generic "身份认证" [ref=e111]
+            - listitem [ref=e112] [cursor=pointer]:
+              - link "icon 微搭低代码" [ref=e113]:
+                - /url: "#/lowcode/apps"
+                - img "icon" [ref=e114]
+                - generic "微搭低代码" [ref=e117]
+            - separator [ref=e118]
+            - listitem [ref=e119] [cursor=pointer]:
+              - link "icon 日志监控" [ref=e120]:
+                - /url: "#/devops/log"
+                - img "icon" [ref=e121]
+                - generic "日志监控" [ref=e124]
+            - listitem [ref=e125] [cursor=pointer]:
+              - link "icon 扩展功能" [ref=e126]:
+                - /url: "#/apis"
+                - img "icon" [ref=e127]
+                - generic "扩展功能" [ref=e130]
+            - listitem [ref=e131] [cursor=pointer]:
+              - link "icon 套餐用量" [ref=e132]:
+                - /url: "#/env/package-usage"
+                - img "icon" [ref=e133]
+                - generic "套餐用量" [ref=e136]
+          - generic [ref=e137]:
+            - separator [ref=e138]
+            - generic [ref=e139]:
+              - listitem [ref=e141] [cursor=pointer]:
+                - link "icon 环境管理" [ref=e142]:
+                  - /url: "#/env/http-access"
+                  - img "icon" [ref=e143]
+                  - generic "环境管理" [ref=e146]
+              - listitem [ref=e148] [cursor=pointer]:
+                - img "icon" [ref=e150]
+      - main [ref=e151]:
+        - generic [ref=e152]:
+          - navigation [ref=e154]:
+            - generic [ref=e155]:
+              - heading "扩展功能" [level=2] [ref=e158]
+              - list [ref=e160]:
+                - listitem [ref=e161] [cursor=pointer]:
+                  - generic [ref=e163]: 资源连接
+                - listitem [ref=e164] [cursor=pointer]:
+                  - link "APIs 连接器" [ref=e165]:
+                    - /url: "#/apis"
+                    - generic "APIs 连接器" [ref=e168]
+                - listitem [ref=e169] [cursor=pointer]:
+                  - link "企微集成" [ref=e170]:
+                    - /url: "#/plugin"
+                    - generic "企微集成" [ref=e173]
+                - listitem [ref=e174] [cursor=pointer]:
+                  - link "工作流" [ref=e175]:
+                    - /url: "#/workflow"
+                    - generic "工作流" [ref=e178]
+                - listitem [ref=e179] [cursor=pointer]:
+                  - link "AnyService BETA" [ref=e180]:
+                    - /url: "#/any-service"
+                    - generic "AnyService" [ref=e183]:
+                      - generic [ref=e184]:
+                        - generic [ref=e185]: AnyService
+                        - generic [ref=e186]: BETA
+                - listitem [ref=e187] [cursor=pointer]:
+                  - link "授权管理" [ref=e188]:
+                    - /url: "#/connect-management"
+                    - generic "授权管理" [ref=e191]
+                - listitem [ref=e192] [cursor=pointer]:
+                  - generic [ref=e194]: 云后台管理
+                - listitem [ref=e195] [cursor=pointer]:
+                  - link "云后台" [ref=e196]:
+                    - /url: "#/cloud-admin"
+                    - generic "云后台" [ref=e199]
+          - main [ref=e200]:
+            - generic [ref=e201]:
+              - heading "APIs 连接器" [level=2] [ref=e206]
+              - generic [ref=e212]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: APIs列表
+                    - img [ref=e221] [cursor=pointer]
+                    - img [ref=e227] [cursor=pointer]
+                    - img [ref=e234] [cursor=pointer]
+                  - table [ref=e239]:
+                    - rowgroup [ref=e242]:
+                      - row "暂无APIs，可创建新的APIs" [ref=e243]:
+                        - cell "暂无APIs，可创建新的APIs" [ref=e244]:
+                          - generic [ref=e248]: 暂无APIs，可创建新的APIs
+                - main [ref=e265]:
+                  - generic [ref=e266]:
+                    - generic [ref=e269]:
+                      - heading "新建APIs" [level=2] [ref=e271]
+                      - button "开放APIs教程" [ref=e273] [cursor=pointer]
+                    - generic [ref=e275]:
+                      - generic [ref=e276]:
+                        - generic [ref=e277]:
+                          - generic [ref=e278]: "1"
+                          - generic [ref=e280]: 选择APIs类型
+                        - generic [ref=e282]:
+                          - generic [ref=e283]: "2"
+                          - generic [ref=e285]: 配置APIs信息
+                      - generic [ref=e619]:
+                        - heading "自定义APIs更换" [level=3] [ref=e623]:
+                          - text: 自定义APIs
+                          - generic [ref=e624]: 更换
+                        - generic [ref=e632] [cursor=pointer]:
+                          - img [ref=e634]
+                          - generic [ref=e640]: 微信支付-小程序
+                      - generic [ref=e642]:
+                        - heading "自定义APIs" [level=3] [ref=e646]
+                        - generic [ref=e647]:
+                          - generic [ref=e648]:
+                            - img [ref=e650]
+                            - list [ref=e656]:
+                              - listitem [ref=e657]: 默认权限是读取本人。如果需要读取全部数据，请调整权限配置。
+                          - generic [ref=e658]:
+                            - generic [ref=e659]:
+                              - generic [ref=e661]: 名称 *
+                              - generic [ref=e662]:
+                                - textbox "请输入APIs名称" [ref=e663]: 微信支付-小程序
+                                - img "success" [ref=e664]
+                            - generic [ref=e668]:
+                              - generic [ref=e670]: 标识 *
+                              - generic [ref=e671]:
+                                - generic [ref=e672]:
+                                  - textbox "请输入APIs英文标识" [ref=e673]: wxzfxcx
+                                  - generic [ref=e675]: _jqluwj1
+                                - img "success" [ref=e676]
+                                - generic [ref=e680]: 请输入APIs英文标识，作为APIs唯一标识，不可重复
+                            - generic [ref=e681]:
+                              - generic [ref=e683]: 描述
+                              - textbox "请输入APIs描述，最多支持 255 个字符" [ref=e685]
+                            - heading "参数配置" [level=3] [ref=e686]
+                            - generic [ref=e687]:
+                              - generic [ref=e689]: AppID *
+                              - generic [ref=e690]:
+                                - textbox [ref=e691]: wx26753b179de5c25c
+                                - img "success" [ref=e786]
+                                - generic [ref=e692]:
+                                  - text: 还没有认证小程序？
+                                  - button "前往认证" [ref=e694] [cursor=pointer]
+                            - generic [ref=e695]:
+                              - generic [ref=e697]: 支付商户号 *
+                              - generic [ref=e698]:
+                                - textbox [ref=e699]: "1710089873"
+                                - img "success" [ref=e790]
+                                - generic [ref=e700]:
+                                  - button "微信支付商家平台" [ref=e702] [cursor=pointer]
+                                  - text: 申请商户号，之后登录
+                                  - button "微信公众平台" [ref=e704] [cursor=pointer]
+                                  - text: ，完成小程序和商户号的绑定，
+                                  - button "了解更多" [ref=e706] [cursor=pointer]
+                            - generic [ref=e707]:
+                              - generic [ref=e709]: 商户API证书序列号 *
+                              - generic [ref=e710]:
+                                - textbox [ref=e711]: 6D4BEDC9337BD2C074748CCF667311E0A5BD9C7E
+                                - img "success" [ref=e794]
+                                - button "什么是商户API证书以及如何获取" [ref=e714] [cursor=pointer]
+                            - generic [ref=e715]:
+                              - generic [ref=e717]: 商户API私钥 *
+                              - generic [ref=e718]:
+                                - textbox [ref=e719]: "-----BEGIN PRIVATE KEY----- MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQDUehp+rATxZXmy 0MrzP5JWzxevQkjYlhVheRXAAExG0CWu4vsXFPI766muODiN0lkAlx+FsbZSffTB zd6T/gD09fuTaNAovzRF46o7G7GjgOZlXbP5RFGDj3oEPei2x5WelWwajx6Le4fW eC8sYXjCeOvIYxmvRI4aNhR8rPKErHtjn1pqVrw1cGFnJOx4fsM3moXCrYT3UbCk hlThj3lo2BEab9jtq4VRa3gDuFCeUoERm+A952MFC2NwJ/oOmSm8DQju2B818kC0 yTc6Jszrfzd17tf35lKnuf781ohvIBFiHongQ6ON1MtAD7V6X4ri8gJfafvfwUAU UcSSoxAHAgMBAAECggEBAImYKOAu9WR9mjm6DDNJz7J3mZbdDd90EZR1nSghCUQy NrTyODfSUKuNCOzRa44r0YcYVkl1s+PnvUBj2OdtbaE0Sh5DmclJSMiZjfuJC5ge ORUbgRjCrSbNGu70SGdVCAcSLFdmpxkcffLdEW9kD5egRtAVnORrOLqwmsPCG6rd +F9IvjOa7jy/VHRoPVTqj01lsnSK1VIlSuqswLoPtjb+jKSlrYQtvQYo2gJQd6MW ehyxrcdMcnNVTHfcuWpok2cNawNj2F/nIvbPCFWXIPRuORwR3+VC/K/ppHiwvUrP G5MvO7cP/FrYX2sUwFc8Ri4J/2+NET/FHMDQmh/gQcECgYEA/LrdpjmeDRuAf2kS Z0LIJojHNSAhP/OdiFHJMJLZ9EJ/3s8H8UDPIK57mexvHJJBB4CwYyPmBr7xZbKs XC/V9LcNs0Jj4x0Tf6aMkpckeQYUo9sbI/ixGzkpxhBJyXvh8ZPU6m6BZf3ziejo UeysMs7mktOgLxub5U4vaZq//rMCgYEA1znnsmDsNe55BSYYyH8QS5BxKZUBFkWz 4rzbSBKUOLgx2+V5dQ4gSFWw/Q1tPTHEkjS6NDqERPejYNPd2+KDtwY/Qwq0omDG amZK7qJWNL/UXo6l+vy6uum5QxeQItHGQ+NDHWdcftX3xv1fM2r59W2n2Y5RlqRC IufVRa8y010CgYEA+hagR2E0uZvBaFM9VtmK3jbzieqlfHdCKCdmg56N91vm1UDh hyau0JRY01RYD1na5+W8ph5b/cjtb8mDLiZX/rU15XGJDrEzHlpdOKJAAVK3Ef47 uTjbaSkD4W801SC10SyMwP9hJOBMIuhLHOaq8Aw1to2cMYGMnzjjSglMfGkCgYEA vkszYdMyZojgNb42YWd/J+ChPWvCV0fvwcTLeRD8Pp4Vb2CYn/eKcYpaf5NUh6uu Krs1+6HVewkdSippWdYQMU3ztzoK9hrss/yXuiCMaf1GLwifFqhIDaVDKV/3D+I8 E6AnoiLWdEqI1kcF2nd2ZBq9Mq0T1EaNN0GVnxRFsv0CgYEAm+WopA7nQrn9A0KS Umzrrs/V24aW4uF/PYZN1l/MFur3c4Irlu0G1gnR5XuxNBn0AUuUxn7ylOmdvFWc JtBHh+L7EBhY4ks5ZQs4g77JhOzbNVAFEqGUlNzeyjU/7Dycw22fV4q/j6aoJ5PK qSpRYi6GIlotuiCm+P4AGFw2NS8= -----END PRIVATE KEY-----"
+                                - img "success" [ref=e798]
+                                - generic [ref=e720]:
+                                  - generic [ref=e721]: 请输入包括了 ‘-----BEGIN PRIVATE KEY-----’，‘-----END PRIVATE KEY-----’的完整密钥内容
+                                  - button "什么是商户API证书以及如何获取" [ref=e723] [cursor=pointer]
+                            - generic [ref=e724]:
+                              - generic [ref=e726]: API V3密钥 *
+                              - generic [ref=e727]:
+                                - textbox [active] [ref=e728]: Kj8mP2nQ5rT9wX3yZ6aB4cD7eF0gH1iL
+                                - generic [ref=e729]:
+                                  - button "API V3密钥" [ref=e731] [cursor=pointer]
+                                  - text: ，主要用于平台证书解密、回调信息解密，具体使用方式可参见接口规则文档中
+                                  - button "证据和回调报文解密" [ref=e733] [cursor=pointer]
+                                  - text: 章节。
+                            - generic [ref=e734]:
+                              - generic [ref=e736]: 微信支付公钥ID
+                              - generic [ref=e737]:
+                                - textbox [ref=e738]
+                                - button "什么是微信支付公钥ID" [ref=e741] [cursor=pointer]
+                            - generic [ref=e742]:
+                              - generic [ref=e744]: 微信支付公钥
+                              - generic [ref=e745]:
+                                - textbox [ref=e746]
+                                - generic [ref=e747]:
+                                  - generic [ref=e748]: 请输入包括了 ‘-----BEGIN PUBLIC KEY-----’，‘-----END PUBLIC KEY-----’的完整密钥内容
+                                  - button "什么是微信支付公钥" [ref=e750] [cursor=pointer]
+                            - generic [ref=e751]:
+                              - generic [ref=e753]: 通知回调
+                              - generic [ref=e754]:
+                                - generic [ref=e755]:
+                                  - generic [ref=e756]:
+                                    - radio "工作流创建" [ref=e758] [cursor=pointer]
+                                    - text: 工作流创建
+                                  - generic [ref=e760]:
+                                    - radio "自有服务" [checked] [ref=e762] [cursor=pointer]
+                                    - text: 自有服务
+                                - button "使用HTTP访问服务生成回调地址，了解更多" [ref=e766] [cursor=pointer]
+                            - generic [ref=e767]:
+                              - generic [ref=e769]: 统一下单 *
+                              - generic [ref=e770]:
+                                - textbox [ref=e771]
+                                - generic [ref=e772]:
+                                  - text: 按支付平台要求必须为HTTPS地址，
+                                  - button "了解更多" [ref=e774] [cursor=pointer]
+                            - generic [ref=e775]:
+                              - generic [ref=e777]: 申请退款 *
+                              - generic [ref=e778]:
+                                - textbox [ref=e779]
+                                - generic [ref=e780]:
+                                  - text: 按支付平台要求必须为HTTPS地址，
+                                  - button "了解更多" [ref=e782] [cursor=pointer]
+                    - generic [ref=e783]:
+                      - button "创建" [ref=e784] [cursor=pointer]
+                      - button "取消" [ref=e785] [cursor=pointer]
+      - img [ref=e258] [cursor=pointer]
+  - iframe

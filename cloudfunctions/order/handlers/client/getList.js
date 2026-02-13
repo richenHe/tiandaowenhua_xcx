@@ -48,6 +48,44 @@ module.exports = async (event, context) => {
       throw error;
     }
 
+    // 检查并自动关闭超时订单
+    const now = Date.now();
+    const timeout = 15 * 60 * 1000; // 15分钟（毫秒）
+    const timeoutOrders = [];
+
+    for (const order of orders || []) {
+      if (order.pay_status === 0) {
+        const createdTime = new Date(order.created_at).getTime();
+        if (now - createdTime >= timeout) {
+          timeoutOrders.push(order.order_no);
+          order.pay_status = 3; // 本地更新状态，用于返回
+        }
+      }
+    }
+
+    // 批量更新超时订单状态
+    if (timeoutOrders.length > 0) {
+      console.log(`[getList] 发现 ${timeoutOrders.length} 个超时订单，自动关闭:`, timeoutOrders);
+      
+      try {
+        const { data: updateResult, error: updateError } = await db
+          .from('orders')
+          .update({ 
+            pay_status: 3,
+            updated_at: new Date().toISOString()
+          })
+          .in('order_no', timeoutOrders);
+        
+        if (updateError) {
+          console.error('[getList] 更新超时订单状态失败:', updateError);
+        } else {
+          console.log('[getList] 成功更新超时订单状态:', updateResult);
+        }
+      } catch (updateErr) {
+        console.error('[getList] 更新超时订单异常:', updateErr);
+      }
+    }
+
     // 格式化数据
     const list = (orders || []).map(order => ({
       order_no: order.order_no,

@@ -3,7 +3,17 @@
     <TdPageHeader title="订单详情" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <view class="page-content">
+      <!-- 加载中占位符 -->
+      <view v-if="isLoading" class="page-content">
+        <view class="t-card t-card--bordered">
+          <view class="t-card__body">
+            <view class="loading-text">加载中...</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 订单内容 -->
+      <view v-else class="page-content">
         <!-- 支付状态 -->
         <view class="status-card">
           <view class="status-icon">✓</view>
@@ -140,8 +150,8 @@ const orderDetail = ref({
   payMethod: '微信支付',
   course: {
     id: 0,
-    name: '初探班',
-    description: '系统学习天道文化基础课程',
+    name: '',
+    description: '',
     icon: '📚',
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
@@ -161,6 +171,9 @@ const orderDetail = ref({
   },
 });
 
+// 加载状态
+const isLoading = ref(true);
+
 // 大使等级映射
 const levelNames: Record<number, string> = {
   0: '普通用户',
@@ -172,6 +185,7 @@ const levelNames: Record<number, string> = {
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
   try {
+    isLoading.value = true;
     const order = await OrderApi.getDetail(orderNo);
 
     orderDetail.value.orderNo = order.order_no;
@@ -192,6 +206,12 @@ const loadOrderDetail = async (orderNo: string) => {
     orderDetail.value.course.name = order.order_name || '';
   } catch (error) {
     console.error('加载订单详情失败:', error);
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    });
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -203,6 +223,13 @@ onMounted(() => {
 
   if (options.orderNo) {
     loadOrderDetail(options.orderNo);
+  } else {
+    // 没有订单号，显示错误并停止加载
+    isLoading.value = false;
+    uni.showToast({
+      title: '订单号不存在',
+      icon: 'none'
+    });
   }
 });
 
@@ -244,6 +271,14 @@ const goToMyCourses = () => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
+}
+
+// 加载占位符
+.loading-text {
+  text-align: center;
+  color: $td-text-color-placeholder;
+  font-size: 28rpx;
+  padding: 64rpx 0;
 }
 
 .mb-l {

@@ -7,10 +7,18 @@ const { findOne } = require('./db');
 const jwt = require('jsonwebtoken');
 
 /**
- * 验证客户端用户身份
+ * 验证客户端用户身份（支持双标识体系）
  * 查询 users 表确认用户存在
  * 
- * @param {string} openid - 用户的 openid（从 cloud.getWXContext() 获取）
+ * 双标识体系说明：
+ * - _openid 字段：存储 CloudBase uid（用于接口鉴权和数据隔离）
+ * - openid 字段：存储真实微信 openid（用于微信支付等微信 API）
+ * 
+ * 查找策略：
+ * 1. 优先使用 _openid 字段查找（CloudBase uid）
+ * 2. 如果未找到，使用 openid 字段查找（真实微信 openid）
+ * 
+ * @param {string} identifier - 用户标识符（可以是 CloudBase uid 或微信 openid）
  * @returns {Promise<Object>} 用户信息对象
  * @throws {Error} 用户不存在时抛出错误 { code: 401, message: '用户未注册' }
  * 
@@ -23,14 +31,21 @@ const jwt = require('jsonwebtoken');
  *   return errorResponse('请先完善个人资料', null, 403);
  * }
  */
-async function checkClientAuth(openid) {
-  if (!openid) {
+async function checkClientAuth(identifier) {
+  if (!identifier) {
     const err = new Error('未登录');
     err.code = 401;
     throw err;
   }
   
-  const user = await findOne('users', { _openid: openid });
+  // 策略1：优先使用 _openid 字段查找（CloudBase uid）
+  let user = await findOne('users', { _openid: identifier });
+  
+  // 策略2：如果未找到，使用 openid 字段查找（真实微信 openid）
+  // 这种情况发生在通过 wx.cloud.callFunction() 调用时
+  if (!user) {
+    user = await findOne('users', { openid: identifier });
+  }
   
   if (!user) {
     const err = new Error('用户未注册');

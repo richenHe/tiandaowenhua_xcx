@@ -3,7 +3,17 @@
     <TdPageHeader title="确认订单" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <view class="page-content">
+      <!-- 加载中占位符 -->
+      <view v-if="isLoading" class="page-content">
+        <view class="t-card t-card--bordered">
+          <view class="t-card__body">
+            <view class="loading-text">加载中...</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 订单内容 -->
+      <view v-else class="page-content">
         <!-- 课程信息 -->
         <view class="t-section-title t-section-title--simple">📦 课程信息</view>
         <view class="t-card t-card--bordered mb-l">
@@ -76,6 +86,7 @@
             </view>
           </view>
         </view>
+        </view>
       </view>
     </scroll-view>
 
@@ -103,7 +114,7 @@ import { UserApi, CourseApi, OrderApi } from '@/api';
 // 课程信息
 const courseInfo = ref({
   id: 0,
-  name: '加载中...',
+  name: '',
   description: '',
   price: 0,
   icon: '📚',
@@ -112,20 +123,24 @@ const courseInfo = ref({
 
 // 用户信息
 const userInfo = ref({
-  name: '加载中...',
+  name: '',
   phone: '',
 });
 
 // 推荐人信息
 const refereeInfo = ref({
   id: 0,
-  name: '未设置',
+  name: '',
   level: '',
 });
+
+// 加载状态
+const isLoading = ref(true);
 
 // 加载页面数据
 const loadPageData = async () => {
   try {
+    isLoading.value = true;
     // 从URL参数获取课程ID
     const pages = getCurrentPages();
     const currentPage = pages[pages.length - 1];
@@ -181,6 +196,8 @@ const loadPageData = async () => {
       title: '加载失败，请重试',
       icon: 'none'
     });
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -238,6 +255,16 @@ const goToSelectReferee = () => {
 
 // 点击确认支付按钮 - 显示原生确认弹窗
 const handleConfirm = () => {
+  // 检查推荐人是否已设置
+  if (refereeInfo.value.id === 0 || refereeInfo.value.name === '未设置') {
+    uni.showToast({
+      title: '请选择推荐人',
+      icon: 'none',
+      duration: 2000
+    });
+    return;
+  }
+
   uni.showModal({
     title: '提示',
     content: `确认推荐人为【${refereeInfo.value.name}】吗？\n\n一旦支付则无法修改！`,
@@ -289,6 +316,14 @@ const handleConfirm = () => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
+}
+
+// 加载占位符
+.loading-text {
+  text-align: center;
+  color: $td-text-color-placeholder;
+  font-size: 28rpx;
+  padding: 64rpx 0;
 }
 
 .mb-l {
