@@ -274,3 +274,6 @@ const goToDetail = (item: Announcement) => {
 
 
 
+
+
+

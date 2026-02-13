@@ -178,8 +178,8 @@
         <t-form-item label="上课地点" name="location">
           <t-input v-model="formData.location" placeholder="请输入上课地点" />
         </t-form-item>
-        <t-form-item label="最大人数" name="max_students">
-          <t-input-number v-model="formData.max_students" :min="1" :max="100" style="width: 100%;" />
+        <t-form-item label="总名额" name="total_quota">
+          <t-input-number v-model="formData.total_quota" :min="1" :max="100" style="width: 100%;" />
         </t-form-item>
         <t-form-item label="备注" name="note">
           <t-textarea v-model="formData.note" placeholder="选填" :maxlength="200" />
@@ -274,11 +274,10 @@
           { colKey: 'id', title: 'ID', width: 80 },
           { colKey: 'course_name', title: '课程名称', width: 200 },
           { colKey: 'class_date', title: '上课日期', width: 120 },
-          { colKey: 'start_time', title: '开始时间', width: 100 },
-          { colKey: 'end_time', title: '结束时间', width: 100 },
-          { colKey: 'location', title: '上课地点', ellipsis: true },
-          { colKey: 'current_students', title: '当前人数', width: 100 },
-          { colKey: 'max_students', title: '最大人数', width: 100 },
+          { colKey: 'class_time', title: '上课时间', width: 120 },
+          { colKey: 'class_location', title: '上课地点', ellipsis: true },
+          { colKey: 'booked_quota', title: '已预约', width: 100 },
+          { colKey: 'total_quota', title: '总名额', width: 100 },
           { colKey: 'status', title: '状态', width: 100, cell: 'status' },
           { colKey: 'operation', title: '操作', width: 150, fixed: 'right', cell: 'operation' }
         ];
@@ -288,7 +287,7 @@
           start_time: [{ required: true, message: '请选择开始时间', type: 'error' }],
           end_time: [{ required: true, message: '请选择结束时间', type: 'error' }],
           location: [{ required: true, message: '请输入上课地点', type: 'error' }],
-          max_students: [{ required: true, message: '请输入最大人数', type: 'error' }]
+          total_quota: [{ required: true, message: '请输入总名额', type: 'error' }]
         };
 
         const fetchData = async () => {
@@ -358,4 +357,7 @@
   </script>
 </body>
 </html>
+
+
+
 

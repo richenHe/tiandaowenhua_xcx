@@ -247,11 +247,11 @@
         @page-change="handlePageChange"
       >
         <!-- 课程图片 -->
-        <template #image="{ row }">
-          <img 
-            v-if="row.cover_image" 
-            :src="row.cover_image" 
-            class="course-image" 
+        <template #cover_image="{ row }">
+          <img
+            v-if="row.cover_image"
+            :src="row.cover_image"
+            class="course-image"
             :alt="row.name"
           />
           <span v-else>-</span>
@@ -449,15 +449,17 @@
         // 表格列配置
         const columns = [
           { colKey: 'id', title: 'ID', width: 80 },
-          { colKey: 'image', title: '课程图片', width: 100 },
-          { colKey: 'name', title: '课程名称', width: 200 },
-          { colKey: 'type', title: '课程类型', width: 120 },
-          { colKey: 'price', title: '价格（元）', width: 120 },
-          { colKey: 'duration', title: '课程时长', width: 120 },
-          { colKey: 'max_students', title: '最大人数', width: 100 },
+          { colKey: 'cover_image', title: '课程图片', width: 100 },
+          { colKey: 'name', title: '课程名称', width: 150 },
+          { colKey: 'nickname', title: '课程昵称', width: 120 },
+          { colKey: 'type', title: '课程类型', width: 100 },
+          { colKey: 'current_price', title: '现价（元）', width: 100 },
+          { colKey: 'original_price', title: '原价（元）', width: 100 },
+          { colKey: 'duration', title: '课程时长', width: 100 },
+          { colKey: 'sold_count', title: '已售', width: 80 },
           { colKey: 'sort_order', title: '排序', width: 80 },
-          { colKey: 'status', title: '状态', width: 100 },
-          { colKey: 'created_at', title: '创建时间', width: 180 },
+          { colKey: 'status', title: '状态', width: 80 },
+          { colKey: 'created_at', title: '创建时间', width: 160 },
           { colKey: 'operation', title: '操作', width: 200, fixed: 'right' }
         ];
 
@@ -530,13 +532,17 @@
           Object.assign(editForm, {
             id: course.id,
             name: course.name,
+            nickname: course.nickname || '',
             type: course.type,
             coverImage: course.cover_image,
-            price: course.price,
+            originalPrice: course.original_price,
+            currentPrice: course.current_price,
+            retrainPrice: course.retrain_price,
             duration: course.duration,
-            maxStudents: course.max_students,
             description: course.description,
             content: course.content,
+            outline: course.outline,
+            teacher: course.teacher,
             sortOrder: course.sort_order,
             status: course.status
           });
@@ -667,4 +673,7 @@
   </script>
 </body>
 </html>
+
+
+
 

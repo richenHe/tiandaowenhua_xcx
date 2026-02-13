@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
       if (classRecord) {
         await update(
           'class_records',
-          { current_students: Math.max(0, classRecord.current_students - 1) },
+          { booked_quota: Math.max(0, classRecord.booked_quota - 1) },
           'id = ?',
           [appointment.class_record_id],
           conn

@@ -118,5 +118,19 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref(null);const cols=[{colKey:'level',title:'等级',width:80},{colKey:'name',title:'等级名称',width:120},{colKey:'merit_points_required',title:'所需功德分',width:120},{colKey:'orders_required',title:'所需订单数',width:120},{colKey:'referral_required',title:'直推要求',width:100},{colKey:'referral_commission_rate',title:'推荐奖励比例',width:130},{colKey:'monthly_reward_points',title:'月奖励积分',width:120},{colKey:'op',title:'操作',width:100,cell:'op'}];const ld=async()=>{lg.value=true;try{d.value=await AdminAPI.getLevelConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const edit=row=>{f.value={...row};v.value=true;};const save=async()=>{try{await AdminAPI.updateLevelConfig(f.value);TDesign.MessagePlugin.success('保存成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return{lg,d,v,f,cols,edit,save};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref(null);const cols=[{colKey:'level',title:'等级',width:80},{colKey:'name',title:'等级名称',width:120},{colKey:'merit_points_required',title:'所需功德分',width:120},{colKey:'orders_required',title:'所需订单数',width:120},{colKey:'referral_required',title:'直推要求',width:100},{colKey:'referral_commission_rate',title:'推荐奖励比例',width:130},{colKey:'monthly_reward_points',title:'月奖励积分',width:120},{colKey:'op',title:'操作',width:100,cell:'op'}];const ld=async()=>{lg.value=true;try{d.value=await AdminAPI.getLevelConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const edit=row=>{f.value={...row};v.value=true;};const save=async()=>{try{await AdminAPI.updateLevelConfig(f.value);TDesign.MessagePlugin.success('保存成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,d,v,f,cols,edit,save
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
 

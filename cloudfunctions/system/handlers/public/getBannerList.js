@@ -1,34 +1,31 @@
 /**
  * 获取轮播图列表（公共接口，无需鉴权）
- * @description 用于首页展示轮播图，从公告表中查询category='banner'的记录
+ * @description 用于首页展示轮播图，从 banners 表查询
  */
 
 const { db, response } = require('common');
 
 module.exports = async (event, context) => {
   try {
-    // 查询轮播图数据（使用公告表，category='banner'）
+    // 查询轮播图数据（使用 banners 表）
     const { data: banners, error } = await db
-      .from('announcements')
-      .select('id, title, summary, cover_image, link, sort_order')
-      .eq('category', 'banner')
-      .eq('status', 1)  // 已发布
-      .lte('start_time', new Date().toISOString())  // 已开始
-      .or('end_time.is.null,end_time.gte.' + new Date().toISOString())  // 未结束或无结束时间
-      .order('sort_order', { ascending: false })  // 按权重倒序
-      .order('created_at', { ascending: false })  // 相同权重按创建时间倒序
+      .from('banners')
+      .select('id, title, subtitle, image_url, link_url, sort_order')
+      .eq('status', 1)  // 已启用
+      .order('sort_order', { ascending: false })  // 按排序字段倒序
+      .order('created_at', { ascending: false })  // 相同排序按创建时间倒序
       .limit(10);  // 最多返回10个
 
     if (error) throw error;
 
-    // 格式化返回数据
+    // 格式化返回数据（映射字段名以匹配前端期望）
     const list = banners.map(item => ({
       id: item.id,
       title: item.title || '',
-      subtitle: item.summary || '',
-      coverImage: item.cover_image || '',
-      link: item.link || '',
-      sortOrder: item.sort_order || 0
+      subtitle: item.subtitle || '',
+      cover_image: item.image_url || '',
+      link: item.link_url || '',
+      sort_order: item.sort_order || 0
     }));
 
     return response.success({
@@ -41,6 +38,7 @@ module.exports = async (event, context) => {
     return response.error('获取轮播图失败', error);
   }
 };
+
 
 
 

@@ -279,21 +279,21 @@
             return;
           }
           
-          // 页面路由映射
+          // 页面路由映射（✅ 修复文件名错误）
           const routes = {
             'dashboard': 'index.html',
             'user-list': 'pages/user/list.html',
             'user-referee': 'pages/user/referee.html',
             'order-list': 'pages/order/list.html',
             'order-refund': 'pages/order/refund.html',
-            'withdraw-audit': 'pages/order/withdraw.html',
+            'withdraw-audit': 'pages/order/withdraw-audit.html',  // ✅ 修复：withdraw.html → withdraw-audit.html
             'course-list': 'pages/course/list.html',
             'schedule-list': 'pages/course/schedule.html',
             'appointment-list': 'pages/course/appointment.html',
             'case-list': 'pages/course/case.html',
             'material-list': 'pages/course/material.html',
             'ambassador-list': 'pages/ambassador/list.html',
-            'application-audit': 'pages/ambassador/application.html',
+            'application-audit': 'pages/ambassador/application-audit.html',  // ✅ 修复：application.html → application-audit.html
             'activity-list': 'pages/ambassador/activity.html',
             'contract-list': 'pages/ambassador/contract.html',
             'admin-list': 'pages/system/admin.html',
@@ -301,7 +301,7 @@
             'announcement-list': 'pages/system/announcement.html',
             'feedback-list': 'pages/system/feedback.html',
             'notification-list': 'pages/system/notification.html',
-            'level-config': 'pages/system/level.html',
+            'level-config': 'pages/system/level-config.html',  // ✅ 修复：level.html → level-config.html
           };
           
           // 跳转页面

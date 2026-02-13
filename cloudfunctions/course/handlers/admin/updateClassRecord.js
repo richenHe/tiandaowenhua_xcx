@@ -24,7 +24,7 @@ module.exports = async (event, context) => {
     // 过滤允许更新的字段
     const allowedFields = [
       'course_id', 'class_date', 'start_time', 'end_time',
-      'location', 'teacher', 'max_students', 'notes', 'status'
+      'location', 'teacher', 'total_quota', 'notes', 'status'
     ];
 
     const fieldsToUpdate = {};

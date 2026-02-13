@@ -1,4 +1,24 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>公告管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>公告管理</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .c {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    
     /* TDesign 布局样式 - 必需！*/
     .t-layout {
       height: 100vh;
@@ -26,7 +46,68 @@
       background: #f5f5f5;
     }
 
-  </style></head><body>
+    /* 云存储上传组件样式 */
+    .upload-container {
+      margin-bottom: 16px;
+    }
+
+    .upload-placeholder {
+      width: 200px;
+      height: 200px;
+      border: 2px dashed #dcdcdc;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .upload-placeholder:hover {
+      border-color: #0052d9;
+      background: #f3f3f3;
+    }
+
+    .upload-placeholder i {
+      font-size: 32px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .upload-placeholder p {
+      margin: 0;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .image-preview {
+      position: relative;
+      width: 200px;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #dcdcdc;
+    }
+
+    .image-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .upload-tips {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
   <div id="app">
     <t-layout style="height: 100vh;">
       <!-- 顶部导航 -->
@@ -113,10 +194,450 @@
         </t-aside>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="c"><h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">公告管理</h1><div style="display:flex;gap:12px;margin-bottom:20px;"><t-input v-model="k" placeholder="公告标题" clearable style="width:200px;"/><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button><t-button theme="success" @click="add">发布公告</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" bordered stripe><template #type="{row}"><t-tag v-if="row.type==='system'" theme="primary">系统</t-tag><t-tag v-else-if="row.type==='activity'" theme="success">活动</t-tag><t-tag v-else theme="warning">通知</t-tag></template><template #status="{row}"><t-tag v-if="row.status===1" theme="success">显示</t-tag><t-tag v-else>隐藏</t-tag></template><template #op="{row}"><t-space><t-button size="small" variant="text" @click="edit(row)">编辑</t-button><t-button size="small" variant="text" theme="danger" @click="del(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="v" :header="m==='add'?'发布公告':'编辑公告'" width="700px" @confirm="save"><t-form :data="f" label-width="100px"><t-form-item label="公告标题"><t-input v-model="f.title"/></t-form-item><t-form-item label="公告类型"><t-select v-model="f.type" :options="typeOpts"/></t-form-item><t-form-item label="公告内容"><t-textarea v-model="f.content" :autosize="{minRows:8}"/></t-form-item><t-form-item label="显示状态"><t-radio-group v-model="f.status"><t-radio :value="1">显示</t-radio><t-radio :value="0">隐藏</t-radio></t-radio-group></t-form-item></t-form></t-dialog>        </t-content>
+        <t-content class="page-content">
+          <div class="c">
+            <h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">公告管理</h1>
+            
+            <!-- 查询表单 -->
+            <div style="display:flex;gap:12px;margin-bottom:20px;">
+              <t-input v-model="keyword" placeholder="公告标题" clearable style="width:200px;"/>
+              <t-button theme="primary" @click="loadData">查询</t-button>
+              <t-button @click="resetSearch">重置</t-button>
+              <t-button theme="success" @click="handleAdd">发布公告</t-button>
+            </div>
+            
+            <!-- 数据表格 -->
+            <t-table 
+              :data="dataList" 
+              :columns="columns" 
+              :loading="loading" 
+              :pagination="pagination" 
+              @page-change="handlePageChange" 
+              bordered 
+              stripe
+            >
+              <template #type="{row}">
+                <t-tag v-if="row.category==='system'" theme="primary">系统</t-tag>
+                <t-tag v-else-if="row.category==='activity'" theme="success">活动</t-tag>
+                <t-tag v-else-if="row.category==='banner'" theme="warning">轮播图</t-tag>
+                <t-tag v-else>通知</t-tag>
+              </template>
+              
+              <template #status="{row}">
+                <t-tag v-if="row.status===1" theme="success">显示</t-tag>
+                <t-tag v-else>隐藏</t-tag>
+              </template>
+              
+              <template #op="{row}">
+                <t-space>
+                  <t-button size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="handleDelete(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 新增/编辑弹窗 -->
+          <t-dialog 
+            v-model:visible="dialogVisible" 
+            :header="dialogMode==='add'?'发布公告':'编辑公告'" 
+            width="700px" 
+            @confirm="handleSave"
+            @close="handleDialogClose"
+          >
+            <t-form :data="formData" label-width="100px">
+              <t-form-item label="公告标题" required>
+                <t-input v-model="formData.title" placeholder="请输入公告标题"/>
+              </t-form-item>
+              
+              <t-form-item label="公告类型" required>
+                <t-select v-model="formData.category" :options="typeOptions"/>
+              </t-form-item>
+              
+              <!-- 🔥 云存储上传组件 -->
+              <t-form-item label="封面图片">
+                <div class="upload-container">
+                  <!-- 隐藏的文件输入 -->
+                  <input 
+                    type="file" 
+                    ref="fileInput" 
+                    accept="image/*"
+                    @change="handleFileChange"
+                    style="display: none;"
+                  >
+                  
+                  <!-- 未上传时显示上传区域 -->
+                  <div v-if="!formData.coverImageURL" class="upload-placeholder" @click="triggerUpload">
+                    <t-icon name="upload" />
+                    <p>点击上传封面</p>
+                  </div>
+                  
+                  <!-- 已上传时显示预览 -->
+                  <div v-else class="image-preview">
+                    <img :src="formData.coverImageURL" alt="封面预览">
+                    <div class="image-actions">
+                      <t-button size="small" variant="outline" @click="triggerUpload">
+                        更换
+                      </t-button>
+                      <t-button size="small" theme="danger" variant="outline" @click="removeImage">
+                        删除
+                      </t-button>
+                    </div>
+                  </div>
+                  
+                  <div class="upload-tips">
+                    建议尺寸：750x400，支持 JPG、PNG，不超过 5MB
+                  </div>
+                </div>
+              </t-form-item>
+              
+              <t-form-item label="跳转链接">
+                <t-input v-model="formData.link" placeholder="选填，用于轮播图跳转"/>
+              </t-form-item>
+              
+              <t-form-item label="公告内容" required>
+                <t-textarea 
+                  v-model="formData.content" 
+                  :autosize="{minRows:8}"
+                  placeholder="请输入公告内容"
+                />
+              </t-form-item>
+              
+              <t-form-item label="显示状态">
+                <t-radio-group v-model="formData.status">
+                  <t-radio :value="1">显示</t-radio>
+                  <t-radio :value="0">隐藏</t-radio>
+                </t-radio-group>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const m=ref('add');const f=ref({});const k=ref('');const pg=ref({current:1,pageSize:20,total:0});const typeOpts=[{label:'系统公告',value:'system'},{label:'活动公告',value:'activity'},{label:'通知',value:'notice'}];const cols=[{colKey:'title',title:'公告标题',width:250},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'created_at',title:'发布时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:150,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getAnnouncementList({page:pg.value.current,pageSize:pg.value.pageSize,keyword:k.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{k.value='';ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const add=()=>{m.value='add';f.value={status:1,type:'system'};v.value=true;};const edit=row=>{m.value='edit';f.value={...row};v.value=true;};const del=async row=>{const ok=await TDesign.DialogPlugin.confirm({header:'确认删除',body:'确认删除该公告吗？'});if(!ok)return;try{await AdminAPI.deleteAnnouncement({announcementId:row.id});TDesign.MessagePlugin.success('删除成功');ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};const save=async()=>{try{if(m.value==='add')await AdminAPI.createAnnouncement(f.value);else await AdminAPI.updateAnnouncement(f.value);TDesign.MessagePlugin.success('保存成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return{lg,d,v,m,f,k,pg,typeOpts,cols,ld,rs,chg,add,edit,del,save};}}).use(TDesign).mount('#app');</script></body></html>
-
+  <!-- 引入依赖 -->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  
+  <!-- 🔥 引入云存储相关脚本（使用本地 SDK） -->
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/cloudbase.js"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  
+  <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
+  
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    
+    createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        
+        // 数据状态
+        const loading = ref(false);
+        const dataList = ref([]);
+        const dialogVisible = ref(false);
+        const dialogMode = ref('add');
+        const formData = ref({});
+        const keyword = ref('');
+        const pagination = ref({
+          current: 1,
+          pageSize: 20,
+          total: 0
+        });
+        
+        // 🔥 云存储相关状态
+        const fileInput = ref(null);
+        const uploadLoading = ref(false);
+        
+        // 选项配置
+        const typeOptions = [
+          { label: '系统公告', value: 'system' },
+          { label: '活动公告', value: 'activity' },
+          { label: '轮播图', value: 'banner' },
+          { label: '通知', value: 'general' }
+        ];
+        
+        // 表格列配置
+        const columns = [
+          { colKey: 'title', title: '公告标题', width: 250 },
+          { colKey: 'category', title: '类型', width: 100, cell: 'type' },
+          { colKey: 'created_at', title: '发布时间', width: 160 },
+          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
+          { colKey: 'op', title: '操作', width: 150, cell: 'op' }
+        ];
+        
+        // 加载数据
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const data = await AdminAPI.getAnnouncementList({
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+              keyword: keyword.value
+            });
+            
+            dataList.value = data.list;
+            pagination.value.total = data.total;
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 重置搜索
+        const resetSearch = () => {
+          keyword.value = '';
+          loadData();
+        };
+        
+        // 分页切换
+        const handlePageChange = (pageInfo) => {
+          pagination.value.current = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+        
+        // 新增
+        const handleAdd = () => {
+          dialogMode.value = 'add';
+          formData.value = {
+            status: 1,
+            category: 'system',
+            title: '',
+            content: '',
+            link: '',
+            cover_image: '',        // fileID（保存到数据库）
+            coverImageURL: ''       // 临时 URL（用于显示）
+          };
+          dialogVisible.value = true;
+        };
+        
+        // 编辑
+        const handleEdit = async (row) => {
+          dialogMode.value = 'edit';
+          formData.value = {
+            ...row,
+            cover_image: row.cover_image || '',
+            coverImageURL: ''
+          };
+          
+          // 🔥 如果有封面图片，转换为临时 URL
+          if (row.cover_image) {
+            try {
+              const tempURL = await window.CloudStorageHelper.getSingleTempURL(row.cover_image);
+              formData.value.coverImageURL = tempURL;
+            } catch (error) {
+              console.error('获取封面临时URL失败:', error);
+            }
+          }
+          
+          dialogVisible.value = true;
+        };
+        
+        // 删除
+        const handleDelete = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: '确认删除该公告吗？此操作不可恢复。'
+          });
+          
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.deleteAnnouncement(row.id);
+            
+            // 🔥 删除云存储文件
+            if (row.cover_image) {
+              try {
+                await window.CloudStorageHelper.deleteFiles([row.cover_image]);
+                console.log('✅ 封面图片已删除');
+              } catch (error) {
+                console.warn('⚠️ 封面图片删除失败（不阻塞）:', error);
+              }
+            }
+            
+            TDesign.MessagePlugin.success('删除成功');
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message);
+          }
+        };
+        
+        // 🔥 触发文件选择
+        const triggerUpload = () => {
+          fileInput.value?.click();
+        };
+        
+        // 🔥 文件选择变化
+        const handleFileChange = async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+          
+          // 验证文件
+          const validation = window.CloudStorageHelper.validateFile(file, {
+            acceptTypes: ['image/jpeg', 'image/png', 'image/jpg'],
+            maxSize: 5 * 1024 * 1024  // 5MB
+          });
+          
+          if (!validation.valid) {
+            TDesign.MessagePlugin.warning(validation.error);
+            return;
+          }
+          
+          try {
+            uploadLoading.value = true;
+            TDesign.MessagePlugin.loading('上传中...', 0);
+            
+            // 🔥 生成云存储路径
+            const cloudPath = window.CloudStorageHelper.generateCloudPath(
+              'announcements/covers',
+              formData.value.id || 'new',
+              file.name
+            );
+            
+            console.log('📤 上传路径:', cloudPath);
+            
+            // 🔥 删除旧文件（如果有）
+            if (formData.value.cover_image) {
+              await window.CloudStorageHelper.deleteFiles([formData.value.cover_image]);
+            }
+            
+            // 🔥 上传新文件
+            const result = await window.CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            
+            // 🔥 保存 fileID 和临时 URL
+            formData.value.cover_image = result.fileID;
+            formData.value.coverImageURL = result.tempFileURL;
+            
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('上传成功');
+            
+            // 清空 input
+            event.target.value = '';
+          } catch (error) {
+            console.error('上传失败:', error);
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败：' + error.message);
+          } finally {
+            uploadLoading.value = false;
+          }
+        };
+        
+        // 🔥 删除图片
+        const removeImage = async () => {
+          try {
+            // 🔥 删除云存储文件
+            if (formData.value.cover_image) {
+              await window.CloudStorageHelper.deleteFiles([formData.value.cover_image]);
+            }
+            
+            // 🔥 清空本地引用
+            formData.value.cover_image = '';
+            formData.value.coverImageURL = '';
+            
+            TDesign.MessagePlugin.success('删除成功');
+          } catch (error) {
+            console.error('删除失败:', error);
+            TDesign.MessagePlugin.error('删除失败');
+          }
+        };
+        
+        // 保存
+        const handleSave = async () => {
+          // 验证必填项
+          if (!formData.value.title) {
+            TDesign.MessagePlugin.warning('请输入公告标题');
+            return false;
+          }
+          
+          if (!formData.value.content) {
+            TDesign.MessagePlugin.warning('请输入公告内容');
+            return false;
+          }
+          
+          try {
+            const submitData = {
+              title: formData.value.title,
+              category: formData.value.category,
+              content: formData.value.content,
+              link: formData.value.link || '',
+              cover_image: formData.value.cover_image || '',  // 🔥 使用 fileID
+              status: formData.value.status
+            };
+            
+            if (dialogMode.value === 'add') {
+              await AdminAPI.createAnnouncement(submitData);
+            } else {
+              submitData.id = formData.value.id;
+              await AdminAPI.updateAnnouncement(submitData);
+            }
+            
+            TDesign.MessagePlugin.success('保存成功');
+            dialogVisible.value = false;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message);
+            return false;
+          }
+        };
+        
+        // 弹窗关闭时清理
+        const handleDialogClose = () => {
+          formData.value = {};
+        };
+        
+        // 挂载时加载数据
+        onMounted(() => {
+          console.log('✅ 公告管理页面加载完成');
+          console.log('✅ CloudStorage 状态:', window.CloudStorage ? '已初始化' : '未初始化');
+          console.log('✅ CloudStorageHelper 状态:', window.CloudStorageHelper ? '已挂载' : '未挂载');
+          loadData();
+        });
+        
+        return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          
+          // 数据状态
+          loading,
+          dataList,
+          dialogVisible,
+          dialogMode,
+          formData,
+          keyword,
+          pagination,
+          typeOptions,
+          columns,
+          
+          // 🔥 云存储相关
+          fileInput,
+          uploadLoading,
+          
+          // 方法
+          loadData,
+          resetSearch,
+          handlePageChange,
+          handleAdd,
+          handleEdit,
+          handleDelete,
+          handleSave,
+          handleDialogClose,
+          
+          // 🔥 云存储方法
+          triggerUpload,
+          handleFileChange,
+          removeImage
+        };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>

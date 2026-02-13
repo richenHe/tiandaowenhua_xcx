@@ -106,8 +106,8 @@ module.exports = async (event, context) => {
       class_time: cr.class_time,
       location: cr.class_location,
       teacher: cr.teacher,
-      max_students: cr.total_quota,
-      current_students: cr.booked_quota,
+      total_quota: cr.total_quota,
+      booked_quota: cr.booked_quota,
       available_quota: cr.total_quota - cr.booked_quota,
       is_appointed: userAppointments.includes(cr.id) ? 1 : 0
     }));

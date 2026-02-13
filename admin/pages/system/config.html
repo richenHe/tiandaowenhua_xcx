@@ -118,5 +118,19 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const cfg=ref({});const ld=async()=>{try{cfg.value=await AdminAPI.getSystemConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}};const save=async()=>{lg.value=true;try{await AdminAPI.updateSystemConfig(cfg.value);TDesign.MessagePlugin.success('保存成功');}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};onMounted(ld);return{lg,cfg,save};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const cfg=ref({});const ld=async()=>{try{cfg.value=await AdminAPI.getSystemConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}};const save=async()=>{lg.value=true;try{await AdminAPI.updateSystemConfig(cfg.value);TDesign.MessagePlugin.success('保存成功');}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,cfg,save
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
 

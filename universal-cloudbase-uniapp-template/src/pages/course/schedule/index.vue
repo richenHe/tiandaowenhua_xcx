@@ -77,7 +77,7 @@ const loadSchedules = async () => {
       location: item.location,
       instructor: item.teacher,
       remainingSlots: item.available_quota,
-      totalSlots: item.max_students,
+      totalSlots: item.total_quota,
       registrationDeadline: item.class_date, // 报名截止时间
       isAppointed: item.is_appointed === 1
     }));

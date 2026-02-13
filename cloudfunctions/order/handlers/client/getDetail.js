@@ -48,7 +48,7 @@ module.exports = async (event, context) => {
       if (course) {
         courseInfo = {
           course_id: course.id,
-          course_name: course.course_name,
+          course_name: course.name,
           course_type: course.type
         };
       }
@@ -61,7 +61,10 @@ module.exports = async (event, context) => {
       order_type: order.order_type,
       order_name: order.order_name,
       original_amount: order.original_amount,
+      discount_amount: order.discount_amount || 0,
       final_amount: order.final_amount,
+      user_name: order.user_name,
+      user_phone: order.user_phone,
       pay_status: order.pay_status,
       pay_status_name: getPayStatusName(order.pay_status),
       pay_time: order.pay_time,

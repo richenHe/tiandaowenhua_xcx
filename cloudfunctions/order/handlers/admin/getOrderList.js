@@ -78,17 +78,22 @@ module.exports = async (event, context) => {
       order_type: order.order_type,
       order_type_text: formatOrderType(order.order_type),
       order_name: order.order_name,
+      original_amount: order.original_amount,
+      discount_amount: order.discount_amount || 0,
       final_amount: order.final_amount,
+      paid_amount: order.final_amount,
       pay_status: order.pay_status,
       pay_status_text: formatPayStatus(order.pay_status),
       pay_time: order.pay_time,
       is_reward_granted: order.is_reward_granted,
       created_at: order.created_at,
       user_name: order.user?.real_name || '',
+      user_nickname: order.user?.nickname || order.user?.real_name || '',
       user_phone: order.user?.phone || '',
       referee_name: order.referee?.real_name || '',
       referee_phone: order.referee?.phone || '',
-      referee_code: order.referee?.referee_code || ''
+      referee_code: order.referee?.referee_code || '',
+      points_used: order.order_metadata?.points_used || 0
     }));
 
     return response.success({

@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
     }
 
     // 检查名额
-    if (classRecord.current_students >= classRecord.max_students) {
+    if (classRecord.booked_quota >= classRecord.total_quota) {
       return response.error('该课程名额已满');
     }
 
@@ -84,7 +84,7 @@ module.exports = async (event, context) => {
     // 更新班级人数（注意：这里可能存在并发问题，生产环境建议使用数据库事务或乐观锁）
     const { error: updateError } = await db
       .from('class_records')
-      .update({ current_students: classRecord.current_students + 1 })
+      .update({ booked_quota: classRecord.booked_quota + 1 })
       .eq('id', finalClassRecordId);
 
     if (updateError) {

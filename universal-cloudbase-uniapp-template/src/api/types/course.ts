@@ -12,6 +12,8 @@ export interface Course {
   id: number
   /** 课程名称 */
   name: string
+  /** 课程昵称 */
+  nickname?: string
   /** 课程类型（1-初探班，2-深研班，3-复训） */
   type: number
   /** 封面图片 */
@@ -76,12 +78,12 @@ export interface ClassRecord {
   end_time: string
   /** 上课地点 */
   location: string
-  /** 最大学员数 */
-  max_students: number
-  /** 当前学员数 */
-  current_students: number
+  /** 总名额 */
+  total_quota: number
+  /** 已预约名额 */
+  booked_quota: number
   /** 可用名额 */
-  available_slots: number
+  available_quota: number
   /** 授课老师 */
   teacher?: string
   /** 状态 */

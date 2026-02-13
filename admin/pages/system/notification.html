@@ -118,5 +118,19 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref({});const pg=ref({current:1,pageSize:20,total:0});const targetOpts=[{label:'全部用户',value:'all'},{label:'全部大使',value:'ambassadors'},{label:'指定用户',value:'users'}];const typeOpts=[{label:'系统通知',value:'system'},{label:'订单通知',value:'order'},{label:'活动通知',value:'activity'}];const cols=[{colKey:'title',title:'通知标题',width:250},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'target_count',title:'接收人数',width:100},{colKey:'created_at',title:'发送时间',width:160}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getNotificationList({page:pg.value.current,pageSize:pg.value.pageSize});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const add=()=>{f.value={target:'all',type:'system'};v.value=true;};const send=async()=>{try{await AdminAPI.sendNotification(f.value);TDesign.MessagePlugin.success('发送成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return{lg,d,v,f,pg,targetOpts,typeOpts,cols,ld,chg,add,send};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref({});const pg=ref({current:1,pageSize:20,total:0});const targetOpts=[{label:'全部用户',value:'all'},{label:'全部大使',value:'ambassadors'},{label:'指定用户',value:'users'}];const typeOpts=[{label:'系统通知',value:'system'},{label:'订单通知',value:'order'},{label:'活动通知',value:'activity'}];const cols=[{colKey:'title',title:'通知标题',width:250},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'target_count',title:'接收人数',width:100},{colKey:'created_at',title:'发送时间',width:160}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getNotificationList({page:pg.value.current,pageSize:pg.value.pageSize});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const add=()=>{f.value={target:'all',type:'system'};v.value=true;};const send=async()=>{try{await AdminAPI.sendNotification(f.value);TDesign.MessagePlugin.success('发送成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,d,v,f,pg,targetOpts,typeOpts,cols,ld,chg,add,send
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
 

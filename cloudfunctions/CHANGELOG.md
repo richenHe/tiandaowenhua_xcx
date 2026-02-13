@@ -136,3 +136,6 @@ functionRootPath: D:\project\cursor\work\xcx\cloudfunctions
 **下次更新需同步的云函数：** user, order, course, ambassador, system
 
 
+
+
+

@@ -1,0 +1,15 @@
+{
+  "name": "libs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tcb-v2.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cloudbase/js-sdk": "^2.25.6"
+  }
+}

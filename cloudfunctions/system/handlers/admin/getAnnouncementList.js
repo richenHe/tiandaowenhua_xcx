@@ -4,45 +4,36 @@
  *
  * 参数：
  * - page: 页码（默认1）
- * - page_size: 每页数量（默认20）
- * - type: 类型筛选（可选）
+ * - pageSize: 每页数量（默认20）
+ * - keyword: 关键词搜索（可选）
+ * - category: 类型筛选（可选）
  * - status: 状态筛选（可选）
  */
 const { db } = require('../../common/db');
 const { response, getPagination } = require('../../common');
+const { getTempFileURLs } = require('../../common/storage');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, type, status } = event;
+  const { page = 1, pageSize = 20, keyword, category, status } = event;
 
   try {
     console.log(`[admin:getAnnouncementList] 管理员 ${admin.id} 获取公告列表`);
 
-    const { limit, offset } = getPagination(page, page_size);
+    const { limit, offset } = getPagination(page, pageSize);
 
     // 构建查询
     let query = db
       .from('announcements')
-      .select(`
-        id,
-        title,
-        content,
-        type,
-        target,
-        start_time,
-        end_time,
-        sort_order,
-        status,
-        created_by,
-        created_at,
-        updated_at,
-        creator:admin_users!created_by(real_name)
-      `)
-      .order('sort_order', { ascending: true })
+      .select('*')
+      .order('sort_order', { ascending: false })
       .order('created_at', { ascending: false });
 
     // 筛选条件
-    if (type) query = query.eq('type', type);
+    if (keyword) {
+      query = query.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+    }
+    if (category) query = query.eq('category', category);
     if (status !== undefined && status !== null && status !== '') {
       query = query.eq('status', status);
     }
@@ -59,26 +50,47 @@ module.exports = async (event, context) => {
       .from('announcements')
       .select('*', { count: 'exact', head: true });
 
-    if (type) countQuery = countQuery.eq('type', type);
+    if (keyword) {
+      countQuery = countQuery.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+    }
+    if (category) countQuery = countQuery.eq('category', category);
     if (status !== undefined && status !== null && status !== '') {
       countQuery = countQuery.eq('status', status);
     }
 
     const { count: total } = await countQuery;
 
-    // 处理数据
-    const processedAnnouncements = announcements.map(a => ({
-      ...a,
-      type_text: getTypeText(a.type),
-      target_text: getTargetText(a.target),
-      status_text: a.status === 1 ? '启用' : '禁用'
-    }));
+    // 🔥 转换云存储 fileID 为临时 URL
+    if (announcements && announcements.length > 0) {
+      const fileIDs = announcements
+        .filter(a => a.cover_image)
+        .map(a => a.cover_image);
+
+      if (fileIDs.length > 0) {
+        try {
+          const tempURLs = await getTempFileURLs(fileIDs);
+          const urlMap = {};
+          tempURLs.forEach(item => {
+            urlMap[item.fileID] = item.tempFileURL;
+          });
+
+          // 替换 fileID 为临时 URL
+          announcements.forEach(a => {
+            if (a.cover_image && urlMap[a.cover_image]) {
+              a.cover_image = urlMap[a.cover_image];
+            }
+          });
+        } catch (error) {
+          console.warn('转换封面图片URL失败（不阻塞）:', error);
+        }
+      }
+    }
 
     return response.success({
-      list: processedAnnouncements,
+      list: announcements,
       total,
       page: parseInt(page),
-      page_size: parseInt(page_size)
+      pageSize: parseInt(pageSize)
     }, '获取成功');
 
   } catch (error) {
@@ -86,23 +98,3 @@ module.exports = async (event, context) => {
     return response.error('获取公告列表失败', error);
   }
 };
-
-// 获取类型文本
-function getTypeText(type) {
-  const typeMap = {
-    1: '系统通知',
-    2: '活动公告',
-    3: '维护公告'
-  };
-  return typeMap[type] || '未知';
-}
-
-// 获取目标文本
-function getTargetText(target) {
-  const targetMap = {
-    'all': '全部用户',
-    'ambassador': '大使',
-    'student': '学员'
-  };
-  return targetMap[target] || '未知';
-}

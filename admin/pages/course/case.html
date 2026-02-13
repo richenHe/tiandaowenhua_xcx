@@ -121,5 +121,180 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const loading=ref(false);const tableData=ref([]);const formVisible=ref(false);const formMode=ref('add');const formData=ref({});const filters=ref({keyword:'',courseId:null});const courseOptions=ref([]);const pagination=ref({current:1,pageSize:20,total:0});const columns=[{colKey:'cover',title:'封面',width:100,cell:'cover'},{colKey:'title',title:'案例标题',width:200},{colKey:'course_name',title:'关联课程',width:150},{colKey:'description',title:'描述',ellipsis:true},{colKey:'created_at',title:'创建时间',width:160},{colKey:'status',title:'状态',width:80,cell:'status'},{colKey:'operation',title:'操作',width:200,fixed:'right',cell:'operation'}];const rules={title:[{required:true,message:'请输入案例标题',type:'error'}],cover:[{required:true,message:'请输入封面图片',type:'error'}],course_id:[{required:true,message:'请选择关联课程',type:'error'}],description:[{required:true,message:'请输入案例描述',type:'error'}]};const fetchData=async()=>{loading.value=true;try{const params={page:pagination.value.current,pageSize:pagination.value.pageSize,...filters.value};const data=await AdminAPI.getCaseList(params);tableData.value=data.list;pagination.value.total=data.total;}catch(error){TDesign.MessagePlugin.error(error.message||'获取数据失败');}finally{loading.value=false;}};const fetchCourses=async()=>{try{const data=await AdminAPI.getAllCourses();courseOptions.value=data.map(c=>({label:c.name,value:c.id}));}catch(error){console.error('获取课程列表失败',error);}};const handleSearch=()=>{pagination.value.current=1;fetchData();};const handleReset=()=>{filters.value={keyword:'',courseId:null};handleSearch();};const handlePageChange=(pageInfo)=>{pagination.value.current=pageInfo.current;pagination.value.pageSize=pageInfo.pageSize;fetchData();};const handleAdd=()=>{formMode.value='add';formData.value={status:1};formVisible.value=true;};const handleEdit=(row)=>{formMode.value='edit';formData.value={...row};formVisible.value=true;};const handleDelete=async(row)=>{const confirmed=await TDesign.DialogPlugin.confirm({header:'确认删除',body:'确认删除该案例吗？',theme:'warning'});if(!confirmed)return;try{await AdminAPI.deleteCase({caseId:row.id});TDesign.MessagePlugin.success('删除成功');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'删除失败');}};const handleToggleStatus=async(row)=>{try{await AdminAPI.updateCaseStatus({caseId:row.id,status:row.status===1?0:1});TDesign.MessagePlugin.success('状态已更新');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'操作失败');}};const handleSubmit=async()=>{try{if(formMode.value==='add'){await AdminAPI.createCase(formData.value);}else{await AdminAPI.updateCase(formData.value);}TDesign.MessagePlugin.success('保存成功');formVisible.value=false;fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'保存失败');}};onMounted(()=>{fetchData();fetchCourses();});return{loading,tableData,formVisible,formMode,formData,filters,courseOptions,pagination,columns,rules,handleSearch,handleReset,handlePageChange,handleAdd,handleEdit,handleDelete,handleToggleStatus,handleSubmit};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
+  
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    
+    createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const formVisible = ref(false);
+        const formMode = ref('add');
+        const formData = ref({});
+        const filters = ref({ keyword: '', courseId: null });
+        const courseOptions = ref([]);
+        const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+        
+        const columns = [
+          { colKey: 'cover', title: '封面', width: 100, cell: 'cover' },
+          { colKey: 'title', title: '案例标题', width: 200 },
+          { colKey: 'course_name', title: '关联课程', width: 150 },
+          { colKey: 'description', title: '描述', ellipsis: true },
+          { colKey: 'created_at', title: '创建时间', width: 160 },
+          { colKey: 'status', title: '状态', width: 80, cell: 'status' },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
+        ];
+        
+        const rules = {
+          title: [{ required: true, message: '请输入案例标题', type: 'error' }],
+          cover: [{ required: true, message: '请输入封面图片', type: 'error' }],
+          course_id: [{ required: true, message: '请选择关联课程', type: 'error' }],
+          description: [{ required: true, message: '请输入案例描述', type: 'error' }]
+        };
+        
+        const fetchData = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+              ...filters.value
+            };
+            const data = await AdminAPI.getCaseList(params);
+            tableData.value = data.list;
+            pagination.value.total = data.total;
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取数据失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        const fetchCourses = async () => {
+          try {
+            const data = await AdminAPI.getAllCourses();
+            courseOptions.value = data.map(c => ({ label: c.name, value: c.id }));
+          } catch (error) {
+            console.error('获取课程列表失败', error);
+          }
+        };
+        
+        const handleSearch = () => {
+          pagination.value.current = 1;
+          fetchData();
+        };
+        
+        const handleReset = () => {
+          filters.value = { keyword: '', courseId: null };
+          handleSearch();
+        };
+        
+        const handlePageChange = (pageInfo) => {
+          pagination.value.current = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          fetchData();
+        };
+        
+        const handleAdd = () => {
+          formMode.value = 'add';
+          formData.value = { status: 1 };
+          formVisible.value = true;
+        };
+        
+        const handleEdit = (row) => {
+          formMode.value = 'edit';
+          formData.value = { ...row };
+          formVisible.value = true;
+        };
+        
+        const handleDelete = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: '确认删除该案例吗？',
+            theme: 'warning'
+          });
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.deleteCase({ caseId: row.id });
+            TDesign.MessagePlugin.success('删除成功');
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '删除失败');
+          }
+        };
+        
+        const handleToggleStatus = async (row) => {
+          try {
+            await AdminAPI.updateCaseStatus({
+              caseId: row.id,
+              status: row.status === 1 ? 0 : 1
+            });
+            TDesign.MessagePlugin.success('状态已更新');
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '操作失败');
+          }
+        };
+        
+        const handleSubmit = async () => {
+          try {
+            if (formMode.value === 'add') {
+              await AdminAPI.createCase(formData.value);
+            } else {
+              await AdminAPI.updateCase(formData.value);
+            }
+            TDesign.MessagePlugin.success('保存成功');
+            formVisible.value = false;
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '保存失败');
+          }
+        };
+        
+        onMounted(() => {
+          fetchData();
+          fetchCourses();
+        });
+        
+        return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          // 页面功能
+          loading,
+          tableData,
+          formVisible,
+          formMode,
+          formData,
+          filters,
+          courseOptions,
+          pagination,
+          columns,
+          rules,
+          handleSearch,
+          handleReset,
+          handlePageChange,
+          handleAdd,
+          handleEdit,
+          handleDelete,
+          handleToggleStatus,
+          handleSubmit
+        };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>
+
 

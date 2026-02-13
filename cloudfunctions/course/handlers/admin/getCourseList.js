@@ -8,6 +8,9 @@ const { getPagination } = require('../../common/utils');
 module.exports = async (event, context) => {
   const { type, status, keyword, page = 1, page_size = 10 } = event;
 
+  console.log('[getCourseList] 开始执行');
+  console.log('[getCourseList] 接收参数:', JSON.stringify({ type, status, keyword, page, page_size }));
+
   try {
     const { offset, limit } = getPagination(page, page_size);
 
@@ -62,7 +65,10 @@ module.exports = async (event, context) => {
     // 执行查询
     const { data: courses, error, count: total } = await queryBuilder;
 
+    console.log('[getCourseList] 查询结果:', { total, dataLength: courses?.length });
+
     if (error) {
+      console.error('[getCourseList] 查询错误:', error);
       throw error;
     }
 

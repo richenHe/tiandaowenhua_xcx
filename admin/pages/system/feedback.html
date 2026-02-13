@@ -118,5 +118,19 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const st=ref(null);const pg=ref({current:1,pageSize:20,total:0});const stOpts=[{label:'待处理',value:0},{label:'已处理',value:1}];const cols=[{colKey:'user_name',title:'用户姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'content',title:'反馈内容',ellipsis:true},{colKey:'created_at',title:'提交时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:150,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getFeedbackList({page:pg.value.current,pageSize:pg.value.pageSize,status:st.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{st.value=null;ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};const handle=async row=>{try{await AdminAPI.handleFeedback({feedbackId:row.id});TDesign.MessagePlugin.success('已标记为已处理');ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return{lg,d,v,cr,st,pg,stOpts,cols,ld,rs,chg,view,handle};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const st=ref(null);const pg=ref({current:1,pageSize:20,total:0});const stOpts=[{label:'待处理',value:0},{label:'已处理',value:1}];const cols=[{colKey:'user_name',title:'用户姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'content',title:'反馈内容',ellipsis:true},{colKey:'created_at',title:'提交时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:150,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getFeedbackList({page:pg.value.current,pageSize:pg.value.pageSize,status:st.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{st.value=null;ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};const handle=async row=>{try{await AdminAPI.handleFeedback({feedbackId:row.id});TDesign.MessagePlugin.success('已标记为已处理');ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,d,v,cr,st,pg,stOpts,cols,ld,rs,chg,view,handle
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
 

@@ -10,25 +10,6 @@
     >
       <view class="page-content">
 
-        <!-- 数据统计 -->
-        <view class="stats-card">
-          <view class="stats-label">📊 学员成就</view>
-          <view class="stats-grid">
-            <view class="stats-item">
-              <view class="stats-value">5,000+</view>
-              <view class="stats-text">累计学员</view>
-            </view>
-            <view class="stats-item">
-              <view class="stats-value">98%</view>
-              <view class="stats-text">好评率</view>
-            </view>
-            <view class="stats-item">
-              <view class="stats-value">1,200+</view>
-              <view class="stats-text">成功案例</view>
-            </view>
-          </view>
-        </view>
-
         <!-- Tab切换 -->
         <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
           <template #tabs>
@@ -219,41 +200,6 @@ onMounted(() => {
 
 .page-content {
   padding: 32rpx;
-}
-
-.stats-card {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  border-radius: 24rpx;
-  padding: 48rpx;
-  margin-bottom: 48rpx;
-  color: #fff;
-}
-
-.stats-label {
-  font-size: 28rpx;
-  opacity: 0.9;
-  margin-bottom: 24rpx;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32rpx;
-}
-
-.stats-item {
-  text-align: center;
-}
-
-.stats-value {
-  font-size: 56rpx;
-  font-weight: 700;
-  margin-bottom: 8rpx;
-}
-
-.stats-text {
-  font-size: 24rpx;
-  opacity: 0.9;
 }
 
 .tabs-wrapper {

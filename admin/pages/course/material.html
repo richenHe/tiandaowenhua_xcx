@@ -121,5 +121,178 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const loading=ref(false);const tableData=ref([]);const formVisible=ref(false);const formMode=ref('add');const formData=ref({});const filters=ref({keyword:'',courseId:null,type:null});const courseOptions=ref([]);const typeOptions=[{label:'PDF',value:'pdf'},{label:'文档',value:'doc'},{label:'视频',value:'video'},{label:'其他',value:'other'}];const pagination=ref({current:1,pageSize:20,total:0});const columns=[{colKey:'title',title:'资料名称',width:250},{colKey:'course_name',title:'关联课程',width:150},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'size',title:'大小',width:120,cell:'size'},{colKey:'download_count',title:'下载次数',width:100},{colKey:'created_at',title:'上传时间',width:160},{colKey:'operation',title:'操作',width:180,fixed:'right',cell:'operation'}];const rules={title:[{required:true,message:'请输入资料名称',type:'error'}],course_id:[{required:true,message:'请选择关联课程',type:'error'}],type:[{required:true,message:'请选择资料类型',type:'error'}],file_url:[{required:true,message:'请输入文件URL',type:'error'}]};const fetchData=async()=>{loading.value=true;try{const params={page:pagination.value.current,pageSize:pagination.value.pageSize,...filters.value};const data=await AdminAPI.getMaterialList(params);tableData.value=data.list;pagination.value.total=data.total;}catch(error){TDesign.MessagePlugin.error(error.message||'获取数据失败');}finally{loading.value=false;}};const fetchCourses=async()=>{try{const data=await AdminAPI.getAllCourses();courseOptions.value=data.map(c=>({label:c.name,value:c.id}));}catch(error){console.error('获取课程列表失败',error);}};const handleSearch=()=>{pagination.value.current=1;fetchData();};const handleReset=()=>{filters.value={keyword:'',courseId:null,type:null};handleSearch();};const handlePageChange=(pageInfo)=>{pagination.value.current=pageInfo.current;pagination.value.pageSize=pageInfo.pageSize;fetchData();};const handleAdd=()=>{formMode.value='add';formData.value={};formVisible.value=true;};const handleEdit=(row)=>{formMode.value='edit';formData.value={...row};formVisible.value=true;};const handleDelete=async(row)=>{const confirmed=await TDesign.DialogPlugin.confirm({header:'确认删除',body:'确认删除该资料吗？',theme:'warning'});if(!confirmed)return;try{await AdminAPI.deleteMaterial({materialId:row.id});TDesign.MessagePlugin.success('删除成功');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'删除失败');}};const handleDownload=(row)=>{window.open(row.file_url,'_blank');};const handleSubmit=async()=>{try{if(formMode.value==='add'){await AdminAPI.createMaterial(formData.value);}else{await AdminAPI.updateMaterial(formData.value);}TDesign.MessagePlugin.success('保存成功');formVisible.value=false;fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'保存失败');}};onMounted(()=>{fetchData();fetchCourses();});return{loading,tableData,formVisible,formMode,formData,filters,courseOptions,typeOptions,pagination,columns,rules,handleSearch,handleReset,handlePageChange,handleAdd,handleEdit,handleDelete,handleDownload,handleSubmit};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
+  
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    
+    createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const formVisible = ref(false);
+        const formMode = ref('add');
+        const formData = ref({});
+        const filters = ref({ keyword: '', courseId: null, type: null });
+        const courseOptions = ref([]);
+        const typeOptions = [
+          { label: 'PDF', value: 'pdf' },
+          { label: '文档', value: 'doc' },
+          { label: '视频', value: 'video' },
+          { label: '其他', value: 'other' }
+        ];
+        const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+        
+        const columns = [
+          { colKey: 'title', title: '资料名称', width: 250 },
+          { colKey: 'course_name', title: '关联课程', width: 150 },
+          { colKey: 'type', title: '类型', width: 100, cell: 'type' },
+          { colKey: 'size', title: '大小', width: 120, cell: 'size' },
+          { colKey: 'download_count', title: '下载次数', width: 100 },
+          { colKey: 'created_at', title: '上传时间', width: 160 },
+          { colKey: 'operation', title: '操作', width: 180, fixed: 'right', cell: 'operation' }
+        ];
+        
+        const rules = {
+          title: [{ required: true, message: '请输入资料名称', type: 'error' }],
+          course_id: [{ required: true, message: '请选择关联课程', type: 'error' }],
+          type: [{ required: true, message: '请选择资料类型', type: 'error' }],
+          file_url: [{ required: true, message: '请输入文件URL', type: 'error' }]
+        };
+        
+        const fetchData = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+              ...filters.value
+            };
+            const data = await AdminAPI.getMaterialList(params);
+            tableData.value = data.list;
+            pagination.value.total = data.total;
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取数据失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        const fetchCourses = async () => {
+          try {
+            const data = await AdminAPI.getAllCourses();
+            courseOptions.value = data.map(c => ({ label: c.name, value: c.id }));
+          } catch (error) {
+            console.error('获取课程列表失败', error);
+          }
+        };
+        
+        const handleSearch = () => {
+          pagination.value.current = 1;
+          fetchData();
+        };
+        
+        const handleReset = () => {
+          filters.value = { keyword: '', courseId: null, type: null };
+          handleSearch();
+        };
+        
+        const handlePageChange = (pageInfo) => {
+          pagination.value.current = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          fetchData();
+        };
+        
+        const handleAdd = () => {
+          formMode.value = 'add';
+          formData.value = {};
+          formVisible.value = true;
+        };
+        
+        const handleEdit = (row) => {
+          formMode.value = 'edit';
+          formData.value = { ...row };
+          formVisible.value = true;
+        };
+        
+        const handleDelete = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: '确认删除该资料吗？',
+            theme: 'warning'
+          });
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.deleteMaterial({ materialId: row.id });
+            TDesign.MessagePlugin.success('删除成功');
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '删除失败');
+          }
+        };
+        
+        const handleDownload = (row) => {
+          window.open(row.file_url, '_blank');
+        };
+        
+        const handleSubmit = async () => {
+          try {
+            if (formMode.value === 'add') {
+              await AdminAPI.createMaterial(formData.value);
+            } else {
+              await AdminAPI.updateMaterial(formData.value);
+            }
+            TDesign.MessagePlugin.success('保存成功');
+            formVisible.value = false;
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '保存失败');
+          }
+        };
+        
+        onMounted(() => {
+          fetchData();
+          fetchCourses();
+        });
+        
+        return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          // 页面功能
+          loading,
+          tableData,
+          formVisible,
+          formMode,
+          formData,
+          filters,
+          courseOptions,
+          typeOptions,
+          pagination,
+          columns,
+          rules,
+          handleSearch,
+          handleReset,
+          handlePageChange,
+          handleAdd,
+          handleEdit,
+          handleDelete,
+          handleDownload,
+          handleSubmit
+        };
+      }
+    }).use(TDesign).mount('#app');
+  </script>
+</body>
+</html>
+
 

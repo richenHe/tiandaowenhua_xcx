@@ -18,8 +18,14 @@ export interface Order {
   order_name: string
   /** 原始金额 */
   original_amount: number
+  /** 优惠金额 */
+  discount_amount: number
   /** 最终金额 */
   final_amount: number
+  /** 用户姓名 */
+  user_name?: string
+  /** 用户电话 */
+  user_phone?: string
   /** 支付状态（0-待支付，1-已支付，2-已取消，3-已关闭，4-已退款） */
   pay_status: number
   /** 支付状态名称 */

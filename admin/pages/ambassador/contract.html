@@ -118,5 +118,19 @@
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({setup(){const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const k=ref('');const pg=ref({current:1,pageSize:20,total:0});const cols=[{colKey:'ambassador_name',title:'大使姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'level',title:'等级',width:100,cell:'level'},{colKey:'contract_no',title:'合约编号',width:180},{colKey:'signed_at',title:'签署时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:100,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getContractList({page:pg.value.current,pageSize:pg.value.pageSize,keyword:k.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{k.value='';ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};onMounted(ld);return{lg,d,v,cr,k,pg,cols,ld,rs,chg,view};}}).use(TDesign).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const k=ref('');const pg=ref({current:1,pageSize:20,total:0});const cols=[{colKey:'ambassador_name',title:'大使姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'level',title:'等级',width:100,cell:'level'},{colKey:'contract_no',title:'合约编号',width:180},{colKey:'signed_at',title:'签署时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:100,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getContractList({page:pg.value.current,pageSize:pg.value.pageSize,keyword:k.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{k.value='';ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,d,v,cr,k,pg,cols,ld,rs,chg,view
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
 
