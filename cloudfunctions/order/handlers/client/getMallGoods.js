@@ -2,7 +2,7 @@
  * 客户端接口：商城商品列表
  * Action: getMallGoods
  */
-const { db, response, getTempFileURL } = require('common');
+const { db, response, storage } = require('common'); // 引入 storage
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -42,8 +42,12 @@ module.exports = async (event, context) => {
       let goodsImageUrl = item.goods_image || '';
       if (item.goods_image) {
         try {
-          const result = await getTempFileURL(item.goods_image);
-          goodsImageUrl = result.tempFileURL || item.goods_image;
+          const result = await storage.getTempFileURL(item.goods_image);
+          if (result.success && result.tempFileURL) {
+            goodsImageUrl = result.tempFileURL;
+          } else {
+            console.warn(`[getMallGoods] 转换临时URL失败，fileID: ${item.goods_image}, 错误: ${result.message}`);
+          }
         } catch (error) {
           console.warn('[getMallGoods] 转换临时URL失败:', item.goods_image, error.message);
         }

@@ -6,7 +6,7 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10，最大50）
  */
-const { query, count, response, getPagination, getTempFileURL } = require('common');
+const { query, count, response, getPagination, storage } = require('common'); // 引入 storage
 
 module.exports = async (event, context) => {
   const { page = 1, page_size = 10 } = event;
@@ -36,8 +36,12 @@ module.exports = async (event, context) => {
       let coverImageUrl = a.cover_image || '';
       if (a.cover_image) {
         try {
-          const result = await getTempFileURL(a.cover_image);
-          coverImageUrl = result.tempFileURL || a.cover_image;
+          const result = await storage.getTempFileURL(a.cover_image);
+          if (result.success && result.tempFileURL) {
+            coverImageUrl = result.tempFileURL;
+          } else {
+            console.warn(`[getAnnouncementList] 转换临时URL失败，fileID: ${a.cover_image}, 错误: ${result.message}`);
+          }
         } catch (error) {
           console.warn('[getAnnouncementList] 转换临时URL失败:', a.cover_image, error.message);
         }

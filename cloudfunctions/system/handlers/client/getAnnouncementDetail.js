@@ -2,7 +2,7 @@
  * 客户端接口：获取公告详情
  * Action: client:getAnnouncementDetail
  */
-const { db, response, getTempFileURL } = require('common');
+const { db, response, storage } = require('common'); // 引入 storage
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -28,8 +28,12 @@ module.exports = async (event, context) => {
     // 🔥 转换云存储 fileID 为临时 URL
     if (data.cover_image) {
       try {
-        const result = await getTempFileURL(data.cover_image);
-        data.cover_image = result.tempFileURL || data.cover_image;
+        const result = await storage.getTempFileURL(data.cover_image);
+        if (result.success && result.tempFileURL) {
+          data.cover_image = result.tempFileURL;
+        } else {
+          console.warn(`[getAnnouncementDetail] 转换临时URL失败，fileID: ${data.cover_image}, 错误: ${result.message}`);
+        }
       } catch (error) {
         console.warn('[getAnnouncementDetail] 转换临时URL失败:', data.cover_image, error.message);
       }

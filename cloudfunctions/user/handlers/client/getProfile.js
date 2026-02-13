@@ -2,7 +2,7 @@
  * 客户端接口：获取个人资料
  * Action: client:getProfile
  */
-const { response, db, getTempFileURL } = require('common');
+const { response, db, storage } = require('common'); // 引入 storage
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -51,8 +51,12 @@ module.exports = async (event, context) => {
     // 🔥 转换云存储 fileID 为临时 URL
     if (profileData.avatar) {
       try {
-        const result = await getTempFileURL(profileData.avatar);
-        profileData.avatar = result.tempFileURL || profileData.avatar;
+        const result = await storage.getTempFileURL(profileData.avatar);
+        if (result.success && result.tempFileURL) {
+          profileData.avatar = result.tempFileURL;
+        } else {
+          console.warn(`[getProfile] 转换avatar临时URL失败，fileID: ${profileData.avatar}, 错误: ${result.message}`);
+        }
       } catch (error) {
         console.warn('[getProfile] 转换avatar临时URL失败:', profileData.avatar, error.message);
       }
@@ -60,8 +64,12 @@ module.exports = async (event, context) => {
     
     if (profileData.background_image) {
       try {
-        const result = await getTempFileURL(profileData.background_image);
-        profileData.background_image = result.tempFileURL || profileData.background_image;
+        const result = await storage.getTempFileURL(profileData.background_image);
+        if (result.success && result.tempFileURL) {
+          profileData.background_image = result.tempFileURL;
+        } else {
+          console.warn(`[getProfile] 转换background_image临时URL失败，fileID: ${profileData.background_image}, 错误: ${result.message}`);
+        }
       } catch (error) {
         console.warn('[getProfile] 转换background_image临时URL失败:', profileData.background_image, error.message);
       }
@@ -69,8 +77,12 @@ module.exports = async (event, context) => {
     
     if (profileData.qrcode_url) {
       try {
-        const result = await getTempFileURL(profileData.qrcode_url);
-        profileData.qrcode_url = result.tempFileURL || profileData.qrcode_url;
+        const result = await storage.getTempFileURL(profileData.qrcode_url);
+        if (result.success && result.tempFileURL) {
+          profileData.qrcode_url = result.tempFileURL;
+        } else {
+          console.warn(`[getProfile] 转换qrcode_url临时URL失败，fileID: ${profileData.qrcode_url}, 错误: ${result.message}`);
+        }
       } catch (error) {
         console.warn('[getProfile] 转换qrcode_url临时URL失败:', profileData.qrcode_url, error.message);
       }

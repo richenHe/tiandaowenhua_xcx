@@ -2,7 +2,7 @@
  * 客户端接口：兑换记录列表
  * Action: getExchangeRecords
  */
-const { db, response, getPagination, getTempFileURL } = require('common');
+const { db, response, getPagination, storage } = require('common'); // 引入 storage
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -52,8 +52,12 @@ module.exports = async (event, context) => {
       let goodsImageUrl = record.goods_image || '';
       if (record.goods_image) {
         try {
-          const result = await getTempFileURL(record.goods_image);
-          goodsImageUrl = result.tempFileURL || record.goods_image;
+          const result = await storage.getTempFileURL(record.goods_image);
+          if (result.success && result.tempFileURL) {
+            goodsImageUrl = result.tempFileURL;
+          } else {
+            console.warn(`[getExchangeRecords] 转换临时URL失败，fileID: ${record.goods_image}, 错误: ${result.message}`);
+          }
         } catch (error) {
           console.warn('[getExchangeRecords] 转换临时URL失败:', record.goods_image, error.message);
         }
