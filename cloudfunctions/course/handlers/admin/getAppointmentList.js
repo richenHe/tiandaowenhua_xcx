@@ -11,44 +11,10 @@ module.exports = async (event, context) => {
   try {
     const { offset, limit } = getPagination(page, page_size);
 
-    // 构建查询（使用多个外键 JOIN）- 注意：appointments 表没有 deleted_at 字段
+    // 构建查询（暂时去掉 JOIN，测试权限）
     let queryBuilder = db
       .from('appointments')
-      .select(`
-        id,
-        user_id,
-        user_uid,
-        user_name,
-        user_phone,
-        class_record_id,
-        user_course_id,
-        course_id,
-        course_name,
-        is_retrain,
-        order_no,
-        checkin_code,
-        checkin_time,
-        checkin_admin_id,
-        status,
-        cancel_reason,
-        cancel_time,
-        remark,
-        created_at,
-        updated_at,
-        user:users!fk_appointments_user(
-          id,
-          real_name,
-          phone
-        ),
-        course:courses!fk_appointments_course(
-          name
-        ),
-        class_record:class_records!fk_appointments_class_record(
-          class_date,
-          class_time,
-          class_location
-        )
-      `, { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     // 添加课程过滤
     if (course_id) {

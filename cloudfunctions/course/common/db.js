@@ -430,6 +430,15 @@ async function upsert(table, data, options = {}) {
   }
 }
 
+/**
+ * 执行原生 SQL 查询
+ * 注意：已废弃，请使用 Query Builder
+ * @deprecated
+ */
+async function executeSQL(sql, params = []) {
+  throw new Error('executeSQL 已废弃，请使用 Query Builder');
+}
+
 module.exports = {
   // 原始数据库客户端（Supabase 风格）
   db,
@@ -450,5 +459,8 @@ module.exports = {
   
   // 高级功能
   rpc,
-  transaction
+  transaction,
+  
+  // 原生 SQL 执行（备用方案）
+  executeSQL
 };

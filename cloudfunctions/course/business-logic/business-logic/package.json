@@ -1,9 +1,0 @@
-{
-  "name": "business-logic",
-  "version": "1.0.1",
-  "description": "天道文化小程序业务逻辑层 - 积分计算、奖励分发、大使升级、微信支付、消息通知",
-  "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "~2.6.3"
-  }
-}

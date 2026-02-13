@@ -1,5 +1,7 @@
 /**
  * 获取课程列表（管理端接口）
+ * 
+ * 使用 CloudBase Query Builder（不使用 mysql2，避免连接问题）
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
@@ -14,32 +16,10 @@ module.exports = async (event, context) => {
   try {
     const { offset, limit } = getPagination(page, page_size);
 
-    // 构建查询（注意：courses 表没有 deleted_at 字段）
+    // 使用 Query Builder 查询（设置 ADMINONLY 权限后应该可用）
     let queryBuilder = db
-      .from('courses')
-      .select(`
-        id,
-        name,
-        type,
-        cover_image,
-        description,
-        content,
-        outline,
-        teacher,
-        duration,
-        original_price,
-        current_price,
-        retrain_price,
-        allow_retrain,
-        included_course_ids,
-        stock,
-        sold_count,
-        sort_order,
-        status,
-        created_at,
-        updated_at,
-        nickname
-      `, { count: 'exact' });
+      .from('courses')  // 数据库名已在 db.js 中配置
+      .select('*', { count: 'exact' });
 
     // 添加类型过滤
     if (type) {
@@ -47,7 +27,7 @@ module.exports = async (event, context) => {
     }
 
     // 添加状态过滤
-    if (status !== undefined) {
+    if (status !== undefined && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
@@ -62,15 +42,21 @@ module.exports = async (event, context) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
+    console.log('[getCourseList] 执行 Query Builder 查询...');
+    
     // 执行查询
-    const { data: courses, error, count: total } = await queryBuilder;
-
-    console.log('[getCourseList] 查询结果:', { total, dataLength: courses?.length });
+    const result = await queryBuilder;
+    
+    console.log('[getCourseList] Query Builder 原始结果:', JSON.stringify(result));
+    
+    const { data: courses, error, count: total } = result;
 
     if (error) {
-      console.error('[getCourseList] 查询错误:', error);
-      throw error;
+      console.error('[getCourseList] Query Builder 错误:', error);
+      throw new Error(error.message || '数据库查询失败');
     }
+
+    console.log('[getCourseList] 查询成功:', { total, count: courses?.length });
 
     // 格式化数据（添加 type_name）
     const getTypeName = (type) => {
@@ -88,7 +74,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total,
+      total: total || 0,
       page: parseInt(page),
       page_size: parseInt(page_size),
       list
