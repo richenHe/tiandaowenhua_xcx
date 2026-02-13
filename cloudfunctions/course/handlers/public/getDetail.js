@@ -2,10 +2,7 @@
  * 获取课程详情（公开接口）
  * 包括购买状态和上课次数
  */
-const { db, findOne } = require('../../common/db');
-const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
-const { getTempFileURL } = require('../../common/storage');
+const { db, findOne, response, validateRequired, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -69,9 +66,10 @@ module.exports = async (event, context) => {
     // 🔥 转换云存储 fileID 为临时 URL
     if (course.cover_image) {
       try {
-        course.cover_image = await getTempFileURL(course.cover_image);
+        const result = await getTempFileURL(course.cover_image);
+        course.cover_image = result.tempFileURL || course.cover_image;
       } catch (error) {
-        console.error('[getDetail] 转换封面图片失败:', error);
+        console.warn('[getDetail] 转换临时URL失败:', course.cover_image, error.message);
       }
     }
 

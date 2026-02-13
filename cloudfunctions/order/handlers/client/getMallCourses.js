@@ -6,8 +6,7 @@
  * @param {number} pageSize - 每页数量（默认10）
  */
 
-const { db, response } = require('common');
-const { getTempFileURL } = require('../../common/storage');
+const { db, response, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { type, page = 1, pageSize = 10 } = event;
@@ -37,50 +36,35 @@ module.exports = async (event, context) => {
 
     if (error) throw error;
 
-    // 格式化返回数据
-    const list = (courses || []).map(item => ({
-      id: item.id,
-      name: item.name,
-      nickname: item.nickname || '',
-      type: item.type,
-      coverImage: item.cover_image || '',
-      description: item.description || '',
-      teacher: item.teacher || '',
-      duration: item.duration || '',
-      originalPrice: parseFloat(item.original_price) || 0,
-      currentPrice: parseFloat(item.current_price) || 0,
-      stock: item.stock,
-      soldCount: item.sold_count || 0,
-      isUnlimitedStock: item.stock === -1,
-      canBuy: item.stock === -1 || item.stock > 0
-    }));
-
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (list && list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(item => {
-        if (item.coverImage) fileIDs.push(item.coverImage);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(item => {
-        if (item.coverImage && urlMap[item.coverImage]) {
-          item.coverImage = urlMap[item.coverImage];
+    // 格式化返回数据并转换云存储 fileID 为临时 URL
+    const list = await Promise.all((courses || []).map(async item => {
+      let coverImageUrl = item.cover_image || '';
+      if (item.cover_image) {
+        try {
+          const result = await getTempFileURL(item.cover_image);
+          coverImageUrl = result.tempFileURL || item.cover_image;
+        } catch (error) {
+          console.warn('[getMallCourses] 转换临时URL失败:', item.cover_image, error.message);
         }
-      });
-    }
+      }
+      
+      return {
+        id: item.id,
+        name: item.name,
+        nickname: item.nickname || '',
+        type: item.type,
+        coverImage: coverImageUrl,
+        description: item.description || '',
+        teacher: item.teacher || '',
+        duration: item.duration || '',
+        originalPrice: parseFloat(item.original_price) || 0,
+        currentPrice: parseFloat(item.current_price) || 0,
+        stock: item.stock,
+        soldCount: item.sold_count || 0,
+        isUnlimitedStock: item.stock === -1,
+        canBuy: item.stock === -1 || item.stock > 0
+      };
+    }));
 
     return response.success({
       total: total || 0,

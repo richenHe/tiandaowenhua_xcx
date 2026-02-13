@@ -2,10 +2,7 @@
  * 客户端接口：兑换记录列表
  * Action: getExchangeRecords
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
-const { getTempFileURL } = require('../../common/storage');
+const { db, response, getPagination, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -50,46 +47,31 @@ module.exports = async (event, context) => {
       throw error;
     }
 
-    // 格式化记录列表
-    const list = (records || []).map(record => ({
-      exchange_no: record.exchange_no,
-      goods_name: record.goods_name,
-      goods_image: record.goods_image,
-      quantity: record.quantity,
-      merit_points_used: record.merit_points_used,
-      cash_points_used: record.cash_points_used,
-      total_cost: record.total_cost,
-      status: record.status,
-      status_name: getExchangeStatusName(record.status),
-      created_at: record.created_at
-    }));
-
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (list && list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(item => {
-        if (item.goods_image) fileIDs.push(item.goods_image);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(item => {
-        if (item.goods_image && urlMap[item.goods_image]) {
-          item.goods_image = urlMap[item.goods_image];
+    // 格式化记录列表并转换云存储 fileID 为临时 URL
+    const list = await Promise.all((records || []).map(async record => {
+      let goodsImageUrl = record.goods_image || '';
+      if (record.goods_image) {
+        try {
+          const result = await getTempFileURL(record.goods_image);
+          goodsImageUrl = result.tempFileURL || record.goods_image;
+        } catch (error) {
+          console.warn('[getExchangeRecords] 转换临时URL失败:', record.goods_image, error.message);
         }
-      });
-    }
+      }
+      
+      return {
+        exchange_no: record.exchange_no,
+        goods_name: record.goods_name,
+        goods_image: goodsImageUrl,
+        quantity: record.quantity,
+        merit_points_used: record.merit_points_used,
+        cash_points_used: record.cash_points_used,
+        total_cost: record.total_cost,
+        status: record.status,
+        status_name: getExchangeStatusName(record.status),
+        created_at: record.created_at
+      };
+    }));
 
     console.log(`[getExchangeRecords] 查询成功，共 ${total} 条`);
 

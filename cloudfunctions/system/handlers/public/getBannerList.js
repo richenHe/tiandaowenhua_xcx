@@ -3,8 +3,7 @@
  * @description 用于首页展示轮播图，从 banners 表查询
  */
 
-const { db, response } = require('common');
-const { getTempFileURL } = require('../../common/storage');
+const { db, response, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   try {
@@ -19,42 +18,27 @@ module.exports = async (event, context) => {
 
     if (error) throw error;
 
-    // 格式化返回数据（映射字段名以匹配前端期望）
-    const list = banners.map(item => ({
-      id: item.id,
-      title: item.title || '',
-      subtitle: item.subtitle || '',
-      cover_image: item.image_url || '',
-      link: item.link_url || '',
-      sort_order: item.sort_order || 0
-    }));
-
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (list && list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(item => {
-        if (item.cover_image) fileIDs.push(item.cover_image);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(item => {
-        if (item.cover_image && urlMap[item.cover_image]) {
-          item.cover_image = urlMap[item.cover_image];
+    // 格式化返回数据并转换云存储 fileID 为临时 URL
+    const list = await Promise.all((banners || []).map(async item => {
+      let coverImageUrl = item.image_url || '';
+      if (item.image_url) {
+        try {
+          const result = await getTempFileURL(item.image_url);
+          coverImageUrl = result.tempFileURL || item.image_url;
+        } catch (error) {
+          console.warn('[getBannerList] 转换临时URL失败:', item.image_url, error.message);
         }
-      });
-    }
+      }
+      
+      return {
+        id: item.id,
+        title: item.title || '',
+        subtitle: item.subtitle || '',
+        cover_image: coverImageUrl,
+        link: item.link_url || '',
+        sort_order: item.sort_order || 0
+      };
+    }));
 
     return response.success({
       list,

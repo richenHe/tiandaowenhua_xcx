@@ -6,9 +6,7 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10，最大50）
  */
-const { query, count } = require('../../common');
-const { response, getPagination } = require('../../common');
-const { getTempFileURL } = require('../../common/storage');
+const { query, count, response, getPagination, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { page = 1, page_size = 10 } = event;
@@ -33,39 +31,25 @@ module.exports = async (event, context) => {
     // 统计总数
     const total = await count('announcements', { status: 1 });
 
-    // 处理数据
-    const processedAnnouncements = (announcements || []).map(a => ({
-      ...a,
-      category_text: getCategoryText(a.category),
-      target_type_text: getTargetTypeText(a.target_type)
-    }));
-
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (processedAnnouncements && processedAnnouncements.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      processedAnnouncements.forEach(item => {
-        if (item.cover_image) fileIDs.push(item.cover_image);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换列表中的 fileID 为临时 URL
-      processedAnnouncements.forEach(item => {
-        if (item.cover_image && urlMap[item.cover_image]) {
-          item.cover_image = urlMap[item.cover_image];
+    // 处理数据并转换云存储 fileID 为临时 URL
+    const processedAnnouncements = await Promise.all((announcements || []).map(async a => {
+      let coverImageUrl = a.cover_image || '';
+      if (a.cover_image) {
+        try {
+          const result = await getTempFileURL(a.cover_image);
+          coverImageUrl = result.tempFileURL || a.cover_image;
+        } catch (error) {
+          console.warn('[getAnnouncementList] 转换临时URL失败:', a.cover_image, error.message);
         }
-      });
-    }
+      }
+      
+      return {
+        ...a,
+        cover_image: coverImageUrl,
+        category_text: getCategoryText(a.category),
+        target_type_text: getTargetTypeText(a.target_type)
+      };
+    }));
 
     return response.success({
       list: processedAnnouncements,

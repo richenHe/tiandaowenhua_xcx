@@ -3,10 +3,7 @@
  * 支持课程类型筛选和关键词搜索
  * 使用 Supabase 风格查询
  */
-const { db, findOne } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
-const { getTempFileURL } = require('../../common/storage');
+const { db, findOne, response, getPagination, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { type, keyword, page = 1, page_size = 10 } = event;
@@ -57,38 +54,24 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 添加已购标识
-    const list = (courses || []).map(course => ({
-      ...course,
-      is_purchased: userCourseIds.includes(course.id)
-    }));
-
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (list && list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(item => {
-        if (item.cover_image) fileIDs.push(item.cover_image);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(item => {
-        if (item.cover_image && urlMap[item.cover_image]) {
-          item.cover_image = urlMap[item.cover_image];
+    // 添加已购标识并转换云存储 fileID 为临时 URL
+    const list = await Promise.all((courses || []).map(async course => {
+      let coverImageUrl = course.cover_image || '';
+      if (course.cover_image) {
+        try {
+          const result = await getTempFileURL(course.cover_image);
+          coverImageUrl = result.tempFileURL || course.cover_image;
+        } catch (error) {
+          console.warn('[getList] 转换临时URL失败:', course.cover_image, error.message);
         }
-      });
-    }
+      }
+      
+      return {
+        ...course,
+        cover_image: coverImageUrl,
+        is_purchased: userCourseIds.includes(course.id)
+      };
+    }));
 
     console.log(`[getList] 查询成功，共 ${count} 条`);
     return response.success({

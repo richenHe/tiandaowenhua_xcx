@@ -2,8 +2,7 @@
  * 客户端接口：获取个人资料
  * Action: client:getProfile
  */
-const { response, db } = require('../../common');
-const { getTempFileURL } = require('../../common/storage');
+const { response, db, getTempFileURL } = require('common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -50,37 +49,32 @@ module.exports = async (event, context) => {
     };
 
     // 🔥 转换云存储 fileID 为临时 URL
-    // 注意：用户资料页面的 avatar 和 background_image 已在前端使用 StorageApi 转换
-    // 这里保留 fileID 格式不变，由前端 StorageApi 处理
-    // qrcode_url 如果存在，也保持 fileID 格式
-    // 
-    // 如需后端转换，取消以下注释：
-    /*
-    const fileIDs = [];
-    if (profileData.avatar) fileIDs.push(profileData.avatar);
-    if (profileData.background_image) fileIDs.push(profileData.background_image);
-    if (profileData.qrcode_url) fileIDs.push(profileData.qrcode_url);
-
-    if (fileIDs.length > 0) {
-      const tempURLs = await getTempFileURL(fileIDs);
-      const urlMap = {};
-      tempURLs.forEach((urlObj, index) => {
-        if (urlObj && urlObj.tempFileURL) {
-          urlMap[fileIDs[index]] = urlObj.tempFileURL;
-        }
-      });
-
-      if (profileData.avatar && urlMap[profileData.avatar]) {
-        profileData.avatar = urlMap[profileData.avatar];
-      }
-      if (profileData.background_image && urlMap[profileData.background_image]) {
-        profileData.background_image = urlMap[profileData.background_image];
-      }
-      if (profileData.qrcode_url && urlMap[profileData.qrcode_url]) {
-        profileData.qrcode_url = urlMap[profileData.qrcode_url];
+    if (profileData.avatar) {
+      try {
+        const result = await getTempFileURL(profileData.avatar);
+        profileData.avatar = result.tempFileURL || profileData.avatar;
+      } catch (error) {
+        console.warn('[getProfile] 转换avatar临时URL失败:', profileData.avatar, error.message);
       }
     }
-    */
+    
+    if (profileData.background_image) {
+      try {
+        const result = await getTempFileURL(profileData.background_image);
+        profileData.background_image = result.tempFileURL || profileData.background_image;
+      } catch (error) {
+        console.warn('[getProfile] 转换background_image临时URL失败:', profileData.background_image, error.message);
+      }
+    }
+    
+    if (profileData.qrcode_url) {
+      try {
+        const result = await getTempFileURL(profileData.qrcode_url);
+        profileData.qrcode_url = result.tempFileURL || profileData.qrcode_url;
+      } catch (error) {
+        console.warn('[getProfile] 转换qrcode_url临时URL失败:', profileData.qrcode_url, error.message);
+      }
+    }
 
     // user 已经由 checkClientAuth 查询并返回
     return response.success(profileData, '获取成功');

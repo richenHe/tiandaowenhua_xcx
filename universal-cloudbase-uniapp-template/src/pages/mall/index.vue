@@ -80,10 +80,19 @@
           </view>
 
           <!-- 加载更多 -->
-          <view class="load-more">
-            <button class="load-more-btn">
-              <text class="btn-text">加载更多</text>
+          <view v-if="hasMore" class="load-more">
+            <button 
+              class="load-more-btn" 
+              :disabled="isLoading"
+              @click="handleLoadMore"
+            >
+              <text class="btn-text">{{ isLoading ? '加载中...' : '加载更多' }}</text>
             </button>
+          </view>
+          
+          <!-- 加载完毕提示 -->
+          <view v-else-if="products.length > 0" class="load-more">
+            <text class="no-more-text">已加载全部商品</text>
           </view>
         </view>
 
@@ -210,12 +219,24 @@ const categoryOptions = [
 // 商品列表
 const products = ref<any[]>([])
 
-// 加载商城商品
-const loadMallGoods = async () => {
-  try {
-    const result = await OrderApi.getMallGoods({ page: 1, page_size: 100 })
+// 分页相关状态
+const currentPage = ref(1)
+const pageSize = 20
+const totalProducts = ref(0)
+const hasMore = ref(true)
+const isLoading = ref(false)
 
-    products.value = result.list.map((item: any) => ({
+// 加载商城商品
+const loadMallGoods = async (isLoadMore = false) => {
+  if (isLoading.value) return
+  
+  try {
+    isLoading.value = true
+    const page = isLoadMore ? currentPage.value + 1 : 1
+    
+    const result = await OrderApi.getMallGoods({ page: page, page_size: pageSize })
+
+    const newProducts = result.list.map((item: any) => ({
       id: item.id,
       name: item.goods_name,
       icon: '🎁',
@@ -223,8 +244,34 @@ const loadMallGoods = async () => {
       points: item.merit_points_price,
       category: 'stationery'
     }))
+    
+    if (isLoadMore) {
+      // 加载更多：追加数据
+      products.value = [...products.value, ...newProducts]
+      currentPage.value = page
+    } else {
+      // 首次加载：替换数据
+      products.value = newProducts
+      currentPage.value = 1
+    }
+    
+    totalProducts.value = result.total || 0
+    hasMore.value = products.value.length < totalProducts.value
   } catch (error) {
     console.error('加载商城商品失败:', error)
+    uni.showToast({
+      title: '加载失败',
+      icon: 'none'
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 加载更多
+const handleLoadMore = () => {
+  if (hasMore.value && !isLoading.value) {
+    loadMallGoods(true)
   }
 }
 
@@ -611,6 +658,28 @@ const performExchange = async (
 .load-more {
   text-align: center;
   padding: 40rpx 0;
+}
+
+.load-more-btn {
+  background-color: #FFFFFF;
+  border: 1px solid $td-border-level-1;
+  border-radius: $td-radius-default;
+  padding: 16rpx 48rpx;
+  font-size: 28rpx;
+  color: $td-text-color-primary;
+  
+  &:disabled {
+    opacity: 0.6;
+  }
+  
+  &::after {
+    border: none;
+  }
+}
+
+.no-more-text {
+  font-size: 24rpx;
+  color: $td-text-color-placeholder;
 }
 
 // 提示框
