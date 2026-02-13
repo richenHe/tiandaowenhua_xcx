@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天道文化后台接口自动化测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .config-section {
+      padding: 20px 30px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+    }
+
+    .config-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .config-row label {
+      min-width: 100px;
+      font-weight: 500;
+    }
+
+    .config-row input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #38a169;
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    .btn-secondary {
+      background: #718096;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #4a5568;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .stat-card {
+      padding: 20px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .stat-card.success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .stat-card.error {
+      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    }
+
+    .stat-card.pending {
+      background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      margin: 20px 30px;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .results {
+      padding: 30px;
+    }
+
+    .module {
+      margin-bottom: 30px;
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 20px;
+      background: #f7fafc;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 10px;
+    }
+
+    .module-header:hover {
+      background: #edf2f7;
+    }
+
+    .module-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .module-stats {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+    }
+
+    .module-stat {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .module-stat.total {
+      background: #e6fffa;
+      color: #234e52;
+    }
+
+    .module-stat.success {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .module-stat.error {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .api-list {
+      display: none;
+    }
+
+    .api-list.show {
+      display: block;
+    }
+
+    .api-item {
+      padding: 15px 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+
+    .api-item.success {
+      border-left: 4px solid #48bb78;
+      background: #f0fff4;
+    }
+
+    .api-item.error {
+      border-left: 4px solid #f56565;
+      background: #fff5f5;
+    }
+
+    .api-item.pending {
+      border-left: 4px solid #ed8936;
+      background: #fffaf0;
+    }
+
+    .api-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .api-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #2d3748;
+    }
+
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-icon.success {
+      background: #48bb78;
+    }
+
+    .status-icon.error {
+      background: #f56565;
+    }
+
+    .status-icon.pending {
+      background: #ed8936;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .api-info {
+      font-size: 13px;
+      color: #718096;
+      margin-bottom: 8px;
+    }
+
+    .api-time {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+
+    .api-details {
+      margin-top: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .api-details pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .log-console {
+      margin-top: 20px;
+      padding: 15px;
+      background: #1a202c;
+      color: #e2e8f0;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-left: 3px solid transparent;
+    }
+
+    .log-entry.info {
+      border-left-color: #4299e1;
+    }
+
+    .log-entry.success {
+      border-left-color: #48bb78;
+    }
+
+    .log-entry.error {
+      border-left-color: #f56565;
+    }
+
+    .log-time {
+      color: #a0aec0;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧪 天道文化后台接口自动化测试</h1>
+      <p>全面测试所有后台管理接口 | 先写后读验证 | 自动化测试报告</p>
+    </div>
+
+    <div class="config-section">
+      <div class="config-row">
+        <label>环境ID:</label>
+        <input type="text" id="envId" value="cloud1-0gnn3mn17b581124" placeholder="CloudBase 环境 ID">
+      </div>
+      <div class="config-row">
+        <label>管理员账号:</label>
+        <input type="text" id="username" value="admin" placeholder="管理员用户名">
+      </div>
+      <div class="config-row">
+        <label>管理员密码:</label>
+        <input type="password" id="password" value="admin123" placeholder="管理员密码">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="startTest()">🚀 开始全量测试</button>
+        <button class="btn btn-success" onclick="testReadOnly()">📖 仅测试读接口</button>
+        <button class="btn btn-danger" onclick="clearResults()">🗑️ 清空结果</button>
+        <button class="btn btn-secondary" onclick="exportReport()">📊 导出报告</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">总接口数</div>
+        <div class="stat-value" id="totalCount">0</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">测试通过</div>
+        <div class="stat-value" id="successCount">0</div>
+      </div>
+      <div class="stat-card error">
+        <div class="stat-label">测试失败</div>
+        <div class="stat-value" id="errorCount">0</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">待测试</div>
+        <div class="stat-value" id="pendingCount">0</div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressBar"></div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <div class="log-console" id="logConsole"></div>
+  </div>
+
+  <script src="https://web-9gikcbug35bad3a8-1257172164.tcloudbaseapp.com/sdk/1.7.0/cloud.js"></script>
+  <script>
+    // 全局变量
+    let app = null;
+    let jwtToken = null;
+    let testResults = {
+      total: 0,
+      success: 0,
+      error: 0,
+      pending: 0,
+      modules: {}
+    };
+
+    // 测试数据存储（用于先写后读验证）
+    let testData = {
+      createdIds: {},
+      testUser: null,
+      testOrder: null,
+      testCourse: null,
+      testClassRecord: null
+    };
+
+    // 初始化 CloudBase
+    function initCloudBase() {
+      const envId = document.getElementById('envId').value;
+      app = window.cloudbase.init({
+        env: envId
+      });
+      log('info', `CloudBase 初始化成功: ${envId}`);
+    }
+
+    // 日志输出
+    function log(type, message) {
+      const logConsole = document.getElementById('logConsole');
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<span class="log-time">[${time}]</span>${message}`;
+      logConsole.appendChild(entry);
+      logConsole.scrollTop = logConsole.scrollHeight;
+      console.log(`[${type}] ${message}`);
+    }
+
+    // 更新统计数据
+    function updateStats() {
+      document.getElementById('totalCount').textContent = testResults.total;
+      document.getElementById('successCount').textContent = testResults.success;
+      document.getElementById('errorCount').textContent = testResults.error;
+      document.getElementById('pendingCount').textContent = testResults.pending;
+
+      const progress = testResults.total > 0 ?
+        ((testResults.success + testResults.error) / testResults.total * 100) : 0;
+      document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // 调用云函数
+    async function callCloudFunction(functionName, action, params = {}) {
+      try {
+        const requestData = {
+          action: action,
+          jwtToken: jwtToken,
+          ...params
+        };
+
+        log('info', `调用接口: ${functionName}.${action}`);
+
+        const result = await app.callFunction({
+          name: functionName,
+          data: requestData
+        });
+
+        if (result.result.success) {
+          log('success', `✓ ${functionName}.${action} 成功`);
+          return { success: true, data: result.result.data };
+        } else {
+          log('error', `✗ ${functionName}.${action} 失败: ${result.result.message}`);
+          return { success: false, error: result.result.message };
+        }
+      } catch (error) {
+        log('error', `✗ ${functionName}.${action} 异常: ${error.message}`);
+        return { success: false, error: error.message };
+      }
+    }
+
+    // 管理员登录
+    async function adminLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      log('info', '开始管理员登录...');
+
+      const result = await callCloudFunction('system', 'login', {
+        username: username,
+        password: password
+      });
+
+      if (result.success && result.data.token) {
+        jwtToken = result.data.token;
+        log('success', '✓ 管理员登录成功');
+        return true;
+      } else {
+        log('error', '✗ 管理员登录失败');
+        return false;
+      }
+    }
+
+    // 渲染测试结果
+    function renderResults() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      for (const [moduleName, moduleData] of Object.entries(testResults.modules)) {
+        const moduleDiv = document.createElement('div');
+        moduleDiv.className = 'module';
+
+        const successCount = moduleData.apis.filter(api => api.status === 'success').length;
+        const errorCount = moduleData.apis.filter(api => api.status === 'error').length;
+
+        moduleDiv.innerHTML = `
+          <div class="module-header" onclick="toggleModule('${moduleName}')">
+            <div class="module-title">${moduleData.title}</div>
+            <div class="module-stats">
+              <span class="module-stat total">总数: ${moduleData.apis.length}</span>
+              <span class="module-stat success">成功: ${successCount}</span>
+              <span class="module-stat error">失败: ${errorCount}</span>
+            </div>
+          </div>
+          <div class="api-list" id="module-${moduleName}">
+            ${moduleData.apis.map(api => renderApiItem(api)).join('')}
+          </div>
+        `;
+
+        resultsDiv.appendChild(moduleDiv);
+      }
+    }
+
+    // 渲染单个接口项
+    function renderApiItem(api) {
+      const statusClass = api.status || 'pending';
+      const statusText = {
+        'success': '✓ 通过',
+        'error': '✗ 失败',
+        'pending': '⏳ 待测试'
+      }[statusClass];
+
+      return `
+        <div class="api-item ${statusClass}">
+          <div class="api-header">
+            <div class="api-name">${api.name}</div>
+            <div class="api-status">
+              <span class="status-icon ${statusClass}"></span>
+              ${statusText}
+            </div>
+          </div>
+          <div class="api-info">
+            <strong>接口:</strong> ${api.function}.${api.action} |
+            <strong>类型:</strong> ${api.type}
+          </div>
+          ${api.time ? `<div class="api-time">耗时: ${api.time}ms</div>` : ''}
+          ${api.details ? `
+            <div class="api-details">
+              <pre>${JSON.stringify(api.details, null, 2)}</pre>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 切换模块显示
+    function toggleModule(moduleName) {
+      const moduleList = document.getElementById(`module-${moduleName}`);
+      moduleList.classList.toggle('show');
+    }
+
+    // 更新接口状态
+    function updateApiStatus(moduleName, apiName, status, details = null, time = null) {
+      const module = testResults.modules[moduleName];
+      if (!module) return;
+
+      const api = module.apis.find(a => a.name === apiName);
+      if (!api) return;
+
+      if (api.status === 'pending') {
+        testResults.pending--;
+      }
+
+      api.status = status;
+      api.details = details;
+      api.time = time;
+
+      if (status === 'success') {
+        testResults.success++;
+      } else if (status === 'error') {
+        testResults.error++;
+      }
+
+      updateStats();
+      renderResults();
+    }
+
+    // 定义所有测试接口（必须在 initTestResults 之前定义）
+    let testAPIs = {
+      system: {
+        title: '系统管理模块 (21个接口)',
+        apis: [
+          // 身份认证
+          { name: '管理员登录', function: 'system', action: 'login', type: '读操作', test: testSystemLogin },
+
+          // 系统配置
+          { name: '获取系统配置', function: 'system', action: 'getConfig', type: '读操作', test: testGetConfig },
+          { name: '更新系统配置', function: 'system', action: 'updateConfig', type: '写操作', test: testUpdateConfig },
+          { name: '获取统计数据', function: 'system', action: 'getStatistics', type: '读操作', test: testGetStatistics },
+
+          // 管理员管理
+          { name: '获取管理员列表', function: 'system', action: 'getAdminUserList', type: '读操作', test: testGetAdminUserList },
+          { name: '创建管理员', function: 'system', action: 'createAdminUser', type: '写操作', test: testCreateAdminUser },
+          { name: '更新管理员', function: 'system', action: 'updateAdminUser', type: '写操作', test: testUpdateAdminUser },
+          { name: '删除管理员', function: 'system', action: 'deleteAdminUser', type: '写操作', test: testDeleteAdminUser },
+
+          // 公告管理
+          { name: '获取公告列表', function: 'system', action: 'getAnnouncementList', type: '读操作', test: testGetAnnouncementList },
+          { name: '创建公告', function: 'system', action: 'createAnnouncement', type: '写操作', test: testCreateAnnouncement },
+          { name: '更新公告', function: 'system', action: 'updateAnnouncement', type: '写操作', test: testUpdateAnnouncement },
+          { name: '删除公告', function: 'system', action: 'deleteAnnouncement', type: '写操作', test: testDeleteAnnouncement },
+
+          // 反馈管理
+          { name: '获取反馈列表', function: 'system', action: 'getFeedbackList', type: '读操作', test: testGetFeedbackList },
+          { name: '回复反馈', function: 'system', action: 'replyFeedback', type: '写操作', test: testReplyFeedback },
+
+          // 通知管理
+          { name: '获取通知配置列表', function: 'system', action: 'getNotificationConfigList', type: '读操作', test: testGetNotificationConfigList },
+          { name: '创建通知配置', function: 'system', action: 'createNotificationConfig', type: '写操作', test: testCreateNotificationConfig },
+          { name: '更新通知配置', function: 'system', action: 'updateNotificationConfig', type: '写操作', test: testUpdateNotificationConfig },
+          { name: '获取通知日志', function: 'system', action: 'getNotificationLogs', type: '读操作', test: testGetNotificationLogs },
+
+          // 大使等级配置
+          { name: '获取大使等级配置', function: 'system', action: 'getAmbassadorLevelConfigs', type: '读操作', test: testGetAmbassadorLevelConfigs },
+          { name: '更新大使等级配置', function: 'system', action: 'updateAmbassadorLevelConfig', type: '写操作', test: testUpdateAmbassadorLevelConfig },
+          { name: '初始化大使等级配置', function: 'system', action: 'initAmbassadorLevelConfigs', type: '写操作', test: testInitAmbassadorLevelConfigs }
+        ]
+      },
+
+      user: {
+        title: '用户管理模块 (4个接口)',
+        apis: [
+          { name: '获取学员列表', function: 'user', action: 'getUserList', type: '读操作', test: testGetUserList },
+          { name: '获取学员详情', function: 'user', action: 'getUserDetail', type: '读操作', test: testGetUserDetail },
+          { name: '修改学员推荐人', function: 'user', action: 'updateUserReferee', type: '写操作', test: testUpdateUserReferee },
+          { name: '获取推荐人变更日志', function: 'user', action: 'getRefereeChangeLogs', type: '读操作', test: testGetRefereeChangeLogs }
+        ]
+      },
+
+      order: {
+        title: '订单管理模块 (6个接口)',
+        apis: [
+          { name: '获取订单列表', function: 'order', action: 'getOrderList', type: '读操作', test: testGetOrderList },
+          { name: '获取订单详情', function: 'order', action: 'getOrderDetail', type: '读操作', test: testGetOrderDetail },
+          { name: '获取退款列表', function: 'order', action: 'getRefundList', type: '读操作', test: testGetRefundList },
+          { name: '管理员退款', function: 'order', action: 'refund', type: '写操作', test: testRefund },
+          { name: '获取提现列表', function: 'order', action: 'getWithdrawList', type: '读操作', test: testGetWithdrawList },
+          { name: '审核提现申请', function: 'order', action: 'withdrawAudit', type: '写操作', test: testWithdrawAudit }
+        ]
+      },
+
+      course: {
+        title: '课程管理模块 (20个接口)',
+        apis: [
+          // 课程管理
+          { name: '获取课程列表', function: 'course', action: 'getCourseList', type: '读操作', test: testGetCourseList },
+          { name: '创建课程', function: 'course', action: 'createCourse', type: '写操作', test: testCreateCourse },
+          { name: '更新课程', function: 'course', action: 'updateCourse', type: '写操作', test: testUpdateCourse },
+          { name: '删除课程', function: 'course', action: 'deleteCourse', type: '写操作', test: testDeleteCourse },
+
+          // 上课排期
+          { name: '获取上课排期列表', function: 'course', action: 'getClassRecordList', type: '读操作', test: testGetClassRecordList },
+          { name: '创建上课排期', function: 'course', action: 'createClassRecord', type: '写操作', test: testCreateClassRecord },
+          { name: '更新上课排期', function: 'course', action: 'updateClassRecord', type: '写操作', test: testUpdateClassRecord },
+          { name: '删除上课排期', function: 'course', action: 'deleteClassRecord', type: '写操作', test: testDeleteClassRecord },
+
+          // 预约管理
+          { name: '获取预约列表', function: 'course', action: 'getAppointmentList', type: '读操作', test: testGetAppointmentList },
+          { name: '更新预约状态', function: 'course', action: 'updateAppointmentStatus', type: '写操作', test: testUpdateAppointmentStatus },
+          { name: '批量签到', function: 'course', action: 'batchCheckin', type: '写操作', test: testBatchCheckin },
+
+          // 案例管理
+          { name: '获取案例列表', function: 'course', action: 'getCaseList', type: '读操作', test: testGetCaseList },
+          { name: '创建案例', function: 'course', action: 'createCase', type: '写操作', test: testCreateCase },
+          { name: '更新案例', function: 'course', action: 'updateCase', type: '写操作', test: testUpdateCase },
+          { name: '删除案例', function: 'course', action: 'deleteCase', type: '写操作', test: testDeleteCase },
+
+          // 资料管理
+          { name: '获取资料列表', function: 'course', action: 'getMaterialList', type: '读操作', test: testGetMaterialList },
+          { name: '创建资料', function: 'course', action: 'createMaterial', type: '写操作', test: testCreateMaterial },
+          { name: '更新资料', function: 'course', action: 'updateMaterial', type: '写操作', test: testUpdateMaterial },
+          { name: '删除资料', function: 'course', action: 'deleteMaterial', type: '写操作', test: testDeleteMaterial },
+
+          // 商学院
+          { name: '管理商学院内容', function: 'course', action: 'manageAcademyContent', type: '写操作', test: testManageAcademyContent }
+        ]
+      },
+
+      ambassador: {
+        title: '大使管理模块 (15个接口)',
+        apis: [
+          // 大使管理
+          { name: '获取大使列表', function: 'ambassador', action: 'getAmbassadorList', type: '读操作', test: testGetAmbassadorList },
+          { name: '获取大使详情', function: 'ambassador', action: 'getAmbassadorDetail', type: '读操作', test: testGetAmbassadorDetail },
+
+          // 申请管理
+          { name: '获取大使申请列表', function: 'ambassador', action: 'getApplicationList', type: '读操作', test: testGetApplicationList },
+          { name: '审核大使申请', function: 'ambassador', action: 'auditApplication', type: '写操作', test: testAuditApplication },
+
+          // 活动管理
+          { name: '获取活动列表', function: 'ambassador', action: 'getActivityList', type: '读操作', test: testGetActivityList },
+          { name: '创建活动', function: 'ambassador', action: 'createActivity', type: '写操作', test: testCreateActivity },
+          { name: '更新活动', function: 'ambassador', action: 'updateActivity', type: '写操作', test: testUpdateActivity },
+          { name: '删除活动', function: 'ambassador', action: 'deleteActivity', type: '写操作', test: testDeleteActivity },
+
+          // 协议模板
+          { name: '获取协议模板列表', function: 'ambassador', action: 'getContractTemplateList', type: '读操作', test: testGetContractTemplateList },
+          { name: '创建协议模板', function: 'ambassador', action: 'createContractTemplate', type: '写操作', test: testCreateContractTemplate },
+          { name: '更新协议模板', function: 'ambassador', action: 'updateContractTemplate', type: '写操作', test: testUpdateContractTemplate },
+          { name: '删除协议模板', function: 'ambassador', action: 'deleteContractTemplate', type: '写操作', test: testDeleteContractTemplate },
+          { name: '获取协议版本历史', function: 'ambassador', action: 'getContractVersions', type: '读操作', test: testGetContractVersions },
+
+          // 签署管理
+          { name: '获取签署列表', function: 'ambassador', action: 'getSignatureList', type: '读操作', test: testGetSignatureList },
+          { name: '获取即将到期协议', function: 'ambassador', action: 'getExpiringContracts', type: '读操作', test: testGetExpiringContracts }
+        ]
+      }
+    };
+
+    // 初始化测试结果
+    function initTestResults() {
+      testResults = {
+        total: 0,
+        success: 0,
+        error: 0,
+        pending: 0,
+        modules: {}
+      };
+
+      for (const [moduleName, moduleData] of Object.entries(testAPIs)) {
+        testResults.modules[moduleName] = {
+          title: moduleData.title,
+          apis: moduleData.apis.map(api => ({
+            ...api,
+            status: 'pending'
+          }))
+        };
+        testResults.total += moduleData.apis.length;
+        testResults.pending += moduleData.apis.length;
+      }
+
+      updateStats();
+      renderResults();
+    }
+
+    // ==================== 测试函数实现 ====================
+
+    // System 模块测试函数
+    async function testSystemLogin() {
+      return await callCloudFunction('system', 'login', {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      });
+    }
+
+    async function testGetConfig() {
+      return await callCloudFunction('system', 'getConfig', {});
+    }
+
+    async function testUpdateConfig() {
+      return await callCloudFunction('system', 'updateConfig', {
+        key: 'test_config_' + Date.now(),
+        value: { test: true, timestamp: Date.now() }
+      });
+    }
+
+    async function testGetStatistics() {
+      return await callCloudFunction('system', 'getStatistics', {});
+    }
+
+    async function testGetAdminUserList() {
+      return await callCloudFunction('system', 'getAdminUserList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateAdminUser() {
+      const result = await callCloudFunction('system', 'createAdminUser', {
+        username: 'test_admin_' + Date.now(),
+        password: 'test123456',
+        real_name: '测试管理员',
+        role: 'operator',
+        permissions: ['user:view', 'order:view']
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.adminUser = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateAdminUser() {
+      if (!testData.createdIds.adminUser) {
+        return { success: false, error: '需要先创建管理员' };
+      }
+      return await callCloudFunction('system', 'updateAdminUser', {
+        id: testData.createdIds.adminUser,
+        real_name: '测试管理员(已更新)',
+        status: 1
+      });
+    }
+
+    async function testDeleteAdminUser() {
+      if (!testData.createdIds.adminUser) {
+        return { success: false, error: '需要先创建管理员' };
+      }
+      return await callCloudFunction('system', 'deleteAdminUser', {
+        id: testData.createdIds.adminUser
+      });
+    }
+
+    async function testGetAnnouncementList() {
+      return await callCloudFunction('system', 'getAnnouncementList', {
+        page: 1,
+        pageSize: 20
+      });
+    }
+
+    async function testCreateAnnouncement() {
+      const result = await callCloudFunction('system', 'createAnnouncement', {
+        title: '测试公告_' + Date.now(),
+        content: '这是一条测试公告内容',
+        summary: '测试公告摘要',
+        category: 'general',
+        target_type: 'all',
+        is_top: false,
+        is_popup: false,
+        sort_order: 0,
+        status: 1
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.announcement = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateAnnouncement() {
+      if (!testData.createdIds.announcement) {
+        return { success: false, error: '需要先创建公告' };
+      }
+      return await callCloudFunction('system', 'updateAnnouncement', {
+        id: testData.createdIds.announcement,
+        title: '测试公告(已更新)',
+        content: '更新后的公告内容'
+      });
+    }
+
+    async function testDeleteAnnouncement() {
+      if (!testData.createdIds.announcement) {
+        return { success: false, error: '需要先创建公告' };
+      }
+      return await callCloudFunction('system', 'deleteAnnouncement', {
+        id: testData.createdIds.announcement
+      });
+    }
+
+    async function testGetFeedbackList() {
+      return await callCloudFunction('system', 'getFeedbackList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testReplyFeedback() {
+      const listResult = await callCloudFunction('system', 'getFeedbackList', {
+        page: 1,
+        page_size: 1,
+        status: 0
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const feedbackId = listResult.data.list[0]._id;
+        return await callCloudFunction('system', 'replyFeedback', {
+          id: feedbackId,
+          reply: '感谢您的反馈，我们会尽快处理',
+          status: 1
+        });
+      }
+      return { success: true, data: { message: '暂无待回复的反馈' } };
+    }
+
+    async function testGetNotificationConfigList() {
+      return await callCloudFunction('system', 'getNotificationConfigList', {});
+    }
+
+    async function testCreateNotificationConfig() {
+      const result = await callCloudFunction('system', 'createNotificationConfig', {
+        name: '测试通知_' + Date.now(),
+        config_name: '测试通知配置',
+        config_code: 'test_notify_' + Date.now(),
+        trigger_type: 'manual',
+        template_id: 'test_template',
+        title: '测试通知标题',
+        content_template: '测试通知内容',
+        page_path: '/pages/index/index'
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.notificationConfig = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateNotificationConfig() {
+      if (!testData.createdIds.notificationConfig) {
+        return { success: false, error: '需要先创建通知配置' };
+      }
+      return await callCloudFunction('system', 'updateNotificationConfig', {
+        id: testData.createdIds.notificationConfig,
+        name: '测试通知(已更新)',
+        status: 1
+      });
+    }
+
+    async function testGetNotificationLogs() {
+      return await callCloudFunction('system', 'getNotificationLogs', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testGetAmbassadorLevelConfigs() {
+      return await callCloudFunction('system', 'getAmbassadorLevelConfigs', {});
+    }
+
+    async function testUpdateAmbassadorLevelConfig() {
+      return await callCloudFunction('system', 'updateAmbassadorLevelConfig', {
+        level: 1,
+        level_name: '初级大使(测试)',
+        upgrade_type: 'auto',
+        upgrade_conditions: { direct_students: 3 },
+        benefits: { commission_rate: 0.1 },
+        description: '测试更新'
+      });
+    }
+
+    async function testInitAmbassadorLevelConfigs() {
+      return await callCloudFunction('system', 'initAmbassadorLevelConfigs', {});
+    }
+
+    // User 模块测试函数
+    async function testGetUserList() {
+      return await callCloudFunction('user', 'getUserList', {
+        page: 1,
+        pageSize: 20
+      });
+    }
+
+    async function testGetUserDetail() {
+      const listResult = await callCloudFunction('user', 'getUserList', {
+        page: 1,
+        pageSize: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const userId = listResult.data.list[0]._id;
+        return await callCloudFunction('user', 'getUserDetail', {
+          userId: userId
+        });
+      }
+      return { success: true, data: { message: '暂无用户数据' } };
+    }
+
+    async function testUpdateUserReferee() {
+      const listResult = await callCloudFunction('user', 'getUserList', {
+        page: 1,
+        pageSize: 2
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length >= 2) {
+        const userId = listResult.data.list[0]._id;
+        const newRefereeId = listResult.data.list[1]._id;
+        return await callCloudFunction('user', 'updateUserReferee', {
+          userId: userId,
+          newRefereeId: newRefereeId,
+          remark: '测试修改推荐人'
+        });
+      }
+      return { success: true, data: { message: '用户数据不足' } };
+    }
+
+    async function testGetRefereeChangeLogs() {
+      const listResult = await callCloudFunction('user', 'getUserList', {
+        page: 1,
+        pageSize: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const userId = listResult.data.list[0]._id;
+        return await callCloudFunction('user', 'getRefereeChangeLogs', {
+          userId: userId,
+          page: 1,
+          pageSize: 20
+        });
+      }
+      return { success: true, data: { message: '暂无用户数据' } };
+    }
+
+    // Order 模块测试函数
+    async function testGetOrderList() {
+      return await callCloudFunction('order', 'getOrderList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testGetOrderDetail() {
+      const listResult = await callCloudFunction('order', 'getOrderList', {
+        page: 1,
+        page_size: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const orderNo = listResult.data.list[0].order_no;
+        return await callCloudFunction('order', 'getOrderDetail', {
+          order_no: orderNo
+        });
+      }
+      return { success: true, data: { message: '暂无订单数据' } };
+    }
+
+    async function testGetRefundList() {
+      return await callCloudFunction('order', 'getRefundList', {
+        page: 1,
+        pageSize: 20
+      });
+    }
+
+    async function testRefund() {
+      const listResult = await callCloudFunction('order', 'getOrderList', {
+        page: 1,
+        page_size: 1,
+        pay_status: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const orderNo = listResult.data.list[0].order_no;
+        return await callCloudFunction('order', 'refund', {
+          order_no: orderNo,
+          refund_reason: '测试退款'
+        });
+      }
+      return { success: true, data: { message: '暂无可退款订单' } };
+    }
+
+    async function testGetWithdrawList() {
+      return await callCloudFunction('order', 'getWithdrawList', {
+        page: 1,
+        pageSize: 20
+      });
+    }
+
+    async function testWithdrawAudit() {
+      const listResult = await callCloudFunction('order', 'getWithdrawList', {
+        page: 1,
+        pageSize: 1,
+        status: 0
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const withdrawalId = listResult.data.list[0]._id;
+        return await callCloudFunction('order', 'withdrawAudit', {
+          withdrawal_id: withdrawalId,
+          status: 1
+        });
+      }
+      return { success: true, data: { message: '暂无待审核提现' } };
+    }
+
+    // Course 模块测试函数
+    async function testGetCourseList() {
+      return await callCloudFunction('course', 'getCourseList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateCourse() {
+      const result = await callCloudFunction('course', 'createCourse', {
+        name: '测试课程_' + Date.now(),
+        type: 1,
+        cover_image: 'https://example.com/cover.jpg',
+        description: '这是一个测试课程',
+        content: '测试课程详细内容',
+        outline: '课程大纲',
+        teacher: '测试老师',
+        duration: 3,
+        current_price: 9800,
+        original_price: 12800,
+        retrain_price: 3800,
+        allow_retrain: true,
+        sort_order: 0,
+        status: 1
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.course = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateCourse() {
+      if (!testData.createdIds.course) {
+        return { success: false, error: '需要先创建课程' };
+      }
+      return await callCloudFunction('course', 'updateCourse', {
+        id: testData.createdIds.course,
+        name: '测试课程(已更新)',
+        current_price: 8800
+      });
+    }
+
+    async function testDeleteCourse() {
+      if (!testData.createdIds.course) {
+        return { success: false, error: '需要先创建课程' };
+      }
+      return await callCloudFunction('course', 'deleteCourse', {
+        id: testData.createdIds.course
+      });
+    }
+
+    async function testGetClassRecordList() {
+      return await callCloudFunction('course', 'getClassRecordList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateClassRecord() {
+      const courseResult = await callCloudFunction('course', 'getCourseList', {
+        page: 1,
+        page_size: 1
+      });
+
+      if (courseResult.success && courseResult.data && courseResult.data.list && courseResult.data.list.length > 0) {
+        const courseId = courseResult.data.list[0]._id;
+        const result = await callCloudFunction('course', 'createClassRecord', {
+          course_id: courseId,
+          class_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          class_time: '09:00-17:00',
+          class_location: '测试地点',
+          teacher: '测试老师',
+          total_quota: 30,
+          remark: '测试排期',
+          status: 1
+        });
+        if (result.success && result.data && result.data.id) {
+          testData.createdIds.classRecord = result.data.id;
+        }
+        return result;
+      }
+      return { success: true, data: { message: '暂无课程数据' } };
+    }
+
+    async function testUpdateClassRecord() {
+      if (!testData.createdIds.classRecord) {
+        return { success: false, error: '需要先创建上课排期' };
+      }
+      return await callCloudFunction('course', 'updateClassRecord', {
+        id: testData.createdIds.classRecord,
+        total_quota: 40,
+        notes: '已更新配额'
+      });
+    }
+
+    async function testDeleteClassRecord() {
+      if (!testData.createdIds.classRecord) {
+        return { success: false, error: '需要先创建上课排期' };
+      }
+      return await callCloudFunction('course', 'deleteClassRecord', {
+        id: testData.createdIds.classRecord
+      });
+    }
+
+    async function testGetAppointmentList() {
+      return await callCloudFunction('course', 'getAppointmentList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testUpdateAppointmentStatus() {
+      const listResult = await callCloudFunction('course', 'getAppointmentList', {
+        page: 1,
+        page_size: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const appointmentId = listResult.data.list[0]._id;
+        return await callCloudFunction('course', 'updateAppointmentStatus', {
+          id: appointmentId,
+          status: 2,
+          notes: '测试签到'
+        });
+      }
+      return { success: true, data: { message: '暂无预约数据' } };
+    }
+
+    async function testBatchCheckin() {
+      const listResult = await callCloudFunction('course', 'getAppointmentList', {
+        page: 1,
+        page_size: 5
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const classRecordId = listResult.data.list[0].class_record_id;
+        const userIds = listResult.data.list.map(item => item.user_id);
+        return await callCloudFunction('course', 'batchCheckin', {
+          class_record_id: classRecordId,
+          user_ids: userIds
+        });
+      }
+      return { success: true, data: { message: '暂无预约数据' } };
+    }
+
+    async function testGetCaseList() {
+      return await callCloudFunction('course', 'getCaseList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateCase() {
+      const result = await callCloudFunction('course', 'createCase', {
+        title: '测试案例_' + Date.now(),
+        category: 'business',
+        student_name: '张三',
+        student_avatar: 'https://example.com/avatar.jpg',
+        student_title: '企业家',
+        summary: '测试案例摘要',
+        content: '测试案例详细内容',
+        quote: '这是一段引用',
+        achievements: ['成就1', '成就2'],
+        images: ['https://example.com/img1.jpg'],
+        sort_order: 0,
+        is_featured: false,
+        status: 1
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.case = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateCase() {
+      if (!testData.createdIds.case) {
+        return { success: false, error: '需要先创建案例' };
+      }
+      return await callCloudFunction('course', 'updateCase', {
+        id: testData.createdIds.case,
+        title: '测试案例(已更新)',
+        is_featured: true
+      });
+    }
+
+    async function testDeleteCase() {
+      if (!testData.createdIds.case) {
+        return { success: false, error: '需要先创建案例' };
+      }
+      return await callCloudFunction('course', 'deleteCase', {
+        id: testData.createdIds.case
+      });
+    }
+
+    async function testGetMaterialList() {
+      return await callCloudFunction('course', 'getMaterialList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateMaterial() {
+      const result = await callCloudFunction('course', 'createMaterial', {
+        title: '测试资料_' + Date.now(),
+        category: 'document',
+        image_url: 'https://example.com/material.jpg',
+        content: '测试资料内容',
+        tags: ['测试', '资料'],
+        sort_order: 0,
+        status: 1
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.material = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateMaterial() {
+      if (!testData.createdIds.material) {
+        return { success: false, error: '需要先创建资料' };
+      }
+      return await callCloudFunction('course', 'updateMaterial', {
+        id: testData.createdIds.material,
+        title: '测试资料(已更新)'
+      });
+    }
+
+    async function testDeleteMaterial() {
+      if (!testData.createdIds.material) {
+        return { success: false, error: '需要先创建资料' };
+      }
+      return await callCloudFunction('course', 'deleteMaterial', {
+        id: testData.createdIds.material
+      });
+    }
+
+    async function testManageAcademyContent() {
+      return await callCloudFunction('course', 'manageAcademyContent', {
+        operation: 'create',
+        title: '测试商学院内容_' + Date.now(),
+        cover_image: 'https://example.com/academy.jpg',
+        summary: '测试摘要',
+        content: '测试内容',
+        sort_order: 0,
+        status: 1
+      });
+    }
+
+    // Ambassador 模块测试函数
+    async function testGetAmbassadorList() {
+      return await callCloudFunction('ambassador', 'getAmbassadorList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testGetAmbassadorDetail() {
+      const listResult = await callCloudFunction('ambassador', 'getAmbassadorList', {
+        page: 1,
+        page_size: 1
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const userId = listResult.data.list[0].user_id || listResult.data.list[0]._id;
+        return await callCloudFunction('ambassador', 'getAmbassadorDetail', {
+          user_id: userId
+        });
+      }
+      return { success: true, data: { message: '暂无大使数据' } };
+    }
+
+    async function testGetApplicationList() {
+      return await callCloudFunction('ambassador', 'getApplicationList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testAuditApplication() {
+      const listResult = await callCloudFunction('ambassador', 'getApplicationList', {
+        page: 1,
+        page_size: 1,
+        status: 0
+      });
+
+      if (listResult.success && listResult.data && listResult.data.list && listResult.data.list.length > 0) {
+        const applicationId = listResult.data.list[0]._id;
+        return await callCloudFunction('ambassador', 'auditApplication', {
+          application_id: applicationId,
+          approved: true
+        });
+      }
+      return { success: true, data: { message: '暂无待审核申请' } };
+    }
+
+    async function testGetActivityList() {
+      return await callCloudFunction('ambassador', 'getActivityList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateActivity() {
+      const result = await callCloudFunction('ambassador', 'createActivity', {
+        title: '测试活动_' + Date.now(),
+        description: '测试活动描述',
+        activity_type: 'promotion',
+        start_time: new Date().toISOString(),
+        end_time: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        target_level: [1, 2, 3],
+        reward_config: { bonus: 1000 },
+        status: 1
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.activity = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateActivity() {
+      if (!testData.createdIds.activity) {
+        return { success: false, error: '需要先创建活动' };
+      }
+      return await callCloudFunction('ambassador', 'updateActivity', {
+        activity_id: testData.createdIds.activity,
+        title: '测试活动(已更新)',
+        status: 1
+      });
+    }
+
+    async function testDeleteActivity() {
+      if (!testData.createdIds.activity) {
+        return { success: false, error: '需要先创建活动' };
+      }
+      return await callCloudFunction('ambassador', 'deleteActivity', {
+        activity_id: testData.createdIds.activity
+      });
+    }
+
+    async function testGetContractTemplateList() {
+      return await callCloudFunction('ambassador', 'getContractTemplateList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testCreateContractTemplate() {
+      const result = await callCloudFunction('ambassador', 'createContractTemplate', {
+        title: '测试协议模板_' + Date.now(),
+        content: '测试协议内容',
+        level: 1,
+        version: '1.0',
+        effective_date: new Date().toISOString().split('T')[0],
+        expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
+      if (result.success && result.data && result.data.id) {
+        testData.createdIds.contractTemplate = result.data.id;
+      }
+      return result;
+    }
+
+    async function testUpdateContractTemplate() {
+      if (!testData.createdIds.contractTemplate) {
+        return { success: false, error: '需要先创建协议模板' };
+      }
+      return await callCloudFunction('ambassador', 'updateContractTemplate', {
+        template_id: testData.createdIds.contractTemplate,
+        title: '测试协议模板(已更新)',
+        status: 1
+      });
+    }
+
+    async function testDeleteContractTemplate() {
+      if (!testData.createdIds.contractTemplate) {
+        return { success: false, error: '需要先创建协议模板' };
+      }
+      return await callCloudFunction('ambassador', 'deleteContractTemplate', {
+        template_id: testData.createdIds.contractTemplate
+      });
+    }
+
+    async function testGetContractVersions() {
+      return await callCloudFunction('ambassador', 'getContractVersions', {
+        level: 1
+      });
+    }
+
+    async function testGetSignatureList() {
+      return await callCloudFunction('ambassador', 'getSignatureList', {
+        page: 1,
+        page_size: 20
+      });
+    }
+
+    async function testGetExpiringContracts() {
+      return await callCloudFunction('ambassador', 'getExpiringContracts', {
+        days: 30
+      });
+    }
+
+    // ==================== 主测试流程 ====================
+
+    // 执行单个接口测试
+    async function runApiTest(moduleName, api) {
+      const startTime = Date.now();
+
+      try {
+        const result = await api.test();
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        if (result.success) {
+          updateApiStatus(moduleName, api.name, 'success', result.data, duration);
+        } else {
+          updateApiStatus(moduleName, api.name, 'error', { error: result.error }, duration);
+        }
+      } catch (error) {
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        updateApiStatus(moduleName, api.name, 'error', { error: error.message }, duration);
+      }
+    }
+
+    // 开始全量测试
+    async function startTest() {
+      log('info', '========== 开始全量测试 ==========');
+
+      // 初始化
+      initCloudBase();
+      initTestResults();
+
+      // 登录
+      const loginSuccess = await adminLogin();
+      if (!loginSuccess) {
+        log('error', '登录失败，测试终止');
+        return;
+      }
+
+      // 按模块顺序测试
+      for (const [moduleName, moduleData] of Object.entries(testAPIs)) {
+        log('info', `\n开始测试模块: ${moduleData.title}`);
+
+        for (const api of moduleData.apis) {
+          // 写操作需要先执行对应的创建操作
+          if (api.type === '写操作' && api.action.includes('update')) {
+            // 更新操作依赖创建操作
+            const createApi = moduleData.apis.find(a =>
+              a.action.includes('create') &&
+              a.action.replace('create', '') === api.action.replace('update', '')
+            );
+            if (createApi && !testData.createdIds[createApi.action]) {
+              log('info', `先执行创建操作: ${createApi.name}`);
+              await runApiTest(moduleName, createApi);
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          if (api.type === '写操作' && api.action.includes('delete')) {
+            // 删除操作依赖创建操作
+            const createApi = moduleData.apis.find(a =>
+              a.action.includes('create') &&
+              a.action.replace('create', '') === api.action.replace('delete', '')
+            );
+            if (createApi && !testData.createdIds[createApi.action]) {
+              log('info', `先执行创建操作: ${createApi.name}`);
+              await runApiTest(moduleName, createApi);
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          await runApiTest(moduleName, api);
+
+          // 延迟避免请求过快
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+
+      log('success', '\n========== 测试完成 ==========');
+      log('info', `总计: ${testResults.total} | 成功: ${testResults.success} | 失败: ${testResults.error}`);
+    }
+
+    // 仅测试读接口
+    async function testReadOnly() {
+      log('info', '========== 开始测试读接口 ==========');
+
+      initCloudBase();
+      initTestResults();
+
+      const loginSuccess = await adminLogin();
+      if (!loginSuccess) {
+        log('error', '登录失败，测试终止');
+        return;
+      }
+
+      for (const [moduleName, moduleData] of Object.entries(testAPIs)) {
+        log('info', `\n开始测试模块: ${moduleData.title}`);
+
+        for (const api of moduleData.apis) {
+          if (api.type === '读操作') {
+            await runApiTest(moduleName, api);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } else {
+            // 跳过写操作
+            updateApiStatus(moduleName, api.name, 'pending', { message: '跳过写操作' });
+          }
+        }
+      }
+
+      log('success', '\n========== 读接口测试完成 ==========');
+      log('info', `总计: ${testResults.total} | 成功: ${testResults.success} | 跳过: ${testResults.pending}`);
+    }
+
+    // 清空结果
+    function clearResults() {
+      testResults = {
+        total: 0,
+        success: 0,
+        error: 0,
+        pending: 0,
+        modules: {}
+      };
+      testData = {
+        createdIds: {},
+        testUser: null,
+        testOrder: null,
+        testCourse: null,
+        testClassRecord: null
+      };
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('logConsole').innerHTML = '';
+      updateStats();
+      log('info', '已清空测试结果');
+    }
+
+    // 导出报告
+    function exportReport() {
+      const report = {
+        timestamp: new Date().toISOString(),
+        summary: {
+          total: testResults.total,
+          success: testResults.success,
+          error: testResults.error,
+          pending: testResults.pending,
+          successRate: ((testResults.success / testResults.total) * 100).toFixed(2) + '%'
+        },
+        modules: {}
+      };
+
+      for (const [moduleName, moduleData] of Object.entries(testResults.modules)) {
+        report.modules[moduleName] = {
+          title: moduleData.title,
+          apis: moduleData.apis.map(api => ({
+            name: api.name,
+            function: api.function,
+            action: api.action,
+            type: api.type,
+            status: api.status,
+            time: api.time,
+            details: api.details
+          }))
+        };
+      }
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `api-test-report-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      log('success', '测试报告已导出');
+    }
+
+    // 页面加载完成后初始化
+    window.onload = function() {
+      try {
+        log('info', '测试工具已就绪');
+        log('info', '请配置环境ID和管理员账号，然后点击"开始全量测试"按钮');
+
+        // 检查 CloudBase SDK
+        if (typeof cloudbase === 'undefined') {
+          log('error', 'CloudBase SDK 加载失败，请检查网络连接');
+        } else {
+          log('success', 'CloudBase SDK 加载成功');
+        }
+      } catch (error) {
+        console.error('初始化错误:', error);
+        alert('页面初始化失败: ' + error.message);
+      }
+    };
+  </script>
+</body>
+</html>

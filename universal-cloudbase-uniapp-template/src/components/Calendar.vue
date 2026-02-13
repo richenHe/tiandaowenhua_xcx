@@ -215,9 +215,9 @@ const selectDate = (date) => {
       
       .date-price {
         font-size: 22rpx;
-        color: #0052d9;
+        color: #999;
         text-align: center;
-        font-weight: 500;
+        font-weight: 400;
         height: 28rpx;
         line-height: 28rpx;
       }

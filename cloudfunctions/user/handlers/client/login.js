@@ -1,166 +1,172 @@
 /**
  * 客户端接口：微信登录/注册
  * Action: client:login
+ * 
+ * 认证策略：
+ * - _openid 字段：存储 CloudBase uid（用于用户识别和权限验证）
+ * - openid 字段：存储真实微信 openid（用于微信支付等微信 API）
+ * - 通过 code2session 换取真实微信 openid
  */
-const cloud = require('wx-server-sdk');
-const { findOne, insert, query } = require('../../common/db');
+const { findOne, insert, update, query } = require('../../common/db');
 const { response } = require('../../common');
 
-// 初始化 wx-server-sdk
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-
 module.exports = async (event, context) => {
+  const { OPENID: cloudbaseUid } = context; // CloudBase uid，用于用户识别
   const { code, scene } = event;
-  let OPENID = null;
+  let wxOpenid = null; // 真实的微信 openid
 
   try {
     console.log('[login] ========== 登录请求开始 ==========');
+    console.log('[login] CloudBase uid:', cloudbaseUid?.slice(-6) || 'undefined');
     console.log('[login] 接收到的参数:', {
       scene: scene || 'none',
       code: code ? `存在（后6位:${code?.slice(-6)}）` : 'none'
     });
 
-    // ⚠️ 关键步骤：通过 code 换取真实的微信 openid
+    // ========== 步骤1：通过 code 换取真实的微信 openid ==========
     if (code) {
       console.log('[login] 步骤1：使用 code 换取真实的微信 openid...');
       
       try {
-        // 调用微信官方 API auth.code2Session 换取 openid
-        // 需要 AppID 和 AppSecret
         const APPID = process.env.WECHAT_APPID;
         const APP_SECRET = process.env.WECHAT_APP_SECRET;
         
         console.log('[login] 使用 AppID:', APPID);
         
         if (!APPID || !APP_SECRET) {
-          throw new Error('未配置微信 AppID 或 AppSecret 环境变量');
-        }
-        
-        // 构造请求 URL
-        const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${APPID}&secret=${APP_SECRET}&js_code=${code}&grant_type=authorization_code`;
-        
-        console.log('[login] 调用微信 API: jscode2session');
-        
-        // 使用 cloud.getWXContext() 获取 openid（如果在云函数环境中）
-        // 或者使用 HTTP 请求调用微信 API
-        const https = require('https');
-        const result = await new Promise((resolve, reject) => {
-          https.get(url, (res) => {
-            let data = '';
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-            res.on('end', () => {
-              try {
-                resolve(JSON.parse(data));
-              } catch (e) {
-                reject(e);
-              }
-            });
-          }).on('error', (err) => {
-            reject(err);
-          });
-        });
-        
-        console.log('[login] 微信 API 返回:', {
-          errcode: result.errcode || 0,
-          errmsg: result.errmsg || 'ok',
-          openid_last6: result.openid?.slice(-6) || 'undefined',
-          session_key_exists: !!result.session_key
-        });
-        
-        if (result.openid) {
-          OPENID = result.openid;
-          console.log('[login] ✅ 成功获取真实的微信 openid');
-          console.log('[login] openid 详情:', {
-            full: OPENID,
-            last6: OPENID.slice(-6),
-            length: OPENID.length,
-            type: typeof OPENID
-          });
+          console.error('[login] ⚠️ 未配置微信 AppID 或 AppSecret 环境变量');
         } else {
-          console.error('[login] ❌ 换取 openid 失败:', result);
-          throw new Error(`获取 openid 失败: ${result.errmsg || '未知错误'} (errcode: ${result.errcode})`);
+          const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${APPID}&secret=${APP_SECRET}&js_code=${code}&grant_type=authorization_code`;
+          
+          console.log('[login] 调用微信 API: jscode2session');
+          
+          const https = require('https');
+          const result = await new Promise((resolve, reject) => {
+            https.get(url, (res) => {
+              let data = '';
+              res.on('data', (chunk) => { data += chunk; });
+              res.on('end', () => {
+                try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+              });
+            }).on('error', (err) => { reject(err); });
+          });
+          
+          console.log('[login] 微信 API 返回:', {
+            errcode: result.errcode || 0,
+            errmsg: result.errmsg || 'ok',
+            openid_last6: result.openid?.slice(-6) || 'undefined',
+            session_key_exists: !!result.session_key
+          });
+          
+          if (result.openid) {
+            wxOpenid = result.openid;
+            console.log('[login] ✅ 成功获取真实的微信 openid:', wxOpenid.slice(-6));
+          } else {
+            console.error('[login] ⚠️ 换取 openid 失败:', result.errmsg || '未知错误');
+          }
         }
       } catch (apiError) {
-        console.error('[login] ❌ 调用微信 API 失败:', apiError);
-        throw new Error(`调用微信 API 失败: ${apiError.message}`);
+        console.error('[login] ⚠️ 调用微信 API 失败:', apiError.message);
+        // 不抛出错误，继续流程（openid 可后续补充）
       }
     } else {
-      console.error('[login] ❌ 缺少 code 参数');
-      throw new Error('缺少微信登录凭证 code');
+      console.log('[login] ⚠️ 未传入 code，跳过微信 openid 获取');
     }
+
+    // ========== 步骤2：查询用户是否已存在 ==========
+    console.log('[login] 步骤2：查询数据库，检查用户是否已存在');
     
-    // 安全检查：确保 openid 有效
-    if (!OPENID || OPENID.length === 0) {
-      console.error('[login] ❌ 严重错误：openid 无效或为空');
-      throw new Error('未能获取有效的用户身份信息');
+    // 主要用户标识：CloudBase uid
+    if (!cloudbaseUid) {
+      console.error('[login] ❌ 严重错误：未获取到 CloudBase uid');
+      throw new Error('未能获取用户身份信息，请重新登录');
     }
+
+    // 策略1：用 CloudBase uid 查找（正常情况）
+    let existingUser = await findOne('users', { _openid: cloudbaseUid });
+    console.log('[login] 查找 _openid =', cloudbaseUid?.slice(-6), '结果:', existingUser ? `找到 id=${existingUser.id}` : '未找到');
     
-    console.log('[login] ✅ openid 验证通过，这是真实的微信 openid');
+    // 策略2：如果没找到，尝试用真实微信 openid 查找（处理之前的数据迁移）
+    if (!existingUser && wxOpenid) {
+      existingUser = await findOne('users', { _openid: wxOpenid });
+      if (existingUser) {
+        console.log('[login] ⚠️ 通过微信 openid 找到用户（数据迁移场景），id:', existingUser.id);
+        // 迁移：将 _openid 更新为 CloudBase uid
+        console.log('[login] 执行数据迁移：_openid 从微信openid 更新为 CloudBase uid');
+        await update('users', { _openid: cloudbaseUid }, { id: existingUser.id });
+        existingUser._openid = cloudbaseUid;
+        console.log('[login] ✅ _openid 迁移完成');
+      }
+    }
 
-    // 1. 查询用户是否已存在
-    console.log('[login] 步骤1：查询数据库，检查用户是否已存在');
-    console.log('[login] 查询条件: { _openid:', OPENID?.slice(-6), '}');
-    const existingUser = await findOne('users', { _openid: OPENID });
-
-    // 2. 如果用户已存在，直接返回用户信息
+    // ========== 步骤3：已存在用户 - 更新并返回 ==========
     if (existingUser) {
-      console.log('[login] ✅ 用户已存在');
+      console.log('[login] ✅ 用户已存在, id:', existingUser.id);
+      
+      // 如果获取到了真实微信 openid 且数据库中还没有或不一致，更新之
+      const needUpdateOpenid = wxOpenid && existingUser.openid !== wxOpenid;
+      const needUpdateId = existingUser._openid !== cloudbaseUid;
+      
+      if (needUpdateOpenid || needUpdateId) {
+        const updateData = {};
+        if (needUpdateOpenid) {
+          updateData.openid = wxOpenid;
+          console.log('[login] 更新真实微信 openid:', wxOpenid?.slice(-6));
+        }
+        if (needUpdateId) {
+          updateData._openid = cloudbaseUid;
+          console.log('[login] 更新 _openid 为 CloudBase uid:', cloudbaseUid?.slice(-6));
+        }
+        
+        await update('users', updateData, { id: existingUser.id });
+        if (needUpdateOpenid) existingUser.openid = wxOpenid;
+        if (needUpdateId) existingUser._openid = cloudbaseUid;
+        console.log('[login] ✅ 用户信息更新完成');
+      }
+      
       console.log('[login] 用户信息:', {
         id: existingUser.id,
         uid: existingUser.uid,
-        openid_last6: existingUser.openid?.slice(-6),
         _openid_last6: existingUser._openid?.slice(-6),
-        openid_match: existingUser.openid === OPENID,
-        _openid_match: existingUser._openid === OPENID,
+        openid_last6: existingUser.openid?.slice(-6),
+        has_real_wx_openid: !!wxOpenid,
         profile_completed: existingUser.profile_completed
       });
       console.log('[login] ========== 登录成功（已存在用户）==========');
       return response.success(existingUser, '登录成功');
     }
 
-    // 3. 新用户注册流程
+    // ========== 步骤4：新用户注册 ==========
     console.log('[login] ========== 新用户注册流程 ==========');
-    console.log('[login] 步骤2：用户不存在，开始注册流程');
 
-    // 生成唯一6位推荐码（注意：使用 referee_code 字段）
-    console.log('[login] 步骤3：生成唯一推荐码');
+    // 生成唯一6位推荐码
     const refereeCode = await generateUniqueRefereeCode();
-    console.log('[login] 推荐码生成成功:', refereeCode);
+    console.log('[login] 推荐码:', refereeCode);
 
-    // 解析 scene 参数获取推荐人
+    // 解析推荐人
     let refereeId = null;
     let refereeUid = null;
     if (scene) {
-      console.log('[login] 步骤4：解析推荐人信息 (scene:', scene, ')');
+      console.log('[login] 解析推荐人 (scene:', scene, ')');
       const refereeUser = await findOne('users', { referee_code: scene });
       if (refereeUser) {
         refereeId = refereeUser.id;
         refereeUid = refereeUser.uid;
-        console.log('[login] ✅ 找到推荐人:', {
-          id: refereeId,
-          uid: refereeUid,
-          referee_code: scene
-        });
+        console.log('[login] ✅ 找到推荐人, id:', refereeId);
       } else {
-        console.log('[login] ⚠️ 未找到对应的推荐人，scene:', scene);
+        console.log('[login] ⚠️ 未找到推荐人');
       }
-    } else {
-      console.log('[login] 步骤4：无推荐人（scene 为空）');
     }
 
     // 生成用户 UID
-    console.log('[login] 步骤5：生成用户 UID');
     const uid = generateUID();
-    console.log('[login] UID 生成成功:', uid);
+    console.log('[login] UID:', uid);
 
-    // 创建新用户（需要手动设置 _openid 和 openid）
-    console.log('[login] 步骤6：准备写入数据库');
+    // 创建新用户
     const newUserData = {
       uid,
-      _openid: OPENID,  // ✅ CloudBase 标准字段（用于权限控制）
-      openid: OPENID,   // ✅ 业务字段（用于微信支付等）
+      _openid: cloudbaseUid,           // CloudBase uid（用于用户识别）
+      openid: wxOpenid || cloudbaseUid, // 真实微信 openid（用于微信支付），未获取到则暂存 CloudBase uid
       referee_code: refereeCode,
       referee_id: refereeId,
       referee_uid: refereeUid,
@@ -169,52 +175,34 @@ module.exports = async (event, context) => {
     
     console.log('[login] 新用户数据:', {
       uid,
-      openid_last6: OPENID?.slice(-6),
-      _openid_last6: OPENID?.slice(-6),
-      openid_full_length: OPENID?.length,
+      _openid_last6: cloudbaseUid?.slice(-6),
+      openid_last6: (wxOpenid || cloudbaseUid)?.slice(-6),
+      has_real_wx_openid: !!wxOpenid,
       referee_code: refereeCode,
-      referee_id: refereeId || 'none',
-      referee_uid: refereeUid || 'none',
-      profile_completed: 0
+      referee_id: refereeId || 'none'
     });
-    
-    console.log('[login] ⚠️ 重要：openid 和 _openid 都使用真实的微信 openid');
-    console.log('[login] ⚠️ openid 字段将用于微信支付 API');
 
-    console.log('[login] 步骤7：执行数据库插入');
-    const result = await insert('users', newUserData);
-    console.log('[login] ✅ 数据库插入成功，插入结果:', result);
+    await insert('users', newUserData);
+    console.log('[login] ✅ 数据库插入成功');
 
-    // 查询新创建的用户信息
-    console.log('[login] 步骤8：查询新创建的用户信息');
+    // 查询新创建的用户
     const newUser = await findOne('users', { uid });
     
     if (!newUser) {
-      console.error('[login] ❌ 严重错误：用户创建后查询失败');
+      console.error('[login] ❌ 用户创建后查询失败');
       throw new Error('用户创建成功但查询失败');
     }
 
-    console.log('[login] ✅ 新用户注册成功');
-    console.log('[login] 用户信息:', {
-      id: newUser.id,
-      uid: newUser.uid,
-      openid_last6: newUser.openid?.slice(-6),
-      _openid_last6: newUser._openid?.slice(-6),
-      openid_match: newUser.openid === OPENID,
-      _openid_match: newUser._openid === OPENID,
-      referee_code: newUser.referee_code,
-      profile_completed: newUser.profile_completed
-    });
+    console.log('[login] ✅ 新用户注册成功, id:', newUser.id);
     console.log('[login] ========== 注册成功 ==========');
     return response.success(newUser, '注册成功');
 
   } catch (error) {
     console.error('[login] ========== 登录失败 ==========');
-    console.error('[login] 错误类型:', error.name);
-    console.error('[login] 错误消息:', error.message);
-    console.error('[login] 错误堆栈:', error.stack);
-    console.error('[login] 接收到的 openid:', OPENID?.slice(-6) || 'undefined');
-    console.error('[login] =====================================');
+    console.error('[login] 错误:', error.message);
+    console.error('[login] CloudBase uid:', cloudbaseUid?.slice(-6) || 'undefined');
+    console.error('[login] 微信 openid:', wxOpenid?.slice(-6) || 'undefined');
+    console.error('[login] =============================');
     return response.error('登录失败', error);
   }
 };
@@ -223,20 +211,16 @@ module.exports = async (event, context) => {
  * 生成唯一的6位推荐码
  */
 async function generateUniqueRefereeCode() {
-  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去除易混淆字符
+  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   let isUnique = false;
 
   while (!isUnique) {
-    // 生成6位随机码
     code = '';
     for (let i = 0; i < 6; i++) {
       code += characters.charAt(Math.floor(Math.random() * characters.length));
     }
-
-    // 检查是否已存在（注意：使用 referee_code 字段）
     const existing = await findOne('users', { referee_code: code });
-
     if (!existing) {
       isUnique = true;
     }
