@@ -241,10 +241,10 @@ const genderOptions = [
 
 // 出生八字字段
 const birthdateFields = [
-  { key: 'year', placeholder: '年' },
-  { key: 'month', placeholder: '月' },
-  { key: 'day', placeholder: '日' },
-  { key: 'hour', placeholder: '时' },
+  { key: 'year', placeholder: '年份（YYYY）' },
+  { key: 'month', placeholder: '月份（MM）' },
+  { key: 'day', placeholder: '日期（DD）' },
+  { key: 'hour', placeholder: '时辰（HH）' },
 ]
 
 // 行业选项（全面的行业分类）
@@ -382,17 +382,19 @@ const loadProfile = async () => {
 
     // 填充推荐人信息
     if (profile.referee_id) {
-      refereeInfo.value.name = profile.real_name || '推荐人' // 使用真实姓名
+      refereeInfo.value.name = profile.referee_name || '未设置' // 使用推荐人姓名（referee_name）
       refereeInfo.value.status = profile.referee_confirmed_at ? '已确认' : '未确认'
-      // 可以根据 ambassador_level 显示等级
+      // 使用推荐人等级（referee_level）显示等级
       const levelMap: Record<number, string> = {
-        1: '青鸾大使',
-        2: '鸿鹄大使',
-        3: '鲲鹏大使'
+        0: '普通用户',
+        1: '准青鸾大使',
+        2: '青鸾大使',
+        3: '鸿鹄大使',
+        4: '金凤大使'
       }
-      refereeInfo.value.level = levelMap[profile.ambassador_level] || ''
+      refereeInfo.value.level = levelMap[profile.referee_level || 0] || '普通用户'
     } else {
-      refereeInfo.value.name = ''
+      refereeInfo.value.name = '暂无'
       refereeInfo.value.level = ''
       refereeInfo.value.status = ''
     }

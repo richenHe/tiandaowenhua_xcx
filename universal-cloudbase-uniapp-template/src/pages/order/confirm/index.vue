@@ -223,10 +223,10 @@ const getCourseGradient = (type: number): string => {
 const getAmbassadorLevelName = (level: number): string => {
   const levelMap: Record<number, string> = {
     0: '普通用户',
-    1: '初级大使',
-    2: '中级大使',
-    3: '高级大使',
-    4: '特级大使'
+    1: '准青鸾大使',
+    2: '青鸾大使',
+    3: '鸿鹄大使',
+    4: '金凤大使'
   };
   return levelMap[level] || '普通用户';
 };

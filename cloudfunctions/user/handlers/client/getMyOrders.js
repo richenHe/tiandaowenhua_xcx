@@ -67,23 +67,35 @@ module.exports = async (event, context) => {
     // 批量更新超时订单状态
     if (timeoutOrders.length > 0) {
       console.log(`[getMyOrders] 发现 ${timeoutOrders.length} 个超时订单，自动关闭:`, timeoutOrders);
+      console.log('[getMyOrders] 准备执行 UPDATE 语句...');
       
       try {
-        const { data: updateResult, error: updateError } = await db
+        // 添加 .select() 确保返回更新结果
+        const updateQuery = db
           .from('orders')
           .update({ 
             pay_status: 3,
             updated_at: new Date().toISOString()
           })
-          .in('order_no', timeoutOrders);
+          .in('order_no', timeoutOrders)
+          .select();  // 添加 select 确保返回结果
+        
+        console.log('[getMyOrders] UPDATE 查询已构建，开始执行...');
+        
+        const { data: updateResult, error: updateError } = await updateQuery;
+        
+        console.log('[getMyOrders] UPDATE 执行完成');
+        console.log('[getMyOrders] updateResult:', JSON.stringify(updateResult));
+        console.log('[getMyOrders] updateError:', JSON.stringify(updateError));
         
         if (updateError) {
           console.error('[getMyOrders] 更新超时订单状态失败:', updateError);
         } else {
-          console.log('[getMyOrders] 成功更新超时订单状态:', updateResult);
+          console.log('[getMyOrders] 成功更新超时订单状态，受影响行数:', updateResult?.length || 0);
         }
       } catch (updateErr) {
         console.error('[getMyOrders] 更新超时订单异常:', updateErr);
+        console.error('[getMyOrders] 异常堆栈:', updateErr.stack);
       }
     }
 

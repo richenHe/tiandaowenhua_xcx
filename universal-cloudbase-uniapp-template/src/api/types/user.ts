@@ -26,6 +26,10 @@ export interface UserProfile {
   referral_code: string
   /** 推荐人ID */
   referee_id: number | null
+  /** 推荐人姓名 */
+  referee_name?: string
+  /** 推荐人等级 */
+  referee_level?: number
   /** 大使等级 */
   ambassador_level: number
   /** 功德分 */

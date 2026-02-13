@@ -221,10 +221,10 @@ const genderOptions = [
 
 // 出生八字字段
 const birthdateFields = [
-  { key: 'year', placeholder: '年' },
-  { key: 'month', placeholder: '月' },
-  { key: 'day', placeholder: '日' },
-  { key: 'hour', placeholder: '时' },
+  { key: 'year', placeholder: '年份（YYYY）' },
+  { key: 'month', placeholder: '月份（MM）' },
+  { key: 'day', placeholder: '日期（DD）' },
+  { key: 'hour', placeholder: '时辰（HH）' },
 ];
 
 // 行业选项（全面的行业分类）
