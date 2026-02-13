@@ -95,16 +95,17 @@ exports.main = async (event, context) => {
   let OPENID = test_openid;
 
   try {
-    // 获取用户身份
+    // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
     if (!OPENID) {
-      const userInfo = auth.getUserInfo();
+      const userInfo = auth.getUserInfo();  // 同步方法，直接返回结果
       if (userInfo && userInfo.openId) {
-        OPENID = userInfo.openId;
+        OPENID = userInfo.openId;  // 使用 openId 作为 OPENID
       } else if (userInfo && userInfo.uid) {
         OPENID = userInfo.uid;
       } else if (userInfo && userInfo.customUserId) {
         OPENID = userInfo.customUserId;
       }
+      
       console.log(`[${action}] getUserInfo 返回:`, {
         openId: userInfo?.openId?.slice(-6),
         uid: userInfo?.uid?.slice(-6),

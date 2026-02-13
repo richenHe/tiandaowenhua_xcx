@@ -3,12 +3,16 @@
  * 用户模块 - 17个action
  */
 const cloudbase = require('@cloudbase/node-sdk');
+const cloud = require('wx-server-sdk');
 const { response } = require('./common');
 const { checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 
-// 初始化 CloudBase
+// 初始化 CloudBase (用于其他功能)
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
 const auth = app.auth();
+
+// 初始化 wx-server-sdk (用于获取真实微信 openid)
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 // 导入客户端处理器
 const clientHandlers = {
@@ -91,21 +95,37 @@ exports.main = async (event, context) => {
   let OPENID = test_openid; // 测试模式支持
   
   try {
-    // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
-    if (!OPENID) {
-      const userInfo = auth.getUserInfo();  // 同步方法，直接返回结果
-      if (userInfo && userInfo.openId) {
-        OPENID = userInfo.openId;  // 使用 openId 作为 OPENID
-      } else if (userInfo && userInfo.uid) {
-        OPENID = userInfo.uid;
-      } else if (userInfo && userInfo.customUserId) {
-        OPENID = userInfo.customUserId;
-      }
+    // ✅ 使用 wx-server-sdk 获取真实的微信 openid
+    // ⚠️ login 接口特殊处理：允许 OPENID 为空，因为它会通过 code 换取 openid
+    if (!OPENID && action !== 'login') {
+      const wxContext = cloud.getWXContext();
+      OPENID = wxContext.OPENID;
       
-      console.log(`[${action}] getUserInfo 返回:`, {
-        openId: userInfo?.openId?.slice(-6),
-        uid: userInfo?.uid?.slice(-6),
-        customUserId: userInfo?.customUserId
+      console.log(`[${action}] ========== 获取微信 openid ==========`);
+      console.log(`[${action}] getWXContext 返回:`, {
+        OPENID: OPENID || 'undefined',
+        OPENID_Last6: OPENID?.slice(-6) || 'undefined',
+        APPID: wxContext.APPID?.slice(-6) || 'undefined',
+        UNIONID: wxContext.UNIONID?.slice(-6) || 'undefined',
+        ENV: wxContext.ENV || 'undefined'
+      });
+      console.log(`[${action}] 这是真实的微信 openid，将用于用户识别和微信支付`);
+      console.log(`[${action}] ======================================`);
+      
+      // ⚠️ 安全检查：确保 openid 已获取（login 接口除外）
+      if (!OPENID) {
+        console.error(`[${action}] ❌ 严重错误：未能获取微信 openid`);
+        throw new Error('无法获取用户身份信息，请确保从微信小程序环境调用');
+      }
+    }
+    
+    // login 接口的特殊日志
+    if (action === 'login') {
+      console.log(`[${action}] ========== login 接口 ==========`);
+      console.log(`[${action}] login 接口不依赖 getWXContext()，将通过 code 换取 openid`);
+      console.log(`[${action}] 接收到的参数:`, {
+        code_exists: !!requestData.code,
+        scene: requestData.scene || 'none'
       });
     }
 
@@ -118,9 +138,9 @@ exports.main = async (event, context) => {
 
     // 客户端接口（需用户登录）
     if (ROUTES.client.includes(action)) {
-      // login 接口特殊处理，不需要提前验证
+      // login 接口特殊处理，不需要提前验证，也不传递 OPENID（它会自己通过 code 换取）
       if (action === 'login') {
-        result = await clientHandlers[action](requestData, { OPENID });
+        result = await clientHandlers[action](requestData, {});
       } else {
         // 其他接口需要验证用户身份
         const user = await checkClientAuth(OPENID);

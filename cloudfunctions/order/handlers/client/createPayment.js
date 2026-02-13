@@ -12,7 +12,22 @@ module.exports = async (event, context) => {
   const finalOrderNo = orderNo || order_no; // 支持两种命名
 
   try {
-    console.log(`[createPayment] 发起支付:`, { user_id: user.id, order_no: finalOrderNo });
+    console.log('[createPayment] ========== 发起支付 ==========');
+    console.log(`[createPayment] 用户信息:`, { 
+      user_id: user.id, 
+      user_openid_last6: user.openid?.slice(-6),
+      context_OPENID_last6: OPENID?.slice(-6),
+      order_no: finalOrderNo 
+    });
+    
+    // ⚠️ 安全检查：确保用户有真实的微信 openid
+    if (!user.openid || user.openid.length === 0) {
+      console.error('[createPayment] ❌ 严重错误：用户没有有效的微信 openid');
+      console.error('[createPayment] 用户数据:', { id: user.id, uid: user.uid, openid: user.openid });
+      throw new Error('用户身份信息异常，请重新登录');
+    }
+    
+    console.log('[createPayment] ✅ 用户 openid 验证通过，这是真实的微信 openid');
 
     // 1. 参数验证
     if (!finalOrderNo) {
@@ -67,11 +82,13 @@ module.exports = async (event, context) => {
     const totalFee = Math.round(parseFloat(order.final_amount) * 100); // 元转分
     const nonceStr = generateNonceStr();
 
-    console.log(`[createPayment] 调用统一下单:`, {
-      orderNo: finalOrderNo,
-      totalFee,
-      openid: OPENID
-    });
+    console.log(`[createPayment] 准备调用微信支付统一下单:`);
+    console.log(`[createPayment] - 订单号: ${finalOrderNo}`);
+    console.log(`[createPayment] - 金额: ${order.final_amount}元 = ${totalFee}分`);
+    console.log(`[createPayment] - 使用 user.openid (真实微信 openid): ${user.openid?.slice(-6)}`);
+    console.log(`[createPayment] - 完整 openid: ${user.openid}`);
+    console.log(`[createPayment] - openid 长度: ${user.openid?.length}`);
+    console.log(`[createPayment] ⚠️ 重要：使用数据库中的真实微信 openid，不使用 context.OPENID`);
 
     const payResult = await cloud.cloudPay.unifiedOrder({
       body: order.order_name || '道天文化课程',
@@ -83,18 +100,20 @@ module.exports = async (event, context) => {
       subMchId: process.env.MCH_ID,
       nonceStr: nonceStr,
       tradeType: 'JSAPI',
-      openid: OPENID
+      openid: user.openid  // ✅ 使用数据库中的真实微信 openid
     });
 
-    console.log('[createPayment] 统一下单返回:', {
-      returnCode: payResult.returnCode,
-      resultCode: payResult.resultCode,
-      prepayId: payResult.prepayId
-    });
+    console.log('[createPayment] ✅ 微信支付统一下单返回:');
+    console.log('[createPayment] - returnCode:', payResult.returnCode);
+    console.log('[createPayment] - resultCode:', payResult.resultCode);
+    console.log('[createPayment] - prepayId:', payResult.prepayId?.slice(-6));
 
     if (payResult.returnCode !== 'SUCCESS' || payResult.resultCode !== 'SUCCESS') {
       const errMsg = payResult.returnMsg || payResult.errCodeDes || '统一下单失败';
-      console.error('[createPayment] 微信支付统一下单失败:', payResult);
+      console.error('[createPayment] ❌ 微信支付统一下单失败');
+      console.error('[createPayment] 完整响应:', JSON.stringify(payResult, null, 2));
+      console.error('[createPayment] 使用的 openid:', user.openid?.slice(-6));
+      console.error('[createPayment] 错误信息:', errMsg);
       throw new Error(`微信支付下单失败: ${errMsg}`);
     }
 
@@ -104,10 +123,10 @@ module.exports = async (event, context) => {
       .update({ prepay_id: payResult.prepayId || '' })
       .eq('order_no', finalOrderNo);
 
-    console.log(`[createPayment] 支付参数生成成功:`, {
-      order_no: finalOrderNo,
-      prepay_id: payResult.prepayId
-    });
+    console.log(`[createPayment] ✅ 支付参数生成成功`);
+    console.log(`[createPayment] - 订单号: ${finalOrderNo}`);
+    console.log(`[createPayment] - prepay_id: ${payResult.prepayId?.slice(-6)}`);
+    console.log(`[createPayment] ========== 支付成功 ==========`);
 
     // 8. 返回小程序支付参数
     return response.success({
@@ -120,7 +139,13 @@ module.exports = async (event, context) => {
     }, '支付参数生成成功');
 
   } catch (error) {
-    console.error(`[createPayment] 失败:`, error);
+    console.error('[createPayment] ========== 支付失败 ==========');
+    console.error('[createPayment] 错误类型:', error.name);
+    console.error('[createPayment] 错误消息:', error.message);
+    console.error('[createPayment] 错误堆栈:', error.stack);
+    console.error('[createPayment] 用户 openid:', user?.openid?.slice(-6) || 'undefined');
+    console.error('[createPayment] 订单号:', finalOrderNo);
+    console.error('[createPayment] ====================================');
     return response.error('发起支付失败', error);
   }
 };

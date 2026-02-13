@@ -38,11 +38,36 @@ const handleWechatLogin = async () => {
   });
 
   try {
-    // 1. 先进行微信登录认证
+    console.log('[登录] ========== 开始微信登录 ==========');
+    
+    // 1. 先进行微信登录认证（获取 CloudBase 授权）
+    console.log('[登录] 步骤1：CloudBase 认证...');
     await signInWithOpenId();
+    console.log('[登录] ✅ CloudBase 认证成功');
 
-    // 2. 调用后端登录接口，获取用户信息
-    const userInfo = await UserApi.login();
+    // 2. 获取微信登录凭证 code（用于后端换取真实 openid）
+    console.log('[登录] 步骤2：获取微信登录凭证 code...');
+    const wxLoginResult = await new Promise<any>((resolve, reject) => {
+      uni.login({
+        provider: 'weixin',
+        success: (res) => {
+          console.log('[登录] ✅ 获取 code 成功:', res.code?.slice(-6));
+          resolve(res);
+        },
+        fail: (err) => {
+          console.error('[登录] ❌ 获取 code 失败:', err);
+          reject(err);
+        }
+      });
+    });
+
+    if (!wxLoginResult.code) {
+      throw new Error('获取微信登录凭证失败');
+    }
+
+    // 3. 调用后端登录接口，传入 code
+    console.log('[登录] 步骤3：调用后端登录接口，传入 code...');
+    const userInfo = await UserApi.login({ code: wxLoginResult.code });
 
     uni.hideLoading();
     uni.showToast({
