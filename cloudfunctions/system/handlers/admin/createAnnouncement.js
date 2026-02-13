@@ -76,29 +76,3 @@ module.exports = async (event, context) => {
     return response.error('创建公告失败', error);
   }
 };
-
-      category,
-      cover_image,
-      link,
-      target_type,
-      target_level,
-      is_top,
-      is_popup,
-      sort_order,
-      status: 1,
-      created_by: admin.id
-    };
-
-    // 时间字段使用 MySQL 格式
-    if (start_time) announcementData.start_time = formatDateTime(start_time);
-    if (end_time) announcementData.end_time = formatDateTime(end_time);
-
-    const [announcement] = await insert('announcements', announcementData);
-
-    return response.success({ id: announcement.id }, '创建成功');
-
-  } catch (error) {
-    console.error('[admin:createAnnouncement] 失败:', error);
-    return response.error('创建公告失败', error);
-  }
-};

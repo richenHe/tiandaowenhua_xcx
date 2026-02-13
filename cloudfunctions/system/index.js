@@ -81,6 +81,10 @@ function wrapHttpResponse(data) {
 }
 
 exports.main = async (event, context) => {
+  console.log('[STEP 1] 云函数启动');
+  console.log('[STEP 1] event:', JSON.stringify(event));
+  console.log('[STEP 1] context:', JSON.stringify(context));
+  
   // 检测是否是 HTTP 请求（检测多种可能的方式）
   const isHttpRequest = 
     (context && context.SOURCE === 'wx_http') || 
@@ -88,26 +92,35 @@ exports.main = async (event, context) => {
     event.method ||
     event.body; // 如果有 body 字段，很可能是 HTTP 请求
   
+  console.log('[STEP 2] isHttpRequest:', isHttpRequest);
+  
   // 处理 OPTIONS 预检请求
   if (event.httpMethod === 'OPTIONS' || event.method === 'OPTIONS') {
+    console.log('[STEP 3] OPTIONS 请求');
     return wrapHttpResponse({ message: 'OK' });
   }
 
   // 解析 HTTP 请求 body（如果 body 是字符串）
   let requestData = event;
   if (event.body && typeof event.body === 'string') {
+    console.log('[STEP 4] 解析 body 字符串');
     try {
       requestData = JSON.parse(event.body);
+      console.log('[STEP 4] 解析成功:', requestData);
     } catch (e) {
+      console.error('[STEP 4] 解析失败:', e);
       return wrapHttpResponse({
         success: false,
         code: 400,
         message: '请求参数格式错误'
       });
     }
+  } else {
+    console.log('[STEP 4] body 不是字符串或不存在');
   }
 
   const { action, test_openid } = requestData;
+  console.log('[STEP 5] action:', action, 'test_openid:', test_openid);
   
   // 获取用户信息
   let OPENID = test_openid; // 测试模式支持
@@ -126,22 +139,28 @@ exports.main = async (event, context) => {
 
 
   try {
+    console.log('[STEP 6] 进入 try 块');
     let result;
 
     // 公开接口（无需登录）
     if (ROUTES.public.includes(action)) {
+      console.log('[STEP 7] 公开接口:', action);
       result = await publicHandlers[action](requestData, { OPENID });
     }
     // 客户端接口（需用户鉴权）
     else if (ROUTES.client.includes(action)) {
+      console.log('[STEP 7] 客户端接口:', action);
       const user = await checkClientAuth(OPENID);
       result = await clientHandlers[action](requestData, { OPENID, user });
     }
     // 管理端接口（需管理员鉴权）
     else if (ROUTES.admin.includes(action)) {
+      console.log('[STEP 7] 管理端接口:', action);
       // login 接口特殊处理，不需要提前验证
       if (action === 'login') {
+        console.log('[STEP 8] 调用 login handler');
         result = await adminHandlers[action](requestData, { OPENID });
+        console.log('[STEP 8] login handler 返回');
       } else {
         // 支持两种鉴权方式：
         // 1. Web端：通过 jwtToken 鉴权（推荐）

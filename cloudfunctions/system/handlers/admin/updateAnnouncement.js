@@ -83,31 +83,3 @@ module.exports = async (event, context) => {
     return response.error('更新公告失败', error);
   }
 };
-
-    // 构建更新数据（updated_at 使用数据库默认值）
-    const updateData = {};
-    if (title) updateData.title = title;
-    if (content) updateData.content = content;
-    if (summary !== undefined) updateData.summary = summary;
-    if (category) updateData.category = category;
-    if (cover_image !== undefined) updateData.cover_image = cover_image;
-    if (link !== undefined) updateData.link = link;
-    if (target_type !== undefined) updateData.target_type = target_type;
-    if (target_level !== undefined) updateData.target_level = target_level;
-    if (is_top !== undefined) updateData.is_top = is_top;
-    if (is_popup !== undefined) updateData.is_popup = is_popup;
-    if (start_time) updateData.start_time = formatDateTime(start_time);
-    if (end_time) updateData.end_time = formatDateTime(end_time);
-    if (sort_order !== undefined) updateData.sort_order = sort_order;
-    if (status !== undefined) updateData.status = status;
-
-    // 更新公告
-    await update('announcements', updateData, { id });
-
-    return response.success({ id }, '更新成功');
-
-  } catch (error) {
-    console.error('[admin:updateAnnouncement] 失败:', error);
-    return response.error('更新公告失败', error);
-  }
-};
