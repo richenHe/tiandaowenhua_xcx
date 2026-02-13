@@ -36,7 +36,7 @@ module.exports = async (event, context) => {
       `, { count: 'exact' });
 
     // 添加状态过滤
-    if (status !== undefined) {
+    if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 

@@ -49,7 +49,7 @@ class AdminAPI {
       if (!result.success) {
         if (result.code === 401) {
           localStorage.clear();
-          window.location.href = 'login.html';
+          window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'login.html';
           throw new Error('登录已过期');
         }
         throw new Error(result.message || '请求失败');
@@ -75,7 +75,7 @@ class AdminAPI {
 
   static logout() {
     localStorage.clear();
-    window.location.href = 'login.html';
+    window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'login.html';
   }
 
   static getCurrentAdmin() {
@@ -209,6 +209,45 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'withdrawAudit', { withdrawal_id, status, reject_reason });
   }
 
+  // 退款管理
+  static async getRefundList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getRefundList', params);
+  }
+
+  static async approveRefund(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'approveRefund', data);
+  }
+
+  static async rejectRefund(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'rejectRefund', data);
+  }
+
+  // 提现管理
+  static async getWithdrawList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getWithdrawList', params);
+  }
+
+  static async approveWithdraw(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'approveWithdraw', data);
+  }
+
+  static async rejectWithdraw(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'rejectWithdraw', data);
+  }
+
+  static async markWithdrawTransferred(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', data);
+  }
+
+  static async exportWithdrawTransferList() {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'exportWithdrawTransferList');
+  }
+
+  // 订单状态管理
+  static async updateOrderStatus(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'updateOrderStatus', data);
+  }
+
   // ==================== 课程模块 (20个接口) ====================
 
   // 课程管理
@@ -225,7 +264,9 @@ class AdminAPI {
   }
 
   static async deleteCourse(id) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCourse', { id });
+    // 兼容两种调用方式：deleteCourse(id) 或 deleteCourse({ courseId })
+    const courseId = typeof id === 'object' ? (id.courseId || id.id) : id;
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCourse', { id: courseId });
   }
 
   // 排期管理
@@ -272,7 +313,9 @@ class AdminAPI {
   }
 
   static async deleteCase(id) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCase', { id });
+    // 兼容两种调用方式：deleteCase(id) 或 deleteCase({ caseId })
+    const caseId = typeof id === 'object' ? (id.caseId || id.id) : id;
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCase', { id: caseId });
   }
 
   // 资料管理
@@ -289,12 +332,43 @@ class AdminAPI {
   }
 
   static async deleteMaterial(id) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteMaterial', { id });
+    // 兼容两种调用方式：deleteMaterial(id) 或 deleteMaterial({ materialId })
+    const materialId = typeof id === 'object' ? (id.materialId || id.id) : id;
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteMaterial', { id: materialId });
   }
 
   // 学院内容
   static async manageAcademyContent(data) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'manageAcademyContent', data);
+  }
+
+  // 排期管理（别名方法，向后兼容）
+  static async getScheduleList(params = {}) {
+    return this.getClassRecordList(params);
+  }
+
+  static async createSchedule(data) {
+    return this.createClassRecord(data);
+  }
+
+  static async updateSchedule(data) {
+    return this.updateClassRecord(data);
+  }
+
+  static async deleteSchedule(data) {
+    const id = typeof data === 'object' ? (data.scheduleId || data.id) : data;
+    return this.deleteClassRecord(id);
+  }
+
+  // 获取全部课程
+  static async getAllCourses() {
+    const data = await this.getCourseList({ page: 1, pageSize: 9999 });
+    return data.list || [];
+  }
+
+  // 案例状态管理
+  static async updateCaseStatus(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateCaseStatus', data);
   }
 
   // ==================== 大使模块 (15个接口) ====================
@@ -361,6 +435,52 @@ class AdminAPI {
 
   static async getExpiringContracts(days = 30) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getExpiringContracts', { days });
+  }
+
+  // 大使模块别名方法（向后兼容）
+  static async getAmbassadorApplicationList(params = {}) {
+    return this.getApplicationList(params);
+  }
+
+  static async getAmbassadorActivityList(params = {}) {
+    return this.getActivityList(params);
+  }
+
+  static async getContractList(params = {}) {
+    return this.getSignatureList(params);
+  }
+
+  // ==================== 系统模块别名方法 ====================
+
+  static async getAdminList(params = {}) {
+    return this.getAdminUserList(params);
+  }
+
+  static async getSystemConfig(config_key = null) {
+    return this.getConfig(config_key);
+  }
+
+  static async updateSystemConfig(data) {
+    if (typeof data === 'object' && !data.config_key) {
+      throw new Error('批量更新配置需要逐个调用 updateConfig');
+    }
+    return this.updateConfig(data.config_key, data.config_value);
+  }
+
+  static async getLevelConfig() {
+    return this.getAmbassadorLevelConfigs();
+  }
+
+  static async updateLevelConfig(data) {
+    return this.updateAmbassadorLevelConfig(data);
+  }
+
+  static async getNotificationList(params = {}) {
+    return this.getNotificationLogs(params);
+  }
+
+  static async handleFeedback(data) {
+    return this.replyFeedback(data.feedbackId, data.replyContent || '已处理');
   }
 }
 

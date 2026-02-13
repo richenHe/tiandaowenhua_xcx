@@ -6,15 +6,15 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认20）
  * - user_id: 用户ID筛选（可选）
- * - scene: 场景筛选（可选）
- * - status: 状态筛选（可选）
+ * - send_type: 发送类型筛选（可选，1=系统通知 2=订阅消息）
+ * - send_status: 发送状态筛选（可选，0=失败 1=成功）
  */
 const { db } = require('../../common/db');
 const { response, getPagination } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, user_id, scene, status } = event;
+  const { page = 1, page_size = 20, user_id, send_type, send_status } = event;
 
   try {
     console.log(`[admin:getNotificationLogs] 管理员 ${admin.id} 获取通知日志`);
@@ -27,11 +27,18 @@ module.exports = async (event, context) => {
       .select(`
         id,
         user_id,
-        scene,
+        config_id,
         template_id,
-        data,
-        status,
-        error_msg,
+        title,
+        content,
+        template_data,
+        send_type,
+        send_status,
+        send_time,
+        error_message,
+        class_record_id,
+        order_no,
+        appointment_id,
         created_at,
         user:users!fk_notification_logs_user(real_name, phone)
       `)
@@ -39,9 +46,11 @@ module.exports = async (event, context) => {
 
     // 筛选条件
     if (user_id) query = query.eq('user_id', user_id);
-    if (scene) query = query.eq('scene', scene);
-    if (status !== undefined && status !== null && status !== '') {
-      query = query.eq('status', status);
+    if (send_type != null && send_type !== '') {
+      query = query.eq('send_type', parseInt(send_type));
+    }
+    if (send_status != null && send_status !== '') {
+      query = query.eq('send_status', parseInt(send_status));
     }
 
     // 分页
@@ -57,19 +66,39 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact', head: true });
 
     if (user_id) countQuery = countQuery.eq('user_id', user_id);
-    if (scene) countQuery = countQuery.eq('scene', scene);
-    if (status !== undefined && status !== null && status !== '') {
-      countQuery = countQuery.eq('status', status);
+    if (send_type != null && send_type !== '') {
+      countQuery = countQuery.eq('send_type', parseInt(send_type));
+    }
+    if (send_status != null && send_status !== '') {
+      countQuery = countQuery.eq('send_status', parseInt(send_status));
     }
 
     const { count: total } = await countQuery;
 
     // 处理数据
-    const processedLogs = logs.map(log => ({
-      ...log,
-      data: log.data ? JSON.parse(log.data) : null,
-      status_text: log.status === 1 ? '成功' : '失败'
-    }));
+    const processedLogs = logs.map(log => {
+      let templateData = null;
+      
+      // 安全解析 template_data 字段
+      if (log.template_data) {
+        try {
+          if (typeof log.template_data === 'string') {
+            templateData = JSON.parse(log.template_data);
+          } else {
+            templateData = log.template_data;
+          }
+        } catch (e) {
+          console.error('[getNotificationLogs] 解析 template_data 失败:', e);
+        }
+      }
+      
+      return {
+        ...log,
+        template_data: templateData,
+        send_type_text: getSendTypeText(log.send_type),
+        send_status_text: getSendStatusText(log.send_status)
+      };
+    });
 
     return response.success({
       list: processedLogs,
@@ -83,3 +112,23 @@ module.exports = async (event, context) => {
     return response.error('获取通知日志失败', error);
   }
 };
+
+// 获取发送类型文本
+function getSendTypeText(type) {
+  const typeMap = {
+    1: '系统通知',
+    2: '订阅消息',
+    3: '模板消息'
+  };
+  return typeMap[type] || '未知';
+}
+
+// 获取发送状态文本
+function getSendStatusText(status) {
+  const statusMap = {
+    0: '失败',
+    1: '成功',
+    2: '待发送'
+  };
+  return statusMap[status] || '未知';
+}

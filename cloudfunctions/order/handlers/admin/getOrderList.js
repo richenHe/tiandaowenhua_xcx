@@ -26,7 +26,7 @@ module.exports = async (event, context) => {
       `, { count: 'exact' });
 
     // 支付状态筛选
-    if (pay_status !== undefined) {
+    if (pay_status != null && pay_status !== '') {
       queryBuilder = queryBuilder.eq('pay_status', parseInt(pay_status));
     }
 

@@ -3,27 +3,15 @@
  * 提供统一的菜单切换和登出功能
  */
 
-// 获取当前页面所在的目录层级（用于计算相对路径）
-function getPageLevel() {
-  const path = window.location.pathname;
-  const segments = path.split('/').filter(s => s);
-  const adminIndex = segments.findIndex(s => s === 'admin');
-  if (adminIndex === -1) return 0;
-  
-  // admin 根目录的页面（如 index.html）层级为 0
-  // admin/pages 下的页面层级为 1
-  // admin/pages/xxx 下的页面层级为 2
-  // 计算：总段数 - admin位置 - 1(admin本身) - 1(文件名) = 目录层级
-  return segments.length - adminIndex - 2;
+// 获取基础路径（部署路径）
+function getBasePath() {
+  // 从 CONFIG 读取基础路径
+  return window.CONFIG?.BASE_PATH || '/tiandaowenhua/';
 }
 
-// 根据层级生成路径前缀
+// 根据层级生成路径前缀（使用绝对路径）
 function getPathPrefix() {
-  const level = getPageLevel();
-  if (level === 0) return './';
-  if (level === 1) return '../';
-  if (level === 2) return '../../';
-  return '../../../';
+  return getBasePath();
 }
 
 /**

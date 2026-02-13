@@ -6,6 +6,9 @@ window.CONFIG = {
   // CloudBase 环境 ID
   ENV_ID: 'cloud1-0gnn3mn17b581124',
   
+  // 基础路径（部署路径）
+  BASE_PATH: '/tiandaowenhua/',
+  
   // 云函数列表
   CLOUD_FUNCTIONS: {
     USER: 'user',

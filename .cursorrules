@@ -432,6 +432,36 @@ return response.unauthorized('用户未登录');
     2. ✅ 代码简洁、易读、易维护
     3. ✅ 统一项目风格，避免混乱
     4. ✅ 类型安全，减少错误
+- **⚠️ 查询参数验证规范（强制执行）**：
+  - **问题根源**：当参数值为 `null` 时，`param !== undefined` 判断会通过（null ≠ undefined），导致 `parseInt(null)` 返回 `NaN`，查询失败
+  - **错误写法**：
+    ```javascript
+    // ❌ 错误 - 会导致 null 参数被误处理
+    if (status !== undefined) {
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
+    }
+    // 问题：status = null 时
+    // - status !== undefined 为 true（null 不等于 undefined）
+    // - parseInt(null) 返回 NaN
+    // - .eq('status', NaN) 查不到任何数据
+    ```
+  - **正确写法**：
+    ```javascript
+    // ✅ 正确 - 同时检查 null、undefined 和空字符串
+    if (param != null && param !== '') {
+      queryBuilder = queryBuilder.eq('field', parseInt(param));
+    }
+    // 说明：
+    // - param != null - 同时检查 undefined 和 null（宽松相等）
+    // - param !== '' - 排除空字符串
+    // - 只有参数真正有效时才添加查询条件
+    ```
+  - **parseInt 陷阱**：
+    - `parseInt(null)` → `NaN`
+    - `parseInt(undefined)` → `NaN`
+    - `parseInt('')` → `NaN`
+    - 必须在解析前先验证参数有效性
+  - **适用场景**：所有可选的筛选参数（status、type、level、category 等）
 - **⚠️ 数据库名称规范**：
   - **业务数据库**：`tiandao_culture`（存放所有业务表）
   - **环境数据库**：`cloud1-0gnn3mn17b581124`（仅为环境ID，非业务数据库）
@@ -585,6 +615,7 @@ SELECT * FROM `cloud1-0gnn3mn17b581124`.users;
 - [ ] **权限验证**：客户端/管理端分离鉴权
 - [ ] **响应格式**：使用 response 工具，格式统一
 - [ ] **数据库操作**：使用 common 层工具，无直接连接
+- [ ] **查询参数验证**：所有可选参数使用 `param != null && param !== ''` 验证
 - [ ] **数据库名称**：MCP 查询已明确指定 `tiandao_culture` 数据库
 - [ ] **Query Builder JOIN**：关联查询使用正确的外键名称（`fk_表名_字段名`格式）
 - [ ] **环境变量**：敏感信息配置在环境变量中
@@ -669,6 +700,34 @@ Error: failed to find relationship between orders and users
    // ✅ 正确
    .select('*, referee:users!fk_orders_referee(id, real_name)')
    ```
+
+#### 错误7：查询参数为 null 导致返回空数据
+```
+数据库有数据，但接口返回空列表
+```
+**问题原因**：参数验证不完整，导致 `parseInt(null)` 返回 `NaN`
+
+**错误代码**：
+```javascript
+// ❌ 错误 - status = null 时会执行 parseInt(null) → NaN
+if (status !== undefined) {
+  queryBuilder = queryBuilder.eq('status', parseInt(status));
+}
+```
+
+**解决方案**：
+```javascript
+// ✅ 正确 - 同时检查 null、undefined 和空字符串
+if (status != null && status !== '') {
+  queryBuilder = queryBuilder.eq('status', parseInt(status));
+}
+```
+
+**排查思路**：
+1. ❌ 不要先入为主认为是权限问题
+2. ✅ 先用 MCP 工具直接查询数据库，确认数据存在
+3. ✅ 对比正常接口和异常接口的参数处理差异
+4. ✅ 检查所有可选参数的验证逻辑
 
 ### 最佳实践
 1. **一个云函数一个模块**：user/order/course/ambassador/system 分离

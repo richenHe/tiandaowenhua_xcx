@@ -27,7 +27,7 @@ module.exports = async (event, context) => {
       .range(offset, offset + limit - 1);
 
     // 状态筛选
-    if (status !== undefined && status !== null) {
+    if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
     }
 

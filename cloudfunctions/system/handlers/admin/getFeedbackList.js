@@ -73,12 +73,29 @@ module.exports = async (event, context) => {
     const { count: total } = await countQuery;
 
     // 处理数据
-    const processedFeedbacks = feedbacks.map(f => ({
-      ...f,
-      images: f.images ? JSON.parse(f.images) : [],
-      type_text: getTypeText(f.feedback_type),
-      status_text: getStatusText(f.status)
-    }));
+    const processedFeedbacks = feedbacks.map(f => {
+      let images = [];
+      
+      // 安全解析 images 字段
+      if (f.images) {
+        try {
+          // 如果是 JSON 数组字符串
+          images = JSON.parse(f.images);
+        } catch (e) {
+          // 如果解析失败，可能是单个字符串，转为数组
+          if (typeof f.images === 'string' && f.images.trim()) {
+            images = [f.images];
+          }
+        }
+      }
+      
+      return {
+        ...f,
+        images,
+        type_text: getTypeText(f.feedback_type),
+        status_text: getStatusText(f.status)
+      };
+    });
 
     return response.success({
       list: processedFeedbacks,

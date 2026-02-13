@@ -25,12 +25,12 @@ module.exports = async (event, context) => {
       .range(offset, offset + limit - 1);
 
     // 等级筛选
-    if (level !== undefined && level !== null) {
+    if (level != null && level !== '') {
       queryBuilder = queryBuilder.eq('level', level);
     }
 
     // 状态筛选
-    if (status !== undefined && status !== null) {
+    if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
     }
 

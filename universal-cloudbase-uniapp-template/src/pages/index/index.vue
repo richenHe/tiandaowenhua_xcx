@@ -294,20 +294,29 @@ const loadCalendarPriceData = async () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
-    
+
     // 计算当月第一天和最后一天
     const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const lastDayStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    
+
     // 调用后台接口获取日历数据
     const result = await CourseApi.getCalendarSchedule({
       startDate: firstDay,
       endDate: lastDayStr
     });
-    
-    // 转换数据格式，将课程信息转换为日历组件需要的格式
-    calendarPriceData.value = result;
+
+    console.log('接口返回的原始数据:', result);
+
+    // 转换数据格式，只保留 nickname 的值
+    const transformedData: Record<string, string> = {};
+    for (const date in result) {
+      console.log(`日期 ${date} 的数据:`, result[date]);
+      transformedData[date] = result[date].nickname;
+      console.log(`转换后的值:`, transformedData[date]);
+    }
+    console.log('最终日历数据:', transformedData);
+    calendarPriceData.value = transformedData;
   } catch (error) {
     console.error('加载日历数据失败:', error);
     calendarPriceData.value = {};

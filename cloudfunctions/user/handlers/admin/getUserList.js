@@ -32,7 +32,7 @@ module.exports = async (event, context) => {
     }
 
     // 大使等级筛选
-    if (ambassadorLevel !== undefined) {
+    if (ambassadorLevel != null && ambassadorLevel !== '') {
       queryBuilder = queryBuilder.eq('ambassador_level', ambassadorLevel);
     }
 
