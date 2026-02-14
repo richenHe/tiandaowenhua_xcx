@@ -2,57 +2,51 @@
  * 客户端接口：商城商品列表
  * Action: getMallGoods
  */
-const { db, response, storage } = require('common'); // 引入 storage
+const { db, response, storage, executePaginatedQuery } = require('common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
-  const { keyword, page = 1, page_size = 10 } = event;
+  const { keyword, page = 1, page_size = 10, pageSize } = event;
 
   try {
     console.log(`[getMallGoods] 查询商城商品:`, { keyword, page });
 
-    // 1. 计算分页参数
-    const limit = parseInt(page_size) || 10;
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
-    // 2. 构建基础查询
+    // 构建基础查询
     let queryBuilder = db
       .from('mall_goods')
       .select('*', { count: 'exact' })
       .eq('status', 1) // 只查询上架商品
-      .order('sort_order', { ascending: true })
-      .range(offset, offset + limit - 1);
+      .order('sort_order', { ascending: true });
 
-    // 3. 关键词过滤
+    // 关键词过滤
     if (keyword && keyword.trim()) {
       queryBuilder = queryBuilder.or(
         `goods_name.ilike.%${keyword}%,description.ilike.%${keyword}%`
       );
     }
 
-    // 4. 执行查询
-    const { data: goods, error, count: total } = await queryBuilder;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    if (error) {
-      throw error;
-    }
-
-    // 5. 格式化商品列表并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((goods || []).map(async item => {
+    // 格式化商品列表并转换云存储 fileID 为临时 URL
+    const list = await Promise.all((result.list || []).map(async item => {
       let goodsImageUrl = item.goods_image || '';
       if (item.goods_image) {
         try {
-          const result = await storage.getTempFileURL(item.goods_image);
-          if (result.success && result.tempFileURL) {
-            goodsImageUrl = result.tempFileURL;
+          const tempResult = await storage.getTempFileURL(item.goods_image);
+          if (tempResult.success && tempResult.tempFileURL) {
+            goodsImageUrl = tempResult.tempFileURL;
           } else {
-            console.warn(`[getMallGoods] 转换临时URL失败，fileID: ${item.goods_image}, 错误: ${result.message}`);
+            console.warn(`[getMallGoods] 转换临时URL失败，fileID: ${item.goods_image}, 错误: ${tempResult.message}`);
           }
         } catch (error) {
           console.warn('[getMallGoods] 转换临时URL失败:', item.goods_image, error.message);
         }
       }
-      
+
       return {
         id: item.id,
         goods_name: item.goods_name,
@@ -66,12 +60,10 @@ module.exports = async (event, context) => {
       };
     }));
 
-    console.log(`[getMallGoods] 查询成功，共 ${total} 件商品`);
+    console.log(`[getMallGoods] 查询成功，共 ${result.total} 件商品`);
 
     return response.success({
-      total: total || 0,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
+      ...result,
       list
     }, '查询成功');
 

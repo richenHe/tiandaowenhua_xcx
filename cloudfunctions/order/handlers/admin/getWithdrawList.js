@@ -4,25 +4,24 @@
  *
  * 参数：
  * - page: 页码（默认1）
- * - pageSize: 每页数量（默认20）
+ * - page_size: 每页数量（默认20）
  * - status: 状态筛选（可选，0=待审核 1=审核通过 2=已打款 3=已拒绝）
  * - keyword: 搜索关键词（提现单号/用户姓名）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, pageSize = 20, status, keyword } = event;
+  const { page = 1, page_size = 20, pageSize, status, keyword } = event;
 
   try {
     console.log(`[admin:getWithdrawList] 管理员 ${admin.id} 获取提现列表`);
 
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询（使用外键名进行 JOIN）
-    let query = db
+    let queryBuilder = db
       .from('withdrawals')
       .select(`
         id,
@@ -42,44 +41,25 @@ module.exports = async (event, context) => {
         transfer_no,
         created_at,
         user:users!fk_withdrawals_user(real_name, phone, ambassador_level)
-      `)
+      `, { count: 'exact' })
       .order('apply_time', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {
-      query = query.eq('status', parseInt(status));
+      queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
     // 关键词搜索
     if (keyword) {
-      query = query.or(`withdraw_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`withdraw_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%`);
     }
 
-    // 分页
-    const { data: withdrawals, error } = await query.range(offset, offset + limit - 1);
-
-    if (error) {
-      throw error;
-    }
-
-    // 统计总数
-    let countQuery = db
-      .from('withdrawals')
-      .select('*', { count: 'exact', head: true });
-
-    if (status != null && status !== '') {
-      countQuery = countQuery.eq('status', parseInt(status));
-    }
-
-    if (keyword) {
-      countQuery = countQuery.or(`withdraw_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%`);
-    }
-
-    const { count: total } = await countQuery;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 获取所有审核管理员ID
-    const adminIds = [...new Set(withdrawals.map(w => w.audit_admin_id).filter(id => id))];
-    
+    const adminIds = [...new Set((result.list || []).map(w => w.audit_admin_id).filter(id => id))];
+
     // 查询审核管理员信息
     let adminMap = {};
     if (adminIds.length > 0) {
@@ -87,18 +67,18 @@ module.exports = async (event, context) => {
         .from('admins')
         .select('id, username, real_name')
         .in('id', adminIds);
-      
+
       if (admins) {
         admins.forEach(admin => {
           adminMap[admin.id] = admin;
         });
       }
     }
-    
+
     // 处理数据
-    const processedWithdrawals = withdrawals.map(withdrawal => {
+    const list = (result.list || []).map(withdrawal => {
       let accountInfo = null;
-      
+
       // 安全解析 account_info 字段
       if (withdrawal.account_info) {
         try {
@@ -111,7 +91,7 @@ module.exports = async (event, context) => {
           console.error('[getWithdrawList] 解析 account_info 失败:', e);
         }
       }
-      
+
       return {
         ...withdrawal,
         account_info: accountInfo,
@@ -122,10 +102,8 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      list: processedWithdrawals,
-      total,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize)
+      ...result,
+      list
     }, '获取成功');
 
   } catch (error) {

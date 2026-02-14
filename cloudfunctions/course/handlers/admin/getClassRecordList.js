@@ -1,17 +1,16 @@
 /**
  * 获取上课排期列表（管理端接口）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { course_id, status, start_date, end_date, page = 1, page_size = 10 } = event;
+  const { course_id, status, start_date, end_date, page = 1, page_size = 10, pageSize } = event;
 
   try {
-    const { offset, limit } = getPagination(page, page_size);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
-    // 构建查询（使用外键 JOIN）- 注意：class_records 表没有 deleted_at 字段
+    // 构建查询（使用外键 JOIN）
     let queryBuilder = db
       .from('class_records')
       .select(`
@@ -36,7 +35,8 @@ module.exports = async (event, context) => {
           name,
           type
         )
-      `, { count: 'exact' });
+      `, { count: 'exact' })
+      .order('class_date', { ascending: false });
 
     // 添加课程过滤
     if (course_id) {
@@ -57,20 +57,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.lte('class_date', end_date);
     }
 
-    // 排序和分页
-    queryBuilder = queryBuilder
-      .order('class_date', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // 执行查询
-    const { data: records, error, count: total } = await queryBuilder;
-
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化数据（扁平化嵌套字段，计算可用名额）
-    const list = (records || []).map(record => ({
+    const list = (result.list || []).map(record => ({
       id: record.id,
       course_id: record.course_id,
       course_name: record.course?.name || record.course_name || '',
@@ -92,9 +83,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
+      ...result,
       list
     });
 

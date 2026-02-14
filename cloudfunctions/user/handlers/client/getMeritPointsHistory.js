@@ -2,32 +2,30 @@
  * 客户端接口：功德分明细记录
  * Action: client:getMeritPointsHistory
  */
-const { db } = require('../../common/db');
-const { response, utils } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { page = 1, pageSize = 20 } = event;
+  const { page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log('[getMeritPointsHistory] 获取功德分明细:', user.id);
 
-    const { offset, limit } = utils.getPagination(page, pageSize);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
-    // 查询功德分明细
-    const { data: records, error, count: total } = await db
+    // 构建查询
+    let queryBuilder = db
       .from('merit_points_records')
       .select('id, type, amount, balance_after, source, order_no, referee_user_id, remark, created_at', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据
-    const list = (records || []).map(record => ({
+    const list = (result.list || []).map(record => ({
       id: record.id,
       change_amount: record.type === 1 ? record.amount : -record.amount, // type: 1=收入(正数), 2=支出(负数)
       balance_after: record.balance_after, // 变更后余额
@@ -39,11 +37,9 @@ module.exports = async (event, context) => {
       created_at: record.created_at
     }));
 
-    console.log('[getMeritPointsHistory] 查询成功，共', total, '条');
+    console.log('[getMeritPointsHistory] 查询成功，共', result.total, '条');
     return response.success({
-      total,
-      page,
-      pageSize,
+      ...result,
       list
     });
 

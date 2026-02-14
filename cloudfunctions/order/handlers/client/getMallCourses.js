@@ -3,18 +3,17 @@
  * @description 展示积分商城的课程商品（初探班和密训班）
  * @param {number} type - 课程类型：1初探班/2密训班（可选）
  * @param {number} page - 页码（默认1）
- * @param {number} pageSize - 每页数量（默认10）
+ * @param {number} page_size - 每页数量（默认10）
  */
 
-const { db, response, getTempFileURL } = require('common');
+const { db, response, getTempFileURL, executePaginatedQuery } = require('common');
 
 module.exports = async (event, context) => {
-  const { type, page = 1, pageSize = 10 } = event;
+  const { type, page = 1, page_size = 10, pageSize } = event;
 
   try {
-    // 计算分页参数
-    const limit = parseInt(pageSize) || 10;
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
     // 构建查询
     let queryBuilder = db
@@ -23,31 +22,28 @@ module.exports = async (event, context) => {
       .eq('status', 1)  // 只查询上架课程
       .in('type', [1, 2])  // 只查询初探班和密训班
       .order('sort_order', { ascending: false })  // 按排序权重倒序
-      .order('id', { ascending: true })  // 相同权重按ID正序
-      .range(offset, offset + limit - 1);
+      .order('id', { ascending: true });  // 相同权重按ID正序
 
     // 如果指定了课程类型
     if (type) {
       queryBuilder = queryBuilder.eq('type', parseInt(type));
     }
 
-    // 执行查询
-    const { data: courses, error, count: total } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((courses || []).map(async item => {
+    const list = await Promise.all((result.list || []).map(async item => {
       let coverImageUrl = item.cover_image || '';
       if (item.cover_image) {
         try {
-          const result = await getTempFileURL(item.cover_image);
-          coverImageUrl = result.tempFileURL || item.cover_image;
+          const tempResult = await getTempFileURL(item.cover_image);
+          coverImageUrl = tempResult.tempFileURL || item.cover_image;
         } catch (error) {
           console.warn('[getMallCourses] 转换临时URL失败:', item.cover_image, error.message);
         }
       }
-      
+
       return {
         id: item.id,
         name: item.name,
@@ -67,9 +63,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: total || 0,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize),
+      ...result,
       list
     }, '获取成功');
 

@@ -19,18 +19,14 @@
           <view class="captcha-image-wrapper">
             <view class="image-content">
               <image 
-                v-if="captchaData.url" 
+                v-if="captchaData.url && !isRefreshing" 
                 class="captcha-img" 
                 :src="captchaData.url" 
                 mode="aspectFit"
                 @error="onImageError"
               />
               <view v-else class="captcha-placeholder">
-                <text>验证码加载中...</text>
-              </view>
-              <!-- 刷新时的加载动画 -->
-              <view v-if="isRefreshing" class="refresh-overlay">
-                <uni-load-more status="loading" :show-icon="true" color="#FFF"></uni-load-more>
+                <text>{{ isRefreshing ? '刷新中...' : '验证码加载中...' }}</text>
               </view>
             </view>
             <!-- 刷新按钮 -->
@@ -153,6 +149,7 @@ const handleSubmit = async () => {
   }
 
   try {
+    uni.showLoading({ title: '验证中...' })
     loading.value = true
     console.log('提交验证码:', captchaCode.value, 'token:', captchaData.value.token)
     const result = await auth.verifyCaptchaData({
@@ -160,10 +157,12 @@ const handleSubmit = async () => {
       token: captchaData.value.token,
     });
     console.log('验证码提交成功:', result)
+    uni.hideLoading()
     uni.$emit('RESOLVE_CAPTCHA_DATA', result)
     closeCaptcha()
   } catch (error) {
     console.error('验证码验证失败:', error)
+    uni.hideLoading()
     uni.showToast({ title: '验证失败，请重试', icon: 'none' })
   } finally {
     loading.value = false

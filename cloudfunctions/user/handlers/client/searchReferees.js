@@ -2,11 +2,10 @@
  * 客户端接口：搜索推荐人列表
  * Action: searchReferees
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { keyword } = event;
+  const { keyword, page = 1, page_size = 50, pageSize } = event;
 
   try {
     console.log('[searchReferees] 搜索推荐人:', { keyword });
@@ -17,23 +16,23 @@ module.exports = async (event, context) => {
     }
 
     const searchKeyword = keyword.trim();
+    // 兼容 pageSize 参数
+    const finalPageSize = Math.min(page_size || pageSize || 50, 50); // 最多50条
 
-    // 查询推荐人列表（搜索姓名或手机号，且必须是大使 ambassador_level >= 1）
-    const { data: referees, error } = await db
+    // 构建查询（搜索姓名或手机号，且必须是大使 ambassador_level >= 1）
+    let queryBuilder = db
       .from('users')
-      .select('id, uid, real_name, phone, avatar, ambassador_level, referee_code')
+      .select('id, uid, real_name, phone, avatar, ambassador_level, referee_code', { count: 'exact' })
       .gte('ambassador_level', 1)
       .or(`real_name.like.%${searchKeyword}%,phone.like.%${searchKeyword}%`)
       .order('ambassador_level', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据
-    const formattedReferees = (referees || []).map(referee => {
+    const formattedReferees = (result.list || []).map(referee => {
       // 手机号脱敏
       const maskedPhone = referee.phone
         ? referee.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
@@ -64,10 +63,10 @@ module.exports = async (event, context) => {
       };
     });
 
-    console.log('[searchReferees] 搜索成功，找到', formattedReferees.length, '个推荐人');
+    console.log('[searchReferees] 搜索成功，找到', result.total, '个推荐人');
     return response.success({
-      list: formattedReferees,
-      total: formattedReferees.length
+      ...result,
+      list: formattedReferees
     }, '查询成功');
 
   } catch (error) {

@@ -84,9 +84,10 @@
             <button 
               class="load-more-btn" 
               :disabled="isLoading"
+              :loading="isLoading"
               @click="handleLoadMore"
             >
-              <text class="btn-text">{{ isLoading ? '加载中...' : '加载更多' }}</text>
+              <text class="btn-text">加载更多</text>
             </button>
           </view>
           
@@ -231,6 +232,9 @@ const loadMallGoods = async (isLoadMore = false) => {
   if (isLoading.value) return
   
   try {
+    if (!isLoadMore) {
+      uni.showLoading({ title: '加载中...' })
+    }
     isLoading.value = true
     const page = isLoadMore ? currentPage.value + 1 : 1
     
@@ -257,8 +261,14 @@ const loadMallGoods = async (isLoadMore = false) => {
     
     totalProducts.value = result.total || 0
     hasMore.value = products.value.length < totalProducts.value
+    if (!isLoadMore) {
+      uni.hideLoading()
+    }
   } catch (error) {
     console.error('加载商城商品失败:', error)
+    if (!isLoadMore) {
+      uni.hideLoading()
+    }
     uni.showToast({
       title: '加载失败',
       icon: 'none'
@@ -315,6 +325,7 @@ const courses = ref<any[]>([])
 // 加载商城课程
 const loadMallCourses = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await OrderApi.getMallCourses({ page: 1, page_size: 100 })
 
     courses.value = result.list.map((item: any) => ({
@@ -328,8 +339,10 @@ const loadMallCourses = async () => {
       badge: item.soldCount > 100 ? '热门' : '',
       badgeType: item.soldCount > 100 ? 'success' : ''
     }))
+    uni.hideLoading()
   } catch (error) {
     console.error('加载商城课程失败:', error)
+    uni.hideLoading()
   }
 }
 

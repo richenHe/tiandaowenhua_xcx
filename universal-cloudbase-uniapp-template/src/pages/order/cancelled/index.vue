@@ -115,33 +115,32 @@ const courseStyles: Record<number, { icon: string; iconBg: string }> = {
   3: { icon: '💼', iconBg: 'bg-orange' }
 }
 
-// 计算状态信息
+// 计算状态信息 - 统一显示"已取消"
 const statusClass = computed(() => {
-  return orderInfo.value.payStatus === 3 ? 'status-card--timeout' : 'status-card--cancelled'
+  return 'status-card--cancelled'
 })
 
 const statusIcon = computed(() => {
-  return orderInfo.value.payStatus === 3 ? '⏰' : '❌'
+  return '❌'
 })
 
 const statusTitle = computed(() => {
-  return orderInfo.value.payStatus === 3 ? '订单已超时' : '订单已取消'
+  return '订单已取消'
 })
 
 const statusDesc = computed(() => {
+  // 根据 payStatus 区分取消原因
   return orderInfo.value.payStatus === 3 
-    ? '订单超过15分钟未支付，已自动关闭' 
+    ? '订单超过15分钟未支付，已自动取消' 
     : '订单已取消，如需购买请重新下单'
 })
 
 const cancelLabel = computed(() => {
-  return orderInfo.value.payStatus === 3 ? '超时时间' : '取消时间'
+  return '取消时间'
 })
 
 const cancelTimeText = computed(() => {
-  return orderInfo.value.payStatus === 3 
-    ? `超时于 ${orderInfo.value.cancelTime}` 
-    : `取消于 ${orderInfo.value.cancelTime}`
+  return `取消于 ${orderInfo.value.cancelTime}`
 })
 
 // 加载订单详情
@@ -151,20 +150,11 @@ const loadOrderDetail = async (orderNo: string) => {
     
     const order = await OrderApi.getDetail(orderNo)
     
-    // 如果订单不是已取消或已超时状态，跳转到对应页面
-    if (order.pay_status === 0) {
-      // 待支付 -> 跳转到待支付页面
-      uni.redirectTo({
-        url: `/pages/order/pending/index?orderNo=${orderNo}`
-      })
-      return
-    } else if (order.pay_status === 1) {
-      // 已支付 -> 跳转到订单详情页面
-      uni.redirectTo({
-        url: `/pages/order/detail/index?orderNo=${orderNo}`
-      })
-      return
-    }
+    // ⚠️ 移除状态检测和跳转逻辑，避免并发更新导致的闪退
+    // 用户既然进入了这个页面，说明订单已经是取消状态
+    // 不应该再根据 API 返回的状态进行跳转
+    // 理由：订单列表可能先在内存中更新状态，但数据库更新有延迟
+    // 导致详情接口返回旧状态，引发错误跳转
     
     const style = courseStyles[order.order_type] || courseStyles[1]
     
@@ -177,7 +167,8 @@ const loadOrderDetail = async (orderNo: string) => {
       refereeName: order.referee_name || '',
       icon: style.icon,
       iconBg: style.iconBg,
-      payStatus: order.pay_status,
+      // ⚠️ 强制使用已取消状态（2或3），避免显示错误状态
+      payStatus: order.pay_status === 0 ? 3 : order.pay_status,
       orderType: order.order_type,
       itemId: (order as any).item_id || 0
     }
@@ -275,7 +266,8 @@ onMounted(() => {
   }
   
   &--cancelled {
-    background: linear-gradient(135deg, #999999 0%, #666666 100%);
+    background: linear-gradient(135deg, #E8E8E8 0%, #D5D5D5 100%);
+    color: $td-text-color-primary;
   }
 }
 

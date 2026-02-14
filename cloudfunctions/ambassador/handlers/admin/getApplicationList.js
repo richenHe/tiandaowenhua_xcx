@@ -2,19 +2,17 @@
  * 管理端接口：获取申请列表
  * Action: getApplicationList
  */
-const { query } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { status, page = 1, page_size = 20 } = event;
+  const { status, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getApplicationList] 查询申请列表:`, { status, page });
 
-    const { limit, offset } = getPagination(page, page_size);
-    const { db } = require('../../common/db');
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询
     let queryBuilder = db
@@ -23,20 +21,18 @@ module.exports = async (event, context) => {
         *,
         user:users!fk_ambassador_applications_user(real_name, phone, avatar)
       `, { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
     }
 
-    const { data: applications, error, count } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据
-    const list = (applications || []).map(app => ({
+    const list = (result.list || []).map(app => ({
       id: app.id,
       user_id: app.user_id,
       user_name: app.user?.real_name,
@@ -53,9 +49,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: count || 0,
-      page,
-      page_size,
+      ...result,
       list
     });
 

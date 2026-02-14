@@ -123,12 +123,6 @@
         <image :src="imageSrc" mode="widthFix" class="downloaded-image"></image>
       </view>
     </view>
-
-    <!-- 加载状态 -->
-    <view v-if="loading" class="loading-overlay">
-      <view class="loading-spinner"></view>
-      <text class="loading-text">处理中...</text>
-    </view>
   </view>
 </template>
 
@@ -179,6 +173,7 @@ onMounted(async () => {
 
 // 初始化云开发
 const initializeCloudBase = async () => {
+  uni.showLoading({ title: '初始化中...' })
   loading.value = true
   try {
     const success = await initCloudBase()
@@ -187,9 +182,11 @@ const initializeCloudBase = async () => {
     } else {
       loginStatus.value = '未登录'
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('初始化失败:', error)
     loginStatus.value = '初始化失败'
+    uni.hideLoading()
   } finally {
     loading.value = false
   }
@@ -207,14 +204,17 @@ const handleLogin = async () => {
     })
     return
   }
+  uni.showLoading({ title: '登录中...' })
   loading.value = true
   try {
     await ensureLogin()
     loginStatus.value = '已登录'
+    uni.hideLoading()
     uni.showToast({ title: '登录成功', icon: 'success' })
   } catch (error) {
     console.error('登录失败:', error)
     loginStatus.value = '登录失败'
+    uni.hideLoading()
     uni.showToast({ title: '登录失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -223,13 +223,16 @@ const handleLogin = async () => {
 
 // 处理退出登录
 const handleLogout = async () => {
+  uni.showLoading({ title: '退出中...' })
   loading.value = true
   try {
     await logout()
     loginStatus.value = '已退出'
+    uni.hideLoading()
     uni.showToast({ title: '已退出登录', icon: 'success' })
   } catch (error) {
     console.error('退出失败:', error)
+    uni.hideLoading()
     uni.showToast({ title: '退出失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -243,14 +246,17 @@ const callCloudFunction = async () => {
     return
   }
 
+  uni.showLoading({ title: '调用中...' })
   loading.value = true
   try {
     const result = await app.callFunction({ name: 'hello', data: { name: 'UniApp' } })
     functionResult.value = JSON.stringify(result.result, null, 2)
+    uni.hideLoading()
     uni.showToast({ title: '调用成功', icon: 'success' })
   } catch (error: any) {
     console.error('云函数调用失败:', error)
     functionResult.value = '调用失败: ' + error.message
+    uni.hideLoading()
     uni.showToast({ title: '调用失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -263,6 +269,7 @@ const callCloudRunFunction = async () => {
     uni.showToast({ title: '请先登录', icon: 'none' })
     return
   }
+  uni.showLoading({ title: '调用中...' })
   loading.value = true
   try {
    const result = await app.callFunction({ 
@@ -277,10 +284,12 @@ const callCloudRunFunction = async () => {
 						},
       })
     cloudrunResult.value = JSON.stringify(result.result, null, 2)
+    uni.hideLoading()
     uni.showToast({ title: '调用成功', icon: 'success' })
   } catch (error: any) {
     console.error('云托管服务调用失败:', error)
     cloudrunResult.value = '调用失败: ' + error.errMsg
+    uni.hideLoading()
     uni.showToast({ title: '调用失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -299,6 +308,7 @@ const addRecord = async () => {
     return
   }
 
+  uni.showLoading({ title: '添加中...' })
   loading.value = true
   try {
     const db = app.database()
@@ -307,10 +317,12 @@ const addRecord = async () => {
       createTime: new Date().toLocaleString()
     })
     newRecord.value = ''
+    uni.hideLoading()
     uni.showToast({ title: '添加成功', icon: 'success' })
     await queryRecords() // 自动刷新列表
   } catch (error: any) {
     console.error('添加数据失败:', error)
+    uni.hideLoading()
     uni.showToast({ title: '添加失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -324,14 +336,17 @@ const queryRecords = async () => {
     return
   }
 
+  uni.showLoading({ title: '查询中...' })
   loading.value = true
   try {
     const db = app.database()
     const result = await db.collection('test').orderBy('createTime', 'desc').limit(10).get()
     records.value = result.data
+    uni.hideLoading()
     uni.showToast({ title: '查询成功', icon: 'success' })
   } catch (error: any) {
     console.error('查询数据失败:', error)
+    uni.hideLoading()
     uni.showToast({ title: '查询失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -350,6 +365,7 @@ const startListening = async() => {
   }
   isListening = true
 
+  uni.showLoading({ title: '开始监听...' })
   loading.value = true
   const db = app.database()
   
@@ -380,6 +396,7 @@ const startListening = async() => {
       uni.showToast({ title: '监听失败', icon: 'error' })
     }
   })
+  uni.hideLoading()
   loading.value = false
 }
 // 停止监听
@@ -414,6 +431,7 @@ const chooseAndUploadFile = async () => {
       const cloudPath = `demo/${Date.now()}.jpg`
 
       uploadProgress.value = 0
+      uni.showLoading({ title: '上传中...' })
       loading.value = true
 
       const result = await app.uploadFile({
@@ -427,11 +445,13 @@ const chooseAndUploadFile = async () => {
       })
 
       uploadResult.value = `文件上传成功\nFileID: ${result.fileID}`
+      uni.hideLoading()
       uni.showToast({ title: '上传成功', icon: 'success' })
     }
   } catch (error: any) {
     console.error('文件上传失败:', error)
     uploadResult.value = '上传失败: ' + error.message
+    uni.hideLoading()
     uni.showToast({ title: '上传失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -447,6 +467,7 @@ const downloadFile = async () => {
   }
   try {
     const fileID = 'your-cloud-file-id' // 替换为你的文件ID
+    uni.showLoading({ title: '下载中...' })
     loading.value = true
 
     const result:any = await app.downloadFile({
@@ -454,11 +475,13 @@ const downloadFile = async () => {
     })
 
     downloadResult.value = `文件下载成功\n临时路径: ${result.tempFilePath}`
+    uni.hideLoading()
     uni.showToast({ title: '下载成功', icon: 'success' })
     imageSrc.value = result.tempFilePath // 显示下载的图片
   } catch (error: any) {
     console.error('文件下载失败:', error)
     downloadResult.value = '下载失败: ' + error.message
+    uni.hideLoading()
     uni.showToast({ title: '下载失败', icon: 'error' })
   } finally {
     loading.value = false
@@ -628,33 +651,6 @@ const downloadFile = async () => {
   transform: translate(-50%, -50%);
   font-size: 24rpx;
   color: #333;
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.loading-spinner {
-  width: 60rpx;
-  height: 60rpx;
-  border: 4rpx solid #f3f3f3;
-  border-top: 4rpx solid #007aff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.loading-text {
-  color: white;
   font-size: 28rpx;
   margin-top: 20rpx;
 }

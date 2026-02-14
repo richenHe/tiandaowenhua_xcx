@@ -2,26 +2,23 @@
  * 管理端接口：获取活动列表
  * Action: getActivityList
  */
-const { query } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { status, activity_type, page = 1, page_size = 20 } = event;
+  const { status, activity_type, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getActivityList] 查询活动列表:`, { status, activity_type, page });
 
-    const { limit, offset } = getPagination(page, page_size);
-    const { db } = require('../../common/db');
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('ambassador_activity_records')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {
@@ -33,12 +30,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.eq('activity_type', activity_type);
     }
 
-    const { data: activities, error, count } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据
-    const list = (activities || []).map(activity => ({
+    const list = (result.list || []).map(activity => ({
       id: activity.id,
       title: activity.title,
       description: activity.description,
@@ -52,9 +48,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: count || 0,
-      page,
-      page_size,
+      ...result,
       list
     });
 

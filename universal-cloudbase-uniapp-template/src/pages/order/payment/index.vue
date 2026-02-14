@@ -101,6 +101,7 @@ const isLoading = ref(true);
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
   try {
+    uni.showLoading({ title: '加载中...' });
     isLoading.value = true;
     const order = await OrderApi.getDetail(orderNo);
 
@@ -108,8 +109,10 @@ const loadOrderDetail = async (orderNo: string) => {
     orderInfo.value.orderName = order.order_name;
     orderInfo.value.orderType = order.order_type;
     orderInfo.value.amount = order.final_amount;
+    uni.hideLoading();
   } catch (error) {
     console.error('加载订单详情失败:', error);
+    uni.hideLoading();
     uni.showToast({
       title: '加载失败，请重试',
       icon: 'none'

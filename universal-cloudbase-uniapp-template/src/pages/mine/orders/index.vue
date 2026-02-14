@@ -105,7 +105,7 @@ const statusMap: Record<number, { text: string; type: string; orderStatus: strin
   0: { text: '待支付', type: 'warning', orderStatus: 'pending' },
   1: { text: '已支付', type: 'success', orderStatus: 'completed' },
   2: { text: '已取消', type: 'default', orderStatus: 'cancelled' },
-  3: { text: '已超时', type: 'default', orderStatus: 'cancelled' }  // 超时也归类为已取消
+  3: { text: '已取消', type: 'default', orderStatus: 'cancelled' }  // 超时统一显示为已取消
 }
 
 // 加载订单列表

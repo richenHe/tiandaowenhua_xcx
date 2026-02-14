@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理员列表分页测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 24px;
+    }
+    .test-section {
+      margin-bottom: 32px;
+      padding: 16px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      border-left: 4px solid #0052D9;
+    }
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0052D9;
+      margin-bottom: 12px;
+    }
+    .test-result {
+      margin-top: 12px;
+      padding: 12px;
+      background: white;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .success {
+      color: #52c41a;
+      font-weight: 600;
+    }
+    .error {
+      color: #ff4d4f;
+      font-weight: 600;
+    }
+    .info {
+      color: #1890ff;
+    }
+    button {
+      background: #0052D9;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button:hover {
+      background: #266FE8;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .field-check {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .field-check .icon {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+    .summary {
+      margin-top: 24px;
+      padding: 16px;
+      background: #e6f7ff;
+      border-radius: 4px;
+      border: 1px solid #91d5ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 管理员列表分页功能测试</h1>
+
+    <div class="test-section">
+      <div class="test-title">测试说明</div>
+      <p>本测试将验证 <code>system/handlers/admin/getAdminUserList.js</code> 接口的分页改造是否成功。</p>
+      <p><strong>改造内容：</strong></p>
+      <ul>
+        <li>✅ 使用 <code>executePaginatedQuery</code> 替代手动分页</li>
+        <li>✅ 统一返回格式，新增 <code>hasMore</code>、<code>totalPages</code>、<code>hasPrev</code> 字段</li>
+        <li>✅ 兼容 <code>pageSize</code> 和 <code>page_size</code> 参数</li>
+        <li>✅ 前端使用 <code>page_size</code> 参数</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <div class="test-title">测试控制</div>
+      <button onclick="runAllTests()">运行所有测试</button>
+      <button onclick="testFirstPage()">测试第一页</button>
+      <button onclick="testSecondPage()">测试第二页</button>
+      <button onclick="testLastPage()">测试最后一页</button>
+      <button onclick="testEmptyResult()">测试空结果</button>
+      <button onclick="testPageSizeParam()">测试 pageSize 参数兼容</button>
+    </div>
+
+    <div id="results"></div>
+
+    <div id="summary" class="summary" style="display: none;">
+      <h3>测试总结</h3>
+      <div id="summary-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // 模拟 API 调用（实际环境需要替换为真实的 API 调用）
+    const API_BASE = 'https://your-env-id.service.tcloudbase.com/system';
+    const TOKEN = localStorage.getItem('admin_token') || 'test-token';
+
+    let testResults = [];
+
+    async function callAPI(params) {
+      try {
+        const response = await fetch(API_BASE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'getAdminUserList',
+            jwtToken: TOKEN,
+            ...params
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        let result = await response.json();
+
+        // 解析 CloudBase HTTP API 响应
+        if (result.body && typeof result.body === 'string') {
+          result = JSON.parse(result.body);
+        }
+
+        return result;
+      } catch (error) {
+        console.error('API 调用失败:', error);
+        throw error;
+      }
+    }
+
+    function addTestResult(title, success, message, data = null) {
+      const resultsDiv = document.getElementById('results');
+      const testDiv = document.createElement('div');
+      testDiv.className = 'test-section';
+
+      const statusClass = success ? 'success' : 'error';
+      const statusIcon = success ? '✅' : '❌';
+
+      let html = `
+        <div class="test-title">${statusIcon} ${title}</div>
+        <div class="${statusClass}">${message}</div>
+      `;
+
+      if (data) {
+        html += `<div class="test-result">${JSON.stringify(data, null, 2)}</div>`;
+      }
+
+      testDiv.innerHTML = html;
+      resultsDiv.appendChild(testDiv);
+
+      testResults.push({ title, success, message });
+    }
+
+    function checkResponseFields(data) {
+      const requiredFields = ['list', 'total', 'page', 'pageSize', 'totalPages', 'hasMore', 'hasPrev'];
+      const checks = [];
+
+      for (const field of requiredFields) {
+        const exists = field in data;
+        checks.push({
+          field,
+          exists,
+          value: exists ? data[field] : undefined
+        });
+      }
+
+      return checks;
+    }
+
+    async function testFirstPage() {
+      try {
+        addTestResult('测试 1：第一页数据', true, '正在测试...', null);
+
+        const result = await callAPI({ page: 1, page_size: 5 });
+
+        if (!result.success) {
+          throw new Error(result.message || '请求失败');
+        }
+
+        const data = result.data;
+        const checks = checkResponseFields(data);
+
+        let allPassed = true;
+        let checkResults = '字段检查：\n';
+
+        for (const check of checks) {
+          const icon = check.exists ? '✅' : '❌';
+          checkResults += `${icon} ${check.field}: ${check.exists ? JSON.stringify(check.value) : '缺失'}\n`;
+          if (!check.exists) allPassed = false;
+        }
+
+        // 验证第一页特定字段
+        const validations = [
+          { name: 'page 应该为 1', pass: data.page === 1 },
+          { name: 'hasPrev 应该为 false', pass: data.hasPrev === false },
+          { name: 'list 应该是数组', pass: Array.isArray(data.list) },
+          { name: 'total 应该大于等于 0', pass: data.total >= 0 },
+          { name: 'totalPages 计算正确', pass: data.totalPages === Math.ceil(data.total / data.pageSize) }
+        ];
+
+        checkResults += '\n逻辑验证：\n';
+        for (const v of validations) {
+          const icon = v.pass ? '✅' : '❌';
+          checkResults += `${icon} ${v.name}\n`;
+          if (!v.pass) allPassed = false;
+        }
+
+        addTestResult(
+          '测试 1：第一页数据',
+          allPassed,
+          allPassed ? '所有检查通过' : '部分检查失败',
+          { checkResults, responseData: data }
+        );
+
+      } catch (error) {
+        addTestResult('测试 1：第一页数据', false, `测试失败: ${error.message}`, null);
+      }
+    }
+
+    async function testSecondPage() {
+      try {
+        addTestResult('测试 2：第二页数据', true, '正在测试...', null);
+
+        const result = await callAPI({ page: 2, page_size: 5 });
+
+        if (!result.success) {
+          throw new Error(result.message || '请求失败');
+        }
+
+        const data = result.data;
+
+        const validations = [
+          { name: 'page 应该为 2', pass: data.page === 2 },
+          { name: 'hasPrev 应该为 true', pass: data.hasPrev === true },
+          { name: 'hasMore 字段存在', pass: 'hasMore' in data }
+        ];
+
+        let allPassed = true;
+        let checkResults = '验证结果：\n';
+        for (const v of validations) {
+          const icon = v.pass ? '✅' : '❌';
+          checkResults += `${icon} ${v.name}\n`;
+          if (!v.pass) allPassed = false;
+        }
+
+        addTestResult(
+          '测试 2：第二页数据',
+          allPassed,
+          allPassed ? '所有检查通过' : '部分检查失败',
+          { checkResults, responseData: data }
+        );
+
+      } catch (error) {
+        addTestResult('测试 2：第二页数据', false, `测试失败: ${error.message}`, null);
+      }
+    }
+
+    async function testLastPage() {
+      try {
+        addTestResult('测试 3：最后一页数据', true, '正在测试...', null);
+
+        // 先获取总数
+        const firstResult = await callAPI({ page: 1, page_size: 5 });
+        if (!firstResult.success) {
+          throw new Error('获取总数失败');
+        }
+
+        const totalPages = firstResult.data.totalPages;
+
+        // 请求最后一页
+        const result = await callAPI({ page: totalPages, page_size: 5 });
+
+        if (!result.success) {
+          throw new Error(result.message || '请求失败');
+        }
+
+        const data = result.data;
+
+        const validations = [
+          { name: `page 应该为 ${totalPages}`, pass: data.page === totalPages },
+          { name: 'hasMore 应该为 false', pass: data.hasMore === false },
+          { name: 'hasPrev 应该为 true (如果总页数>1)', pass: totalPages > 1 ? data.hasPrev === true : true }
+        ];
+
+        let allPassed = true;
+        let checkResults = '验证结果：\n';
+        for (const v of validations) {
+          const icon = v.pass ? '✅' : '❌';
+          checkResults += `${icon} ${v.name}\n`;
+          if (!v.pass) allPassed = false;
+        }
+
+        addTestResult(
+          '测试 3：最后一页数据',
+          allPassed,
+          allPassed ? '所有检查通过' : '部分检查失败',
+          { checkResults, totalPages, responseData: data }
+        );
+
+      } catch (error) {
+        addTestResult('测试 3：最后一页数据', false, `测试失败: ${error.message}`, null);
+      }
+    }
+
+    async function testEmptyResult() {
+      try {
+        addTestResult('测试 4：空结果处理', true, '正在测试...', null);
+
+        // 使用一个不存在的状态值来获取空结果
+        const result = await callAPI({ page: 1, page_size: 10, status: 999 });
+
+        if (!result.success) {
+          throw new Error(result.message || '请求失败');
+        }
+
+        const data = result.data;
+
+        const validations = [
+          { name: 'list 应该是空数组', pass: Array.isArray(data.list) && data.list.length === 0 },
+          { name: 'total 应该为 0', pass: data.total === 0 },
+          { name: 'totalPages 应该为 0', pass: data.totalPages === 0 },
+          { name: 'hasMore 应该为 false', pass: data.hasMore === false }
+        ];
+
+        let allPassed = true;
+        let checkResults = '验证结果：\n';
+        for (const v of validations) {
+          const icon = v.pass ? '✅' : '❌';
+          checkResults += `${icon} ${v.name}\n`;
+          if (!v.pass) allPassed = false;
+        }
+
+        addTestResult(
+          '测试 4：空结果处理',
+          allPassed,
+          allPassed ? '所有检查通过' : '部分检查失败',
+          { checkResults, responseData: data }
+        );
+
+      } catch (error) {
+        addTestResult('测试 4：空结果处理', false, `测试失败: ${error.message}`, null);
+      }
+    }
+
+    async function testPageSizeParam() {
+      try {
+        addTestResult('测试 5：pageSize 参数兼容性', true, '正在测试...', null);
+
+        // 使用 pageSize 参数（驼峰命名）
+        const result = await callAPI({ page: 1, pageSize: 3 });
+
+        if (!result.success) {
+          throw new Error(result.message || '请求失败');
+        }
+
+        const data = result.data;
+
+        const validations = [
+          { name: 'pageSize 参数被正确识别', pass: data.pageSize === 3 },
+          { name: 'list 长度不超过 pageSize', pass: data.list.length <= 3 }
+        ];
+
+        let allPassed = true;
+        let checkResults = '验证结果：\n';
+        for (const v of validations) {
+          const icon = v.pass ? '✅' : '❌';
+          checkResults += `${icon} ${v.name}\n`;
+          if (!v.pass) allPassed = false;
+        }
+
+        addTestResult(
+          '测试 5：pageSize 参数兼容性',
+          allPassed,
+          allPassed ? '所有检查通过 - 后端兼容驼峰命名' : '部分检查失败',
+          { checkResults, responseData: data }
+        );
+
+      } catch (error) {
+        addTestResult('测试 5：pageSize 参数兼容性', false, `测试失败: ${error.message}`, null);
+      }
+    }
+
+    async function runAllTests() {
+      // 清空之前的结果
+      document.getElementById('results').innerHTML = '';
+      testResults = [];
+
+      // 运行所有测试
+      await testFirstPage();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      await testSecondPage();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      await testLastPage();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      await testEmptyResult();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      await testPageSizeParam();
+
+      // 显示总结
+      showSummary();
+    }
+
+    function showSummary() {
+      const summaryDiv = document.getElementById('summary');
+      const summaryContent = document.getElementById('summary-content');
+
+      const total = testResults.length;
+      const passed = testResults.filter(r => r.success).length;
+      const failed = total - passed;
+
+      const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+
+      summaryContent.innerHTML = `
+        <p><strong>总测试数：</strong>${total}</p>
+        <p><strong class="success">通过：</strong>${passed}</p>
+        <p><strong class="error">失败：</strong>${failed}</p>
+        <p><strong>通过率：</strong>${passRate}%</p>
+        ${passed === total ? '<p class="success">🎉 所有测试通过！分页改造成功！</p>' : '<p class="error">⚠️ 部分测试失败，请检查问题。</p>'}
+      `;
+
+      summaryDiv.style.display = 'block';
+    }
+
+    // 页面加载时的提示
+    window.onload = function() {
+      console.log('测试页面已加载');
+      console.log('请确保：');
+      console.log('1. 已登录管理后台并获取 token');
+      console.log('2. 修改 API_BASE 为实际的云函数地址');
+      console.log('3. 云函数已部署最新代码');
+    };
+  </script>
+</body>
+</html>

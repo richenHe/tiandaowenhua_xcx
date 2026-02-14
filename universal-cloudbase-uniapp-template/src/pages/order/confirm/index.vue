@@ -139,6 +139,7 @@ const isLoading = ref(true);
 // 加载页面数据
 const loadPageData = async () => {
   try {
+    uni.showLoading({ title: '加载中...' });
     isLoading.value = true;
     // 从URL参数获取课程ID
     const pages = getCurrentPages();
@@ -148,6 +149,7 @@ const loadPageData = async () => {
 
     if (!courseId) {
       isLoading.value = false;
+      uni.hideLoading();
       uni.showToast({
         title: '课程ID不存在',
         icon: 'none'
@@ -188,8 +190,10 @@ const loadPageData = async () => {
     } else {
       console.log('📌 未设置推荐人');
     }
+    uni.hideLoading();
   } catch (error) {
     console.error('加载页面数据失败:', error);
+    uni.hideLoading();
     uni.showToast({
       title: '加载失败，请重试',
       icon: 'none'

@@ -185,6 +185,7 @@ const levelNames: Record<number, string> = {
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
   try {
+    uni.showLoading({ title: '加载中...' });
     isLoading.value = true;
     const order = await OrderApi.getDetail(orderNo);
 
@@ -204,8 +205,10 @@ const loadOrderDetail = async (orderNo: string) => {
     orderDetail.value.amount.totalAmount = order.final_amount || 0;
 
     orderDetail.value.course.name = order.order_name || '';
+    uni.hideLoading();
   } catch (error) {
     console.error('加载订单详情失败:', error);
+    uni.hideLoading();
     uni.showToast({
       title: '加载失败，请重试',
       icon: 'none'

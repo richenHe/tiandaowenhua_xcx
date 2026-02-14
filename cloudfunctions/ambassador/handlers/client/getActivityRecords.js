@@ -3,25 +3,22 @@
  * Action: client:getActivityRecords
  * @description 获取用户的活动记录列表，支持分页和类型筛选
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
-const { getTempFileURL } = require('../../common/storage');
+const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { activityType = 0, page = 1, pageSize = 10 } = event;
+  const { activityType = 0, page = 1, page_size = 10, pageSize } = event;
 
   try {
     console.log('[getActivityRecords] 获取活动记录:', {
       userId: user.id,
       activityType,
       page,
-      pageSize
+      page_size
     });
 
-    // 计算分页参数
-    const limit = parseInt(pageSize) || 10;
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
     // 构建查询
     let queryBuilder = db
@@ -41,7 +38,8 @@ module.exports = async (event, context) => {
         created_at
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .eq('status', 1);
+      .eq('status', 1)
+      .order('start_time', { ascending: false });
 
     // 如果指定了活动类型，添加类型筛选
     if (activityType > 0) {
@@ -49,18 +47,11 @@ module.exports = async (event, context) => {
     }
 
     // 执行分页查询
-    queryBuilder = queryBuilder
-      .order('start_time', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    const { data: list, error: listError, count: total } = await queryBuilder;
-
-    if (listError) {
-      throw listError;
-    }
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 🔥 转换云存储 fileID 为临时 URL
-    if (list && list.length > 0) {
+    const list = result.list || [];
+    if (list.length > 0) {
       // 收集所有需要转换的 fileID
       const fileIDs = [];
       list.forEach(record => {
@@ -96,7 +87,7 @@ module.exports = async (event, context) => {
           try {
             const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
             if (Array.isArray(imagesArray)) {
-              record.images = imagesArray.map(imgFileID => 
+              record.images = imagesArray.map(imgFileID =>
                 urlMap[imgFileID] || imgFileID
               );
             }
@@ -151,19 +142,19 @@ module.exports = async (event, context) => {
       }
     });
 
-    const result = {
-      list: list || [],
-      total: total || 0,
+    const finalResult = {
+      ...result,
+      list,
       stats
     };
 
     console.log('[getActivityRecords] 查询成功:', {
-      listCount: result.list.length,
+      listCount: list.length,
       total: result.total,
-      stats: result.stats
+      stats
     });
 
-    return response.success(result);
+    return response.success(finalResult);
 
   } catch (error) {
     console.error('[getActivityRecords] 查询失败:', error);

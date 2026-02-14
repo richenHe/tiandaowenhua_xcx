@@ -378,7 +378,77 @@ const handleSubmit = async () => {
     return;
   }
 
+  // 验证生辰八字格式（如果填写了任何一个字段）
+  const { year, month, day, hour } = formData.value.birthdate;
+  const hasBirthdateInput = year || month || day || hour;
+  
+  if (hasBirthdateInput) {
+    // 检查是否所有字段都填写完整
+    if (!year || !month || !day || !hour) {
+      uni.showModal({
+        title: '格式错误',
+        content: '生辰八字需要填写完整的年月日时',
+        showCancel: false,
+      });
+      return;
+    }
+    
+    // 验证年份：4位数字，范围1900-2100
+    const yearNum = parseInt(year);
+    if (!/^\d{4}$/.test(year) || yearNum < 1900 || yearNum > 2100) {
+      uni.showModal({
+        title: '格式错误',
+        content: '年份格式不正确，请输入4位数字（如：1990）',
+        showCancel: false,
+      });
+      return;
+    }
+    
+    // 验证月份：1-12
+    const monthNum = parseInt(month);
+    if (!/^\d{1,2}$/.test(month) || monthNum < 1 || monthNum > 12) {
+      uni.showModal({
+        title: '格式错误',
+        content: '月份格式不正确，请输入1-12之间的数字（如：01或1）',
+        showCancel: false,
+      });
+      return;
+    }
+    
+    // 验证日期：1-31
+    const dayNum = parseInt(day);
+    if (!/^\d{1,2}$/.test(day) || dayNum < 1 || dayNum > 31) {
+      uni.showModal({
+        title: '格式错误',
+        content: '日期格式不正确，请输入1-31之间的数字（如：01或1）',
+        showCancel: false,
+      });
+      return;
+    }
+    
+    // 验证时辰：0-23
+    const hourNum = parseInt(hour);
+    if (!/^\d{1,2}$/.test(hour) || hourNum < 0 || hourNum > 23) {
+      uni.showModal({
+        title: '格式错误',
+        content: '时辰格式不正确，请输入0-23之间的数字（如：08或8）',
+        showCancel: false,
+      });
+      return;
+    }
+  }
+
   try {
+    // 构建生辰八字字符串（格式化为标准格式：YYYY-MM-DD-HH）
+    let birthday = '';
+    if (formData.value.birthdate.year) {
+      const yearStr = formData.value.birthdate.year.padStart(4, '0');
+      const monthStr = formData.value.birthdate.month.padStart(2, '0');
+      const dayStr = formData.value.birthdate.day.padStart(2, '0');
+      const hourStr = formData.value.birthdate.hour.padStart(2, '0');
+      birthday = `${yearStr}-${monthStr}-${dayStr}-${hourStr}`;
+    }
+    
     // 调用API更新资料
     await UserApi.updateProfile({
       realName: formData.value.realName,
@@ -388,8 +458,7 @@ const handleSubmit = async () => {
       nickname: formData.value.nickName || '',
       gender: formData.value.gender === 'male' ? '男' : '女',
       industry: formData.value.industry || '',
-      birthday: formData.value.birthdate.year ?
-        `${formData.value.birthdate.year}-${formData.value.birthdate.month}-${formData.value.birthdate.day}-${formData.value.birthdate.hour}` : ''
+      birthday: birthday
     });
 
     uni.showToast({

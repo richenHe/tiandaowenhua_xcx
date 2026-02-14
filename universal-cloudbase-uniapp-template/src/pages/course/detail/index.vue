@@ -136,6 +136,7 @@ const isLoading = ref(true);
 // 加载课程详情
 const loadCourseDetail = async (courseId: number) => {
   try {
+    uni.showLoading({ title: '加载中...' });
     isLoading.value = true;
     const course = await CourseApi.getDetail(courseId);
 
@@ -160,8 +161,10 @@ const loadCourseDetail = async (courseId: number) => {
         courseInfo.value.outline = course.outline ? [course.outline] : [];
       }
     }
+    uni.hideLoading();
   } catch (error) {
     console.error('加载课程详情失败:', error);
+    uni.hideLoading();
     uni.showToast({
       title: '加载失败，请重试',
       icon: 'none'

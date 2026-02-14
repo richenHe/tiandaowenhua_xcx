@@ -2,28 +2,25 @@
  * 管理端接口：获取大使列表
  * Action: getAmbassadorList
  */
-const { query } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { level, keyword, page = 1, page_size = 20 } = event;
+  const { level, keyword, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getAmbassadorList] 查询大使列表:`, { level, keyword, page });
 
-    const { limit, offset } = getPagination(page, page_size);
-    const { db } = require('../../common/db');
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
-    // 构建查询（注意：users 表没有 deleted_at 字段）
+    // 构建查询
     let queryBuilder = db
       .from('users')
       .select('*', { count: 'exact' })
       .gt('ambassador_level', 0)
       .order('ambassador_level', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
     // 等级筛选
     if (level != null && level !== '') {
@@ -35,12 +32,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.or(`real_name.ilike.%${keyword}%,phone.ilike.%${keyword}%,referee_code.ilike.%${keyword}%`);
     }
 
-    const { data: ambassadors, error, count } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 统计每个大使的推荐数据
-    const list = await Promise.all((ambassadors || []).map(async (ambassador) => {
+    const list = await Promise.all((result.list || []).map(async (ambassador) => {
       // 统计推荐人数
       const { count: refereeCount } = await db
         .from('users')
@@ -72,9 +68,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: count || 0,
-      page,
-      page_size,
+      ...result,
       list
     });
 

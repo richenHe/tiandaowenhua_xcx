@@ -187,11 +187,14 @@ const videoList = computed(() => allMaterials.value.filter(m => m.category === '
 // 加载素材数据
 const loadMaterials = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await CourseApi.getMaterialList({ page: 1, page_size: 100 })
     allMaterials.value = result.list
+    uni.hideLoading()
   } catch (error) {
     console.error('加载素材失败:', error)
+    uni.hideLoading()
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false

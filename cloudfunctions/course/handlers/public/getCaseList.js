@@ -1,21 +1,21 @@
 /**
  * 获取案例列表（公开接口）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
-const { getTempFileURL } = require('../../common/storage');
+const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { category, keyword, page = 1, page_size = 10 } = event;
+  const { category, keyword, page = 1, page_size = 10, pageSize } = event;
 
   try {
-    const { offset, limit } = getPagination(page, page_size);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
     // 构建查询（注意：academy_cases 表没有 deleted_at 字段）
     let queryBuilder = db.from('academy_cases')
       .select('id, category, category_label, badge_theme, student_surname, student_name, student_desc, student_avatar, student_title, avatar_theme, title, summary, content, quote, achievements, video_url, images, course_name, view_count, like_count, is_featured, sort_order, created_at', { count: 'exact' })
-      .eq('status', 1);
+      .eq('status', 1)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
 
     // 添加分类过滤
     if (category) {
@@ -27,18 +27,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,summary.ilike.%${keyword}%,student_name.ilike.%${keyword}%`);
     }
 
-    // 执行查询（带总数和分页）
-    const { data: list, error, count: total } = await queryBuilder
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 处理返回数据 - 解析 JSON 字段
-    const processedList = (list || []).map(caseItem => {
+    const processedList = (result.list || []).map(caseItem => {
       try {
         // 解析 achievements JSON 字符串
         if (caseItem.achievements && typeof caseItem.achievements === 'string') {
@@ -90,7 +83,7 @@ module.exports = async (event, context) => {
         }
         // 转换 images 数组中的 fileID
         if (Array.isArray(caseItem.images)) {
-          caseItem.images = caseItem.images.map(imgFileID => 
+          caseItem.images = caseItem.images.map(imgFileID =>
             urlMap[imgFileID] || imgFileID
           );
         }
@@ -98,9 +91,7 @@ module.exports = async (event, context) => {
     }
 
     return response.success({
-      total: total || 0,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
+      ...result,
       list: processedList
     });
 

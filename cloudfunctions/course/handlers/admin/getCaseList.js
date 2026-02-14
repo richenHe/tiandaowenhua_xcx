@@ -1,17 +1,16 @@
 /**
  * 获取案例列表（管理端接口）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { category, status, keyword, page = 1, page_size = 10 } = event;
+  const { category, status, keyword, page = 1, page_size = 10, pageSize } = event;
 
   try {
-    const { offset, limit } = getPagination(page, page_size);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
-    // 构建查询（注意：academy_cases 表没有 deleted_at 字段，实际字段是 image_url 而非 cover_image）
+    // 构建查询
     let queryBuilder = db
       .from('academy_cases')
       .select(`
@@ -33,7 +32,9 @@ module.exports = async (event, context) => {
         status,
         created_at,
         updated_at
-      `, { count: 'exact' });
+      `, { count: 'exact' })
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
 
     // 添加状态过滤
     if (status != null && status !== '') {
@@ -45,24 +46,12 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,summary.ilike.%${keyword}%,student_name.ilike.%${keyword}%`);
     }
 
-    // 排序和分页
-    queryBuilder = queryBuilder
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // 执行查询
-    const { data: list, error, count: total } = await queryBuilder;
-
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     return response.success({
-      total,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
-      list: list || []
+      ...result,
+      list: result.list || []
     });
 
   } catch (error) {

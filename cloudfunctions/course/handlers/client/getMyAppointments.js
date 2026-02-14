@@ -1,19 +1,17 @@
 /**
  * 获取我的预约列表（客户端接口）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { status, page = 1, page_size = 10 } = event;
+  const { status, page = 1, page_size = 10, pageSize } = event;
   const { user } = context;
 
   try {
     console.log(`[Course/getMyAppointments] 收到请求:`, { user_id: user.id, status, page });
 
-    // 计算分页参数
-    const limit = parseInt(page_size) || 10;
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
     // 构建基础查询 - 使用外键 JOIN
     let queryBuilder = db
@@ -39,24 +37,16 @@ module.exports = async (event, context) => {
           teacher
         )
       `, { count: 'exact' })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
     // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
-    // 排序和分页
-    queryBuilder = queryBuilder
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // 执行查询
-    const { data: appointments, error, count: total } = await queryBuilder;
-
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化数据
     const getStatusName = (status) => {
@@ -69,7 +59,7 @@ module.exports = async (event, context) => {
       return statusMap[status] || '未知';
     };
 
-    const list = (appointments || []).map(a => ({
+    const list = (result.list || []).map(a => ({
       id: a.id,
       course_id: a.course_id,
       course_name: a.course?.name,
@@ -87,12 +77,10 @@ module.exports = async (event, context) => {
       cancelled_at: a.cancel_time
     }));
 
-    console.log(`[Course/getMyAppointments] 查询成功，共 ${total} 条预约`);
+    console.log(`[Course/getMyAppointments] 查询成功，共 ${result.total} 条预约`);
 
     return response.success({
-      total: total || 0,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
+      ...result,
       list
     });
 

@@ -2,27 +2,24 @@
  * 管理端接口：获取协议模板列表
  * Action: getContractTemplateList
  */
-const { query } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { level, status, page = 1, page_size = 20 } = event;
+  const { level, status, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getContractTemplateList] 查询协议模板列表:`, { level, status, page });
 
-    const { limit, offset } = getPagination(page, page_size);
-    const { db } = require('../../common/db');
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('contract_templates')
       .select('*', { count: 'exact' })
       .order('level', { ascending: true })
-      .order('version', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('version', { ascending: false });
 
     // 等级筛选
     if (level != null && level !== '') {
@@ -34,12 +31,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.eq('status', status);
     }
 
-    const { data: templates, error, count } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 统计每个模板的签署数量
-    const list = await Promise.all((templates || []).map(async (template) => {
+    const list = await Promise.all((result.list || []).map(async (template) => {
       const { count: signatureCount } = await db
         .from('contract_signatures')
         .select('*', { count: 'exact', head: true })
@@ -59,9 +55,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: count || 0,
-      page,
-      page_size,
+      ...result,
       list
     });
 

@@ -8,20 +8,20 @@
  * - status: 状态筛选（可选）
  * - type: 类型筛选（可选）
  */
-const { db } = require('../../common/db');
-const { response, getPagination } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, status, type } = event;
+  const { page = 1, page_size = 20, pageSize, status, type } = event;
 
   try {
     console.log(`[admin:getFeedbackList] 管理员 ${admin.id} 获取反馈列表`);
 
-    const { limit, offset } = getPagination(page, page_size);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询（使用外键名进行 JOIN）
-    let query = db
+    let queryBuilder = db
       .from('feedbacks')
       .select(`
         id,
@@ -38,44 +38,26 @@ module.exports = async (event, context) => {
         created_at,
         user:users!fk_feedbacks_user(real_name, phone),
         course:courses!fk_feedbacks_course(name)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
     // 状态筛选
     if (status !== undefined && status !== null && status !== '') {
-      query = query.eq('status', status);
+      queryBuilder = queryBuilder.eq('status', status);
     }
 
     // 类型筛选
     if (type) {
-      query = query.eq('feedback_type', type);
+      queryBuilder = queryBuilder.eq('feedback_type', type);
     }
 
-    // 分页
-    const { data: feedbacks, error } = await query.range(offset, offset + limit - 1);
-
-    if (error) {
-      throw error;
-    }
-
-    // 统计总数
-    let countQuery = db
-      .from('feedbacks')
-      .select('*', { count: 'exact', head: true });
-
-    if (status !== undefined && status !== null && status !== '') {
-      countQuery = countQuery.eq('status', status);
-    }
-    if (type) {
-      countQuery = countQuery.eq('feedback_type', type);
-    }
-
-    const { count: total } = await countQuery;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 处理数据
-    const processedFeedbacks = feedbacks.map(f => {
+    const list = (result.list || []).map(f => {
       let images = [];
-      
+
       // 安全解析 images 字段
       if (f.images) {
         try {
@@ -88,7 +70,7 @@ module.exports = async (event, context) => {
           }
         }
       }
-      
+
       return {
         ...f,
         images,
@@ -98,10 +80,8 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      list: processedFeedbacks,
-      total,
-      page: parseInt(page),
-      page_size: parseInt(page_size)
+      ...result,
+      list
     }, '获取成功');
 
   } catch (error) {

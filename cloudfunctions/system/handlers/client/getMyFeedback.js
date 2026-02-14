@@ -6,20 +6,20 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10）
  */
-const { query, db } = require('../../common/db');
-const { response, getPagination } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { page = 1, page_size = 10 } = event;
+  const { page = 1, page_size = 10, pageSize } = event;
 
   try {
     console.log(`[getMyFeedback] 用户 ${user.id} 获取反馈列表`);
 
-    const { limit, offset } = getPagination(page, page_size);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
-    // 查询反馈列表（包含课程信息）
-    const { data: feedbacks, error } = await db
+    // 构建查询（包含课程信息）
+    let queryBuilder = db
       .from('feedbacks')
       .select(`
         id,
@@ -33,23 +33,15 @@ module.exports = async (event, context) => {
         reply_time,
         created_at,
         course:courses(name, cover_image)
-      `)
+      `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
-
-    // 统计总数
-    const { count: total } = await db
-      .from('feedbacks')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 处理图片字段
-    const processedFeedbacks = feedbacks.map(f => ({
+    const list = (result.list || []).map(f => ({
       ...f,
       images: f.images ? JSON.parse(f.images) : [],
       type_text: getTypeText(f.type),
@@ -57,10 +49,8 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      list: processedFeedbacks,
-      total,
-      page: parseInt(page),
-      page_size: parseInt(page_size)
+      ...result,
+      list
     }, '获取成功');
 
   } catch (error) {

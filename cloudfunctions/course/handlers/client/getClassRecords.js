@@ -1,28 +1,27 @@
 /**
  * 获取上课排期列表（客户端接口）
  */
-const { db, response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   // 支持驼峰和下划线两种参数格式
-  const { 
-    courseId, 
-    course_id, 
-    startDate, 
-    start_date, 
-    endDate, 
-    end_date, 
-    page = 1, 
-    pageSize, 
-    page_size 
+  const {
+    courseId,
+    course_id,
+    startDate,
+    start_date,
+    endDate,
+    end_date,
+    page = 1,
+    pageSize,
+    page_size
   } = event;
-  
+
   // 统一转换为下划线格式
   const finalCourseId = courseId || course_id;
   const finalStartDate = startDate || start_date;
   const finalEndDate = endDate || end_date;
-  const finalPageSize = pageSize || page_size || 10;
+  const finalPageSize = page_size || pageSize || 10;
   const { user } = context;
 
   try {
@@ -31,16 +30,12 @@ module.exports = async (event, context) => {
       return response.paramError('缺少必填参数: courseId');
     }
 
-    console.log(`[Course/getClassRecords] 收到请求:`, { 
-      course_id: finalCourseId, 
-      start_date: finalStartDate, 
-      end_date: finalEndDate, 
-      page 
+    console.log(`[Course/getClassRecords] 收到请求:`, {
+      course_id: finalCourseId,
+      start_date: finalStartDate,
+      end_date: finalEndDate,
+      page
     });
-
-    // 计算分页参数
-    const limit = parseInt(finalPageSize) || 10;
-    const offset = (parseInt(page) - 1) * limit;
 
     // 构建查询
     let queryBuilder = db
@@ -59,7 +54,8 @@ module.exports = async (event, context) => {
         booked_quota
       `, { count: 'exact' })
       .eq('course_id', finalCourseId)
-      .eq('status', 1);
+      .eq('status', 1)
+      .order('class_date', { ascending: true });
 
     // 日期过滤
     if (finalStartDate) {
@@ -70,22 +66,13 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.lte('class_date', finalEndDate);
     }
 
-    // 排序和分页
-    queryBuilder = queryBuilder
-      .order('class_date', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    // 执行查询
-    const { data: classRecords, error, count: total } = await queryBuilder;
-
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 查询当前用户的预约记录
-    const classRecordIds = (classRecords || []).map(cr => cr.id);
+    const classRecordIds = (result.list || []).map(cr => cr.id);
     let userAppointments = [];
-    
+
     if (classRecordIds.length > 0) {
       const { data: appointments } = await db
         .from('appointments')
@@ -93,12 +80,12 @@ module.exports = async (event, context) => {
         .eq('user_id', user.id)
         .in('class_record_id', classRecordIds)
         .in('status', [1, 2]); // 1=待上课, 2=已签到
-      
+
       userAppointments = (appointments || []).map(a => a.class_record_id);
     }
 
     // 格式化数据
-    const list = (classRecords || []).map(cr => ({
+    const list = (result.list || []).map(cr => ({
       id: cr.id,
       course_id: cr.course_id,
       course_name: cr.course_name,
@@ -112,12 +99,10 @@ module.exports = async (event, context) => {
       is_appointed: userAppointments.includes(cr.id) ? 1 : 0
     }));
 
-    console.log(`[Course/getClassRecords] 查询成功，共 ${total} 条排期`);
+    console.log(`[Course/getClassRecords] 查询成功，共 ${result.total} 条排期`);
 
     return response.success({
-      total: total || 0,
-      page: parseInt(page),
-      page_size: parseInt(page_size),
+      ...result,
       list
     });
 

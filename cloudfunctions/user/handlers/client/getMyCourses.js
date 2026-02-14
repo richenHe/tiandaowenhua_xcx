@@ -1,23 +1,24 @@
 /**
  * 客户端接口：获取我的课程列表
  * Action: client:getMyCourses
- * 
+ *
  * 使用 Supabase 风格 JOIN 查询，利用外键约束优化性能
  */
 const { db } = require('../../common/db');
-const { response, utils } = require('../../common');
+const { response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { page = 1, pageSize = 10 } = event;
+  const { page = 1, page_size = 10, pageSize } = event;
 
   try {
     console.log('[getMyCourses] 获取我的课程:', user.id);
 
-    const { offset, limit } = utils.getPagination(page, pageSize);
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 10;
 
-    // 一次查询获取所有数据（利用外键 fk_user_courses_course）
-    const { data: courses, error, count: total } = await db
+    // 构建查询（利用外键 fk_user_courses_course）
+    let queryBuilder = db
       .from('user_courses')
       .select(`
         *,
@@ -36,15 +37,13 @@ module.exports = async (event, context) => {
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化数据
-    const list = (courses || []).map(uc => ({
+    const list = (result.list || []).map(uc => ({
       id: uc.id,
       user_id: uc.user_id,
       course_id: uc.course_id,
@@ -66,11 +65,9 @@ module.exports = async (event, context) => {
       outline: uc.course?.outline
     }));
 
-    console.log('[getMyCourses] 查询成功，共', total, '条');
+    console.log('[getMyCourses] 查询成功，共', result.total, '条');
     return response.success({
-      total,
-      page,
-      pageSize,
+      ...result,
       list
     });
 

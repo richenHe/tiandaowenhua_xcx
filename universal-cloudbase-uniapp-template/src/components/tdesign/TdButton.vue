@@ -9,10 +9,7 @@
     @getuserinfo="emit('getuserinfo', $event)"
     @getphonenumber="emit('getphonenumber', $event)"
   >
-    <view v-if="loading" class="t-button__loading">
-      <view class="t-button__loading-icon"></view>
-    </view>
-    <view v-else-if="icon" class="t-button__icon">
+    <view v-if="icon && !loading" class="t-button__icon">
       <text>{{ icon }}</text>
     </view>
     <view class="t-button__text">
@@ -321,32 +318,9 @@ const handleClick = (e: Event) => {
   cursor: not-allowed;
 }
 
-// 加载中
+// 加载中（使用原生微信 loading）
 .t-button--loading {
   cursor: wait;
-}
-
-.t-button__loading {
-  display: inline-flex;
-  align-items: center;
-}
-
-.t-button__loading-icon {
-  width: 28rpx;
-  height: 28rpx;
-  border: 4rpx solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: button-loading-rotate 1s linear infinite;
-}
-
-@keyframes button-loading-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 // 块级按钮

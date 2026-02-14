@@ -6,47 +6,45 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10，最大50）
  */
-const { query, count, response, getPagination, storage } = require('common'); // 引入 storage
+const { db, response, executePaginatedQuery, storage } = require('common');
 
 module.exports = async (event, context) => {
-  const { page = 1, page_size = 10 } = event;
+  const { page = 1, page_size = 10, pageSize } = event;
 
   try {
     console.log(`[client:getAnnouncementList] 获取公告列表, page=${page}, page_size=${page_size}`);
 
-    // 限制每页最大数量
-    const limitedPageSize = Math.min(parseInt(page_size), 50);
-    const { limit, offset } = getPagination(page, limitedPageSize);
+    // 兼容 pageSize 参数，限制每页最大数量
+    const finalPageSize = Math.min(parseInt(page_size || pageSize || 10), 50);
 
-    // 使用 Query Builder 方式查询已发布的公告
-    const queryOptions = {
-      where: { status: 1 },
-      columns: 'id, title, content, summary, cover_image, category, target_type, is_top, start_time, end_time, view_count, sort_order, published_at, created_at',
-      limit,
-      offset
-    };
+    // 构建查询
+    let queryBuilder = db
+      .from('announcements')
+      .select('id, title, content, summary, cover_image, category, target_type, is_top, start_time, end_time, view_count, sort_order, published_at, created_at', { count: 'exact' })
+      .eq('status', 1)
+      .order('is_top', { ascending: false })
+      .order('sort_order', { ascending: false })
+      .order('published_at', { ascending: false });
 
-    const announcements = await query('announcements', queryOptions);
-
-    // 统计总数
-    const total = await count('announcements', { status: 1 });
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 处理数据并转换云存储 fileID 为临时 URL
-    const processedAnnouncements = await Promise.all((announcements || []).map(async a => {
+    const list = await Promise.all((result.list || []).map(async a => {
       let coverImageUrl = a.cover_image || '';
       if (a.cover_image) {
         try {
-          const result = await storage.getTempFileURL(a.cover_image);
-          if (result.success && result.tempFileURL) {
-            coverImageUrl = result.tempFileURL;
+          const tempResult = await storage.getTempFileURL(a.cover_image);
+          if (tempResult.success && tempResult.tempFileURL) {
+            coverImageUrl = tempResult.tempFileURL;
           } else {
-            console.warn(`[getAnnouncementList] 转换临时URL失败，fileID: ${a.cover_image}, 错误: ${result.message}`);
+            console.warn(`[getAnnouncementList] 转换临时URL失败，fileID: ${a.cover_image}, 错误: ${tempResult.message}`);
           }
         } catch (error) {
           console.warn('[getAnnouncementList] 转换临时URL失败:', a.cover_image, error.message);
         }
       }
-      
+
       return {
         ...a,
         cover_image: coverImageUrl,
@@ -56,10 +54,8 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      list: processedAnnouncements,
-      total: total || 0,
-      page: parseInt(page),
-      page_size: limitedPageSize
+      ...result,
+      list
     }, '获取成功');
 
   } catch (error) {

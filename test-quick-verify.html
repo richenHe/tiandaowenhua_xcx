@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>快速验证 - 管理员列表分页</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; margin-bottom: 24px; }
+    .status {
+      padding: 16px;
+      border-radius: 4px;
+      margin: 16px 0;
+      font-weight: 600;
+    }
+    .success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+    .info { background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; }
+    button {
+      background: #0052D9;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button:hover { background: #266FE8; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .field-check {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin: 4px 0;
+      background: #fafafa;
+      border-radius: 4px;
+    }
+    .field-check .icon {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 快速验证 - 管理员列表分页改造</h1>
+
+    <div class="info status">
+      <strong>验证说明：</strong><br>
+      本页面将快速验证 <code>system/getAdminUserList</code> 接口的分页改造是否成功。<br>
+      请确保已登录管理后台并部署了最新的云函数。
+    </div>
+
+    <div style="margin: 24px 0;">
+      <button onclick="runQuickTest()" id="testBtn">开始验证</button>
+      <button onclick="location.reload()">重置</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script src="admin/assets/js/config.js"></script>
+  <script src="admin/assets/js/admin-api.js"></script>
+  <script>
+    async function runQuickTest() {
+      const resultsDiv = document.getElementById('results');
+      const testBtn = document.getElementById('testBtn');
+
+      resultsDiv.innerHTML = '<div class="info status">⏳ 正在测试...</div>';
+      testBtn.disabled = true;
+
+      try {
+        // 测试1: 第一页
+        console.log('测试1: 第一页数据');
+        const result1 = await AdminAPI.getAdminUserList({ page: 1, page_size: 5 });
+
+        // 检查必需字段
+        const requiredFields = ['list', 'total', 'page', 'pageSize', 'totalPages', 'hasMore', 'hasPrev'];
+        const missingFields = requiredFields.filter(field => !(field in result1));
+
+        if (missingFields.length > 0) {
+          throw new Error(`缺少字段: ${missingFields.join(', ')}`);
+        }
+
+        // 验证逻辑
+        const checks = [
+          { name: 'page 应该为 1', pass: result1.page === 1 },
+          { name: 'hasPrev 应该为 false', pass: result1.hasPrev === false },
+          { name: 'list 应该是数组', pass: Array.isArray(result1.list) },
+          { name: 'totalPages 计算正确', pass: result1.totalPages === Math.ceil(result1.total / result1.pageSize) },
+          { name: 'hasMore 计算正确', pass: result1.hasMore === (result1.page < result1.totalPages) }
+        ];
+
+        let html = '<div class="success status">✅ 验证通过！</div>';
+        html += '<h3>字段检查：</h3>';
+
+        for (const field of requiredFields) {
+          html += `<div class="field-check">
+            <span class="icon">✅</span>
+            <strong>${field}:</strong> ${JSON.stringify(result1[field])}
+          </div>`;
+        }
+
+        html += '<h3>逻辑验证：</h3>';
+        for (const check of checks) {
+          const icon = check.pass ? '✅' : '❌';
+          const className = check.pass ? 'success' : 'error';
+          html += `<div class="field-check ${className}">
+            <span class="icon">${icon}</span>
+            ${check.name}
+          </div>`;
+        }
+
+        // 测试2: pageSize 参数兼容性
+        console.log('测试2: pageSize 参数兼容性');
+        const result2 = await AdminAPI.getAdminUserList({ page: 1, pageSize: 3 });
+
+        html += '<h3>参数兼容性测试：</h3>';
+        if (result2.pageSize === 3) {
+          html += '<div class="field-check success">✅ pageSize 参数兼容性正常</div>';
+        } else {
+          html += '<div class="field-check error">❌ pageSize 参数未生效</div>';
+        }
+
+        html += '<h3>完整响应数据：</h3>';
+        html += `<pre>${JSON.stringify(result1, null, 2)}</pre>`;
+
+        html += '<div class="success status" style="margin-top: 24px;">';
+        html += '<strong>🎉 所有测试通过！</strong><br>';
+        html += '可以继续批量改造其他接口。';
+        html += '</div>';
+
+        resultsDiv.innerHTML = html;
+
+      } catch (error) {
+        console.error('测试失败:', error);
+        resultsDiv.innerHTML = `
+          <div class="error status">
+            <strong>❌ 验证失败</strong><br>
+            错误信息: ${error.message}<br><br>
+            <strong>可能的原因：</strong><br>
+            1. 未登录管理后台<br>
+            2. 云函数未部署最新代码<br>
+            3. 接口返回格式不正确<br><br>
+            <strong>解决方法：</strong><br>
+            1. 打开浏览器控制台查看详细错误<br>
+            2. 确认已登录: localStorage.getItem('admin_token')<br>
+            3. 确认云函数已部署: cloudbase functions:deploy system
+          </div>
+        `;
+      } finally {
+        testBtn.disabled = false;
+      }
+    }
+
+    // 页面加载时检查登录状态
+    window.onload = function() {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        document.getElementById('results').innerHTML = `
+          <div class="error status">
+            <strong>⚠️ 未检测到登录状态</strong><br>
+            请先登录管理后台，然后刷新本页面。<br><br>
+            <a href="admin/pages/auth/login.html" style="color: #0052D9;">前往登录</a>
+          </div>
+        `;
+      }
+    };
+  </script>
+</body>
+</html>

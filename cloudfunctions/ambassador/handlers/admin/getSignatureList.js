@@ -2,19 +2,17 @@
  * 管理端接口：获取签署列表
  * Action: getSignatureList
  */
-const { query } = require('../../common/db');
-const { response } = require('../../common');
-const { getPagination } = require('../../common/utils');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { template_id, level, status, page = 1, page_size = 20 } = event;
+  const { template_id, level, status, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getSignatureList] 查询签署列表:`, { template_id, level, status, page });
 
-    const { limit, offset } = getPagination(page, page_size);
-    const { db } = require('../../common/db');
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询
     let queryBuilder = db
@@ -24,8 +22,7 @@ module.exports = async (event, context) => {
         user:users!fk_contract_signatures_user(id, real_name, phone, avatar),
         template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `, { count: 'exact' })
-      .order('sign_time', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('sign_time', { ascending: false });
 
     // 模板筛选
     if (template_id) {
@@ -42,12 +39,11 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.eq('status', status);
     }
 
-    const { data: signatures, error, count } = await queryBuilder;
-
-    if (error) throw error;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 格式化返回数据
-    const list = (signatures || []).map(sig => ({
+    const list = (result.list || []).map(sig => ({
       id: sig.id,
       user_id: sig.user_id,
       user_name: sig.user?.real_name,
@@ -67,9 +63,7 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      total: count || 0,
-      page,
-      page_size,
+      ...result,
       list
     });
 

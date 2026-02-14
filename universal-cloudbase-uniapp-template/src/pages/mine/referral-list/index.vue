@@ -178,8 +178,22 @@ const finished = ref(false)
 // 获取我的推荐人信息
 const loadRefereeInfo = async () => {
   try {
-    const result = await UserApi.getRefereeInfo()
-    referee.value = result
+    const profile = await UserApi.getProfile()
+    
+    // 如果有推荐人，构建推荐人信息
+    if (profile.referee_id && profile.referee_name) {
+      referee.value = {
+        id: profile.referee_id,
+        real_name: profile.referee_name,
+        phone: '', // 推荐人手机号由后端返回，这里暂时为空
+        referral_code: '',
+        ambassador_level: profile.referee_level || 0,
+        avatar: '',
+        created_at: profile.referee_confirmed_at || profile.created_at
+      }
+    } else {
+      referee.value = null
+    }
   } catch (error) {
     console.error('获取推荐人信息失败:', error)
   }

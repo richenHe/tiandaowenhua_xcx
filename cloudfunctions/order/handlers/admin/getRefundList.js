@@ -4,25 +4,24 @@
  *
  * 参数：
  * - page: 页码（默认1）
- * - pageSize: 每页数量（默认20）
+ * - page_size: 每页数量（默认20）
  * - refund_status: 退款状态筛选（可选）
  * - keyword: 搜索关键词（订单号/用户姓名/手机号）
  */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, pageSize = 20, refund_status, keyword } = event;
+  const { page = 1, page_size = 20, pageSize, refund_status, keyword } = event;
 
   try {
     console.log(`[admin:getRefundList] 管理员 ${admin.id} 获取退款列表`);
 
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
+    // 兼容 pageSize 参数
+    const finalPageSize = page_size || pageSize || 20;
 
     // 构建查询（使用外键名进行 JOIN）
-    let query = db
+    let queryBuilder = db
       .from('orders')
       .select(`
         id,
@@ -46,42 +45,22 @@ module.exports = async (event, context) => {
         admin_remark,
         created_at,
         user:users!fk_orders_user(real_name, phone)
-      `)
+      `, { count: 'exact' })
       .gt('refund_status', 0)
       .order('refund_time', { ascending: false });
 
     // 退款状态筛选
     if (refund_status != null && refund_status !== '') {
-      query = query.eq('refund_status', parseInt(refund_status));
+      queryBuilder = queryBuilder.eq('refund_status', parseInt(refund_status));
     }
 
     // 关键词搜索
     if (keyword) {
-      query = query.or(`order_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`order_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
     }
 
-    // 分页
-    const { data: refunds, error } = await query.range(offset, offset + limit - 1);
-
-    if (error) {
-      throw error;
-    }
-
-    // 统计总数
-    let countQuery = db
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .gt('refund_status', 0);
-
-    if (refund_status != null && refund_status !== '') {
-      countQuery = countQuery.eq('refund_status', parseInt(refund_status));
-    }
-
-    if (keyword) {
-      countQuery = countQuery.or(`order_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
-    }
-
-    const { count: total } = await countQuery;
+    // 执行分页查询
+    const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 统计数据
     const statistics = {
@@ -117,7 +96,7 @@ module.exports = async (event, context) => {
     }
 
     // 处理数据 - 映射字段名称
-    const processedRefunds = refunds.map(order => ({
+    const list = (result.list || []).map(order => ({
       id: order.id,
       order_no: order.order_no,
       order_type: order.order_type,
@@ -135,10 +114,8 @@ module.exports = async (event, context) => {
     }));
 
     return response.success({
-      list: processedRefunds,
-      total,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize),
+      ...result,
+      list,
       statistics
     }, '获取成功');
 
