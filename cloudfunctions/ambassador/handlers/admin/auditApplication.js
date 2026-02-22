@@ -39,12 +39,13 @@ module.exports = async (event, context) => {
     }
 
     // 更新申请状态
+    const { formatDateTime } = require('../../common/utils');
     await update('ambassador_applications',
       {
         status: approved ? 1 : 2,
         reject_reason: approved ? null : reject_reason,
-        reviewed_at: new Date().toISOString(),
-        reviewer_id: admin.id
+        audit_time: formatDateTime(new Date()),
+        audit_admin_id: admin.id
       },
       { id: application_id }
     );
@@ -54,7 +55,7 @@ module.exports = async (event, context) => {
       await update('users',
         {
           ambassador_level: 1,  // 初级大使
-          ambassador_approved_at: new Date().toISOString()
+          ambassador_start_date: formatDateTime(new Date()).split(' ')[0]  // 只保留日期部分
         },
         { id: user.id }
       );
@@ -76,10 +77,9 @@ module.exports = async (event, context) => {
     }
 
     return response.success({
-      application_id,
-      approved,
+      success: true,
       message: approved ? '申请已通过，用户已成为初级大使' : '申请已拒绝'
-    }, '审核成功');
+    });
 
   } catch (error) {
     console.error(`[auditApplication] 失败:`, error);

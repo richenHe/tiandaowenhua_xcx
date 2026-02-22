@@ -152,6 +152,7 @@ const courseList = ref<any[]>([]);
 // 加载课程列表
 const loadCourseList = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await CourseApi.getList({ page: 1, page_size: 20 });
 
     // 转换课程数据格式
@@ -164,8 +165,14 @@ const loadCourseList = async () => {
       type: getCourseTypeKey(course.type),
       purchased: false // 需要从用户已购课程中判断
     }));
+    uni.hideLoading()
   } catch (error) {
     console.error('加载课程列表失败:', error);
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 };
 
@@ -231,6 +238,7 @@ const onBannerClick = (banner: any) => {
 // 加载轮播图列表
 const loadBannerList = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getBannerList();
     if (result.list && result.list.length > 0) {
       // 将后台返回的数据转换为前端需要的格式
@@ -244,8 +252,10 @@ const loadBannerList = async () => {
         cover_image: item.cover_image
       }));
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('加载轮播图失败:', error);
+    uni.hideLoading()
     // 失败时使用默认数据
     bannerList.value = [
       {
@@ -291,6 +301,7 @@ const onDateSelect = (date: Date) => {
 
 const loadCalendarPriceData = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
@@ -312,8 +323,10 @@ const loadCalendarPriceData = async () => {
       transformedData[date] = result[date].nickname;
     }
     calendarPriceData.value = transformedData;
+    uni.hideLoading()
   } catch (error) {
     console.error('加载日历数据失败:', error);
+    uni.hideLoading()
     calendarPriceData.value = {};
   }
 };
@@ -338,6 +351,7 @@ onMounted(() => {
 // 加载公告列表
 const loadAnnouncements = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getAnnouncementList({ page: 1, page_size: 3 });
     if (result.list && result.list.length > 0) {
       announcementList.value = result.list.map((item: any) => ({
@@ -345,8 +359,10 @@ const loadAnnouncements = async () => {
         title: item.title
       }));
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('加载公告失败:', error);
+    uni.hideLoading()
   }
 };
 </script>

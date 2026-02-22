@@ -30,6 +30,18 @@ module.exports = async (event, context) => {
     const typeNames = { 1: '初探班', 2: '密训班', 3: '咨询服务' };
     course.type_name = typeNames[course.type] || '未知';
 
+    // 🔥 处理课程大纲 JSON 解析
+    if (course.outline && typeof course.outline === 'string') {
+      try {
+        course.outline = JSON.parse(course.outline);
+      } catch (e) {
+        // 如果解析失败，转换为数组
+        course.outline = [course.outline];
+      }
+    } else if (!course.outline) {
+      course.outline = [];
+    }
+
     // 如果用户已登录，查询购买状态和上课次数
     if (OPENID) {
       const user = await findOne('users', { _openid: OPENID });

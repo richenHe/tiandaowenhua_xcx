@@ -3,17 +3,8 @@
     <TdPageHeader title="初探班详情" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <!-- 加载中占位符 -->
-      <view v-if="isLoading" class="loading-placeholder">
-        <view class="t-card t-card--bordered">
-          <view class="t-card__body">
-            <view class="loading-text">加载中...</view>
-          </view>
-        </view>
-      </view>
-
       <!-- 课程内容 -->
-      <view v-else>
+      <view v-if="!isLoading">
         <!-- 封面图片 -->
         <view class="cover-image">📚</view>
 
@@ -261,21 +252,6 @@ const handleBuy = () => {
   padding-bottom: calc(152rpx + env(safe-area-inset-bottom)); // 为固定底部预留空间 + 额外留白
   background-color: $td-bg-color-page;
   min-height: calc(100vh - 420rpx - var(--td-page-header-height)); // 确保内容区域填满屏幕
-}
-
-// 加载占位符
-.loading-placeholder {
-  padding: 32rpx;
-  min-height: 50vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loading-text {
-  text-align: center;
-  color: $td-text-color-placeholder;
-  font-size: 28rpx;
 }
 
 // 卡片样式

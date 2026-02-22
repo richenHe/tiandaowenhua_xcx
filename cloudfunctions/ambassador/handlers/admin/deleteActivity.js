@@ -30,9 +30,9 @@ module.exports = async (event, context) => {
     );
 
     return response.success({
-      activity_id,
+      success: true,
       message: '活动已删除'
-    }, '删除成功');
+    });
 
   } catch (error) {
     console.error(`[deleteActivity] 失败:`, error);

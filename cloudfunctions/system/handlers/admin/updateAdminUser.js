@@ -55,7 +55,7 @@ module.exports = async (event, context) => {
     // 更新管理员
     await update('admin_users', updateData, { id });
 
-    return response.success({ id }, '更新成功');
+    return response.success({ success: true, id }, '更新成功');
 
   } catch (error) {
     console.error('[admin:updateAdminUser] 失败:', error);

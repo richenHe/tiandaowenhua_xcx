@@ -64,12 +64,14 @@ module.exports = async (event, context) => {
       // 记录积分变动
       await insert('cash_points_records', {
         user_id: user.id,
+        user_uid: user.uid,
         type: 3, // 提现
         amount: -withdrawal.amount,
-        balance_after: user.cash_points_frozen - withdrawal.amount,
-        source_type: 4, // 提现
-        source_id: withdrawal_id,
-        description: `提现审核通过：${withdrawal.amount}元`
+        frozen_after: user.cash_points_frozen - withdrawal.amount,
+        available_after: user.cash_points_available,
+        withdraw_no: withdrawal.withdraw_no,
+        remark: `提现审核通过：${withdrawal.amount}元`,
+        _openid: ''
       });
 
       console.log(`[withdrawAudit] 审核通过`);

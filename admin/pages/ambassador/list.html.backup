@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>大使列表</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-header{margin-bottom:24px}.page-title{font-size:20px;font-weight:600;color:#333;margin:0 0 8px 0}.page-desc{font-size:14px;color:#999;margin:0}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+    /* TDesign 布局样式 - 必需！*/
+    .t-layout {
+      height: 100vh;
+    }
+    
+    .t-layout__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      background: #fff;
+      border-bottom: 1px solid #dcdcdc;
+    }
+    
+    .t-layout__sider {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      width: 240px !important;
+      flex-shrink: 0;
+    }
+    
+    .t-layout__content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+
+  </style></head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="ambassador-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">大使列表</h1><p class="page-desc">管理天道文化大使账户</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="姓名/手机号" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.level" :options="levelOptions" placeholder="大使等级" clearable style="width:150px;"/><t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width:150px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #level="{ row }"><t-tag v-if="row.ambassador_level===1" theme="default">云雀</t-tag><t-tag v-else-if="row.ambassador_level===2" theme="primary">青鸾</t-tag><t-tag v-else-if="row.ambassador_level===3" theme="warning">鸿鹄</t-tag></template><template #points="{ row }"><div><div style="font-weight:600;">功德分: {{row.merit_points||0}}</div><div style="font-size:12px;color:#666;">现金分: {{row.cash_points_available||0}}</div></div></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleView(row)">查看详情</t-button><t-button theme="default" size="small" variant="text" @click="handleAdjustPoints(row)">调整积分</t-button><t-button theme="warning" size="small" variant="text" @click="handleUpgrade(row)">升级</t-button></t-space></template></t-table></div><t-dialog v-model:visible="detailVisible" header="大使详情" width="650px" :footer="false"><t-descriptions v-if="currentRecord" bordered :column="2"><t-descriptions-item label="ID">{{currentRecord.id}}</t-descriptions-item><t-descriptions-item label="姓名">{{currentRecord.real_name}}</t-descriptions-item><t-descriptions-item label="手机号">{{currentRecord.phone}}</t-descriptions-item><t-descriptions-item label="大使等级"><t-tag v-if="currentRecord.ambassador_level===1" theme="default">云雀</t-tag><t-tag v-else-if="currentRecord.ambassador_level===2" theme="primary">青鸾</t-tag><t-tag v-else-if="currentRecord.ambassador_level===3" theme="warning">鸿鹄</t-tag></t-descriptions-item><t-descriptions-item label="功德分">{{currentRecord.merit_points||0}}</t-descriptions-item><t-descriptions-item label="现金分可用">{{currentRecord.cash_points_available||0}}</t-descriptions-item><t-descriptions-item label="推荐人数">{{currentRecord.referral_count||0}}</t-descriptions-item><t-descriptions-item label="订单数">{{currentRecord.order_count||0}}</t-descriptions-item><t-descriptions-item label="注册时间" :span="2">{{currentRecord.created_at}}</t-descriptions-item></t-descriptions></t-dialog><t-dialog v-model:visible="pointsVisible" header="调整积分" width="500px" @confirm="handlePointsSubmit"><t-form :data="pointsForm"><t-form-item label="调整类型"><t-radio-group v-model="pointsForm.type"><t-radio value="merit">功德分</t-radio><t-radio value="cash">现金分</t-radio></t-radio-group></t-form-item><t-form-item label="调整方式"><t-radio-group v-model="pointsForm.action"><t-radio value="add">增加</t-radio><t-radio value="subtract">扣除</t-radio></t-radio-group></t-form-item><t-form-item label="调整数量"><t-input-number v-model="pointsForm.amount" :min="1" style="width:100%;"/></t-form-item><t-form-item label="调整原因"><t-textarea v-model="pointsForm.reason" placeholder="请输入调整原因" :maxlength="200"/></t-form-item></t-form></t-dialog>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const loading=ref(false);const tableData=ref([]);const detailVisible=ref(false);const pointsVisible=ref(false);const currentRecord=ref(null);const pointsForm=ref({type:'merit',action:'add',amount:0,reason:''});const filters=ref({keyword:'',level:null,status:null});const levelOptions=[{label:'云雀',value:1},{label:'青鸾',value:2},{label:'鸿鹄',value:3}];const statusOptions=[{label:'正常',value:1},{label:'冻结',value:0}];const pagination=ref({current:1,pageSize:20,total:0});const columns=[{colKey:'id',title:'ID',width:80},{colKey:'real_name',title:'姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'level',title:'等级',width:100,cell:'level'},{colKey:'points',title:'积分',width:150,cell:'points'},{colKey:'referral_count',title:'推荐人数',width:100},{colKey:'order_count',title:'订单数',width:100},{colKey:'created_at',title:'注册时间',width:160},{colKey:'operation',title:'操作',width:240,fixed:'right',cell:'operation'}];const fetchData=async()=>{loading.value=true;try{const params={page:pagination.value.current,pageSize:pagination.value.pageSize,...filters.value};const data=await AdminAPI.getAmbassadorList(params);tableData.value=data.list;pagination.value.total=data.total;}catch(error){TDesign.MessagePlugin.error(error.message||'获取数据失败');}finally{loading.value=false;}};const handleSearch=()=>{pagination.value.current=1;fetchData();};const handleReset=()=>{filters.value={keyword:'',level:null,status:null};handleSearch();};const handlePageChange=(pageInfo)=>{pagination.value.current=pageInfo.current;pagination.value.pageSize=pageInfo.pageSize;fetchData();};const handleView=(row)=>{currentRecord.value=row;detailVisible.value=true;};const handleAdjustPoints=(row)=>{currentRecord.value=row;pointsForm.value={type:'merit',action:'add',amount:0,reason:''};pointsVisible.value=true;};const handleUpgrade=async(row)=>{const levels={1:'云雀',2:'青鸾',3:'鸿鹄'};const nextLevel=row.ambassador_level+1;if(nextLevel>3){TDesign.MessagePlugin.warning('已是最高等级');return;}const confirmed=await TDesign.DialogPlugin.confirm({header:'确认升级',body:`确认将 ${row.real_name} 升级为 ${levels[nextLevel]} 吗？`,theme:'warning'});if(!confirmed)return;try{await AdminAPI.upgradeAmbassador({userId:row.id,targetLevel:nextLevel});TDesign.MessagePlugin.success('升级成功');fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'升级失败');}};const handlePointsSubmit=async()=>{if(!pointsForm.value.amount||!pointsForm.value.reason){TDesign.MessagePlugin.warning('请填写完整信息');return;}try{await AdminAPI.adjustAmbassadorPoints({userId:currentRecord.value.id,...pointsForm.value});TDesign.MessagePlugin.success('调整成功');pointsVisible.value=false;fetchData();}catch(error){TDesign.MessagePlugin.error(error.message||'调整失败');}};onMounted(()=>{fetchData();});return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          loading,tableData,detailVisible,pointsVisible,currentRecord,pointsForm,filters,levelOptions,statusOptions,pagination,columns,handleSearch,handleReset,handlePageChange,handleView,handleAdjustPoints,handleUpgrade,handlePointsSubmit
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
+
+
+
+
+

@@ -123,6 +123,7 @@ const courseStyles: Record<number, { icon: string; gradient: string }> = {
 // 加载我的课程
 const loadMyCourses = async () => {
   try {
+    uni.showLoading({ title: '加载中...' });
     const result = await UserApi.getMyCourses({ page: 1, page_size: 100 });
 
     courses.value = result.list.map((item: any) => {
@@ -138,8 +139,10 @@ const loadMyCourses = async () => {
         status: item.attend_count > 0 ? 'completed' : 'ongoing'
       };
     });
+    uni.hideLoading();
   } catch (error) {
     console.error('加载课程列表失败:', error);
+    uni.hideLoading();
   }
 };
 

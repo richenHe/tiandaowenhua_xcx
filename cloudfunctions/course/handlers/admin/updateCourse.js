@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
     }
 
     // 查询课程是否存在
-    const course = await findOne('courses', 'id = ? AND deleted_at IS NULL', [id]);
+    const course = await findOne('courses', { id });
     if (!course) {
       return response.notFound('课程不存在');
     }
@@ -40,9 +40,10 @@ module.exports = async (event, context) => {
     }
 
     // 更新课程
-    await update('courses', fieldsToUpdate, 'id = ?', [id]);
+    await update('courses', fieldsToUpdate, { id });
 
     return response.success({
+      success: true,
       message: '课程更新成功'
     });
 

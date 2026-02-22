@@ -57,7 +57,7 @@ async function createAcademyIntro(data) {
   });
 
   return response.success({
-    id: result.id
+    academy_id: result.id
   }, '商学院介绍创建成功');
 }
 
@@ -70,7 +70,7 @@ async function updateAcademyIntro(id, data) {
   }
 
   // 查询介绍是否存在
-  const intro = await findOne('academy_intro', 'id = ? AND deleted_at IS NULL', [id]);
+  const intro = await findOne('academy_intro', { id });
   if (!intro) {
     return response.notFound('商学院介绍不存在');
   }
@@ -89,7 +89,7 @@ async function updateAcademyIntro(id, data) {
   }
 
   // 更新介绍
-  await update('academy_intro', fieldsToUpdate, 'id = ?', [id]);
+  await update('academy_intro', fieldsToUpdate, { id });
 
   return response.success({
     message: '商学院介绍更新成功'
@@ -105,13 +105,14 @@ async function deleteAcademyIntro(id) {
   }
 
   // 查询介绍是否存在
-  const intro = await findOne('academy_intro', 'id = ? AND deleted_at IS NULL', [id]);
+  const intro = await findOne('academy_intro', { id });
   if (!intro) {
     return response.notFound('商学院介绍不存在');
   }
 
-  // 软删除介绍
-  await softDelete('academy_intro', 'id = ?', [id]);
+  // 删除介绍（academy_intro 表没有 deleted_at 字段，直接删除）
+  const { hardDelete } = require('../../common/db');
+  await hardDelete('academy_intro', { id });
 
   return response.success({
     message: '商学院介绍删除成功'

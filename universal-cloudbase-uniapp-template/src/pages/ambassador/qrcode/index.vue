@@ -95,27 +95,33 @@ const stats = ref({
 // 加载二维码
 const loadQRCode = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await AmbassadorApi.generateQRCode({ scene_type: 'share' })
 
     qrcodeInfo.value.qrcode_url = result.qrcode_url
     qrcodeInfo.value.referee_code = result.referee_code
     qrcodeInfo.value.share_text = result.share_text
+    uni.hideLoading()
   } catch (error) {
     console.error('加载二维码失败:', error)
+    uni.hideLoading()
   }
 }
 
 // 加载推广统计
 const loadStats = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const referees = await UserApi.getMyReferees({ page: 1, pageSize: 1 })
     stats.value.referralCount = referees.total || 0
 
     // 累计收益需要从其他接口获取
     const profile = await UserApi.getProfile()
     stats.value.totalEarnings = profile.cash_points_available || 0
+    uni.hideLoading()
   } catch (error) {
     console.error('加载统计失败:', error)
+    uni.hideLoading()
   }
 }
 

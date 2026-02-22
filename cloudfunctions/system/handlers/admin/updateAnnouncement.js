@@ -76,7 +76,7 @@ module.exports = async (event, context) => {
     // 更新公告
     await update('announcements', updateData, { id });
 
-    return response.success({ id }, '更新成功');
+    return response.success({ success: true, id }, '更新成功');
 
   } catch (error) {
     console.error('[admin:updateAnnouncement] 失败:', error);

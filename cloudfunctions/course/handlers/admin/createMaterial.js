@@ -46,7 +46,7 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      id: result.id
+      material_id: result.id
     }, '资料创建成功');
 
   } catch (error) {

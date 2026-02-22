@@ -173,6 +173,7 @@ const academyContent = ref({
 // 加载商学院介绍
 const loadAcademyIntro = async () => {
   try {
+    uni.showLoading({ title: '加载中...' });
     const result = await CourseApi.getAcademyList();
 
     if (result.list && result.list.length > 0) {
@@ -180,8 +181,10 @@ const loadAcademyIntro = async () => {
       academyContent.value.title = firstItem.title || academyContent.value.title;
       academyContent.value.intro = firstItem.summary || academyContent.value.intro;
     }
+    uni.hideLoading();
   } catch (error) {
     console.error('加载商学院介绍失败:', error);
+    uni.hideLoading();
   }
 };
 

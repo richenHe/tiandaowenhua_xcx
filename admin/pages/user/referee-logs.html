@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推荐人变更记录 - 天道文化后台</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .t-layout {
+      height: 100vh;
+    }
+    
+    .t-layout__sider {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      width: 240px !important;
+      flex-shrink: 0;
+    }
+    
+    .page-content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+    
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .stats-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="user-referee-logs"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+          <!-- 页面头部 -->
+          <div class="page-header">
+            <h1 class="page-title">推荐人变更记录</h1>
+          </div>
+          
+          <!-- 统计卡片 -->
+          <div class="stats-card" v-if="stats">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value" :style="{color: '#0052d9'}">{{ stats.total_changes || 0 }}</div>
+                <div class="stat-label">总变更次数</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" :style="{color: '#00a870'}">{{ stats.today_count || 0 }}</div>
+                <div class="stat-label">今日变更</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" :style="{color: '#ed7b2f'}">{{ stats.week_count || 0 }}</div>
+                <div class="stat-label">本周变更</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value" :style="{color: '#e34d59'}">{{ stats.abnormal_count || 0 }}</div>
+                <div class="stat-label">异常变更</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 搜索表单 -->
+          <div class="search-form">
+            <t-form layout="inline">
+              <t-form-item label="用户ID">
+                <t-input v-model="searchForm.userId" placeholder="请输入用户ID" clearable style="width: 150px;"></t-input>
+              </t-form-item>
+              
+              <t-form-item label="关键词">
+                <t-input v-model="searchForm.keyword" placeholder="姓名/手机号" clearable style="width: 200px;"></t-input>
+              </t-form-item>
+              
+              <t-form-item label="变更类型">
+                <t-select v-model="searchForm.changeType" clearable placeholder="全部" style="width: 150px;">
+                  <t-option :value="1" label="系统自动"></t-option>
+                  <t-option :value="2" label="管理员修改"></t-option>
+                  <t-option :value="3" label="异常变更"></t-option>
+                </t-select>
+              </t-form-item>
+              
+              <t-form-item label="日期范围">
+                <t-date-range-picker 
+                  v-model="searchForm.dateRange" 
+                  clearable
+                  style="width: 280px;"
+                />
+              </t-form-item>
+              
+              <t-form-item>
+                <t-space>
+                  <t-button theme="primary" @click="handleSearch">查询</t-button>
+                  <t-button theme="default" @click="handleReset">重置</t-button>
+                  <t-button theme="default" @click="exportData">导出</t-button>
+                </t-space>
+              </t-form-item>
+            </t-form>
+          </div>
+          
+          <!-- 数据表格 -->
+          <div class="table-card">
+            <t-table
+              :data="tableData"
+              :columns="columns"
+              :loading="loading"
+              row-key="id"
+              :pagination="pagination"
+              @page-change="onPageChange"
+            >
+              <template #changeType="{ row }">
+                <t-tag v-if="row.change_type === 1" theme="success">系统自动</t-tag>
+                <t-tag v-else-if="row.change_type === 2" theme="primary">管理员修改</t-tag>
+                <t-tag v-else-if="row.change_type === 3" theme="danger">异常变更</t-tag>
+              </template>
+              
+              <template #oldReferee="{ row }">
+                <div v-if="row.old_referee_id">
+                  <div>{{ row.old_referee_name || '-' }}</div>
+                  <div style="font-size: 12px; color: #999;">ID: {{ row.old_referee_id }}</div>
+                </div>
+                <span v-else style="color: #999;">无</span>
+              </template>
+              
+              <template #newReferee="{ row }">
+                <div v-if="row.new_referee_id">
+                  <div>{{ row.new_referee_name || '-' }}</div>
+                  <div style="font-size: 12px; color: #999;">ID: {{ row.new_referee_id }}</div>
+                </div>
+                <span v-else style="color: #999;">无</span>
+              </template>
+              
+              <template #operator="{ row }">
+                <span>{{ row.operator_name || '系统' }}</span>
+              </template>
+              
+              <template #createdAt="{ row }">
+                {{ formatDateTime(row.created_at) }}
+              </template>
+              
+              <template #action="{ row }">
+                <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">详情</t-button>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 详情对话框 -->
+          <t-dialog
+            v-model:visible="detailVisible"
+            header="变更详情"
+            width="600px"
+            :footer="false"
+          >
+            <t-descriptions v-if="currentLog" :column="1" bordered>
+              <t-descriptions-item label="用户信息">
+                {{ currentLog.user_name }} (ID: {{ currentLog.user_id }})
+              </t-descriptions-item>
+              <t-descriptions-item label="原推荐人">
+                <span v-if="currentLog.old_referee_id">
+                  {{ currentLog.old_referee_name }} (ID: {{ currentLog.old_referee_id }})
+                </span>
+                <span v-else style="color: #999;">无</span>
+              </t-descriptions-item>
+              <t-descriptions-item label="新推荐人">
+                <span v-if="currentLog.new_referee_id">
+                  {{ currentLog.new_referee_name }} (ID: {{ currentLog.new_referee_id }})
+                </span>
+                <span v-else style="color: #999;">无</span>
+              </t-descriptions-item>
+              <t-descriptions-item label="变更类型">
+                <t-tag v-if="currentLog.change_type === 1" theme="success">系统自动</t-tag>
+                <t-tag v-else-if="currentLog.change_type === 2" theme="primary">管理员修改</t-tag>
+                <t-tag v-else-if="currentLog.change_type === 3" theme="danger">异常变更</t-tag>
+              </t-descriptions-item>
+              <t-descriptions-item label="操作人">
+                {{ currentLog.operator_name || '系统' }}
+              </t-descriptions-item>
+              <t-descriptions-item label="变更原因">
+                {{ currentLog.reason || '-' }}
+              </t-descriptions-item>
+              <t-descriptions-item label="变更时间">
+                {{ formatDateTime(currentLog.created_at) }}
+              </t-descriptions-item>
+              <t-descriptions-item label="备注" v-if="currentLog.remark">
+                {{ currentLog.remark }}
+              </t-descriptions-item>
+            </t-descriptions>
+          </t-dialog>
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <!-- Vue 3（本地）-->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <!-- TDesign Vue（本地）-->
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <!-- CloudBase SDK（本地）-->
+  <script src="../../assets/libs/tcb.js"></script>
+  <!-- 配置 -->
+  <script src="../../assets/js/config.js"></script>
+  <!-- API -->
+  <script src="../../assets/js/admin-api.js"></script>
+  
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const pagination = reactive({
+          current: 1,
+          pageSize: 20,
+          total: 0,
+        });
+        
+        const searchForm = reactive({
+          userId: '',
+          keyword: '',
+          changeType: '',
+          dateRange: [],
+        });
+        
+        const stats = ref(null);
+        
+        const columns = [
+          { colKey: 'user_name', title: '用户', width: 120 },
+          { colKey: 'oldReferee', title: '原推荐人', width: 150 },
+          { colKey: 'newReferee', title: '新推荐人', width: 150 },
+          { colKey: 'changeType', title: '变更类型', width: 120 },
+          { colKey: 'operator', title: '操作人', width: 100 },
+          { colKey: 'reason', title: '变更原因', ellipsis: true },
+          { colKey: 'createdAt', title: '变更时间', width: 160 },
+          { colKey: 'action', title: '操作', width: 80, fixed: 'right' },
+        ];
+        
+        // 详情对话框
+        const detailVisible = ref(false);
+        const currentLog = ref(null);
+        
+        // 加载数据
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const result = await AdminAPI.getRefereeChangeLogs(
+              searchForm.userId || null,
+              {
+                page: pagination.current,
+                pageSize: pagination.pageSize,
+                keyword: searchForm.keyword,
+                changeType: searchForm.changeType,
+                startDate: searchForm.dateRange[0],
+                endDate: searchForm.dateRange[1],
+              }
+            );
+            
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+            stats.value = result.stats || null;
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 搜索
+        const handleSearch = () => {
+          pagination.current = 1;
+          loadData();
+        };
+        
+        // 重置
+        const handleReset = () => {
+          searchForm.userId = '';
+          searchForm.keyword = '';
+          searchForm.changeType = '';
+          searchForm.dateRange = [];
+          handleSearch();
+        };
+        
+        // 分页
+        const onPageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+        
+        // 查看详情
+        const viewDetail = (row) => {
+          currentLog.value = row;
+          detailVisible.value = true;
+        };
+        
+        // 导出数据
+        const exportData = async () => {
+          try {
+            TDesign.MessagePlugin.success('导出功能开发中...');
+          } catch (error) {
+            TDesign.MessagePlugin.error('导出失败: ' + error.message);
+          }
+        };
+        
+        // 格式化时间
+        const formatDateTime = (datetime) => {
+          if (!datetime) return '-';
+          return new Date(datetime).toLocaleString('zh-CN');
+        };
+        
+        onMounted(() => {
+          if (checkAuth()) {
+            loadData();
+          }
+        });
+        
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          tableData,
+          pagination,
+          searchForm,
+          stats,
+          columns,
+          detailVisible,
+          currentLog,
+          handleSearch,
+          handleReset,
+          onPageChange,
+          viewDetail,
+          exportData,
+          formatDateTime,
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

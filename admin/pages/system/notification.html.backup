@@ -1,0 +1,140 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>通知管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
+    /* TDesign 布局样式 - 必需！*/
+    .t-layout {
+      height: 100vh;
+    }
+    
+    .t-layout__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      background: #fff;
+      border-bottom: 1px solid #dcdcdc;
+    }
+    
+    .t-layout__sider {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      width: 240px !important;
+      flex-shrink: 0;
+    }
+    
+    .t-layout__content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+
+  </style></head><body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="notification-list"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content"><div class="c"><h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">通知管理</h1><div style="display:flex;gap:12px;margin-bottom:20px;"><t-button theme="success" @click="add">发送通知</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" bordered stripe><template #type="{row}"><t-tag v-if="row.type==='system'">系统</t-tag><t-tag v-else-if="row.type==='order'" theme="primary">订单</t-tag><t-tag v-else theme="warning">活动</t-tag></template></t-table></div><t-dialog v-model:visible="v" header="发送通知" width="600px" @confirm="send"><t-form :data="f" label-width="100px"><t-form-item label="接收对象"><t-select v-model="f.target" :options="targetOpts"/></t-form-item><t-form-item label="通知类型"><t-select v-model="f.type" :options="typeOpts"/></t-form-item><t-form-item label="通知标题"><t-input v-model="f.title"/></t-form-item><t-form-item label="通知内容"><t-textarea v-model="f.content" :autosize="{minRows:6}"/></t-form-item></t-form></t-dialog>        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+      setup() {
+        // 引入侧边栏导航功能
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref({});const pg=ref({current:1,pageSize:20,total:0});const targetOpts=[{label:'全部用户',value:'all'},{label:'全部大使',value:'ambassadors'},{label:'指定用户',value:'users'}];const typeOpts=[{label:'系统通知',value:'system'},{label:'订单通知',value:'order'},{label:'活动通知',value:'activity'}];const cols=[{colKey:'title',title:'通知标题',width:250},{colKey:'type',title:'类型',width:100,cell:'type'},{colKey:'target_count',title:'接收人数',width:100},{colKey:'created_at',title:'发送时间',width:160}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getNotificationList({page:pg.value.current,pageSize:pg.value.pageSize});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const add=()=>{f.value={target:'all',type:'system'};v.value=true;};const send=async()=>{try{await AdminAPI.sendNotification(f.value);TDesign.MessagePlugin.success('发送成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return {
+          // 侧边栏导航
+          adminInfo,
+          handleMenuChange,
+          handleLogout,
+          lg,d,v,f,pg,targetOpts,typeOpts,cols,ld,chg,add,send
+        };}}).use(TDesign).mount('#app');</script></body></html>
+
+
+
+
+
+
+
+

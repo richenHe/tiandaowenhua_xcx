@@ -27,6 +27,339 @@
 
 ---
 
+## 代码注释规范 ⚠️
+
+### 强制要求
+**生成或修改代码时必须添加必要注释，确保后续 AI 能够理解代码逻辑和业务含义。**
+
+### 注释原则
+1. **清晰性**：注释要清晰表达代码的意图，而非重复代码本身
+2. **必要性**：关键业务逻辑、复杂算法、特殊处理必须注释
+3. **及时性**：编写代码时同步添加注释，不要事后补充
+4. **准确性**：注释要与代码保持一致，修改代码时同步更新注释
+
+### 注释类型和规范
+
+#### 1. 文件头部注释
+每个文件开头应包含文件说明：
+
+```javascript
+/**
+ * 文件说明：用户订单创建支付接口
+ * 功能：创建订单并生成微信支付参数
+ * 作者：系统生成
+ * 创建时间：2024-01-01
+ */
+```
+
+```vue
+<!--
+  页面说明：订单支付页面
+  功能：处理课程订单、复训订单、升级订单的统一支付
+  路由参数：orderId（订单ID）、orderType（订单类型）
+-->
+```
+
+#### 2. 函数/方法注释
+所有函数必须包含 JSDoc 风格注释：
+
+```javascript
+/**
+ * 创建订单并生成支付参数
+ * @param {Object} event - 事件对象
+ * @param {string} event.courseId - 课程ID（驼峰命名）
+ * @param {number} event.orderType - 订单类型：1-课程订单，2-复训订单，3-升级订单
+ * @param {Object} context - 上下文对象
+ * @param {string} context.OPENID - 用户openid
+ * @param {Object} context.user - 用户信息（已通过鉴权）
+ * @returns {Promise<Object>} 返回支付参数或错误信息
+ */
+module.exports = async (event, context) => {
+  // 业务逻辑
+};
+```
+
+```vue
+<script setup>
+/**
+ * 获取用户订单列表
+ * @param {number} status - 订单状态筛选（可选）：1-待支付，2-已支付，3-已完成
+ * @returns {Promise<void>}
+ */
+const getOrderList = async (status) => {
+  // 实现逻辑
+};
+</script>
+```
+
+#### 3. 业务逻辑注释
+关键业务逻辑必须注释：
+
+```javascript
+// ✅ 正确 - 详细说明业务逻辑
+// 订单状态流转：待支付(1) -> 已支付(2) -> 已完成(3)
+// 注意：只有已支付订单才能申请退款
+if (order.status === 2) {
+  // 检查退款条件：订单完成时间在7天内
+  const daysDiff = (Date.now() - order.completed_at) / (1000 * 60 * 60 * 24);
+  if (daysDiff <= 7) {
+    // 允许退款
+  }
+}
+
+// ❌ 错误 - 注释没有价值
+// 如果订单状态是2
+if (order.status === 2) {
+  // 计算天数差
+  const daysDiff = (Date.now() - order.completed_at) / (1000 * 60 * 60 * 24);
+  // 如果天数差小于等于7
+  if (daysDiff <= 7) {
+    // 执行退款
+  }
+}
+```
+
+#### 4. 参数转换注释
+字段命名转换必须注释：
+
+```javascript
+// ✅ 正确 - 说明命名转换原因
+// 前端传入驼峰命名（realName），需要转换为数据库下划线命名（real_name）
+const updateData = {
+  real_name: realName,  // 转换为 snake_case 存入数据库
+  phone: phone,
+  city: city || ''
+};
+
+// ❌ 错误 - 没有说明转换原因
+const updateData = {
+  real_name: realName,
+  phone: phone
+};
+```
+
+#### 5. 数据库查询注释
+复杂查询必须注释：
+
+```javascript
+// ✅ 正确 - 说明查询逻辑和关联关系
+// 查询用户订单列表，关联查询推荐人信息
+// 使用外键 fk_orders_referee 关联 users 表
+const { data: orders, error } = await db
+  .from('orders')
+  .select(`
+    *,
+    referee:users!fk_orders_referee(id, real_name, nickname)
+  `)
+  .eq('user_id', userId)
+  .order('created_at', { ascending: false });
+
+// ❌ 错误 - 没有说明查询意图
+const { data: orders, error } = await db
+  .from('orders')
+  .select('*, referee:users!fk_orders_referee(id, real_name)')
+  .eq('user_id', userId);
+```
+
+#### 6. 特殊处理注释
+特殊逻辑、边界情况、已知问题必须注释：
+
+```javascript
+// ✅ 正确 - 说明特殊处理原因
+// 注意：status 参数可能为 null，需要先验证再使用 parseInt
+// 原因：parseInt(null) 返回 NaN，会导致查询失败
+if (status != null && status !== '') {
+  queryBuilder = queryBuilder.eq('status', parseInt(status));
+}
+
+// ✅ 正确 - 说明业务规则
+// 订单类型说明：
+// 1 - 课程订单（初探班/密训班）
+// 2 - 复训订单（已购买用户再次购买）
+// 3 - 升级订单（大使等级升级）
+const orderTypeMap = {
+  1: '课程订单',
+  2: '复训订单',
+  3: '升级订单'
+};
+
+// ✅ 正确 - 说明已知限制
+// TODO: 当前实现仅支持单课程订单，后续需要支持多课程合并支付
+// 限制原因：微信支付接口限制，单次支付最多支持 50 个商品
+```
+
+#### 7. Vue 组件注释
+组件、props、事件必须注释：
+
+```vue
+<template>
+  <!-- 订单列表卡片 -->
+  <!-- 支持三种订单类型：课程订单、复训订单、升级订单 -->
+  <view class="t-card">
+    <!-- 订单状态标签 -->
+    <t-badge :content="statusText" />
+  </view>
+</template>
+
+<script setup>
+/**
+ * 订单列表项组件
+ * @component OrderItem
+ * @description 显示单个订单信息，支持点击跳转到订单详情
+ */
+
+/**
+ * 订单数据
+ * @prop {Object} order - 订单对象
+ * @prop {number} order.id - 订单ID
+ * @prop {number} order.order_type - 订单类型（数据库字段，下划线命名）
+ * @prop {number} order.status - 订单状态：1-待支付，2-已支付，3-已完成
+ */
+const props = defineProps({
+  order: {
+    type: Object,
+    required: true
+  }
+});
+
+/**
+ * 点击订单卡片
+ * @emits {number} orderId - 订单ID（驼峰命名，用于URL参数）
+ */
+const handleClick = () => {
+  // 跳转到订单详情页，URL参数使用驼峰命名
+  uni.navigateTo({
+    url: `/pages/order/detail/index?orderId=${props.order.id}`
+  });
+};
+</script>
+```
+
+#### 8. 错误处理注释
+错误处理逻辑必须注释：
+
+```javascript
+// ✅ 正确 - 说明错误处理策略
+try {
+  // 业务逻辑
+} catch (error) {
+  // 数据库错误：记录日志但不暴露给用户
+  // 业务错误：返回友好提示
+  // 系统错误：返回通用错误信息
+  console.error('[createOrder] 订单创建失败:', error);
+  
+  if (error.code === 'DB_ERROR') {
+    return response.error('系统繁忙，请稍后重试', error);
+  }
+  
+  return response.error(error.message || '操作失败', error);
+}
+```
+
+### 注释检查清单
+生成或修改代码后必须检查：
+- [ ] **文件头部**：已添加文件说明注释
+- [ ] **函数注释**：所有函数都有 JSDoc 注释，包含参数和返回值说明
+- [ ] **业务逻辑**：关键业务逻辑有清晰注释，说明业务规则和流程
+- [ ] **参数转换**：字段命名转换（驼峰↔下划线）有注释说明
+- [ ] **数据库查询**：复杂查询有注释，说明查询意图和关联关系
+- [ ] **特殊处理**：特殊逻辑、边界情况、已知问题有注释
+- [ ] **组件注释**：Vue 组件、props、事件有注释说明
+- [ ] **错误处理**：错误处理逻辑有注释，说明处理策略
+- [ ] **命名规范**：注释中明确说明参数命名规范（驼峰/下划线）
+
+### 注释示例对比
+
+#### 好的注释示例
+```javascript
+/**
+ * 创建订单支付参数
+ * @param {Object} event - 事件对象
+ * @param {string} event.courseId - 课程ID（驼峰命名，前端传入）
+ * @param {number} event.orderType - 订单类型：1-课程订单，2-复训订单，3-升级订单
+ * @param {Object} context - 上下文对象
+ * @param {Object} context.user - 用户信息（已通过鉴权）
+ * @returns {Promise<Object>} 返回微信支付参数
+ */
+module.exports = async (event, context) => {
+  const { courseId, orderType } = event;  // 接收驼峰命名参数
+  const { user } = context;
+  
+  // 查询课程信息（数据库字段使用下划线命名）
+  const { data: course, error } = await db
+    .from('courses')
+    .select('*')
+    .eq('id', courseId)
+    .single();
+  
+  if (error) {
+    return response.error('课程不存在', error);
+  }
+  
+  // 创建订单记录（前端参数转换为数据库字段）
+  // 注意：前端传入 orderType（驼峰），数据库存储 order_type（下划线）
+  const orderData = {
+    user_id: user.id,           // 数据库字段：下划线命名
+    course_id: courseId,        // 数据库字段：下划线命名
+    order_type: orderType,       // 转换：orderType -> order_type
+    status: 1,                  // 1-待支付
+    total_amount: course.price
+  };
+  
+  // 插入订单记录
+  const { data: order, error: insertError } = await db
+    .from('orders')
+    .insert(orderData)
+    .select()
+    .single();
+  
+  if (insertError) {
+    return response.error('订单创建失败', insertError);
+  }
+  
+  // 生成微信支付参数
+  // 注意：支付金额单位为"分"，需要将"元"转换为"分"
+  const paymentParams = {
+    orderId: order.id,           // 返回给前端使用驼峰命名
+    amount: order.total_amount * 100,  // 转换为分
+    description: `购买课程：${course.name}`
+  };
+  
+  return response.success(paymentParams, '订单创建成功');
+};
+```
+
+#### 差的注释示例
+```javascript
+// 创建订单
+module.exports = async (event, context) => {
+  const { courseId, orderType } = event;
+  const { user } = context;
+  
+  const { data: course } = await db.from('courses').select('*').eq('id', courseId).single();
+  
+  const orderData = {
+    user_id: user.id,
+    course_id: courseId,
+    order_type: orderType,
+    status: 1,
+    total_amount: course.price
+  };
+  
+  const { data: order } = await db.from('orders').insert(orderData).select().single();
+  
+  const paymentParams = {
+    orderId: order.id,
+    amount: order.total_amount * 100,
+    description: `购买课程：${course.name}`
+  };
+  
+  return response.success(paymentParams);
+};
+```
+
+---
+
 ## 字段命名规范 ⚠️
 
 **固定命名规则，全项目统一遵循：**
@@ -146,6 +479,15 @@ return response.success({
 
 ### 强制规范
 
+#### 0. 代码注释规范（严格遵守）⚠️
+- **所有 Vue 组件、函数、业务逻辑必须添加注释**
+- **组件必须包含文件头部注释和组件说明**
+- **函数必须包含 JSDoc 注释，说明参数、返回值、业务逻辑**
+- **关键业务逻辑必须注释，说明业务规则和处理流程**
+- **参数命名转换（驼峰↔下划线）必须注释说明**
+- **特殊处理、边界情况、已知问题必须注释**
+- **参考"代码注释规范"章节了解详细要求**
+
 #### 1. 样式规范（严格遵守）
 - **禁止**：TDesign Vue 组件、自定义类名、硬编码颜色
 - **必须**：使用 TDesign CSS 类名（.t-card/.t-button 等）
@@ -230,6 +572,7 @@ const handleScroll = (e) => {
 **注意**：首页等有 Banner 的页面不需要吸顶，直接使用 CapsuleTabs。
 
 ### Code Review 检查清单
+- [ ] **代码注释**：所有函数、组件、业务逻辑已添加必要注释
 - [ ] **样式优先级**：先用 TDesign CSS 类名，再考虑可复用组件样式
 - [ ] **可复用性**：相同样式已抽取到 components/*.scss
 - [ ] **禁止项**：无自定义类名、无硬编码颜色、无随意 inline style
@@ -275,6 +618,17 @@ const handleScroll = (e) => {
 ## 云函数开发规范
 
 ### 强制规范
+
+#### 0. 代码注释规范（严格遵守）⚠️
+- **所有云函数、处理器、业务逻辑必须添加注释**
+- **文件必须包含文件头部注释，说明功能和用途**
+- **函数必须包含 JSDoc 注释，说明参数、返回值、业务逻辑**
+- **关键业务逻辑必须注释，说明业务规则和处理流程**
+- **参数命名转换（驼峰↔下划线）必须注释说明**
+- **数据库查询必须注释，说明查询意图和关联关系**
+- **特殊处理、边界情况、已知问题必须注释**
+- **错误处理逻辑必须注释，说明处理策略**
+- **参考"代码注释规范"章节了解详细要求**
 
 #### 1. 运行时版本匹配（严格遵守）⚠️
 - **创建云函数前必须检查依赖层支持的运行时版本**
@@ -609,6 +963,7 @@ SELECT * FROM `cloud1-0gnn3mn17b581124`.users;
 ```
 
 ### Code Review 检查清单
+- [ ] **代码注释**：所有函数、业务逻辑、参数转换已添加必要注释
 - [ ] **运行时版本**：已确认使用 Nodejs14.18（与层兼容）
 - [ ] **目录结构**：符合规范（index.js + handlers/client + handlers/admin）
 - [ ] **路由架构**：统一入口，按 action 分发

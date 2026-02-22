@@ -151,6 +151,7 @@ const stats = ref([
 // 加载用户信息
 const loadUserProfile = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const profile = await UserApi.getProfile();
 
     // 获取头像和背景图片临时URL
@@ -179,40 +180,53 @@ const loadUserProfile = async () => {
 
     // 加载推荐统计信息
     await loadReferralStats();
+    uni.hideLoading()
   } catch (error) {
     console.error('加载用户信息失败:', error);
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 };
 
 // 加载推荐统计信息
 const loadReferralStats = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const stats = await UserApi.getReferralStats();
     referralStats.value = stats;
 
     // 更新成长等级显示
     growthLevelDisplay.value = getGrowthLevelDisplay(stats.total_activity_count);
+    uni.hideLoading()
   } catch (error) {
     console.error('加载推荐统计失败:', error);
+    uni.hideLoading()
   }
 };
 
 // 加载用户积分
 const loadUserPoints = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const points = await SystemApi.getUserPoints();
     userPoints.value = {
       meritPoints: points.meritPoints || 0,
       cashPointsAvailable: points.cashPointsAvailable || 0
     };
+    uni.hideLoading()
   } catch (error) {
     console.error('加载用户积分失败:', error);
+    uni.hideLoading()
   }
 };
 
 // 加载统计数据
 const loadStats = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     // 并行加载各项统计数据
     const [orders, courses, appointments] = await Promise.all([
       UserApi.getMyOrders({ page: 1, page_size: 1 }),
@@ -227,8 +241,10 @@ const loadStats = async () => {
       { type: 'courses', count: courses.total || 0, label: '我的课程', color: '#D4AF37' },
       { type: 'contracts', count: 0, label: '我的合同', color: '#E34D59' }
     ];
+    uni.hideLoading()
   } catch (error) {
     console.error('加载统计数据失败:', error);
+    uni.hideLoading()
   }
 };
 

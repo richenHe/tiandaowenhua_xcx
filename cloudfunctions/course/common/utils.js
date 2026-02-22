@@ -13,10 +13,16 @@ const crypto = require('crypto');
 function validateRequired(data, requiredFields) {
   for (const field of requiredFields) {
     if (!data[field] && data[field] !== 0) {
-      return `缺少必填参数: ${field}`;
+      return {
+        valid: false,
+        message: `缺少必填参数: ${field}`
+      };
     }
   }
-  return null;
+  return {
+    valid: true,
+    message: ''
+  };
 }
 
 /**

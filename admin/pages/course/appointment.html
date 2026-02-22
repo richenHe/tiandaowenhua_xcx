@@ -86,7 +86,8 @@
               <template #icon><t-icon name="user" /></template>
               <template #title>用户管理</template>
               <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
             </t-submenu>
             
             <t-submenu value="order">
@@ -143,9 +144,29 @@
         <t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width: 150px;" />
         <t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search" /></template>查询</t-button>
         <t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh" /></template>重置</t-button>
+        <t-button 
+          theme="warning" 
+          @click="handleBatchCheckIn" 
+          :disabled="selectedRowKeys.length === 0"
+        >
+          <template #icon><t-icon name="check" /></template>
+          批量签到 ({{ selectedRowKeys.length }})
+        </t-button>
       </div>
 
-      <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
+      <t-table 
+        :data="tableData" 
+        :columns="columns" 
+        :loading="loading" 
+        :pagination="pagination" 
+        :selected-row-keys="selectedRowKeys"
+        @select-change="handleSelectChange"
+        @page-change="handlePageChange" 
+        row-key="id" 
+        bordered 
+        stripe 
+        hover
+      >
         <template #status="{ row }">
           <t-tag v-if="row.status === 1" theme="success">已确认</t-tag>
           <t-tag v-else-if="row.status === 2" theme="primary">待签到</t-tag>
@@ -223,6 +244,7 @@
             'dashboard': '../../index.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
@@ -253,6 +275,7 @@
         const filters = ref({ keyword: '', courseId: null, status: null }); const courseOptions = ref([]);
         const statusOptions = [{ label: '已确认', value: 1 }, { label: '待签到', value: 2 }, { label: '已签到', value: 3 }, { label: '已取消', value: 0 }];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+        const selectedRowKeys = ref([]); // 批量签到选中的行
         const columns = [
           { colKey: 'appointment_no', title: '预约编号', width: 180 }, { colKey: 'user_name', title: '用户姓名', width: 120 },
           { colKey: 'user_phone', title: '手机号', width: 130 }, { colKey: 'course_name', title: '课程名称', width: 200 },
@@ -280,18 +303,52 @@
           const confirmed = await TDesign.DialogPlugin.confirm({ header: '确认取消', body: `确认取消 ${row.user_name} 的预约吗？`, theme: 'warning' }); if (!confirmed) return;
           try { await AdminAPI.cancelAppointment({ appointmentId: row.id }); TDesign.MessagePlugin.success('已取消'); fetchData(); } catch (error) { TDesign.MessagePlugin.error(error.message || '取消失败'); }
         };
+
+        // 批量签到相关
+        const handleSelectChange = (value, { selectedRowData }) => {
+          selectedRowKeys.value = value;
+        };
+
+        const handleBatchCheckIn = async () => {
+          if (selectedRowKeys.value.length === 0) {
+            TDesign.MessagePlugin.warning('请先选择要签到的预约');
+            return;
+          }
+
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认批量签到',
+            body: `确认为 ${selectedRowKeys.value.length} 条预约批量签到吗？`,
+            theme: 'info'
+          });
+
+          if (!confirmed) return;
+
+          try {
+            const result = await AdminAPI.batchCheckIn({ appointment_ids: selectedRowKeys.value });
+            TDesign.MessagePlugin.success(`批量签到成功！成功 ${result.success_count} 条，失败 ${result.failed_count} 条`);
+            selectedRowKeys.value = [];
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '批量签到失败');
+          }
+        };
+
         onMounted(() => {
           if (checkAuth()) { fetchData(); fetchCourses(); }
         });
         return {
           adminInfo,
           handleLogout,
-          handleMenuChange, loading, tableData, detailVisible, currentRecord, filters, courseOptions, statusOptions, pagination, columns, handleSearch, handleReset, handlePageChange, handleView, handleCheckIn, handleCancel };
+          handleMenuChange, loading, tableData, detailVisible, currentRecord, filters, courseOptions, statusOptions, pagination, columns, 
+          selectedRowKeys, handleSearch, handleReset, handlePageChange, handleView, handleCheckIn, handleCancel,
+          handleSelectChange, handleBatchCheckIn
+        };
       }
     }).use(TDesign).mount('#app');
   </script>
 </body>
 </html>
+
 
 
 

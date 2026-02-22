@@ -191,10 +191,13 @@ onMounted(() => {
 // 加载协议模板
 const loadContractTemplate = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await AmbassadorApi.getContractTemplate(targetLevel.value)
     contractTemplate.value = result
+    uni.hideLoading()
   } catch (error) {
     console.error('获取协议模板失败:', error)
+    uni.hideLoading()
     uni.showToast({
       title: '获取协议模板失败',
       icon: 'none'

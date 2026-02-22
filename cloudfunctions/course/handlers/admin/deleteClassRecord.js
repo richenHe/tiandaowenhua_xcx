@@ -16,27 +16,33 @@ module.exports = async (event, context) => {
     }
 
     // 查询排期是否存在
-    const record = await findOne('class_records', 'id = ? AND deleted_at IS NULL', [id]);
+    const record = await findOne('class_records', { id });
     if (!record) {
       return response.notFound('上课排期不存在');
     }
 
-    // 检查是否有预约记录
-    const appointmentsSql = `
-      SELECT COUNT(*) as count
-      FROM appointments
-      WHERE class_record_id = ? AND status IN (1,2) AND deleted_at IS NULL
-    `;
-    const appointmentsResult = await query(appointmentsSql, [id]);
+    // 检查是否有预约记录（appointments 表没有 deleted_at 字段）
+    const { db } = require('../../common/db');
+    const { data: appointments, error: queryError } = await db
+      .from('appointments')
+      .select('id', { count: 'exact' })
+      .eq('class_record_id', parseInt(id))
+      .in('status', [0, 1, 2]);
 
-    if (appointmentsResult[0].count > 0) {
+    if (queryError) {
+      throw queryError;
+    }
+
+    if (appointments && appointments.length > 0) {
       return response.error('该排期已有预约记录，无法删除');
     }
 
-    // 软删除排期
-    await softDelete('class_records', 'id = ?', [id]);
+    // 删除排期（class_records 表没有 deleted_at 字段，使用状态标记）
+    const { update } = require('../../common/db');
+    await update('class_records', { status: 0 }, { id });
 
     return response.success({
+      success: true,
       message: '上课排期删除成功'
     });
 

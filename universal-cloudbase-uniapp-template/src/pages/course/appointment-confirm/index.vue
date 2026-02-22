@@ -80,6 +80,7 @@ const buttonText = computed(() => {
 // 加载排期详情
 const loadClassRecordDetail = async (classRecordId: number) => {
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true;
     const result = await CourseApi.getClassRecords({
       course_id: courseInfo.value.courseId,
@@ -95,8 +96,10 @@ const loadClassRecordDetail = async (classRecordId: number) => {
       courseInfo.value.endDate = record.end_date || '';
       courseInfo.value.location = record.location;
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('加载排期详情失败:', error);
+    uni.hideLoading()
     uni.showToast({
       title: '加载失败',
       icon: 'none'
@@ -109,23 +112,33 @@ const loadClassRecordDetail = async (classRecordId: number) => {
 // 加载用户上课次数
 const loadUserAttendCount = async (userCourseId: number) => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await CourseApi.getAcademyProgress();
     const userCourse = result.find((item: any) => item.id === userCourseId);
     if (userCourse) {
       courseInfo.value.userAttendCount = userCourse.attend_count || 0;
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('加载用户上课次数失败:', error);
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 };
 
 // 加载客服电话
 const loadCustomerServicePhone = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getSystemConfig({ key: 'customer_service_phone' });
     customerServicePhone.value = result.value;
+    uni.hideLoading()
   } catch (error) {
     console.error('加载客服电话失败:', error);
+    uni.hideLoading()
   }
 };
 

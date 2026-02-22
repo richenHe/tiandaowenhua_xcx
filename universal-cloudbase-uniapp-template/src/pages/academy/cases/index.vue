@@ -152,6 +152,7 @@ const caseList = ref<any[]>([])
 // 加载案例列表
 const loadCaseList = async (category?: string) => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const params: any = { page: 1, page_size: 100 }
     if (category && category !== 'all') {
       params.category = category
@@ -159,8 +160,14 @@ const loadCaseList = async (category?: string) => {
 
     const result = await CourseApi.getCaseList(params)
     caseList.value = result.list || []
+    uni.hideLoading()
   } catch (error) {
     console.error('加载案例列表失败:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 }
 

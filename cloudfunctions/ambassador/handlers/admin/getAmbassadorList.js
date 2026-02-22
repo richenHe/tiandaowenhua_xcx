@@ -53,17 +53,18 @@ module.exports = async (event, context) => {
       return {
         id: ambassador.id,
         uid: ambassador.uid,
+        user_id: ambassador.id,
         real_name: ambassador.real_name,
         phone: ambassador.phone,
-        avatar_url: ambassador.avatar_url,
+        avatar_url: ambassador.avatar,
         referee_code: ambassador.referee_code,
         ambassador_level: ambassador.ambassador_level,
-        merit_points: ambassador.merit_points_available || 0,
+        merit_points: ambassador.merit_points || 0,
         cash_points: ambassador.cash_points_available || 0,
         referee_count: refereeCount || 0,
         order_count: orderCount || 0,
         created_at: ambassador.created_at,
-        ambassador_approved_at: ambassador.ambassador_approved_at
+        ambassador_start_date: ambassador.ambassador_start_date
       };
     }));
 

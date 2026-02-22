@@ -16,15 +16,17 @@ module.exports = async (event, context) => {
     }
 
     // 查询课程是否存在
-    const course = await findOne('courses', 'id = ? AND deleted_at IS NULL', [id]);
+    const course = await findOne('courses', { id });
     if (!course) {
       return response.notFound('课程不存在');
     }
 
-    // 软删除课程
-    await softDelete('courses', 'id = ?', [id]);
+    // 软删除课程（courses 表没有 deleted_at 字段，使用状态标记）
+    const { update } = require('../../common/db');
+    await update('courses', { status: 0 }, { id });
 
     return response.success({
+      success: true,
       message: '课程删除成功'
     });
 

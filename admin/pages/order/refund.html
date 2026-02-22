@@ -145,7 +145,8 @@
               <template #icon><t-icon name="user" /></template>
               <template #title>用户管理</template>
               <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
             </t-submenu>
             
             <t-submenu value="order">
@@ -423,6 +424,7 @@
             'dashboard': '../../index.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
@@ -656,6 +658,7 @@
   </script>
 </body>
 </html>
+
 
 
 

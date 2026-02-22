@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
     }
 
     // 查询案例是否存在
-    const caseItem = await findOne('academy_cases', 'id = ? AND deleted_at IS NULL', [id]);
+    const caseItem = await findOne('academy_cases', { id });
     if (!caseItem) {
       return response.notFound('案例不存在');
     }
@@ -39,9 +39,10 @@ module.exports = async (event, context) => {
     }
 
     // 更新案例
-    await update('academy_cases', fieldsToUpdate, 'id = ?', [id]);
+    await update('academy_cases', fieldsToUpdate, { id });
 
     return response.success({
+      success: true,
       message: '案例更新成功'
     });
 

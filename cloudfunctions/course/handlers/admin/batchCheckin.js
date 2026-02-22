@@ -3,7 +3,7 @@
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired } = require('../../common/utils');
+const { validateRequired, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { class_record_id, user_ids } = event;
@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
 
     // 批量更新签到状态（注意：字段是 checkin_time 而非 checkin_at）
     const appointmentIds = appointments.map(a => a.id);
-    const now = new Date().toISOString();
+    const now = formatDateTime(new Date());  // 使用 MySQL 格式而非 ISO 格式
     
     const { error: updateError } = await db
       .from('appointments')
@@ -73,7 +73,8 @@ module.exports = async (event, context) => {
 
     return response.success({
       message: '批量签到成功',
-      checkin_count: appointments.length
+      success_count: appointments.length,
+      failed_count: 0
     });
 
   } catch (error) {

@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
     }
 
     // 查询资料是否存在
-    const material = await findOne('academy_materials', 'id = ? AND deleted_at IS NULL', [id]);
+    const material = await findOne('academy_materials', { id });
     if (!material) {
       return response.notFound('资料不存在');
     }
@@ -39,9 +39,10 @@ module.exports = async (event, context) => {
     }
 
     // 更新资料
-    await update('academy_materials', fieldsToUpdate, 'id = ?', [id]);
+    await update('academy_materials', fieldsToUpdate, { id });
 
     return response.success({
+      success: true,
       message: '资料更新成功'
     });
 

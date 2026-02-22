@@ -16,15 +16,17 @@ module.exports = async (event, context) => {
     }
 
     // 查询案例是否存在
-    const caseItem = await findOne('academy_cases', 'id = ? AND deleted_at IS NULL', [id]);
+    const caseItem = await findOne('academy_cases', { id });
     if (!caseItem) {
       return response.notFound('案例不存在');
     }
 
-    // 软删除案例
-    await softDelete('academy_cases', 'id = ?', [id]);
+    // 删除案例（academy_cases 表没有 deleted_at 字段，使用状态标记）
+    const { update } = require('../../common/db');
+    await update('academy_cases', { status: 0 }, { id });
 
     return response.success({
+      success: true,
       message: '案例删除成功'
     });
 

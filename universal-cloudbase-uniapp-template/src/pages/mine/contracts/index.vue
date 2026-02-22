@@ -97,11 +97,14 @@ onMounted(() => {
 // 加载协议列表
 const loadContracts = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await AmbassadorApi.getMyContracts()
     contracts.value = result
+    uni.hideLoading()
   } catch (error) {
     console.error('获取协议列表失败:', error)
+    uni.hideLoading()
   } finally {
     loading.value = false
   }

@@ -153,49 +153,65 @@ const nextLevel = ref<LevelConfig | null>(null)
 // 加载用户信息
 const loadUserInfo = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const profile = await UserApi.getProfile()
     userInfo.value = {
       ambassador_level: profile.ambassador_level,
       level_name: getLevelName(profile.ambassador_level),
       created_at: profile.created_at
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('加载用户信息失败:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 }
 
 // 加载推荐统计信息
 const loadReferralStats = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const stats = await UserApi.getReferralStats()
     referralStats.value = stats
+    uni.hideLoading()
   } catch (error) {
     console.error('加载推荐统计失败:', error)
+    uni.hideLoading()
   }
 }
 
 // 加载功德分和积分
 const loadPoints = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const [merit, cash] = await Promise.all([
       UserApi.getMeritPoints(),
       UserApi.getCashPoints()
     ])
     meritPoints.value = merit.balance
     cashPoints.value = cash.available
+    uni.hideLoading()
   } catch (error) {
     console.error('加载积分信息失败:', error)
+    uni.hideLoading()
   }
 }
 
 // 加载等级体系配置
 const loadLevelSystem = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await AmbassadorApi.getLevelSystem()
     levelSystem.value = result.levels || []
     nextLevel.value = result.next_level || null
+    uni.hideLoading()
   } catch (error) {
     console.error('加载等级体系失败:', error)
+    uni.hideLoading()
   }
 }
 

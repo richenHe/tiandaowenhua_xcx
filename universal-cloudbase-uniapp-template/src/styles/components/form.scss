@@ -311,9 +311,7 @@
 .t-select {
   position: relative;
   width: 100%;
-}
-
-.t-select__input {
+}.t-select__input {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -354,4 +352,3 @@
 .t-select__arrow--expanded {
   transform: rotate(180deg);
 }
-

@@ -52,7 +52,7 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      id: result.id
+      course_id: result.id
     }, '课程创建成功');
 
   } catch (error) {

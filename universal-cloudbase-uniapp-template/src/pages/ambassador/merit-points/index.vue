@@ -156,10 +156,13 @@ const finished = ref(false)
 // 获取功德分余额
 const loadMeritPoints = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await UserApi.getMeritPoints()
     meritPointsInfo.value = result
+    uni.hideLoading()
   } catch (error) {
     console.error('获取功德分余额失败:', error)
+    uni.hideLoading()
   }
 }
 
@@ -174,6 +177,7 @@ const loadRecords = async (reset = false) => {
   }
 
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await UserApi.getMeritPointsHistory({
       page: page.value,
@@ -187,8 +191,10 @@ const loadRecords = async (reset = false) => {
     if (recordsList.value.length >= result.total) {
       finished.value = true
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('获取功德分明细失败:', error)
+    uni.hideLoading()
   } finally {
     loading.value = false
   }

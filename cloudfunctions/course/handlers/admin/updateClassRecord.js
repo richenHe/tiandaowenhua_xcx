@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
     }
 
     // 查询排期是否存在
-    const record = await findOne('class_records', 'id = ? AND deleted_at IS NULL', [id]);
+    const record = await findOne('class_records', { id });
     if (!record) {
       return response.notFound('上课排期不存在');
     }
@@ -39,9 +39,10 @@ module.exports = async (event, context) => {
     }
 
     // 更新排期
-    await update('class_records', fieldsToUpdate, 'id = ?', [id]);
+    await update('class_records', fieldsToUpdate, { id });
 
     return response.success({
+      success: true,
       message: '上课排期更新成功'
     });
 

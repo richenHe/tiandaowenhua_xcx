@@ -62,6 +62,7 @@ const loadSchedules = async () => {
   if (!courseId.value) return;
 
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await CourseApi.getClassRecords({
       course_id: courseId.value,
       page: 1,
@@ -81,8 +82,14 @@ const loadSchedules = async () => {
       registrationDeadline: item.class_date, // 报名截止时间
       isAppointed: item.is_appointed === 1
     }));
+    uni.hideLoading()
   } catch (error) {
     console.error('加载课程排期失败:', error);
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 };
 

@@ -36,13 +36,16 @@ module.exports = async (event, context) => {
     // 格式化返回数据
     const list = (result.list || []).map(activity => ({
       id: activity.id,
-      title: activity.title,
-      description: activity.description,
+      user_id: activity.user_id,
+      activity_name: activity.activity_name || '',
       activity_type: activity.activity_type,
+      description: activity.activity_desc || '',
       start_time: activity.start_time,
       end_time: activity.end_time,
-      target_level: activity.target_level,
-      reward_config: activity.reward_config ? JSON.parse(activity.reward_config) : null,
+      duration: activity.duration || '',
+      location: activity.location || '',
+      participant_count: activity.participant_count || 0,
+      merit_points: activity.merit_points || 0,
       status: activity.status,
       created_at: activity.created_at
     }));

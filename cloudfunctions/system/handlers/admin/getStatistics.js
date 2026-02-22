@@ -91,7 +91,13 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', today.toISOString());
 
+    // 返回适配测试用例的字段（简化版）
     return response.success({
+      user_count: totalUsers,
+      order_count: totalOrders,
+      revenue_total: totalAmount.toFixed(2),
+      ambassador_count: ambassadorCount,
+      // 详细数据（可选）
       users: {
         total: totalUsers,
         today: todayUsers,

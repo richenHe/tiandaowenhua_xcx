@@ -58,7 +58,7 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      id: result.id
+      class_record_id: result.id
     }, '上课排期创建成功');
 
   } catch (error) {

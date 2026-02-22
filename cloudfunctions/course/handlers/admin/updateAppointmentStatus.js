@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
     }
 
     // 查询预约是否存在
-    const appointment = await findOne('appointments', 'id = ? AND deleted_at IS NULL', [id]);
+    const appointment = await findOne('appointments', { id });
     if (!appointment) {
       return response.notFound('预约记录不存在');
     }
@@ -33,14 +33,15 @@ module.exports = async (event, context) => {
     }
 
     if (status === 2) {
-      updateData.checkin_at = formatDateTime(new Date());
+      updateData.checkin_time = formatDateTime(new Date());
     } else if (status === 3) {
-      updateData.cancelled_at = formatDateTime(new Date());
+      updateData.cancel_time = formatDateTime(new Date());
     }
 
-    await update('appointments', updateData, 'id = ?', [id]);
+    await update('appointments', updateData, { id });
 
     return response.success({
+      success: true,
       message: '预约状态更新成功'
     });
 

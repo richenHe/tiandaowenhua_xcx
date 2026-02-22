@@ -67,6 +67,7 @@ const loadAnnouncements = async () => {
   if (loading.value || finished.value) return
 
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await SystemApi.getAnnouncementList({
       page: page.value,
@@ -80,8 +81,10 @@ const loadAnnouncements = async () => {
     if (announcements.value.length >= total.value) {
       finished.value = true
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('获取公告列表失败:', error)
+    uni.hideLoading()
   } finally {
     loading.value = false
   }
@@ -254,6 +257,7 @@ const goToDetail = (item: Announcement) => {
   color: #999;
 }
 </style>
+
 
 
 

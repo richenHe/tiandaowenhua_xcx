@@ -130,6 +130,7 @@ const loadExchangeRecords = async () => {
   if (loading.value || finished.value) return;
 
   try {
+    uni.showLoading({ title: '加载中...' });
     loading.value = true;
     const result = await OrderApi.getExchangeRecords({
       page: page.value,
@@ -144,8 +145,10 @@ const loadExchangeRecords = async () => {
     if (records.value.length >= total.value) {
       finished.value = true;
     }
+    uni.hideLoading();
   } catch (error) {
     console.error('获取兑换记录失败:', error);
+    uni.hideLoading();
   } finally {
     loading.value = false;
   }

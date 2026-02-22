@@ -68,6 +68,7 @@ const levelNames: Record<number, string> = {
 // 加载团队成员
 const loadTeamMembers = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await UserApi.getMyReferees({ page: 1, pageSize: 100 })
 
     members.value = result.list.map((item: any) => ({
@@ -76,8 +77,10 @@ const loadTeamMembers = async () => {
       referralCount: 0, // 需要额外接口获取
       level: levelNames[item.ambassador_level || 0]
     }))
+    uni.hideLoading()
   } catch (error) {
     console.error('加载团队成员失败:', error)
+    uni.hideLoading()
   }
 }
 

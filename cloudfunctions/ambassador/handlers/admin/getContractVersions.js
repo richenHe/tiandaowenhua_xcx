@@ -23,7 +23,7 @@ module.exports = async (event, context) => {
     const { data: versions, error } = await db
       .from('contract_templates')
       .select('*')
-      .eq('level', level)
+      .eq('ambassador_level', level)
       .order('version', { ascending: false });
 
     if (error) throw error;
@@ -33,14 +33,15 @@ module.exports = async (event, context) => {
       const { count: signatureCount } = await db
         .from('contract_signatures')
         .select('*', { count: 'exact', head: true })
-        .eq('template_id', version.id);
+        .eq('contract_template_id', version.id);
 
       return {
         id: version.id,
-        title: version.title,
+        contract_name: version.contract_name,
         version: version.version,
-        effective_date: version.effective_date,
-        expiry_date: version.expiry_date,
+        version_note: version.version_note,
+        effective_time: version.effective_time,
+        validity_years: version.validity_years,
         status: version.status,
         status_text: version.status === 1 ? '启用' : '停用',
         signature_count: signatureCount || 0,

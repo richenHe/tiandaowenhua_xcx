@@ -59,11 +59,11 @@ module.exports = async (event, context) => {
     const stats = {
       high: list.filter(item => item.urgency === 'high').length,
       medium: list.filter(item => item.urgency === 'medium').length,
-      low: list.filter(item => item.urgency === 'low').length,
-      total: list.length
+      low: list.filter(item => item.urgency === 'low').length
     };
 
     return response.success({
+      total: list.length,
       stats,
       list
     });

@@ -136,23 +136,29 @@ const withdrawRecords = ref<WithdrawRecord[]>([])
 // 获取可提现积分
 const loadAvailablePoints = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await UserApi.getCashPoints()
     availablePoints.value = result.available
+    uni.hideLoading()
   } catch (error) {
     console.error('获取可提现积分失败:', error)
+    uni.hideLoading()
   }
 }
 
 // 获取提现记录
 const loadWithdrawRecords = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await UserApi.getWithdrawRecords({
       page: 1,
       pageSize: 5
     })
     withdrawRecords.value = result.list
+    uni.hideLoading()
   } catch (error) {
     console.error('获取提现记录失败:', error)
+    uni.hideLoading()
   }
 }
 

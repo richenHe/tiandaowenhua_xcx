@@ -178,6 +178,7 @@ const finished = ref(false)
 // 获取我的推荐人信息
 const loadRefereeInfo = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const profile = await UserApi.getProfile()
     
     // 如果有推荐人，构建推荐人信息
@@ -194,8 +195,14 @@ const loadRefereeInfo = async () => {
     } else {
       referee.value = null
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('获取推荐人信息失败:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 }
 
@@ -210,6 +217,7 @@ const loadReferralList = async (reset = false) => {
   }
 
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await UserApi.getMyReferees({
       page: page.value,
@@ -228,8 +236,14 @@ const loadReferralList = async (reset = false) => {
     if (referralList.value.length >= result.total) {
       finished.value = true
     }
+    uni.hideLoading()
   } catch (error) {
     console.error('获取推荐人列表失败:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   } finally {
     loading.value = false
   }

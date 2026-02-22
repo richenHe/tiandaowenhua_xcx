@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学院内容管理 - 天道文化后台</title>
+  
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .t-layout {
+      height: 100vh;
+    }
+    
+    .t-layout__sider {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      width: 240px !important;
+      flex-shrink: 0;
+    }
+    
+    .page-content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+    
+    .page-header {
+      margin-bottom: 24px;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    
+    .toolbar {
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <t-aside width="240px" style="
+          background: #fff;
+          border-right: 1px solid #dcdcdc;
+          overflow-y: auto;
+        ">
+          <t-menu
+            value="academy-content"
+            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
+            theme="light"
+            @change="handleMenuChange"
+          >
+            <t-menu-item value="dashboard">
+              <template #icon><t-icon name="dashboard" /></template>
+              数据概览
+            </t-menu-item>
+            
+            <t-submenu value="user">
+              <template #icon><t-icon name="user" /></template>
+              <template #title>用户管理</template>
+              <t-menu-item value="user-list">学员列表</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="order">
+              <template #icon><t-icon name="order" /></template>
+              <template #title>订单管理</template>
+              <t-menu-item value="order-list">订单列表</t-menu-item>
+              <t-menu-item value="order-refund">退款管理</t-menu-item>
+              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="course">
+              <template #icon><t-icon name="file" /></template>
+              <template #title>课程管理</template>
+              <t-menu-item value="course-list">课程列表</t-menu-item>
+              <t-menu-item value="schedule-list">排期管理</t-menu-item>
+              <t-menu-item value="appointment-list">预约管理</t-menu-item>
+              <t-menu-item value="case-list">案例管理</t-menu-item>
+              <t-menu-item value="material-list">资料管理</t-menu-item>
+              <t-menu-item value="academy-content">学院内容</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="ambassador">
+              <template #icon><t-icon name="usergroup" /></template>
+              <template #title>大使管理</template>
+              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
+              <t-menu-item value="application-audit">申请审核</t-menu-item>
+              <t-menu-item value="activity-list">活动管理</t-menu-item>
+              <t-menu-item value="contract-list">合约管理</t-menu-item>
+            </t-submenu>
+            
+            <t-submenu value="system">
+              <template #icon><t-icon name="setting" /></template>
+              <template #title>系统管理</template>
+              <t-menu-item value="admin-list">管理员管理</t-menu-item>
+              <t-menu-item value="config">系统配置</t-menu-item>
+              <t-menu-item value="announcement-list">公告管理</t-menu-item>
+              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
+              <t-menu-item value="notification-list">通知管理</t-menu-item>
+              <t-menu-item value="level-config">等级配置</t-menu-item>
+            </t-submenu>
+          </t-menu>
+        </t-aside>
+        
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+          <!-- 页面头部 -->
+          <div class="page-header">
+            <h1 class="page-title">学院内容管理</h1>
+          </div>
+          
+          <!-- 标签页 -->
+          <t-tabs v-model="activeTab" @change="handleTabChange">
+            <t-tab-panel value="courses" label="课程列表"></t-tab-panel>
+            <t-tab-panel value="chapters" label="章节管理"></t-tab-panel>
+            <t-tab-panel value="videos" label="视频管理"></t-tab-panel>
+            <t-tab-panel value="materials" label="资料管理"></t-tab-panel>
+          </t-tabs>
+          
+          <!-- 课程列表 -->
+          <div class="table-card" v-if="activeTab === 'courses'">
+            <div class="toolbar">
+              <t-space>
+                <t-input v-model="searchKeyword" placeholder="搜索课程名称" clearable style="width: 200px;"></t-input>
+                <t-button theme="primary" @click="loadCourses">查询</t-button>
+              </t-space>
+              <t-button theme="primary" @click="createCourse">
+                <template #icon><t-icon name="add" /></template>
+                新建课程
+              </t-button>
+            </div>
+            
+            <t-table
+              :data="courses"
+              :columns="courseColumns"
+              :loading="loading"
+              row-key="id"
+            >
+              <template #status="{ row }">
+                <t-tag :theme="row.status === 1 ? 'success' : 'default'">
+                  {{ row.status === 1 ? '上架' : '下架' }}
+                </t-tag>
+              </template>
+              
+              <template #operation="{ row }">
+                <t-space>
+                  <t-button size="small" variant="text" theme="primary" @click="editCourse(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="default" @click="viewChapters(row)">章节</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="deleteCourse(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 章节管理 -->
+          <div class="table-card" v-if="activeTab === 'chapters'">
+            <div class="toolbar">
+              <t-select v-model="selectedCourseId" placeholder="选择课程" style="width: 200px;" @change="loadChapters">
+                <t-option v-for="course in courses" :key="course.id" :value="course.id" :label="course.name"></t-option>
+              </t-select>
+              <t-button theme="primary" @click="createChapter" :disabled="!selectedCourseId">
+                <template #icon><t-icon name="add" /></template>
+                新建章节
+              </t-button>
+            </div>
+            
+            <t-table
+              :data="chapters"
+              :columns="chapterColumns"
+              :loading="loading"
+              row-key="id"
+            >
+              <template #operation="{ row }">
+                <t-space>
+                  <t-button size="small" variant="text" theme="primary" @click="editChapter(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="default" @click="viewVideos(row)">视频</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="deleteChapter(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 视频管理 -->
+          <div class="table-card" v-if="activeTab === 'videos'">
+            <div class="toolbar">
+              <t-space>
+                <t-select v-model="selectedCourseId" placeholder="选择课程" style="width: 150px;" @change="loadChaptersByCourse">
+                  <t-option v-for="course in courses" :key="course.id" :value="course.id" :label="course.name"></t-option>
+                </t-select>
+                <t-select v-model="selectedChapterId" placeholder="选择章节" style="width: 150px;" @change="loadVideos" :disabled="!selectedCourseId">
+                  <t-option v-for="chapter in chapters" :key="chapter.id" :value="chapter.id" :label="chapter.title"></t-option>
+                </t-select>
+              </t-space>
+              <t-button theme="primary" @click="uploadVideo" :disabled="!selectedChapterId">
+                <template #icon><t-icon name="upload" /></template>
+                上传视频
+              </t-button>
+            </div>
+            
+            <t-table
+              :data="videos"
+              :columns="videoColumns"
+              :loading="loading"
+              row-key="id"
+            >
+              <template #duration="{ row }">
+                {{ formatDuration(row.duration) }}
+              </template>
+              
+              <template #operation="{ row }">
+                <t-space>
+                  <t-button size="small" variant="text" theme="primary" @click="playVideo(row)">播放</t-button>
+                  <t-button size="small" variant="text" theme="default" @click="editVideo(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="deleteVideo(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 资料管理 -->
+          <div class="table-card" v-if="activeTab === 'materials'">
+            <div class="toolbar">
+              <t-select v-model="selectedCourseId" placeholder="选择课程" style="width: 200px;" @change="loadMaterials">
+                <t-option v-for="course in courses" :key="course.id" :value="course.id" :label="course.name"></t-option>
+              </t-select>
+              <t-button theme="primary" @click="uploadMaterial" :disabled="!selectedCourseId">
+                <template #icon><t-icon name="upload" /></template>
+                上传资料
+              </t-button>
+            </div>
+            
+            <t-table
+              :data="materials"
+              :columns="materialColumns"
+              :loading="loading"
+              row-key="id"
+            >
+              <template #fileType="{ row }">
+                <t-tag>{{ row.file_type }}</t-tag>
+              </template>
+              
+              <template #fileSize="{ row }">
+                {{ formatFileSize(row.file_size) }}
+              </template>
+              
+              <template #operation="{ row }">
+                <t-space>
+                  <t-button size="small" variant="text" theme="primary" @click="downloadMaterial(row)">下载</t-button>
+                  <t-button size="small" variant="text" theme="default" @click="editMaterial(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="deleteMaterial(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'academy-content': '../course/academy.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        const loading = ref(false);
+        const activeTab = ref('courses');
+        const searchKeyword = ref('');
+        const selectedCourseId = ref(null);
+        const selectedChapterId = ref(null);
+        
+        // 数据
+        const courses = ref([]);
+        const chapters = ref([]);
+        const videos = ref([]);
+        const materials = ref([]);
+        
+        // 表格列定义
+        const courseColumns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'name', title: '课程名称', width: 200 },
+          { colKey: 'category', title: '分类', width: 100 },
+          { colKey: 'status', title: '状态', width: 80 },
+          { colKey: 'created_at', title: '创建时间', width: 160 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' },
+        ];
+        
+        const chapterColumns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'title', title: '章节标题', width: 250 },
+          { colKey: 'sort_order', title: '排序', width: 80 },
+          { colKey: 'video_count', title: '视频数量', width: 100 },
+          { colKey: 'created_at', title: '创建时间', width: 160 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' },
+        ];
+        
+        const videoColumns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'title', title: '视频标题', width: 250 },
+          { colKey: 'duration', title: '时长', width: 100 },
+          { colKey: 'sort_order', title: '排序', width: 80 },
+          { colKey: 'created_at', title: '上传时间', width: 160 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' },
+        ];
+        
+        const materialColumns = [
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'title', title: '资料标题', width: 250 },
+          { colKey: 'fileType', title: '文件类型', width: 100 },
+          { colKey: 'fileSize', title: '文件大小', width: 100 },
+          { colKey: 'created_at', title: '上传时间', width: 160 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' },
+        ];
+        
+        // 标签页切换
+        const handleTabChange = (value) => {
+          activeTab.value = value;
+          if (value === 'courses') {
+            loadCourses();
+          }
+        };
+        
+        // 加载课程列表
+        const loadCourses = async () => {
+          loading.value = true;
+          try {
+            const result = await AdminAPI.manageAcademyContent({
+              action: 'list_courses',
+              data: { keyword: searchKeyword.value }
+            });
+            courses.value = result.list || [];
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载课程失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 加载章节列表
+        const loadChapters = async () => {
+          if (!selectedCourseId.value) return;
+          
+          loading.value = true;
+          try {
+            const result = await AdminAPI.manageAcademyContent({
+              action: 'list_chapters',
+              data: { courseId: selectedCourseId.value }
+            });
+            chapters.value = result.list || [];
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载章节失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 根据课程加载章节
+        const loadChaptersByCourse = () => {
+          selectedChapterId.value = null;
+          loadChapters();
+        };
+        
+        // 加载视频列表
+        const loadVideos = async () => {
+          if (!selectedChapterId.value) return;
+          
+          loading.value = true;
+          try {
+            const result = await AdminAPI.manageAcademyContent({
+              action: 'list_videos',
+              data: { chapterId: selectedChapterId.value }
+            });
+            videos.value = result.list || [];
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载视频失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 加载资料列表
+        const loadMaterials = async () => {
+          if (!selectedCourseId.value) return;
+          
+          loading.value = true;
+          try {
+            const result = await AdminAPI.manageAcademyContent({
+              action: 'list_materials',
+              data: { courseId: selectedCourseId.value }
+            });
+            materials.value = result.list || [];
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载资料失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // CRUD操作
+        const createCourse = () => {
+          TDesign.MessagePlugin.info('新建课程功能开发中...');
+        };
+        
+        const editCourse = (row) => {
+          TDesign.MessagePlugin.info('编辑课程功能开发中...');
+        };
+        
+        const deleteCourse = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除课程"${row.name}"吗？`,
+            theme: 'warning',
+          });
+          
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.manageAcademyContent({
+              action: 'delete_course',
+              data: { id: row.id }
+            });
+            TDesign.MessagePlugin.success('删除成功');
+            loadCourses();
+          } catch (error) {
+            TDesign.MessagePlugin.error('删除失败: ' + error.message);
+          }
+        };
+        
+        const viewChapters = (row) => {
+          activeTab.value = 'chapters';
+          selectedCourseId.value = row.id;
+          loadChapters();
+        };
+        
+        const createChapter = () => {
+          TDesign.MessagePlugin.info('新建章节功能开发中...');
+        };
+        
+        const editChapter = (row) => {
+          TDesign.MessagePlugin.info('编辑章节功能开发中...');
+        };
+        
+        const deleteChapter = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除章节"${row.title}"吗？`,
+            theme: 'warning',
+          });
+          
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.manageAcademyContent({
+              action: 'delete_chapter',
+              data: { id: row.id }
+            });
+            TDesign.MessagePlugin.success('删除成功');
+            loadChapters();
+          } catch (error) {
+            TDesign.MessagePlugin.error('删除失败: ' + error.message);
+          }
+        };
+        
+        const viewVideos = (row) => {
+          activeTab.value = 'videos';
+          selectedChapterId.value = row.id;
+          loadVideos();
+        };
+        
+        const uploadVideo = () => {
+          TDesign.MessagePlugin.info('上传视频功能开发中...');
+        };
+        
+        const playVideo = (row) => {
+          TDesign.MessagePlugin.info('视频播放功能开发中...');
+        };
+        
+        const editVideo = (row) => {
+          TDesign.MessagePlugin.info('编辑视频功能开发中...');
+        };
+        
+        const deleteVideo = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除视频"${row.title}"吗？`,
+            theme: 'warning',
+          });
+          
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.manageAcademyContent({
+              action: 'delete_video',
+              data: { id: row.id }
+            });
+            TDesign.MessagePlugin.success('删除成功');
+            loadVideos();
+          } catch (error) {
+            TDesign.MessagePlugin.error('删除失败: ' + error.message);
+          }
+        };
+        
+        const uploadMaterial = () => {
+          TDesign.MessagePlugin.info('上传资料功能开发中...');
+        };
+        
+        const downloadMaterial = (row) => {
+          if (row.file_url) {
+            window.open(row.file_url, '_blank');
+          } else {
+            TDesign.MessagePlugin.warning('文件地址不存在');
+          }
+        };
+        
+        const editMaterial = (row) => {
+          TDesign.MessagePlugin.info('编辑资料功能开发中...');
+        };
+        
+        const deleteMaterial = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除资料"${row.title}"吗？`,
+            theme: 'warning',
+          });
+          
+          if (!confirmed) return;
+          
+          try {
+            await AdminAPI.manageAcademyContent({
+              action: 'delete_material',
+              data: { id: row.id }
+            });
+            TDesign.MessagePlugin.success('删除成功');
+            loadMaterials();
+          } catch (error) {
+            TDesign.MessagePlugin.error('删除失败: ' + error.message);
+          }
+        };
+        
+        // 辅助函数
+        const formatDuration = (seconds) => {
+          if (!seconds) return '-';
+          const minutes = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        };
+        
+        const formatFileSize = (bytes) => {
+          if (!bytes) return '-';
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(1024));
+          return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+        };
+        
+        onMounted(() => {
+          if (checkAuth()) {
+            loadCourses();
+          }
+        });
+        
+        return {
+          adminInfo,
+          handleLogout,
+          handleMenuChange,
+          loading,
+          activeTab,
+          searchKeyword,
+          selectedCourseId,
+          selectedChapterId,
+          courses,
+          chapters,
+          videos,
+          materials,
+          courseColumns,
+          chapterColumns,
+          videoColumns,
+          materialColumns,
+          handleTabChange,
+          loadCourses,
+          loadChapters,
+          loadChaptersByCourse,
+          loadVideos,
+          loadMaterials,
+          createCourse,
+          editCourse,
+          deleteCourse,
+          viewChapters,
+          createChapter,
+          editChapter,
+          deleteChapter,
+          viewVideos,
+          uploadVideo,
+          playVideo,
+          editVideo,
+          deleteVideo,
+          uploadMaterial,
+          downloadMaterial,
+          editMaterial,
+          deleteMaterial,
+          formatDuration,
+          formatFileSize,
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

@@ -320,6 +320,7 @@ onMounted(() => {
 // 获取用户升级状态
 const fetchUserUpgradeStatus = async () => {
   try {
+    uni.showLoading({ title: '加载中...' });
     // 获取用户当前等级（从个人中心或其他地方获取）
     const targetLevel = currentLevel.value + 1;
 
@@ -331,8 +332,10 @@ const fetchUserUpgradeStatus = async () => {
 
     // 检查是否推荐过课程
     hasRecommendedCourse.value = result.current_stats.order_count > 0;
+    uni.hideLoading();
   } catch (error) {
     console.error('获取升级指南失败:', error);
+    uni.hideLoading();
   }
 };
 

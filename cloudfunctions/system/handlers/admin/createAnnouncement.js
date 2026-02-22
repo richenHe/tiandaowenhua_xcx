@@ -69,7 +69,7 @@ module.exports = async (event, context) => {
 
     const [announcement] = await insert('announcements', announcementData);
 
-    return response.success({ id: announcement.id }, '创建成功');
+    return response.success({ announcement_id: announcement.id }, '创建成功');
 
   } catch (error) {
     console.error('[admin:createAnnouncement] 失败:', error);

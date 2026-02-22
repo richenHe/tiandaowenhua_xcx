@@ -43,12 +43,14 @@ module.exports = async (event, context) => {
       // 批量获取临时 URL
       let urlMap = {};
       if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
+        const result = await getTempFileURL(fileIDs);
+        if (result.success && result.fileList) {
+          result.fileList.forEach((urlObj, index) => {
+            if (urlObj && urlObj.tempFileURL) {
+              urlMap[fileIDs[index]] = urlObj.tempFileURL;
+            }
+          });
+        }
       }
 
       // 替换 list 中的 fileID 为临时 URL

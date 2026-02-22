@@ -28,7 +28,7 @@ module.exports = async (event, context) => {
       id: referee.id,
       uid: referee.uid,
       nickname: referee.nickname || '未设置',
-      avatar_url: referee.avatar_url || '',
+      avatar: referee.avatar || '',  // 修正：使用 avatar 而不是 avatar_url
       referee_code: referee.referee_code
     };
 
@@ -40,6 +40,8 @@ module.exports = async (event, context) => {
     return response.error('查询失败', error);
   }
 };
+
+
 
 
 

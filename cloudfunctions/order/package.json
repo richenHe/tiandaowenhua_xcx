@@ -6,6 +6,7 @@
   "dependencies": {
     "wx-server-sdk": "latest",
     "@cloudbase/node-sdk": "latest",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "axios": "^1.6.0"
   }
 }

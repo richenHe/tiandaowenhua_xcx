@@ -164,10 +164,13 @@ const hasMore = ref(true)
 // 加载活动统计
 const loadActivityStats = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const stats = await AmbassadorApi.getActivityStats()
     activityStats.value = stats
+    uni.hideLoading()
   } catch (error) {
     console.error('加载活动统计失败:', error)
+    uni.hideLoading()
   }
 }
 
@@ -176,6 +179,7 @@ const loadActivityRecords = async (activityType?: number) => {
   if (loading.value || !hasMore.value) return
 
   try {
+    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await AmbassadorApi.getActivityRecords({
       activity_type: activityType || 0,
@@ -191,8 +195,10 @@ const loadActivityRecords = async (activityType?: number) => {
 
     hasMore.value = activityRecords.value.length < result.total
     page.value++
+    uni.hideLoading()
   } catch (error) {
     console.error('加载活动记录失败:', error)
+    uni.hideLoading()
   } finally {
     loading.value = false
   }

@@ -23,7 +23,7 @@ export interface UserProfile {
   /** 背景图片URL */
   background_image?: string
   /** 推荐码 */
-  referral_code: string
+  referee_code: string
   /** 推荐人ID */
   referee_id: number | null
   /** 推荐人姓名 */
@@ -34,10 +34,12 @@ export interface UserProfile {
   ambassador_level: number
   /** 功德分 */
   merit_points: number
-  /** 积分（可用） */
-  cash_points: number
+  /** 可用积分 */
+  cash_points_available: number
   /** 冻结积分 */
-  frozen_cash_points: number
+  cash_points_frozen: number
+  /** 提现中积分 */
+  cash_points_pending: number
   /** 资料是否完善 */
   profile_completed: number
   /** 推荐人确认时间 */
@@ -66,7 +68,7 @@ export interface LoginParams {
 export interface LoginResponse {
   id: number
   _openid: string
-  referral_code: string
+  referee_code: string
   referee_id: number | null
   profile_completed: number
   created_at: string
@@ -118,7 +120,7 @@ export interface RefereeInfo {
   id: number
   real_name: string
   phone: string
-  referral_code: string
+  referee_code: string
   ambassador_level: number
   avatar: string
 }

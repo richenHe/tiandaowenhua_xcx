@@ -1,16 +1,27 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>合约管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}.t{font-size:20px;font-weight:600;margin-bottom:24px}.b{display:flex;gap:12px;margin-bottom:20px}
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合约管理 - 天道文化后台</title>
+  
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
     
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .t-layout {
+      height: 100vh;
     }
     
     .t-layout__sider {
@@ -20,13 +31,41 @@
       flex-shrink: 0;
     }
     
-    .t-layout__content {
+    .page-content {
       padding: 24px;
       overflow-y: auto;
       background: #f5f5f5;
     }
-
-  </style></head><body>
+    
+    .page-header {
+      margin-bottom: 24px;
+    }
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .alert-card {
+      margin-bottom: 16px;
+    }
+    
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
   <div id="app">
     <t-layout style="height: 100vh;">
       <!-- 顶部导航 -->
@@ -69,7 +108,8 @@
               <template #icon><t-icon name="user" /></template>
               <template #title>用户管理</template>
               <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
             </t-submenu>
             
             <t-submenu value="order">
@@ -113,27 +153,437 @@
         </t-aside>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="c"><h1 class="t">合约管理</h1><div class="b"><t-input v-model="k" placeholder="大使姓名" clearable style="width:200px;"/><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" bordered stripe><template #level="{row}"><t-tag v-if="row.level===1">云雀</t-tag><t-tag v-else-if="row.level===2" theme="primary">青鸾</t-tag><t-tag v-else theme="warning">鸿鹄</t-tag></template><template #status="{row}"><t-tag v-if="row.status===1" theme="success">已签署</t-tag><t-tag v-else theme="warning">待签署</t-tag></template><template #op="{row}"><t-button size="small" variant="text" @click="view(row)">查看</t-button></template></t-table></div><t-dialog v-model:visible="v" header="合约详情" width="700px" :footer="false"><t-descriptions v-if="cr" bordered :column="2"><t-descriptions-item label="大使姓名">{{cr.ambassador_name}}</t-descriptions-item><t-descriptions-item label="等级"><t-tag v-if="cr.level===1">云雀</t-tag><t-tag v-else-if="cr.level===2" theme="primary">青鸾</t-tag><t-tag v-else theme="warning">鸿鹄</t-tag></t-descriptions-item><t-descriptions-item label="合约编号" :span="2">{{cr.contract_no}}</t-descriptions-item><t-descriptions-item label="签署时间" :span="2">{{cr.signed_at||'未签署'}}</t-descriptions-item><t-descriptions-item label="合约文件" :span="2"><a :href="cr.contract_url" target="_blank">查看合约</a></t-descriptions-item></t-descriptions></t-dialog>        </t-content>
+        <t-content class="page-content">
+          <!-- 页面头部 -->
+          <div class="page-header">
+            <h1 class="page-title">合约管理</h1>
+          </div>
+          
+          <!-- 到期合约提醒 -->
+          <div class="alert-card" v-if="expiringContracts.length > 0">
+            <t-alert 
+              theme="warning" 
+              :message="`有 ${expiringContracts.length} 份合约即将在30天内到期`"
+            >
+              <template #operation>
+                <t-button size="small" @click="showExpiringList">查看列表</t-button>
+              </template>
+            </t-alert>
+          </div>
+          
+          <!-- 搜索表单 -->
+          <div class="search-form">
+            <t-form layout="inline">
+              <t-form-item label="关键词">
+                <t-input v-model="searchForm.keyword" placeholder="大使姓名" clearable style="width: 200px;"></t-input>
+              </t-form-item>
+              
+              <t-form-item label="合约状态">
+                <t-select v-model="searchForm.status" clearable placeholder="全部" style="width: 150px;">
+                  <t-option :value="1" label="生效中"></t-option>
+                  <t-option :value="2" label="即将到期"></t-option>
+                  <t-option :value="3" label="已到期"></t-option>
+                </t-select>
+              </t-form-item>
+              
+              <t-form-item>
+                <t-space>
+                  <t-button theme="primary" @click="handleSearch">查询</t-button>
+                  <t-button theme="default" @click="handleReset">重置</t-button>
+                </t-space>
+              </t-form-item>
+            </t-form>
+          </div>
+          
+          <!-- 数据表格 -->
+          <div class="table-card">
+            <t-table
+              :data="tableData"
+              :columns="columns"
+              :loading="loading"
+              row-key="id"
+              :pagination="pagination"
+              @page-change="onPageChange"
+            >
+              <template #ambassadorLevel="{ row }">
+                <t-tag v-if="row.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+              </template>
+              
+              <template #status="{ row }">
+                <t-tag v-if="row.status === 1" theme="success">生效中</t-tag>
+                <t-tag v-else-if="row.status === 2" theme="warning">即将到期</t-tag>
+                <t-tag v-else-if="row.status === 3" theme="danger">已到期</t-tag>
+              </template>
+              
+              <template #action="{ row }">
+                <t-space>
+                  <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">详情</t-button>
+                  <t-button theme="default" size="small" variant="text" @click="viewVersions(row)">版本历史</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+          
+          <!-- 合约详情对话框 -->
+          <t-dialog
+            v-model:visible="detailVisible"
+            header="合约详情"
+            width="700px"
+            :footer="false"
+          >
+            <t-descriptions v-if="currentContract" bordered :column="2">
+              <t-descriptions-item label="大使姓名">{{ currentContract.ambassador_name }}</t-descriptions-item>
+              <t-descriptions-item label="手机号">{{ currentContract.phone }}</t-descriptions-item>
+              <t-descriptions-item label="大使等级">
+                <t-tag v-if="currentContract.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+                <t-tag v-else-if="currentContract.ambassador_level === 2" theme="success">青鸾大使</t-tag>
+                <t-tag v-else-if="currentContract.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
+                <t-tag v-else-if="currentContract.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+              </t-descriptions-item>
+              <t-descriptions-item label="合约状态">
+                <t-tag v-if="currentContract.status === 1" theme="success">生效中</t-tag>
+                <t-tag v-else-if="currentContract.status === 2" theme="warning">即将到期</t-tag>
+                <t-tag v-else-if="currentContract.status === 3" theme="danger">已到期</t-tag>
+              </t-descriptions-item>
+              <t-descriptions-item label="合约编号" :span="2">{{ currentContract.contract_no }}</t-descriptions-item>
+              <t-descriptions-item label="签署时间">{{ formatDateTime(currentContract.signed_at) }}</t-descriptions-item>
+              <t-descriptions-item label="到期时间">{{ formatDateTime(currentContract.expires_at) }}</t-descriptions-item>
+              <t-descriptions-item label="合约文件" :span="2">
+                <a v-if="currentContract.contract_url" :href="currentContract.contract_url" target="_blank">查看合约</a>
+                <span v-else style="color: #999;">暂无文件</span>
+              </t-descriptions-item>
+            </t-descriptions>
+          </t-dialog>
+          
+          <!-- 即将到期合约列表对话框 -->
+          <t-dialog
+            v-model:visible="expiringVisible"
+            header="即将到期合约"
+            width="900px"
+            :footer="false"
+          >
+            <t-table
+              :data="expiringContracts"
+              :columns="expiringColumns"
+              row-key="id"
+            >
+              <template #ambassador="{ row }">
+                {{ row.ambassador_name }} ({{ row.phone }})
+              </template>
+              
+              <template #daysLeft="{ row }">
+                <t-tag :theme="row.days_left <= 7 ? 'danger' : 'warning'">
+                  剩余 {{ row.days_left }} 天
+                </t-tag>
+              </template>
+              
+              <template #operation="{ row }">
+                <t-space>
+                  <t-button size="small" theme="primary" @click="renewContract(row)">
+                    续约
+                  </t-button>
+                  <t-button size="small" theme="default" @click="contactAmbassador(row)">
+                    联系大使
+                  </t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </t-dialog>
+          
+          <!-- 版本历史对话框 -->
+          <t-dialog
+            v-model:visible="versionsVisible"
+            header="合约版本历史"
+            width="800px"
+            :footer="false"
+          >
+            <t-loading :loading="versionsLoading">
+              <t-timeline v-if="versions.length > 0">
+                <t-timeline-item 
+                  v-for="version in versions" 
+                  :key="version.id"
+                  :label="formatDateTime(version.created_at)"
+                >
+                  <div>
+                    <div style="font-weight: 600;">版本 {{ version.version }}</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 4px;">
+                      修改人: {{ version.editor_name }}
+                    </div>
+                    <div style="color: #666; font-size: 14px; margin-top: 4px;">
+                      变更说明: {{ version.change_notes }}
+                    </div>
+                    <t-button 
+                      size="small" 
+                      theme="primary" 
+                      variant="text"
+                      style="margin-top: 8px;"
+                      @click="viewVersionContent(version)"
+                    >
+                      查看内容
+                    </t-button>
+                  </div>
+                </t-timeline-item>
+              </t-timeline>
+              <div v-else style="text-align: center; padding: 40px; color: #999;">
+                暂无版本历史
+              </div>
+            </t-loading>
+          </t-dialog>
+        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js"></script><script src="../../assets/js/admin-api.js"></script>
-  <script src="../../assets/js/sidebar-navigation.js"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+    
+    const app = createApp({
       setup() {
-        // 引入侧边栏导航功能
-        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
-        const lg=ref(false);const d=ref([]);const v=ref(false);const cr=ref(null);const k=ref('');const pg=ref({current:1,pageSize:20,total:0});const cols=[{colKey:'ambassador_name',title:'大使姓名',width:120},{colKey:'phone',title:'手机号',width:130},{colKey:'level',title:'等级',width:100,cell:'level'},{colKey:'contract_no',title:'合约编号',width:180},{colKey:'signed_at',title:'签署时间',width:160},{colKey:'status',title:'状态',width:100,cell:'status'},{colKey:'op',title:'操作',width:100,cell:'op'}];const ld=async()=>{lg.value=true;try{const data=await AdminAPI.getContractList({page:pg.value.current,pageSize:pg.value.pageSize,keyword:k.value});d.value=data.list;pg.value.total=data.total;}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const rs=()=>{k.value='';ld();};const chg=pi=>{pg.value.current=pi.current;pg.value.pageSize=pi.pageSize;ld();};const view=row=>{cr.value=row;v.value=true;};onMounted(ld);return {
-          // 侧边栏导航
+        // 管理员信息
+        const adminInfo = ref(null);
+        
+        // 检查登录状态
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+        
+        // 退出登录
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => {
+              AdminAPI.logout();
+            }
+          });
+        };
+        
+        // 菜单切换
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          
+          if (routes[value]) {
+            window.location.href = routes[value];
+          }
+        };
+        
+        const loading = ref(false);
+        const tableData = ref([]);
+        const pagination = reactive({
+          current: 1,
+          pageSize: 20,
+          total: 0,
+        });
+        
+        const searchForm = reactive({
+          keyword: '',
+          status: '',
+        });
+        
+        const columns = [
+          { colKey: 'ambassador_name', title: '大使姓名', width: 120 },
+          { colKey: 'phone', title: '手机号', width: 130 },
+          { colKey: 'ambassadorLevel', title: '大使等级', width: 120 },
+          { colKey: 'contract_no', title: '合约编号', width: 180 },
+          { colKey: 'signed_at', title: '签署时间', width: 160 },
+          { colKey: 'expires_at', title: '到期时间', width: 160 },
+          { colKey: 'status', title: '状态', width: 100 },
+          { colKey: 'action', title: '操作', width: 160, fixed: 'right' },
+        ];
+        
+        // 到期合约
+        const expiringContracts = ref([]);
+        const expiringVisible = ref(false);
+        const expiringColumns = [
+          { colKey: 'ambassador', title: '大使信息', width: 200 },
+          { colKey: 'contract_type_name', title: '合约类型', width: 120 },
+          { colKey: 'signed_at', title: '签约日期', width: 120 },
+          { colKey: 'expires_at', title: '到期日期', width: 120 },
+          { colKey: 'daysLeft', title: '剩余天数', width: 120 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' },
+        ];
+        
+        // 详情对话框
+        const detailVisible = ref(false);
+        const currentContract = ref(null);
+        
+        // 版本历史
+        const versionsVisible = ref(false);
+        const versionsLoading = ref(false);
+        const versions = ref([]);
+        
+        // 加载到期合约
+        const loadExpiringContracts = async () => {
+          try {
+            const result = await AdminAPI.getExpiringContracts(30);
+            expiringContracts.value = result.list || [];
+          } catch (error) {
+            console.error('加载到期合约失败:', error);
+          }
+        };
+        
+        // 显示到期列表
+        const showExpiringList = () => {
+          expiringVisible.value = true;
+        };
+        
+        // 加载合约列表
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const result = await AdminAPI.getContractList({
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              keyword: searchForm.keyword,
+              status: searchForm.status,
+            });
+            
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+        
+        // 搜索
+        const handleSearch = () => {
+          pagination.current = 1;
+          loadData();
+        };
+        
+        // 重置
+        const handleReset = () => {
+          searchForm.keyword = '';
+          searchForm.status = '';
+          handleSearch();
+        };
+        
+        // 分页
+        const onPageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+        
+        // 查看详情
+        const viewDetail = (row) => {
+          currentContract.value = row;
+          detailVisible.value = true;
+        };
+        
+        // 查看版本历史
+        const viewVersions = async (row) => {
+          versionsVisible.value = true;
+          versionsLoading.value = true;
+          try {
+            versions.value = await AdminAPI.getContractVersions(row.id);
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载版本历史失败: ' + error.message);
+            versions.value = [];
+          } finally {
+            versionsLoading.value = false;
+          }
+        };
+        
+        // 查看版本内容
+        const viewVersionContent = (version) => {
+          TDesign.MessagePlugin.info('版本内容查看功能开发中...');
+        };
+        
+        // 续约
+        const renewContract = async (row) => {
+          TDesign.MessagePlugin.info('续约功能开发中...');
+        };
+        
+        // 联系大使
+        const contactAmbassador = (row) => {
+          TDesign.MessagePlugin.info(`联系大使: ${row.ambassador_name} (${row.phone})`);
+        };
+        
+        // 格式化时间
+        const formatDateTime = (datetime) => {
+          if (!datetime) return '-';
+          return new Date(datetime).toLocaleString('zh-CN');
+        };
+        
+        onMounted(() => {
+          if (checkAuth()) {
+            loadData();
+            loadExpiringContracts();
+          }
+        });
+        
+        return {
           adminInfo,
-          handleMenuChange,
           handleLogout,
-          lg,d,v,cr,k,pg,cols,ld,rs,chg,view
-        };}}).use(TDesign).mount('#app');</script></body></html>
-
-
-
-
-
-
-
+          handleMenuChange,
+          loading,
+          tableData,
+          pagination,
+          searchForm,
+          columns,
+          expiringContracts,
+          expiringVisible,
+          expiringColumns,
+          detailVisible,
+          currentContract,
+          versionsVisible,
+          versionsLoading,
+          versions,
+          showExpiringList,
+          handleSearch,
+          handleReset,
+          onPageChange,
+          viewDetail,
+          viewVersions,
+          viewVersionContent,
+          renewContract,
+          contactAmbassador,
+          formatDateTime,
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>

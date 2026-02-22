@@ -111,6 +111,7 @@ const statusMap: Record<number, { text: string; type: string; orderStatus: strin
 // 加载订单列表
 const loadOrders = async (tabValue?: number) => {
   try {
+    uni.showLoading({ title: '加载中...' })
     // 根据 tab 值设置状态过滤和分页大小
     // 0-全部（100条）, 1-待支付(20条), 2-已完成(100条), 3-已取消(20条)
     const params: any = { page: 1, pageSize: 100 }
@@ -151,8 +152,14 @@ const loadOrders = async (tabValue?: number) => {
       
       return orderData
     })
+    uni.hideLoading()
   } catch (error) {
     console.error('加载订单列表失败:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '加载失败，请重试',
+      icon: 'none'
+    })
   }
 }
 

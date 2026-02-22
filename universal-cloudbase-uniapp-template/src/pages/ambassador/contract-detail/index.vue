@@ -133,10 +133,13 @@ onMounted(() => {
 // 加载协议详情
 const loadContractDetail = async () => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const result = await AmbassadorApi.getContractDetail(signatureId.value)
     contractDetail.value = result
+    uni.hideLoading()
   } catch (error) {
     console.error('获取协议详情失败:', error)
+    uni.hideLoading()
     uni.showToast({
       title: '获取协议详情失败',
       icon: 'none'

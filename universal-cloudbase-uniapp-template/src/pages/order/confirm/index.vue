@@ -3,17 +3,8 @@
     <TdPageHeader title="确认订单" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <!-- 加载中占位符 -->
-      <view v-if="isLoading" class="page-content">
-        <view class="t-card t-card--bordered">
-          <view class="t-card__body">
-            <view class="loading-text">加载中...</view>
-          </view>
-        </view>
-      </view>
-
       <!-- 订单内容 -->
-      <view v-else class="page-content">
+      <view v-if="!isLoading" class="page-content">
         <!-- 课程信息 -->
         <view class="t-section-title t-section-title--simple">📦 课程信息</view>
         <view class="t-card t-card--bordered mb-l">
@@ -318,14 +309,6 @@ const handleConfirm = () => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
-}
-
-// 加载占位符
-.loading-text {
-  text-align: center;
-  color: $td-text-color-placeholder;
-  font-size: 28rpx;
-  padding: 64rpx 0;
 }
 
 .mb-l {

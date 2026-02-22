@@ -9,12 +9,12 @@ module.exports = async (event, context) => {
   const { user } = context;  // user 已通过 checkClientAuth 鉴权
 
   try {
-    // 返回用户积分信息
+    // 返回用户积分信息（使用下划线命名，与数据库一致）
     return response.success({
-      meritPoints: parseFloat(user.merit_points) || 0,          // 功德分
-      cashPointsFrozen: parseFloat(user.cash_points_frozen) || 0,      // 冻结积分
-      cashPointsAvailable: parseFloat(user.cash_points_available) || 0, // 可用积分
-      cashPointsPending: parseFloat(user.cash_points_pending) || 0     // 提现中积分
+      merit_points: parseFloat(user.merit_points) || 0,          // 功德分
+      cash_points_frozen: parseFloat(user.cash_points_frozen) || 0,      // 冻结积分
+      cash_points_available: parseFloat(user.cash_points_available) || 0, // 可用积分
+      cash_points_pending: parseFloat(user.cash_points_pending) || 0     // 提现中积分
     }, '获取成功');
 
   } catch (error) {
@@ -22,6 +22,8 @@ module.exports = async (event, context) => {
     return response.error('获取用户积分失败', error);
   }
 };
+
+
 
 
 

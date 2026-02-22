@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台管理接口自动化测试</title>
+  
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
+  
+  <!-- 自定义样式 -->
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+
+    .test-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .test-header {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .mode-alert {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .mode-alert.mock {
+      background: #fff3e0;
+      border: 1px solid #ff9800;
+      color: #e65100;
+    }
+
+    .mode-alert.real {
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      color: #0d47a1;
+    }
+
+    .test-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .test-modules {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .module-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .module-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .module-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .test-results {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .test-case {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+    }
+
+    .test-case.running {
+      border-color: #0052d9;
+      background: #f0f5ff;
+    }
+
+    .test-case.success {
+      border-color: #00a870;
+      background: #f0f9f6;
+    }
+
+    .test-case.failed {
+      border-color: #e34d59;
+      background: #fff0f1;
+    }
+
+    .test-case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .test-case-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-dot.pending {
+      background: #ccc;
+    }
+
+    .status-dot.running {
+      background: #0052d9;
+    }
+
+    .status-dot.success {
+      background: #00a870;
+    }
+
+    .status-dot.failed {
+      background: #e34d59;
+    }
+
+    .test-case-info {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .test-case-details {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .field-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .field-check.success {
+      color: #00a870;
+    }
+
+    .field-check.failed {
+      color: #e34d59;
+    }
+
+    .field-name {
+      font-family: monospace;
+      font-weight: 600;
+    }
+
+    .error-message {
+      background: #fff0f1;
+      border: 1px solid #e34d59;
+      border-radius: 4px;
+      padding: 12px;
+      margin-top: 12px;
+      color: #e34d59;
+      font-size: 12px;
+    }
+
+    .json-code {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #0052d9;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="test-container">
+      <!-- 测试头部 -->
+      <div class="test-header">
+        <h1 style="margin: 0 0 16px 0;">🧪 后台管理接口自动化测试（共64个接口）</h1>
+        
+        <!-- 模式提示 -->
+        <div class="mode-alert" :class="testConfig.useMock ? 'mock' : 'real'">
+          <strong>⚠️ 当前模式：{{ testConfig.useMock ? 'Mock 模式（假数据测真接口）' : '真实数据模式' }}</strong>
+          <br>
+          <span v-if="testConfig.useMock">
+            Mock 模式：使用假数据（userId=1, orderId=999等）调用真实后端接口，测试接口是否正常工作。
+          </span>
+          <span v-else>
+            真实数据模式：使用真实业务数据调用后端接口，验证实际业务流程是否正确。
+          </span>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div class="test-stats">
+          <div class="stat-item">
+            <div class="stat-value" :style="{color: '#0052d9'}">{{ totalTests }}</div>
+            <div class="stat-label">总测试数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" :style="{color: '#00a870'}">{{ passedTests }}</div>
+            <div class="stat-label">通过</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" :style="{color: '#e34d59'}">{{ failedTests }}</div>
+            <div class="stat-label">失败</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" :style="{color: '#666'}">{{ Math.round(passRate) }}%</div>
+            <div class="stat-label">通过率</div>
+          </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-bar" v-if="isRunning">
+          <div class="progress-fill" :style="{width: progress + '%'}"></div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="test-controls">
+          <t-button theme="primary" @click="runAllTests" :loading="isRunning" :disabled="isRunning">
+            {{ isRunning ? '测试运行中...' : '运行所有测试' }}
+          </t-button>
+          <t-button theme="default" @click="clearResults" :disabled="isRunning">
+            清空结果
+          </t-button>
+          <t-button theme="default" @click="exportReport" :disabled="results.length === 0">
+            导出 JSON 报告
+          </t-button>
+          <t-button theme="warning" variant="outline" @click="handleManualLogin" :disabled="isRunning">
+            🔄 重新登录
+          </t-button>
+          <t-space align="center">
+            <t-checkbox v-model="testConfig.skipSuccess">跳过已成功</t-checkbox>
+            <t-checkbox v-model="testConfig.stopOnError">遇错停止</t-checkbox>
+            <t-checkbox v-model="testConfig.showDetails">显示详情</t-checkbox>
+            <t-checkbox v-model="testConfig.useMock" @change="handleMockChange">
+              <span :style="{color: testConfig.useMock ? '#ff9800' : '#00a870', fontWeight: 600}">
+                {{ testConfig.useMock ? 'Mock（假数据）' : '真实数据' }}
+              </span>
+            </t-checkbox>
+          </t-space>
+          <div style="margin-left: auto; font-size: 12px; color: #666;">
+            <div>管理员: {{ testConfig.admin.username }}</div>
+            <div :style="{color: testConfig.token ? '#00a870' : '#e34d59'}">
+              {{ testConfig.token ? '✓ 已登录' : '✗ 未登录' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 测试模块 -->
+      <div class="test-modules" v-if="!isRunning || results.length === 0">
+        <div 
+          v-for="module in testModules" 
+          :key="module.id"
+          class="module-card"
+          @click="runModuleTests(module.id)"
+        >
+          <div class="module-header">
+            <div class="module-title">{{ module.name }}</div>
+            <t-tag theme="primary" variant="light">{{ module.tests.length }} 个测试</t-tag>
+          </div>
+          <div style="font-size: 12px; color: #666;">
+            📋 {{ module.description }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 测试结果 -->
+      <div class="test-results" v-if="results.length > 0">
+        <h3>测试结果</h3>
+        <div 
+          v-for="(result, index) in results" 
+          :key="index"
+          class="test-case"
+          :class="result.status"
+        >
+          <div class="test-case-header">
+            <div class="test-case-title">
+              <span class="status-dot" :class="result.status"></span>
+              {{ result.name }}
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <t-tag 
+                :theme="result.status === 'success' ? 'success' : result.status === 'failed' ? 'danger' : 'default'"
+                variant="light"
+              >
+                {{ result.status === 'success' ? '✓ 通过' : result.status === 'failed' ? '✗ 失败' : '⏳ 运行中' }}
+              </t-tag>
+              <span style="font-size: 12px; color: #666;" v-if="result.duration">{{ result.duration }}ms</span>
+            </div>
+          </div>
+
+          <div class="test-case-info">
+            <strong>接口:</strong> {{ result.method }} {{ result.url }}
+          </div>
+
+          <!-- 字段检查结果 -->
+          <div v-if="testConfig.showDetails && result.fieldChecks && result.fieldChecks.length > 0">
+            <div style="margin: 12px 0 8px 0; font-weight: 600; font-size: 12px;">字段验证:</div>
+            <div class="test-case-details">
+              <div 
+                v-for="(check, idx) in result.fieldChecks" 
+                :key="idx"
+                class="field-check"
+                :class="check.exists ? 'success' : 'failed'"
+              >
+                <span>{{ check.exists ? '✓' : '✗' }}</span>
+                <span class="field-name">{{ check.field }}</span>
+                <span v-if="check.type"> ({{ check.type }})</span>
+                <span v-if="!check.exists" style="color: #e34d59;"> - 字段缺失</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 错误信息 -->
+          <div v-if="result.error" class="error-message">
+            <strong>错误:</strong> {{ result.error }}
+          </div>
+
+          <!-- 响应数据（仅显示错误时） -->
+          <div v-if="testConfig.showDetails && result.response && result.status === 'failed'" 
+               style="background: #f5f5f5; border-radius: 4px; padding: 12px; margin-top: 12px; font-size: 12px;">
+            <strong>响应数据:</strong>
+            <pre class="json-code">{{ JSON.stringify(result.response, null, 2) }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue 3（本地）-->
+  <script src="./assets/libs/vue.global.js"></script>
+  
+  <!-- TDesign Vue（本地）-->
+  <script src="./assets/libs/tdesign.min.js"></script>
+  
+  <!-- CloudBase SDK（本地）-->
+  <script src="./assets/libs/tcb.js"></script>
+  
+  <!-- 配置文件 -->
+  <script src="./assets/js/config.js"></script>
+  
+  <!-- API 封装 -->
+  <script src="./assets/js/admin-api.js"></script>
+  
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    
+    const app = createApp({
+      setup() {
+        const isRunning = ref(false);
+        const results = ref([]);
+        
+        const testConfig = ref({
+          skipSuccess: false,
+          stopOnError: false,
+          showDetails: true,
+          useMock: true,  // 默认 Mock 模式：使用假数据（userId=1等）测试接口
+          apiBaseURL: window.API_CONFIG?.baseURL || 'https://your-api-domain.com',
+          token: '',
+          admin: {
+            username: 'herichen',
+            password: 'tiandaowenhua'
+          }
+        });
+
+        // 初始化
+        onMounted(async () => {
+          // 尝试从 localStorage 恢复 Token
+          const savedToken = localStorage.getItem('api_test_token');
+          if (savedToken) {
+            testConfig.value.token = savedToken;
+            console.log('✓ 恢复保存的 Token:', savedToken.substring(0, 20) + '...');
+            
+            // 验证 Token 是否还有效
+            try {
+              await testTokenValidity();
+            } catch (error) {
+              console.warn('Token 已失效，重新登录');
+              TDesign.MessagePlugin.warning('登录已过期，正在重新登录...');
+              await autoLogin();
+            }
+          } else {
+            // 没有保存的 Token，自动登录
+            console.log('✗ 未找到保存的 Token');
+            TDesign.MessagePlugin.info('正在自动登录...');
+            await autoLogin();
+          }
+        });
+
+        // Mock 模式切换处理（两种模式都需要登录）
+        const handleMockChange = (checked) => {
+          if (!testConfig.value.token) {
+            // 没有 Token 时自动登录
+            TDesign.MessagePlugin.info('正在自动登录...');
+            autoLogin();
+          } else {
+            // 提示模式切换
+            if (checked) {
+              TDesign.MessagePlugin.info('已切换到 Mock 模式：使用假数据测试接口');
+            } else {
+              TDesign.MessagePlugin.warning('已切换到真实数据模式：使用实际业务数据！请谨慎操作');
+            }
+          }
+        };
+
+        // 手动登录
+        const handleManualLogin = async () => {
+          TDesign.MessagePlugin.info('正在重新登录...');
+          await autoLogin();
+        };
+
+        // 验证 Token 是否有效
+        const testTokenValidity = async () => {
+          try {
+            const apiUrl = `https://${CONFIG.ENV_ID}.service.tcloudbase.com/${CONFIG.CLOUD_FUNCTIONS.SYSTEM}`;
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'getStatistics',
+                jwtToken: testConfig.value.token
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error('Token 验证失败');
+            }
+
+            let result = await response.json();
+
+            // 解析 body（如果存在）
+            if (result.body && typeof result.body === 'string') {
+              try {
+                result = JSON.parse(result.body);
+              } catch (e) {
+                console.error('解析响应失败:', e);
+                throw new Error('Token 验证失败');
+              }
+            }
+
+            if (!result.success || result.code === 401) {
+              throw new Error('Token 已过期');
+            }
+            
+            console.log('✓ Token 验证成功');
+          } catch (error) {
+            console.error('Token 验证失败:', error);
+            throw error;
+          }
+        };
+
+        // 自动登录函数（增强版）
+        const autoLogin = async () => {
+          try {
+            console.log('开始自动登录...');
+            console.log('管理员账号:', testConfig.value.admin.username);
+            
+            // 使用 CloudBase 云函数格式调用登录接口
+            const apiUrl = `https://${CONFIG.ENV_ID}.service.tcloudbase.com/${CONFIG.CLOUD_FUNCTIONS.SYSTEM}`;
+            console.log('登录接口:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'login',
+                username: testConfig.value.admin.username,
+                password: testConfig.value.admin.password
+              })
+            });
+
+            console.log('HTTP 响应状态:', response.status, response.statusText);
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            let result = await response.json();
+            console.log('原始响应:', result);
+
+            // 解析 body（如果存在）
+            if (result.body && typeof result.body === 'string') {
+              try {
+                result = JSON.parse(result.body);
+                console.log('解析后的响应:', result);
+              } catch (e) {
+                console.error('解析响应 body 失败:', e);
+                throw new Error('登录接口返回数据格式错误');
+              }
+            }
+
+            if (!result.success) {
+              throw new Error(result.message || '登录失败');
+            }
+            
+            if (result.data && result.data.token) {
+              const token = result.data.token;
+              testConfig.value.token = token;
+              localStorage.setItem('api_test_token', token);
+              localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, token);
+              
+              // 同时保存管理员信息
+              if (result.data.admin) {
+                localStorage.setItem(CONFIG.STORAGE_KEYS.ADMIN_INFO, JSON.stringify(result.data.admin));
+              }
+              
+              TDesign.MessagePlugin.success('✓ 自动登录成功');
+              console.log('✓ 登录成功');
+              console.log('Token:', token.substring(0, 30) + '...');
+              console.log('管理员信息:', result.data.admin);
+            } else {
+              console.error('登录响应数据:', result);
+              throw new Error('登录响应中没有 token 字段');
+            }
+          } catch (error) {
+            console.error('✗ 自动登录失败:', error);
+            TDesign.MessagePlugin.error('自动登录失败：' + error.message);
+            
+            // 显示详细错误信息给用户
+            TDesign.DialogPlugin.alert({
+              header: '登录失败',
+              body: `无法自动登录管理后台，请检查：\n\n1. 用户名和密码是否正确\n2. 云函数是否正常部署\n3. 网络连接是否正常\n\n错误详情: ${error.message}`,
+              confirmBtn: '我知道了'
+            });
+          }
+        };
+
+        // 测试模块定义（64个接口完整版本）
+        const testModules = ref([
+          {
+            id: 'user',
+            name: '用户管理',
+            description: '学员列表、详情、推荐人管理（4个接口）',
+            tests: [
+              {
+                name: '1. 获取学员列表',
+                method: 'GET',
+                url: '/api/admin/user/getUserList',
+                params: { page: 1, pageSize: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'real_name', 'phone', 'ambassador_level', 'created_at']
+              },
+              {
+                name: '2. 获取学员详情',
+                method: 'GET',
+                url: '/api/admin/user/getUserDetail',
+                params: { userId: 30 },
+                expectedFields: ['user', 'referee', 'refereeCount', 'courses']
+              },
+              {
+                name: '3. 修改学员推荐人',
+                method: 'POST',
+                url: '/api/admin/user/updateUserReferee',
+                body: { userId: 30, newRefereeId: 29, reason: '测试修改推荐人' },
+                expectedFields: ['oldRefereeId', 'newRefereeId', 'newRefereeName']
+              },
+              {
+                name: '4. 推荐人变更记录',
+                method: 'GET',
+                url: '/api/admin/user/getRefereeChangeLogs',
+                params: { userId: 30, page: 1, pageSize: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'old_referee_id', 'new_referee_id', 'created_at']
+              }
+            ]
+          },
+          {
+            id: 'order',
+            name: '订单管理',
+            description: '订单列表、详情、退款、提现（4个接口）',
+            tests: [
+              {
+                name: '1. 获取订单列表',
+                method: 'GET',
+                url: '/api/admin/order/getOrderList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['order_no', 'user_id', 'total_amount', 'pay_status', 'created_at']
+              },
+              {
+                name: '2. 获取订单详情',
+                method: 'GET',
+                url: '/api/admin/order/getOrderDetail',
+                params: { order_no: 'TEST20260215001' },
+                expectedFields: ['order_no', 'user_id', 'final_amount', 'pay_status']
+              },
+              {
+                name: '3. 订单退款',
+                method: 'POST',
+                url: '/api/admin/order/refund',
+                body: { order_no: 'TEST20260215001', refund_reason: '测试退款' },
+                expectedFields: ['refund_id', 'refund_amount']
+              },
+              {
+                name: '4. 提现审核',
+                method: 'POST',
+                url: '/api/admin/order/withdrawAudit',
+                body: { withdrawal_id: 3, status: 1 },
+                expectedFields: ['withdrawal_id', 'status', 'status_name']
+              }
+            ]
+          },
+          {
+            id: 'course',
+            name: '课程管理',
+            description: '课程、排期、预约、案例、资料（20个接口）',
+            tests: [
+              // 3.1 课程管理（4个接口）
+              {
+                name: '1. 获取课程列表',
+                method: 'GET',
+                url: '/api/admin/course/getCourseList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'name', 'type', 'current_price', 'status']
+              },
+              {
+                name: '2. 创建课程',
+                method: 'POST',
+                url: '/api/admin/course/createCourse',
+                body: { name: '测试课程', type: 1, current_price: 1688 },
+                expectedFields: ['course_id']
+              },
+              {
+                name: '3. 更新课程',
+                method: 'POST',
+                url: '/api/admin/course/updateCourse',
+                body: { id: 1, name: '更新后的课程' },
+                expectedFields: ['success']
+              },
+              {
+                name: '4. 删除课程',
+                method: 'POST',
+                url: '/api/admin/course/deleteCourse',
+                body: { id: 7 },
+                expectedFields: ['success']
+              },
+              // 3.2 排期管理（4个接口）
+              {
+                name: '5. 获取排期列表',
+                method: 'GET',
+                url: '/api/admin/course/getClassRecordList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'course_id', 'class_date', 'start_time', 'status']
+              },
+              {
+                name: '6. 创建排期',
+                method: 'POST',
+                url: '/api/admin/course/createClassRecord',
+                body: { course_id: 1, class_date: '2026-03-01', start_time: '09:00', end_time: '12:00' },
+                expectedFields: ['class_record_id']
+              },
+              {
+                name: '7. 更新排期',
+                method: 'POST',
+                url: '/api/admin/course/updateClassRecord',
+                body: { id: 1, status: 1 },
+                expectedFields: ['success']
+              },
+              {
+                name: '8. 删除排期',
+                method: 'POST',
+                url: '/api/admin/course/deleteClassRecord',
+                body: { id: 9 },
+                expectedFields: ['success']
+              },
+              // 3.3 预约管理（3个接口）
+              {
+                name: '9. 获取预约列表',
+                method: 'GET',
+                url: '/api/admin/course/getAppointmentList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'course_id', 'status', 'created_at']
+              },
+              {
+                name: '10. 更新预约状态',
+                method: 'POST',
+                url: '/api/admin/course/updateAppointmentStatus',
+                body: { id: 4, status: 2 },
+                expectedFields: ['success']
+              },
+              {
+                name: '11. 批量签到',
+                method: 'POST',
+                url: '/api/admin/course/batchCheckin',
+                body: { class_record_id: 1, user_ids: [30] },
+                expectedFields: ['success_count', 'failed_count']
+              },
+              // 3.4 案例管理（4个接口）
+              {
+                name: '12. 获取案例列表',
+                method: 'GET',
+                url: '/api/admin/course/getCaseList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'title', 'category', 'status', 'created_at']
+              },
+              {
+                name: '13. 创建案例',
+                method: 'POST',
+                url: '/api/admin/course/createCase',
+                body: { title: '测试案例', student_name: '测试学员', category: '命理', content: '测试内容' },
+                expectedFields: ['case_id']
+              },
+              {
+                name: '14. 更新案例',
+                method: 'POST',
+                url: '/api/admin/course/updateCase',
+                body: { id: 1, title: '更新后的案例' },
+                expectedFields: ['success']
+              },
+              {
+                name: '15. 删除案例',
+                method: 'POST',
+                url: '/api/admin/course/deleteCase',
+                body: { id: 8 },
+                expectedFields: ['success']
+              },
+              // 3.5 资料管理（4个接口）
+              {
+                name: '16. 获取资料列表',
+                method: 'GET',
+                url: '/api/admin/course/getMaterialList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'title', 'type', 'file_url', 'created_at']
+              },
+              {
+                name: '17. 创建资料',
+                method: 'POST',
+                url: '/api/admin/course/createMaterial',
+                body: { title: '测试资料', category: '视频课程', video_url: 'https://example.com/video.mp4' },
+                expectedFields: ['material_id']
+              },
+              {
+                name: '18. 更新资料',
+                method: 'POST',
+                url: '/api/admin/course/updateMaterial',
+                body: { id: 6, title: '更新后的资料' },
+                expectedFields: ['success']
+              },
+              {
+                name: '19. 删除资料',
+                method: 'POST',
+                url: '/api/admin/course/deleteMaterial',
+                body: { id: 6 },
+                expectedFields: ['success']
+              },
+              // 3.6 学院内容管理（1个接口）
+              {
+                name: '20. 学院内容管理',
+                method: 'POST',
+                url: '/api/admin/course/manageAcademyContent',
+                body: { operation: 'create', title: '测试商学院介绍', content: '测试内容' },
+                expectedFields: ['academy_id']
+              }
+            ]
+          },
+          {
+            id: 'ambassador',
+            name: '大使管理',
+            description: '大使、申请、活动、合约（14个接口）',
+            tests: [
+              // 4.1 大使管理（4个接口）
+              {
+                name: '1. 获取大使列表',
+                method: 'GET',
+                url: '/api/admin/ambassador/getAmbassadorList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['user_id', 'real_name', 'ambassador_level', 'merit_points']
+              },
+              {
+                name: '2. 获取大使详情',
+                method: 'GET',
+                url: '/api/admin/ambassador/getAmbassadorDetail',
+                params: { user_id: 30 },
+                expectedFields: ['user', 'statistics', 'referees']
+              },
+              {
+                name: '3. 更新大使等级',
+                method: 'POST',
+                url: '/api/admin/ambassador/updateAmbassadorLevel',
+                body: { user_id: 30, level: 2 },
+                expectedFields: ['success']
+              },
+              {
+                name: '4. 修改功德点',
+                method: 'POST',
+                url: '/api/admin/ambassador/adjustPoints',
+                body: { user_id: 30, point_type: 'merit', amount: 100, reason: '测试调整' },
+                expectedFields: ['success']
+              },
+              // 4.2 申请管理（3个接口）
+              {
+                name: '5. 获取申请列表',
+                method: 'GET',
+                url: '/api/admin/ambassador/getApplicationList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'real_name', 'status', 'created_at']
+              },
+              {
+                name: '6. 审核申请',
+                method: 'POST',
+                url: '/api/admin/ambassador/auditApplication',
+                body: { application_id: 2, approved: true },
+                expectedFields: ['success']
+              },
+              {
+                name: '7. 获取申请详情',
+                method: 'GET',
+                url: '/api/admin/ambassador/getApplicationDetail',
+                params: { application_id: 2 },
+                expectedFields: ['id', 'user_id', 'real_name', 'status', 'materials']
+              },
+              // 4.3 活动管理（4个接口）
+              {
+                name: '8. 获取活动列表',
+                method: 'GET',
+                url: '/api/admin/ambassador/getActivityList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'activity_name', 'merit_points']
+              },
+              {
+                name: '9. 审核活动',
+                method: 'POST',
+                url: '/api/admin/ambassador/auditActivity',
+                body: { activity_id: 2, status: 1, merit_points: 50 },
+                expectedFields: ['success']
+              },
+              {
+                name: '10. 获取活动详情',
+                method: 'GET',
+                url: '/api/admin/ambassador/getActivityDetail',
+                params: { activity_id: 2 },
+                expectedFields: ['id', 'user_id', 'activity_name', 'description', 'status']
+              },
+              {
+                name: '11. 删除活动',
+                method: 'POST',
+                url: '/api/admin/ambassador/deleteActivity',
+                body: { activity_id: 3 },
+                expectedFields: ['success']
+              },
+              // 4.4 合约管理（3个接口）
+              {
+                name: '12. 获取合约列表',
+                method: 'GET',
+                url: '/api/admin/ambassador/getContractList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'real_name', 'contract_level', 'status']
+              },
+              {
+                name: '13. 到期合约提醒',
+                method: 'GET',
+                url: '/api/admin/ambassador/getExpiringContracts',
+                params: { days: 30 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'real_name', 'expire_date']
+              },
+              {
+                name: '14. 合约版本历史',
+                method: 'GET',
+                url: '/api/admin/ambassador/getContractVersions',
+                params: { level: 1 },
+                expectedFields: ['level', 'total', 'versions']
+              }
+            ]
+          },
+          {
+            id: 'system',
+            name: '系统管理',
+            description: '认证、统计、管理员、配置（21个接口）',
+            tests: [
+              // 5.1 认证（1个接口）
+              {
+                name: '1. 管理员登录',
+                method: 'POST',
+                url: '/api/admin/system/login',
+                body: {
+                  username: 'herichen',
+                  password: 'tiandaowenhua'
+                },
+                expectedFields: ['token', 'admin']
+              },
+              // 5.2 统计（1个接口）
+              {
+                name: '2. 数据统计',
+                method: 'GET',
+                url: '/api/admin/system/getStatistics',
+                params: {},
+                expectedFields: ['user_count', 'order_count', 'revenue_total', 'ambassador_count']
+              },
+              // 5.3 管理员管理（4个接口）
+              {
+                name: '3. 管理员列表',
+                method: 'GET',
+                url: '/api/admin/system/getAdminUserList',
+                params: { page: 1, pageSize: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'username', 'role', 'created_at']
+              },
+              {
+                name: '4. 创建管理员',
+                method: 'POST',
+                url: '/api/admin/system/createAdminUser',
+                body: { username: 'test_admin', password: 'test123', real_name: '测试管理员', role: 'editor' },
+                expectedFields: ['id']
+              },
+              {
+                name: '5. 更新管理员',
+                method: 'POST',
+                url: '/api/admin/system/updateAdminUser',
+                body: { id: 1, role: 'admin' },
+                expectedFields: ['success']
+              },
+              {
+                name: '6. 删除管理员',
+                method: 'POST',
+                url: '/api/admin/system/deleteAdminUser',
+                body: { id: 999 },
+                expectedFields: ['success']
+              },
+              // 5.4 系统配置（4个接口）
+              {
+                name: '7. 获取配置',
+                method: 'GET',
+                url: '/api/admin/system/getConfig',
+                params: { key: 'system.maintenance' },
+                expectedFields: ['key', 'value']
+              },
+              {
+                name: '8. 更新配置',
+                method: 'POST',
+                url: '/api/admin/system/updateConfig',
+                body: { key: 'system.maintenance', value: 'false' },
+                expectedFields: ['success']
+              },
+              {
+                name: '9. 获取配置列表',
+                method: 'GET',
+                url: '/api/admin/system/getConfigList',
+                params: { category: 'system' },
+                expectedFields: ['total', 'list'],
+                itemFields: ['key', 'value', 'description']
+              },
+              {
+                name: '10. 批量更新配置',
+                method: 'POST',
+                url: '/api/admin/system/batchUpdateConfig',
+                body: { 
+                  configs: [
+                    { key: 'system.maintenance', value: 'false' },
+                    { key: 'points.exchange_rate', value: '0.01' }
+                  ]
+                },
+                expectedFields: ['success']
+              },
+              // 5.5 公告管理（4个接口）
+              {
+                name: '11. 公告列表',
+                method: 'GET',
+                url: '/api/admin/system/getAnnouncementList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'title', 'type', 'status', 'created_at']
+              },
+              {
+                name: '12. 创建公告',
+                method: 'POST',
+                url: '/api/admin/system/createAnnouncement',
+                body: { title: '测试公告', content: '公告内容', type: 'system' },
+                expectedFields: ['announcement_id']
+              },
+              {
+                name: '13. 更新公告',
+                method: 'POST',
+                url: '/api/admin/system/updateAnnouncement',
+                body: { id: 1, title: '更新后的公告' },
+                expectedFields: ['success']
+              },
+              {
+                name: '14. 删除公告',
+                method: 'POST',
+                url: '/api/admin/system/deleteAnnouncement',
+                body: { id: 999 },
+                expectedFields: ['success']
+              },
+              // 5.6 通知管理（3个接口）
+              {
+                name: '15. 发送通知',
+                method: 'POST',
+                url: '/api/admin/system/sendNotification',
+                body: { 
+                  user_ids: [1, 2, 3], 
+                  title: '测试通知', 
+                  content: '通知内容',
+                  type: 'system'
+                },
+                expectedFields: ['success']
+              },
+              {
+                name: '16. 通知配置管理',
+                method: 'POST',
+                url: '/api/admin/system/manageNotificationConfig',
+                body: { action: 'list' },
+                expectedFields: ['total', 'list']
+              },
+              {
+                name: '17. 通知日志查询',
+                method: 'GET',
+                url: '/api/admin/system/getNotificationLogs',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'type', 'status', 'created_at']
+              },
+              // 5.7 反馈管理（4个接口）
+              {
+                name: '18. 反馈列表',
+                method: 'GET',
+                url: '/api/admin/system/getFeedbackList',
+                params: { page: 1, page_size: 20 },
+                expectedFields: ['total', 'list'],
+                itemFields: ['id', 'user_id', 'type', 'status', 'created_at']
+              },
+              {
+                name: '19. 反馈详情',
+                method: 'GET',
+                url: '/api/admin/system/getFeedbackDetail',
+                params: { feedback_id: 1 },
+                expectedFields: ['id', 'user_id', 'type', 'content', 'status']
+              },
+              {
+                name: '20. 处理反馈',
+                method: 'POST',
+                url: '/api/admin/system/handleFeedback',
+                body: { feedback_id: 1, reply: '感谢反馈，已处理', status: 2 },
+                expectedFields: ['success']
+              },
+              {
+                name: '21. 删除反馈',
+                method: 'POST',
+                url: '/api/admin/system/deleteFeedback',
+                body: { feedback_id: 999 },
+                expectedFields: ['success']
+              }
+            ]
+          }
+        ]);
+
+        // 计算统计数据
+        const totalTests = computed(() => {
+          return testModules.value.reduce((sum, module) => sum + module.tests.length, 0);
+        });
+
+        const passedTests = computed(() => {
+          return results.value.filter(r => r.status === 'success').length;
+        });
+
+        const failedTests = computed(() => {
+          return results.value.filter(r => r.status === 'failed').length;
+        });
+
+        const passRate = computed(() => {
+          if (results.value.length === 0) return 0;
+          return (passedTests.value / results.value.length) * 100;
+        });
+
+        const progress = computed(() => {
+          if (totalTests.value === 0) return 0;
+          return (results.value.length / totalTests.value) * 100;
+        });
+
+        // 执行单个测试
+        const runTest = async (test) => {
+          const startTime = Date.now();
+          const result = {
+            name: test.name,
+            method: test.method,
+            url: test.url,
+            status: 'running',
+            fieldChecks: [],
+            response: null,
+            error: null,
+            duration: 0
+          };
+
+          results.value.push(result);
+
+          try {
+            // 调用 API
+            const response = await makeApiCall(test);
+            
+            result.response = response;
+            result.duration = Date.now() - startTime;
+
+            // 字段验证
+            result.fieldChecks = [];
+            if (test.expectedFields) {
+              for (const field of test.expectedFields) {
+                const exists = response && response.hasOwnProperty(field);
+                result.fieldChecks.push({
+                  field,
+                  exists,
+                  type: exists ? typeof response[field] : 'undefined'
+                });
+              }
+            }
+
+            // 判断成功或失败
+            const allFieldsExist = result.fieldChecks.every(check => check.exists);
+            result.status = allFieldsExist ? 'success' : 'failed';
+
+            if (!allFieldsExist) {
+              const missingFields = result.fieldChecks.filter(c => !c.exists).map(c => c.field);
+              result.error = `缺少必需字段: ${missingFields.join(', ')}`;
+            }
+
+          } catch (error) {
+            result.status = 'failed';
+            result.error = error.message || '请求失败';
+            result.duration = Date.now() - startTime;
+          }
+
+          return result;
+        };
+
+        // API 调用（使用 CloudBase 云函数格式 - 增强版）
+        const makeApiCall = async (test) => {
+          try {
+            // 检查是否有 Token
+            if (!testConfig.value.token) {
+              throw new Error('未找到或提取登录口令，请先登录');
+            }
+            
+            // 解析 RESTful URL 转换为云函数调用
+            // /api/admin/user/getUserList -> user.getUserList
+            // /api/admin/order/getOrderList -> order.getOrderList
+            const urlMatch = test.url.match(/\/api\/admin\/(\w+)\/(\w+)/);
+            if (!urlMatch) {
+              throw new Error(`无法解析接口地址: ${test.url}`);
+            }
+            
+            const [, moduleName, actionName] = urlMatch;
+            
+            // 获取云函数名称
+            const functionName = CONFIG.CLOUD_FUNCTIONS[moduleName.toUpperCase()];
+            if (!functionName) {
+              throw new Error(`未找到模块 ${moduleName} 对应的云函数`);
+            }
+            
+            // 合并参数（GET 的 params 和 POST 的 body）
+            const requestData = {
+              action: actionName,
+              jwtToken: testConfig.value.token,
+              ...(test.params || {}),
+              ...(test.body || {})
+            };
+            
+            // 使用 CloudBase HTTP API 调用云函数
+            const apiUrl = `https://${CONFIG.ENV_ID}.service.tcloudbase.com/${functionName}`;
+            
+            console.log(`[${test.name}] 调用云函数:`, {
+              url: apiUrl,
+              data: { ...requestData, jwtToken: '***' } // 隐藏 Token
+            });
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            let result = await response.json();
+
+            // 如果返回的是 HTTP Access Service 的格式（带 body 字段），解析 body
+            if (result.body && typeof result.body === 'string') {
+              try {
+                result = JSON.parse(result.body);
+              } catch (e) {
+                console.error('解析响应 body 失败:', e);
+                throw new Error('接口返回数据格式错误');
+              }
+            }
+
+            console.log(`[${test.name}] 返回:`, result);
+
+            // 检查响应
+            if (!result.success) {
+              // 特殊处理：登录过期（401）
+              if (result.code === 401 || result.message?.includes('登录') || result.message?.includes('过期') || result.message?.includes('token')) {
+                console.warn('检测到登录过期，尝试重新登录...');
+                TDesign.MessagePlugin.warning('登录已过期，正在重新登录...');
+                
+                // 重新登录
+                await autoLogin();
+                
+                // 如果登录成功，使用新 Token 重试当前请求
+                if (testConfig.value.token) {
+                  requestData.jwtToken = testConfig.value.token;
+                  const retryResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                  });
+                  
+                  let retryResult = await retryResponse.json();
+                  
+                  if (retryResult.body && typeof retryResult.body === 'string') {
+                    retryResult = JSON.parse(retryResult.body);
+                  }
+                  
+                  if (!retryResult.success) {
+                    throw new Error(retryResult.message || '重试后仍然失败');
+                  }
+                  
+                  console.log(`[${test.name}] 重试成功`);
+                  return retryResult.data;
+                } else {
+                  throw new Error('重新登录失败，无法继续测试');
+                }
+              }
+              
+              throw new Error(result.message || result.error || '请求失败');
+            }
+
+            return result.data;
+          } catch (error) {
+            // 抛出详细错误信息
+            console.error(`[${test.name}] API调用失败:`, error);
+            throw new Error(error.message || '请求失败');
+          }
+        };
+
+        // 运行所有测试
+        const runAllTests = async () => {
+          if (isRunning.value) return;
+          
+          isRunning.value = true;
+          results.value = [];
+
+          try {
+            for (const module of testModules.value) {
+              for (const test of module.tests) {
+                await runTest(test);
+
+                if (testConfig.value.stopOnError) {
+                  const lastResult = results.value[results.value.length - 1];
+                  if (lastResult.status === 'failed') {
+                    TDesign.MessagePlugin.error('测试失败，已停止');
+                    break;
+                  }
+                }
+              }
+            }
+
+            TDesign.MessagePlugin.success(`测试完成！通过 ${passedTests.value}/${results.value.length}`);
+          } catch (error) {
+            TDesign.MessagePlugin.error('测试出错：' + error.message);
+          } finally {
+            isRunning.value = false;
+          }
+        };
+
+        // 运行模块测试
+        const runModuleTests = async (moduleId) => {
+          if (isRunning.value) return;
+
+          const module = testModules.value.find(m => m.id === moduleId);
+          if (!module) return;
+
+          isRunning.value = true;
+
+          try {
+            for (const test of module.tests) {
+              await runTest(test);
+            }
+
+            TDesign.MessagePlugin.success(`${module.name} 测试完成`);
+          } catch (error) {
+            TDesign.MessagePlugin.error('测试出错：' + error.message);
+          } finally {
+            isRunning.value = false;
+          }
+        };
+
+        // 清空结果
+        const clearResults = () => {
+          results.value = [];
+          TDesign.MessagePlugin.success('已清空结果');
+        };
+
+        // 导出报告
+        const exportReport = () => {
+          if (results.value.length === 0) {
+            TDesign.MessagePlugin.warning('没有测试结果可导出');
+            return;
+          }
+
+          try {
+            // 生成测试报告数据
+            const report = {
+              summary: {
+                total: totalTests.value,
+                passed: passedTests.value,
+                failed: failedTests.value,
+                passRate: passRate.value,
+                testDate: new Date().toISOString(),
+                duration: results.value.reduce((sum, r) => sum + (r.duration || 0), 0)
+              },
+              details: results.value.map(r => ({
+                name: r.name,
+                status: r.status,
+                method: r.method,
+                url: r.url,
+                duration: r.duration,
+                fieldChecks: r.fieldChecks || [],
+                error: r.error
+              })),
+              failedTests: results.value
+                .filter(r => r.status === 'failed')
+                .map(r => ({
+                  name: r.name,
+                  error: r.error,
+                  missingFields: (r.fieldChecks || [])
+                    .filter(fc => !fc.exists)
+                    .map(fc => fc.field)
+                }))
+            };
+
+            // 创建下载
+            const blob = new Blob([JSON.stringify(report, null, 2)], { 
+              type: 'application/json' 
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `api-test-report-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            TDesign.MessagePlugin.success('JSON 报告已导出');
+          } catch (error) {
+            console.error('导出报告失败:', error);
+            TDesign.MessagePlugin.error('导出失败：' + error.message);
+          }
+        };
+
+        return {
+          isRunning,
+          results,
+          testModules,
+          testConfig,
+          totalTests,
+          passedTests,
+          failedTests,
+          passRate,
+          progress,
+          runAllTests,
+          runModuleTests,
+          clearResults,
+          exportReport,
+          handleMockChange,
+          handleManualLogin
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+</body>
+</html>

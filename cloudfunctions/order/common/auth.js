@@ -23,14 +23,25 @@ const jwt = require('jsonwebtoken');
  *   return errorResponse('请先完善个人资料', null, 403);
  * }
  */
-async function checkClientAuth(openid) {
-  if (!openid) {
+async function checkClientAuth(identifier) {
+  if (!identifier) {
     const err = new Error('未登录');
     err.code = 401;
     throw err;
   }
   
-  const user = await findOne('users', { _openid: openid });
+  // 优先使用 _openid 字段查找 (CloudBase uid)
+  let user = await findOne('users', { _openid: identifier });
+  
+  // 如果找不到，尝试使用 openid 字段查找 (真实微信 openid)
+  if (!user) {
+    user = await findOne('users', { openid: identifier });
+    if (user) {
+      console.log(`[checkClientAuth] 用户查找成功（通过 openid 字段）`);
+    }
+  } else {
+    console.log(`[checkClientAuth] 用户查找成功（通过 _openid 字段）`);
+  }
   
   if (!user) {
     const err = new Error('用户未注册');

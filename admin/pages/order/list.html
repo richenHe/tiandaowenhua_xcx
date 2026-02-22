@@ -138,7 +138,8 @@
               <template #icon><t-icon name="user" /></template>
               <template #title>用户管理</template>
               <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
+              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
+              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
             </t-submenu>
             
             <t-submenu value="order">
@@ -313,7 +314,8 @@
       width="800px"
       @confirm="detailDialogVisible = false"
     >
-      <div v-if="currentOrder">
+      <t-loading :loading="detailLoading">
+        <div v-if="currentOrder">
         <t-descriptions bordered>
           <t-descriptions-item label="订单编号">{{ currentOrder.order_no }}</t-descriptions-item>
           <t-descriptions-item label="用户昵称">{{ currentOrder.user_nickname }}</t-descriptions-item>
@@ -342,7 +344,8 @@
           <t-descriptions-item label="创建时间">{{ currentOrder.created_at }}</t-descriptions-item>
           <t-descriptions-item label="更新时间">{{ currentOrder.updated_at }}</t-descriptions-item>
         </t-descriptions>
-      </div>
+        </div>
+      </t-loading>
     </t-dialog>
   </div>
 
@@ -392,6 +395,7 @@
             'dashboard': '../../index.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
@@ -436,6 +440,7 @@
         });
 
         const detailDialogVisible = ref(false);
+        const detailLoading = ref(false);
         const currentOrder = ref(null);
 
         // 表格列配置
@@ -507,9 +512,18 @@
         };
 
         // 查看详情
-        const viewDetail = (order) => {
-          currentOrder.value = order;
+        const viewDetail = async (order) => {
           detailDialogVisible.value = true;
+          detailLoading.value = true;
+          try {
+            // 调用 getOrderDetail 接口获取完整订单信息
+            currentOrder.value = await AdminAPI.getOrderDetail(order.order_no);
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载订单详情失败: ' + error.message);
+            currentOrder.value = order; // 降级使用列表数据
+          } finally {
+            detailLoading.value = false;
+          }
         };
 
         // 确认支付
@@ -625,6 +639,7 @@
           pagination,
           columns,
           detailDialogVisible,
+          detailLoading,
           currentOrder,
           handleSearch,
           handleReset,

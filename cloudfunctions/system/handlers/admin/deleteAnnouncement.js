@@ -31,7 +31,7 @@ module.exports = async (event, context) => {
       status: 0
     }, { id });
 
-    return response.success({ id }, '删除成功');
+    return response.success({ success: true, id }, '删除成功');
 
   } catch (error) {
     console.error('[admin:deleteAnnouncement] 失败:', error);

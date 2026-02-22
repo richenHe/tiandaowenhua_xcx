@@ -1,36 +1,50 @@
 /**
- * 客户端接口：发起支付
+ * 客户端接口：发起支付（直接调用微信支付 V3 API）
  * Action: createPayment
  */
 const cloud = require('wx-server-sdk');
 const { db } = require('../../common/db');
 const { response } = require('../../common');
+const crypto = require('crypto');
+const axios = require('axios');
+
+// 生成随机字符串
+function generateNonceStr(length = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// 构建签名串
+function buildSignString(method, urlPath, timestamp, nonceStr, body) {
+  const bodyStr = body ? JSON.stringify(body) : '';
+  return `${method}\n${urlPath}\n${timestamp}\n${nonceStr}\n${bodyStr}\n`;
+}
+
+// 生成签名
+function sign(signString, privateKey) {
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(signString);
+  return signer.sign(privateKey, 'base64');
+}
+
+// 构建 Authorization 头
+function buildAuthorization(mchId, serialNo, nonceStr, timestamp, signature) {
+  return `mchid="${mchId}",nonce_str="${nonceStr}",timestamp="${timestamp}",serial_no="${serialNo}",signature="${signature}"`;
+}
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
-  const { orderNo, order_no } = event;
-  const finalOrderNo = orderNo || order_no; // 支持两种命名
+  const { order_no } = event;
 
   try {
-    console.log('[createPayment] ========== 发起支付 ==========');
-    console.log(`[createPayment] 用户信息:`, { 
-      user_id: user.id, 
-      user_openid_last6: user.openid?.slice(-6),
-      context_OPENID_last6: OPENID?.slice(-6),
-      order_no: finalOrderNo 
-    });
-    
-    // ⚠️ 安全检查：确保用户有真实的微信 openid
-    if (!user.openid || user.openid.length === 0) {
-      console.error('[createPayment] ❌ 严重错误：用户没有有效的微信 openid');
-      console.error('[createPayment] 用户数据:', { id: user.id, uid: user.uid, openid: user.openid });
-      throw new Error('用户身份信息异常，请重新登录');
-    }
-    
-    console.log('[createPayment] ✅ 用户 openid 验证通过，这是真实的微信 openid');
+    console.log(`[createPayment] 发起支付:`, { user_id: user.id, order_no });
 
     // 1. 参数验证
-    if (!finalOrderNo) {
+    if (!order_no) {
       return response.paramError('缺少订单号');
     }
 
@@ -38,38 +52,29 @@ module.exports = async (event, context) => {
     const { data: orders, error: queryError } = await db
       .from('orders')
       .select('*')
-      .eq('order_no', finalOrderNo)
+      .eq('order_no', order_no)
       .eq('user_id', user.id)
       .single();
 
     if (queryError || !orders) {
-      console.error('[createPayment] 订单查询失败:', queryError);
-      return response.notFound('订单不存在');
+      return response.error('订单不存在');
     }
 
     const order = orders;
 
     // 3. 验证订单状态
-    if (order.pay_status === 1) {
-      return response.error('订单已支付');
-    }
-    if (order.pay_status === 2) {
-      return response.error('订单已取消');
-    }
-    if (order.pay_status === 3) {
-      return response.error('订单已关闭');
+    if (order.pay_status !== 0) {
+      return response.error('订单状态异常，无法支付');
     }
 
-    // 4. 检查订单有效期
+    // 4. 验证订单是否过期
     const now = new Date();
     const expiresAt = new Date(order.expire_at);
     if (now > expiresAt) {
-      // 更新订单状态为已关闭
       await db
         .from('orders')
         .update({ pay_status: 3 })
-        .eq('order_no', finalOrderNo);
-
+        .eq('order_no', order_no);
       return response.error('订单已超时，请重新下单');
     }
 
@@ -78,90 +83,151 @@ module.exports = async (event, context) => {
       return response.error('订单金额异常');
     }
 
-    // 6. 调用微信支付统一下单
+    // 6. 准备微信支付 V3 API 参数
     const totalFee = Math.round(parseFloat(order.final_amount) * 100); // 元转分
     const nonceStr = generateNonceStr();
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    
+    // 回调地址（使用固定环境ID）
+    const notifyUrl = 'https://cloud1-0gnn3mn17b581124.service.tcloudbase.com/callbacks/payment';
 
-    console.log(`[createPayment] 准备调用微信支付统一下单:`);
-    console.log(`[createPayment] - 订单号: ${finalOrderNo}`);
-    console.log(`[createPayment] - 金额: ${order.final_amount}元 = ${totalFee}分`);
-    console.log(`[createPayment] - 使用 user.openid (真实微信 openid): ${user.openid?.slice(-6)}`);
-    console.log(`[createPayment] - 完整 openid: ${user.openid}`);
-    console.log(`[createPayment] - openid 长度: ${user.openid?.length}`);
-    console.log(`[createPayment] ⚠️ 重要：使用数据库中的真实微信 openid，不使用 context.OPENID`);
+    // 请求体
+    const requestBody = {
+      appid: process.env.WECHAT_APPID,
+      mchid: process.env.MCH_ID,
+      description: order.order_name || '道天文化课程',
+      out_trade_no: order_no,
+      notify_url: notifyUrl,
+      amount: {
+        total: totalFee,
+        currency: 'CNY'
+      },
+      payer: {
+        openid: user.openid // 使用真实微信 openid
+      }
+    };
 
-    // ⚠️ 关键：CloudBase 微信支付使用"普通商户直连模式"
-    // 不需要传递 subMchId 参数，CloudBase 会自动从环境配置中读取商户信息
-    // 参考官方文档：https://docs.cloudbase.net/toolbox/datasource/weixin-pay
-    const payResult = await cloud.cloudPay.unifiedOrder({
-      body: order.order_name || '道天文化课程',
-      outTradeNo: finalOrderNo,
-      spbillCreateIp: '127.0.0.1',
-      totalFee: totalFee,
-      envId: process.env.TCB_ENV || cloud.DYNAMIC_CURRENT_ENV,
-      functionName: 'callbacks', // 支付回调云函数
-      nonceStr: nonceStr,
-      tradeType: 'JSAPI',
-      openid: user.openid  // ✅ 使用数据库中的真实微信 openid
+    console.log(`[createPayment] 调用微信支付 V3 API:`, {
+      orderNo: order_no,
+      totalFee,
+      openid: user.openid,
+      notifyUrl
     });
 
-    console.log('[createPayment] ✅ 微信支付统一下单返回:');
-    console.log('[createPayment] - returnCode:', payResult.returnCode);
-    console.log('[createPayment] - resultCode:', payResult.resultCode);
-    console.log('[createPayment] - prepayId:', payResult.prepayId?.slice(-6));
+    // 7. 构建签名
+    const urlPath = '/v3/pay/transactions/jsapi';
+    const signString = buildSignString('POST', urlPath, timestamp, nonceStr, requestBody);
+    
+    // 商户私钥（从环境变量或硬编码获取）
+    const privateKey = process.env.WECHAT_PRIVATE_KEY || `-----BEGIN PRIVATE KEY-----
+MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQDUehp+rATxZXmy
+0MrzP5JWzxevQkjYlhVheRXAAExG0CWu4vsXFPI766muODiN0lkAlx+FsbZSffTB
+zd6T/gD09fuTaNAovzRF46o7G7GjgOZlXbP5RFGDj3oEPei2x5WelWwajx6Le4fW
+eC8sYXjCeOvIYxmvRI4aNhR8rPKErHtjn1pqVrw1cGFnJOx4fsM3moXCrYT3UbCk
+hlThj3lo2BEab9jtq4VRa3gDuFCeUoERm+A952MFC2NwJ/oOmSm8DQju2B818kC0
+yTc6Jszrfzd17tf35lKnuf781ohvIBFiHongQ6ON1MtAD7V6X4ri8gJfafvfwUAU
+UcSSoxAHAgMBAAECggEBAImYKOAu9WR9mjm6DDNJz7J3mZbdDd90EZR1nSghCUQy
+NrTyODfSUKuNCOzRa44r0YcYVkl1s+PnvUBj2OdtbaE0Sh5DmclJSMiZjfuJC5ge
+ORUbgRjCrSbNGu70SGdVCAcSLFdmpxkcffLdEW9kD5egRtAVnORrOLqwmsPCG6rd
++F9IvjOa7jy/VHRoPVTqj01lsnSK1VIlSuqswLoPtjb+jKSlrYQtvQYo2gJQd6MW
+ehyxrcdMcnNVTHfcuWpok2cNawNj2F/nIvbPCFWXIPRuORwR3+VC/K/ppHiwvUrP
+G5MvO7cP/FrYX2sUwFc8Ri4J/2+NET/FHMDQmh/gQcECgYEA/LrdpjmeDRuAf2kS
+Z0LIJojHNSAhP/OdiFHJMJLZ9EJ/3s8H8UDPIK57mexvHJJBB4CwYyPmBr7xZbKs
+XC/V9LcNs0Jj4x0Tf6aMkpckeQYUo9sbI/ixGzkpxhBJyXvh8ZPU6m6BZf3ziejo
+UeysMs7mktOgLxub5U4vaZq//rMCgYEA1znnsmDsNe55BSYYyH8QS5BxKZUBFkWz
+4rzbSBKUOLgx2+V5dQ4gSFWw/Q1tPTHEkjS6NDqERPejYNPd2+KDtwY/Qwq0omDG
+amZK7qJWNL/UXo6l+vy6uum5QxeQItHGQ+NDHWdcftX3xv1fM2r59W2n2Y5RlqRC
+IufVRa8y010CgYEA+hagR2E0uZvBaFM9VtmK3jbzieqlfHdCKCdmg56N91vm1UDh
+hyau0JRY01RYD1na5+W8ph5b/cjtb8mDLiZX/rU15XGJDrEzHlpdOKJAAVK3Ef47
+uTjbaSkD4W801SC10SyMwP9hJOBMIuhLHOaq8Aw1to2cMYGMnzjjSglMfGkCgYEA
+vkszYdMyZojgNb42YWd/J+ChPWvCV0fvwcTLeRD8Pp4Vb2CYn/eKcYpaf5NUh6uu
+Krs1+6HVewkdSippWdYQMU3ztzoK9hrss/yXuiCMaf1GLwifFqhIDaVDKV/3D+I8
+E6AnoiLWdEqI1kcF2nd2ZBq9Mq0T1EaNN0GVnxRFsv0CgYEAm+WopA7nQrn9A0KS
+Umzrrs/V24aW4uF/PYZN1l/MFur3c4Irlu0G1gnR5XuxNBn0AUuUxn7ylOmdvFWc
+JtBHh+L7EBhY4ks5ZQs4g77JhOzbNVAFEqGUlNzeyjU/7Dycw22fV4q/j6aoJ5PK
+qSpRYi6GIlotuiCm+P4AGFw2NS8=
+-----END PRIVATE KEY-----`;
+    const signature = sign(signString, privateKey);
+    
+    // 证书序列号（从环境变量或硬编码获取）
+    const certSerialNo = process.env.WECHAT_CERT_SERIAL_NO || '6D4BEDC9337BD2C074748CCF667311E0A5BD9C7E';
+    
+    const authorization = buildAuthorization(
+      process.env.MCH_ID,
+      certSerialNo,
+      nonceStr,
+      timestamp,
+      signature
+    );
 
-    if (payResult.returnCode !== 'SUCCESS' || payResult.resultCode !== 'SUCCESS') {
-      const errMsg = payResult.returnMsg || payResult.errCodeDes || '统一下单失败';
-      console.error('[createPayment] ❌ 微信支付统一下单失败');
-      console.error('[createPayment] 完整响应:', JSON.stringify(payResult, null, 2));
-      console.error('[createPayment] 使用的 openid:', user.openid?.slice(-6));
-      console.error('[createPayment] 错误信息:', errMsg);
-      throw new Error(`微信支付下单失败: ${errMsg}`);
+    // 8. 调用微信支付统一下单 API
+    const apiUrl = `https://api.mch.weixin.qq.com${urlPath}`;
+    const payResult = await axios({
+      method: 'POST',
+      url: apiUrl,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `WECHATPAY2-SHA256-RSA2048 ${authorization}`,
+        'User-Agent': 'CloudBase-CloudFunction'
+      },
+      data: requestBody
+    });
+
+    console.log('[createPayment] 微信支付返回:', {
+      status: payResult.status,
+      prepay_id: payResult.data?.prepay_id
+    });
+
+    if (payResult.status !== 200 || !payResult.data?.prepay_id) {
+      console.error('[createPayment] 微信支付下单失败:', payResult.data);
+      throw new Error('微信支付下单失败');
     }
 
-    // 7. 更新订单 prepay_id
+    const prepayId = payResult.data.prepay_id;
+
+    // 9. 更新订单 prepay_id
     await db
       .from('orders')
-      .update({ prepay_id: payResult.prepayId || '' })
-      .eq('order_no', finalOrderNo);
+      .update({ prepay_id: prepayId })
+      .eq('order_no', order_no);
 
-    console.log(`[createPayment] ✅ 支付参数生成成功`);
-    console.log(`[createPayment] - 订单号: ${finalOrderNo}`);
-    console.log(`[createPayment] - prepay_id: ${payResult.prepayId?.slice(-6)}`);
-    console.log(`[createPayment] ========== 支付成功 ==========`);
+    // 10. 生成小程序支付参数
+    const payTimestamp = Math.floor(Date.now() / 1000).toString();
+    const payNonceStr = generateNonceStr();
+    const payPackage = `prepay_id=${prepayId}`;
 
-    // 8. 返回小程序支付参数
-    return response.success({
-      timeStamp: payResult.payment.timeStamp,
-      nonceStr: payResult.payment.nonceStr,
-      package: payResult.payment.package,
-      signType: payResult.payment.signType,
-      paySign: payResult.payment.paySign,
-      prepay_id: payResult.prepayId || ''
-    }, '支付参数生成成功');
+    // 构建支付签名
+    const paySignString = `${process.env.WECHAT_APPID}\n${payTimestamp}\n${payNonceStr}\n${payPackage}\n`;
+    const paySign = sign(paySignString, privateKey);
+
+    const paymentData = {
+      timeStamp: payTimestamp,
+      nonceStr: payNonceStr,
+      package: payPackage,
+      signType: 'RSA',
+      paySign: paySign
+    };
+
+    console.log(`[createPayment] 支付参数生成成功:`, {
+      order_no: order_no,
+      prepay_id: prepayId
+    });
+
+    return response.success(paymentData, '发起支付成功');
 
   } catch (error) {
-    console.error('[createPayment] ========== 支付失败 ==========');
-    console.error('[createPayment] 错误类型:', error.name);
-    console.error('[createPayment] 错误消息:', error.message);
-    console.error('[createPayment] 错误堆栈:', error.stack);
-    console.error('[createPayment] 用户 openid:', user?.openid?.slice(-6) || 'undefined');
-    console.error('[createPayment] 订单号:', finalOrderNo);
-    console.error('[createPayment] ====================================');
-    return response.error('发起支付失败', error);
+    console.error('[createPayment] 失败:', error);
+    
+    // 详细错误信息
+    if (error.response) {
+      console.error('[createPayment] 微信支付 API 错误:', {
+        status: error.response.status,
+        data: error.response.data
+      });
+      return response.error('微信支付下单失败', error.response.data);
+    }
+    
+    return response.error('发起支付失败', error.message);
   }
 };
-
-/**
- * 生成随机字符串
- * @param {number} length - 字符串长度
- * @returns {string}
- */
-function generateNonceStr(length = 32) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let str = '';
-  for (let i = 0; i < length; i++) {
-    str += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return str;
-}

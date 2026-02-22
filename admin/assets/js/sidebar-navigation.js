@@ -31,6 +31,7 @@ function handleMenuChange(value) {
     'dashboard': 'index.html',
     'user-list': 'pages/user/list.html',
     'user-referee': 'pages/user/referee.html',
+    'user-referee-logs': 'pages/user/referee-logs.html',
     'order-list': 'pages/order/list.html',
     'order-refund': 'pages/order/refund.html',
     'withdraw-audit': 'pages/order/withdraw-audit.html',

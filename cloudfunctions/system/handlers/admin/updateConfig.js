@@ -34,6 +34,7 @@ module.exports = async (event, context) => {
       // 更新配置
       await update('system_configs', {
         config_value: configValueStr,
+        updated_by: admin.id
         // updated_at 使用数据库默认值
       }, { id: config.id });
     } else {
@@ -41,12 +42,13 @@ module.exports = async (event, context) => {
       await insert('system_configs', {
         config_key: configKey,
         config_value: configValueStr,
-        value_type: typeof configValue === 'object' ? 'json' : 'string',
+        config_type: typeof configValue === 'object' ? 'json' : 'string',
+        status: 1
         // created_at 使用数据库默认值
       });
     }
 
-    return response.success({ key: configKey, value: configValue }, '更新成功');
+    return response.success({ success: true, key: configKey, value: configValue }, '更新成功');
 
   } catch (error) {
     console.error('[admin:updateConfig] 失败:', error);

@@ -138,6 +138,7 @@ const statusMap: Record<number, { text: string; type: string; appointmentStatus:
 // 加载预约列表
 const loadAppointments = async (status?: number) => {
   try {
+    uni.showLoading({ title: '加载中...' })
     const params: any = { page: 1, page_size: 100 }
     if (status && status > 0) {
       params.status = status
@@ -160,8 +161,10 @@ const loadAppointments = async (status?: number) => {
         rating: item.status === 2 ? '⭐⭐⭐⭐⭐' : ''
       }
     })
+    uni.hideLoading()
   } catch (error) {
     console.error('加载预约列表失败:', error)
+    uni.hideLoading()
   }
 }
 

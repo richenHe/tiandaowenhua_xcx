@@ -16,15 +16,17 @@ module.exports = async (event, context) => {
     }
 
     // 查询资料是否存在
-    const material = await findOne('academy_materials', 'id = ? AND deleted_at IS NULL', [id]);
+    const material = await findOne('academy_materials', { id });
     if (!material) {
       return response.notFound('资料不存在');
     }
 
-    // 软删除资料
-    await softDelete('academy_materials', 'id = ?', [id]);
+    // 删除资料（academy_materials 表没有 deleted_at 字段，使用状态标记）
+    const { update } = require('../../common/db');
+    await update('academy_materials', { status: 0 }, { id });
 
     return response.success({
+      success: true,
       message: '资料删除成功'
     });
 
