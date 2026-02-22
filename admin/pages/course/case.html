@@ -117,7 +117,7 @@
         </t-aside>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">案例管理</h1><p class="page-desc">管理课程案例，展示学员成果</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="案例标题" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button><t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add"/></template>新增案例</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #cover="{ row }"><t-image :src="row.cover" style="width:80px;height:60px;border-radius:4px;" fit="cover"/></template><template #status="{ row }"><t-tag v-if="row.status===1" theme="success">显示</t-tag><t-tag v-else theme="default">隐藏</t-tag></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button :theme="row.status===1?'warning':'success'" size="small" variant="text" @click="handleToggleStatus(row)">{{row.status===1?'隐藏':'显示'}}</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增案例':'编辑案例'" width="700px" @confirm="handleSubmit"><t-form ref="form" :data="formData" :rules="rules" label-width="100px"><t-form-item label="案例标题" name="title"><t-input v-model="formData.title" placeholder="请输入案例标题"/></t-form-item><t-form-item label="封面图片" name="cover"><t-input v-model="formData.cover" placeholder="图片URL"/></t-form-item><t-form-item label="关联课程" name="course_id"><t-select v-model="formData.course_id" :options="courseOptions" placeholder="选择课程"/></t-form-item><t-form-item label="案例描述" name="description"><t-textarea v-model="formData.description" placeholder="请输入案例描述" :maxlength="500" :autosize="{minRows:4,maxRows:8}"/></t-form-item><t-form-item label="案例内容" name="content"><t-textarea v-model="formData.content" placeholder="请输入详细内容" :maxlength="5000" :autosize="{minRows:6,maxRows:12}"/></t-form-item><t-form-item label="显示状态" name="status"><t-radio-group v-model="formData.status"><t-radio :value="1">显示</t-radio><t-radio :value="0">隐藏</t-radio></t-radio-group></t-form-item></t-form></t-dialog>        </t-content>
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">案例管理</h1><p class="page-desc">管理课程案例，展示学员成果</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="案例标题" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button><t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add"/></template>新增案例</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #cover="{ row }"><t-image :src="row.student_avatar" style="width:80px;height:60px;border-radius:4px;" fit="cover"/></template><template #status="{ row }"><t-tag v-if="row.status===1" theme="success">显示</t-tag><t-tag v-else theme="default">隐藏</t-tag></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button :theme="row.status===1?'warning':'success'" size="small" variant="text" @click="handleToggleStatus(row)">{{row.status===1?'隐藏':'显示'}}</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增案例':'编辑案例'" width="700px" @confirm="handleSubmit"><t-form ref="form" :data="formData" :rules="rules" label-width="100px"><!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB --><t-form-item label="案例标题" name="title"><t-input v-model="formData.title" placeholder="请输入案例标题"/></t-form-item><t-form-item label="学员姓名" name="studentName"><t-input v-model="formData.studentName" placeholder="请输入学员姓名"/></t-form-item><t-form-item label="学员头像" name="studentAvatar"><t-input v-model="formData.studentAvatar" placeholder="头像图片URL（对应DB student_avatar）"/></t-form-item><t-form-item label="关联课程" name="courseId"><t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程"/></t-form-item><t-form-item label="案例摘要" name="summary"><t-textarea v-model="formData.summary" placeholder="请输入案例摘要（对应DB summary）" :maxlength="500" :autosize="{minRows:4,maxRows:8}"/></t-form-item><t-form-item label="案例内容" name="content"><t-textarea v-model="formData.content" placeholder="请输入详细内容" :maxlength="5000" :autosize="{minRows:6,maxRows:12}"/></t-form-item><t-form-item label="排序" name="sortOrder"><t-input-number v-model="formData.sortOrder" :min="0" style="width:100%;"/></t-form-item><t-form-item label="显示状态" name="status"><t-radio-group v-model="formData.status"><t-radio :value="1">显示</t-radio><t-radio :value="0">隐藏</t-radio></t-radio-group></t-form-item></t-form></t-dialog>        </t-content>
       </t-layout>
     </t-layout>
   </div>
@@ -146,20 +146,24 @@
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         
         const columns = [
-          { colKey: 'cover', title: '封面', width: 100, cell: 'cover' },
+          // DB 返回 student_avatar 字段，表格 slot 名沿用 'cover' 方便模板识别
+          { colKey: 'student_avatar', title: '头像', width: 100, cell: 'cover' },
           { colKey: 'title', title: '案例标题', width: 200 },
+          { colKey: 'student_name', title: '学员姓名', width: 120 },
           { colKey: 'course_name', title: '关联课程', width: 150 },
-          { colKey: 'description', title: '描述', ellipsis: true },
+          { colKey: 'summary', title: '摘要', ellipsis: true },
           { colKey: 'created_at', title: '创建时间', width: 160 },
           { colKey: 'status', title: '状态', width: 80, cell: 'status' },
           { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
         ];
         
+        // 表单验证规则，name 与表单字段 camelCase 保持一致
         const rules = {
           title: [{ required: true, message: '请输入案例标题', type: 'error' }],
-          cover: [{ required: true, message: '请输入封面图片', type: 'error' }],
-          course_id: [{ required: true, message: '请选择关联课程', type: 'error' }],
-          description: [{ required: true, message: '请输入案例描述', type: 'error' }]
+          studentName: [{ required: true, message: '请输入学员姓名', type: 'error' }],
+          studentAvatar: [{ required: true, message: '请输入学员头像URL', type: 'error' }],
+          courseId: [{ required: true, message: '请选择关联课程', type: 'error' }],
+          summary: [{ required: true, message: '请输入案例摘要', type: 'error' }]
         };
         
         const fetchData = async () => {
@@ -213,7 +217,18 @@
         
         const handleEdit = (row) => {
           formMode.value = 'edit';
-          formData.value = { ...row };
+          // DB 返回 snake_case，映射为 camelCase 供表单使用
+          formData.value = {
+            id: row.id,
+            title: row.title,
+            studentName: row.student_name,
+            studentAvatar: row.student_avatar,
+            courseId: row.course_id,
+            summary: row.summary,
+            content: row.content,
+            sortOrder: row.sort_order,
+            status: row.status
+          };
           formVisible.value = true;
         };
         

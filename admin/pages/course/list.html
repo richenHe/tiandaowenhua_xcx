@@ -215,11 +215,12 @@
           <t-input v-model="searchForm.name" placeholder="请输入课程名称" />
         </t-form-item>
         
+        <!-- type 使用整数与 DB 一致：1=初探班, 2=密训班, 3=咨询服务 -->
         <t-form-item label="课程类型" name="type">
           <t-select v-model="searchForm.type" placeholder="请选择课程类型" clearable>
-            <t-option value="initial" label="初探班" />
-            <t-option value="intensive" label="密训班" />
-            <t-option value="consultation" label="咨询服务" />
+            <t-option :value="1" label="初探班" />
+            <t-option :value="2" label="密训班" />
+            <t-option :value="3" label="咨询服务" />
           </t-select>
         </t-form-item>
         
@@ -300,28 +301,34 @@
           <t-input v-model="editForm.name" placeholder="请输入课程名称" />
         </t-form-item>
         
+        <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
+        <!-- type 使用整数：1=初探班, 2=密训班, 3=咨询服务（对应 DB courses.type 列） -->
         <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
           <t-select v-model="editForm.type" placeholder="请选择课程类型">
-            <t-option value="initial" label="初探班" />
-            <t-option value="intensive" label="密训班" />
-            <t-option value="consultation" label="咨询服务" />
+            <t-option :value="1" label="初探班" />
+            <t-option :value="2" label="密训班" />
+            <t-option :value="3" label="咨询服务" />
           </t-select>
         </t-form-item>
         
         <t-form-item label="课程封面" name="coverImage">
-          <t-input v-model="editForm.coverImage" placeholder="请输入课程封面图片URL" />
+          <t-input v-model="editForm.coverImage" placeholder="请输入课程封面图片URL（对应DB cover_image）" />
         </t-form-item>
         
-        <t-form-item label="课程价格（元）" name="price" :rules="[{ required: true, message: '请输入课程价格' }]">
-          <t-input-number v-model="editForm.price" :min="0" :step="0.01" />
+        <t-form-item label="现价（元）" name="currentPrice" :rules="[{ required: true, message: '请输入课程现价' }]">
+          <t-input-number v-model="editForm.currentPrice" :min="0" :step="0.01" style="width:100%;" />
+        </t-form-item>
+        
+        <t-form-item label="原价（元）" name="originalPrice">
+          <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" />
+        </t-form-item>
+        
+        <t-form-item label="重训价（元）" name="retrainPrice">
+          <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" />
         </t-form-item>
         
         <t-form-item label="课程时长" name="duration">
           <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
-        </t-form-item>
-        
-        <t-form-item label="课程人数" name="maxStudents">
-          <t-input-number v-model="editForm.maxStudents" :min="1" />
         </t-form-item>
         
         <t-form-item label="课程简介" name="description">
@@ -330,6 +337,10 @@
         
         <t-form-item label="课程详情" name="content">
           <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" />
+        </t-form-item>
+        
+        <t-form-item label="讲师" name="teacher">
+          <t-input v-model="editForm.teacher" placeholder="请输入讲师姓名" />
         </t-form-item>
         
         <t-form-item label="排序" name="sortOrder">
@@ -434,16 +445,20 @@
         const editDialogVisible = ref(false);
         const editMode = ref('add');
         const editFormRef = ref(null);
+        // editForm 所有字段使用 camelCase，云函数负责转换为 snake_case
         const editForm = reactive({
           id: null,
           name: '',
-          type: '',
+          type: null,
           coverImage: '',
-          price: 0,
+          currentPrice: 0,
+          originalPrice: 0,
+          retrainPrice: 0,
           duration: '',
-          maxStudents: 30,
           description: '',
           content: '',
+          outline: '',
+          teacher: '',
           sortOrder: 0,
           status: 1
         });
@@ -515,13 +530,16 @@
           Object.assign(editForm, {
             id: null,
             name: '',
-            type: '',
+            type: null,
             coverImage: '',
-            price: 0,
+            currentPrice: 0,
+            originalPrice: 0,
+            retrainPrice: 0,
             duration: '',
-            maxStudents: 30,
             description: '',
             content: '',
+            outline: '',
+            teacher: '',
             sortOrder: 0,
             status: 1
           });
@@ -551,18 +569,21 @@
           editDialogVisible.value = true;
         };
 
-        // 保存课程
+        // 保存课程，所有参数使用 camelCase，云函数负责转换
         const handleSave = async () => {
           try {
             const params = {
               name: editForm.name,
               type: editForm.type,
               coverImage: editForm.coverImage,
-              price: editForm.price,
+              currentPrice: editForm.currentPrice,
+              originalPrice: editForm.originalPrice,
+              retrainPrice: editForm.retrainPrice,
               duration: editForm.duration,
-              maxStudents: editForm.maxStudents,
               description: editForm.description,
               content: editForm.content,
+              outline: editForm.outline,
+              teacher: editForm.teacher,
               sortOrder: editForm.sortOrder,
               status: editForm.status
             };
@@ -571,7 +592,8 @@
               await AdminAPI.createCourse(params);
               TDesign.Message.success('课程创建成功');
             } else {
-              params.courseId = editForm.id;
+              // 更新时传 id（云函数 updateCourse 用 id 查询）
+              params.id = editForm.id;
               await AdminAPI.updateCourse(params);
               TDesign.Message.success('课程更新成功');
             }
@@ -617,23 +639,15 @@
           }
         };
 
-        // 获取类型文本
+        // 获取类型文本（DB type 为整数）
         const getTypeText = (type) => {
-          const typeMap = {
-            initial: '初探班',
-            intensive: '密训班',
-            consultation: '咨询服务'
-          };
-          return typeMap[type] || type;
+          const typeMap = { 1: '初探班', 2: '密训班', 3: '咨询服务' };
+          return typeMap[type] || String(type);
         };
 
-        // 获取类型样式类
+        // 获取类型样式类（DB type 为整数）
         const getTypeClass = (type) => {
-          const classMap = {
-            initial: 'type-initial',
-            intensive: 'type-intensive',
-            consultation: 'type-consultation'
-          };
+          const classMap = { 1: 'type-initial', 2: 'type-intensive', 3: 'type-consultation' };
           return classMap[type] || '';
         };
 

@@ -1,72 +1,66 @@
 /**
  * 创建案例（管理端接口）
+ *
+ * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
+ *
+ * DB 表：academy_cases
+ * 关键字段：student_name（必填）、student_avatar、summary、course_id、sort_order
+ *
+ * @param {Object} event
+ * @param {string} event.title         - 案例标题（必填）
+ * @param {string} event.studentName   - 学员姓名（必填），对应 DB 字段 student_name
+ * @param {string} event.studentAvatar - 学员头像URL，对应 DB 字段 student_avatar
+ * @param {string} event.summary       - 案例摘要，对应 DB 字段 summary
+ * @param {string} event.content       - 案例详情
+ * @param {number} event.courseId      - 关联课程ID，对应 DB 字段 course_id
+ * @param {number} event.sortOrder     - 排序，对应 DB 字段 sort_order（默认 0）
+ * @param {number} event.status        - 状态：0隐藏/1显示（默认 1）
  */
 const { insert } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
+  // 接收 camelCase 参数
   const {
     title,
-    category,
-    category_label,
-    badge_theme,
-    student_surname,
-    student_name,
-    student_avatar,
-    student_title,
-    student_desc,
-    avatar_theme,
+    studentName,
+    studentAvatar,
     summary,
     content,
-    quote,
-    achievements,
-    video_url,
-    images,
-    course_id,
-    course_name,
-    sort_order,
-    is_featured,
+    courseId,
+    sortOrder,
     status
   } = event;
 
   try {
-    // 参数验证
-    const validation = validateRequired({ title, student_name }, ['title', 'student_name']);
+    // 参数验证（camelCase key）
+    const validation = validateRequired(
+      { title, studentName },
+      ['title', 'studentName']
+    );
     if (!validation.valid) {
       return response.paramError(validation.message);
     }
 
-    // 创建案例
+    // camelCase → snake_case，写入 DB
     const [result] = await insert('academy_cases', {
       title,
-      category,
-      category_label,
-      badge_theme: badge_theme || 'primary',
-      student_surname,
-      student_name,
-      student_avatar,
-      student_title,
-      student_desc,
-      avatar_theme: avatar_theme || 'default',
-      summary,
-      content,
-      quote,
-      achievements, // JSON 类型
-      video_url,
-      images, // JSON 类型
-      course_id,
-      course_name,
+      student_name: studentName,
+      student_avatar: studentAvatar || null,
+      summary: summary || null,
+      content: content || null,
+      course_id: courseId || null,
       view_count: 0,
       like_count: 0,
-      sort_order: sort_order || 0,
-      is_featured: is_featured || 0,
+      sort_order: sortOrder || 0,
+      is_featured: 0,
       status: status !== undefined ? status : 1
     });
 
     return response.success({
-      message: '案例创建成功',
-      case_id: result.id
+      caseId: result.id,
+      message: '案例创建成功'
     });
 
   } catch (error) {

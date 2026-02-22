@@ -164,26 +164,27 @@
 
     <t-dialog v-model:visible="formVisible" :header="formMode === 'add' ? '新增排期' : '编辑排期'" width="600px" @confirm="handleSubmit">
       <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
-        <t-form-item label="课程" name="course_id">
-          <t-select v-model="formData.course_id" :options="courseOptions" placeholder="选择课程" />
+        <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
+        <t-form-item label="课程" name="courseId">
+          <t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程" />
         </t-form-item>
-        <t-form-item label="上课日期" name="class_date">
-          <t-date-picker v-model="formData.class_date" clearable style="width: 100%;" />
+        <t-form-item label="上课日期" name="classDate">
+          <t-date-picker v-model="formData.classDate" clearable style="width: 100%;" />
         </t-form-item>
-        <t-form-item label="开始时间" name="start_time">
-          <t-time-picker v-model="formData.start_time" clearable style="width: 100%;" />
+        <t-form-item label="开始时间" name="startTime">
+          <t-time-picker v-model="formData.startTime" clearable style="width: 100%;" />
         </t-form-item>
-        <t-form-item label="结束时间" name="end_time">
-          <t-time-picker v-model="formData.end_time" clearable style="width: 100%;" />
+        <t-form-item label="结束时间" name="endTime">
+          <t-time-picker v-model="formData.endTime" clearable style="width: 100%;" />
         </t-form-item>
-        <t-form-item label="上课地点" name="location">
-          <t-input v-model="formData.location" placeholder="请输入上课地点" />
+        <t-form-item label="上课地点" name="classLocation">
+          <t-input v-model="formData.classLocation" placeholder="请输入上课地点" />
         </t-form-item>
-        <t-form-item label="总名额" name="total_quota">
-          <t-input-number v-model="formData.total_quota" :min="1" :max="100" style="width: 100%;" />
+        <t-form-item label="总名额" name="totalQuota">
+          <t-input-number v-model="formData.totalQuota" :min="1" :max="100" style="width: 100%;" />
         </t-form-item>
-        <t-form-item label="备注" name="note">
-          <t-textarea v-model="formData.note" placeholder="选填" :maxlength="200" />
+        <t-form-item label="备注" name="remark">
+          <t-textarea v-model="formData.remark" placeholder="选填" :maxlength="200" />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -283,13 +284,14 @@
           { colKey: 'status', title: '状态', width: 100, cell: 'status' },
           { colKey: 'operation', title: '操作', width: 150, fixed: 'right', cell: 'operation' }
         ];
+        // 表单验证规则，name 与表单字段 camelCase 保持一致
         const rules = {
-          course_id: [{ required: true, message: '请选择课程', type: 'error' }],
-          class_date: [{ required: true, message: '请选择上课日期', type: 'error' }],
-          start_time: [{ required: true, message: '请选择开始时间', type: 'error' }],
-          end_time: [{ required: true, message: '请选择结束时间', type: 'error' }],
-          location: [{ required: true, message: '请输入上课地点', type: 'error' }],
-          total_quota: [{ required: true, message: '请输入总名额', type: 'error' }]
+          courseId: [{ required: true, message: '请选择课程', type: 'error' }],
+          classDate: [{ required: true, message: '请选择上课日期', type: 'error' }],
+          startTime: [{ required: true, message: '请选择开始时间', type: 'error' }],
+          endTime: [{ required: true, message: '请选择结束时间', type: 'error' }],
+          classLocation: [{ required: true, message: '请输入上课地点', type: 'error' }],
+          totalQuota: [{ required: true, message: '请输入总名额', type: 'error' }]
         };
 
         const fetchData = async () => {
@@ -318,8 +320,26 @@
         const handleSearch = () => { pagination.value.current = 1; fetchData(); };
         const handleReset = () => { filters.value = { courseId: null, dateRange: [], status: null }; handleSearch(); };
         const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
-        const handleAdd = () => { formMode.value = 'add'; formData.value = {}; formVisible.value = true; };
-        const handleEdit = (row) => { formMode.value = 'edit'; formData.value = { ...row }; formVisible.value = true; };
+        const handleAdd = () => { formMode.value = 'add'; formData.value = { totalQuota: 30 }; formVisible.value = true; };
+        const handleEdit = (row) => {
+          formMode.value = 'edit';
+          // DB 返回 snake_case，映射为 camelCase 供表单使用
+          // class_time 格式如 "09:00-17:00"，拆分为 startTime/endTime
+          const timeParts = (row.class_time || '').split('-');
+          formData.value = {
+            id: row.id,
+            courseId: row.course_id,
+            classDate: row.class_date,
+            startTime: timeParts[0] || '',
+            endTime: timeParts[1] || '',
+            classLocation: row.class_location,
+            totalQuota: row.total_quota,
+            remark: row.remark,
+            teacher: row.teacher,
+            status: row.status
+          };
+          formVisible.value = true;
+        };
         const handleDelete = async (row) => {
           const confirmed = await TDesign.DialogPlugin.confirm({ header: '确认删除', body: '确认删除该排期吗？', theme: 'warning' });
           if (!confirmed) return;

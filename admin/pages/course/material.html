@@ -117,7 +117,7 @@
         </t-aside>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">资料管理</h1><p class="page-desc">管理课程学习资料和文档</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="资料名称" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/><t-select v-model="filters.type" :options="typeOptions" placeholder="资料类型" clearable style="width:150px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button><t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add"/></template>上传资料</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.type==='pdf'" theme="primary">PDF</t-tag><t-tag v-else-if="row.type==='doc'" theme="success">文档</t-tag><t-tag v-else-if="row.type==='video'" theme="warning">视频</t-tag><t-tag v-else theme="default">其他</t-tag></template><template #size="{ row }">{{(row.size/(1024*1024)).toFixed(2)}} MB</template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传资料':'编辑资料'" width="600px" @confirm="handleSubmit"><t-form ref="form" :data="formData" :rules="rules" label-width="100px"><t-form-item label="资料名称" name="title"><t-input v-model="formData.title" placeholder="请输入资料名称"/></t-form-item><t-form-item label="关联课程" name="course_id"><t-select v-model="formData.course_id" :options="courseOptions" placeholder="选择课程"/></t-form-item><t-form-item label="资料类型" name="type"><t-select v-model="formData.type" :options="typeOptions" placeholder="选择类型"/></t-form-item><t-form-item label="文件URL" name="file_url"><t-input v-model="formData.file_url" placeholder="文件存储URL"/></t-form-item><t-form-item label="文件大小(B)" name="size"><t-input-number v-model="formData.size" :min="0" style="width:100%;"/></t-form-item><t-form-item label="资料描述" name="description"><t-textarea v-model="formData.description" placeholder="选填" :maxlength="200" :autosize="{minRows:3,maxRows:6}"/></t-form-item></t-form></t-dialog>        </t-content>
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">资料管理</h1><p class="page-desc">管理课程学习资料和文档</p></div><div class="search-bar"><t-input v-model="filters.keyword" placeholder="资料名称" clearable style="width:200px;"><template #prefix-icon><t-icon name="search"/></template></t-input><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/><t-select v-model="filters.type" :options="typeOptions" placeholder="资料类型" clearable style="width:150px;"/><t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search"/></template>查询</t-button><t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh"/></template>重置</t-button><t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add"/></template>上传资料</t-button></div><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.category==='pdf'" theme="primary">PDF</t-tag><t-tag v-else-if="row.category==='doc'" theme="success">文档</t-tag><t-tag v-else-if="row.category==='video'" theme="warning">视频</t-tag><t-tag v-else-if="row.category==='image'" theme="success">图片</t-tag><t-tag v-else theme="default">其他</t-tag></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传资料':'编辑资料'" width="600px" @confirm="handleSubmit"><t-form ref="form" :data="formData" :rules="rules" label-width="100px"><!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB --><t-form-item label="资料名称" name="title"><t-input v-model="formData.title" placeholder="请输入资料名称"/></t-form-item><t-form-item label="资料分类" name="category"><t-select v-model="formData.category" :options="typeOptions" placeholder="选择分类（对应DB category）"/></t-form-item><t-form-item label="图片URL" name="imageUrl"><t-input v-model="formData.imageUrl" placeholder="图片文件URL（对应DB image_url）"/></t-form-item><t-form-item label="视频URL" name="videoUrl"><t-input v-model="formData.videoUrl" placeholder="视频文件URL（对应DB video_url）"/></t-form-item><t-form-item label="资料内容" name="content"><t-textarea v-model="formData.content" placeholder="资料文字内容（对应DB content）" :maxlength="5000" :autosize="{minRows:3,maxRows:6}"/></t-form-item><t-form-item label="排序" name="sortOrder"><t-input-number v-model="formData.sortOrder" :min="0" style="width:100%;"/></t-form-item><t-form-item label="显示状态" name="status"><t-radio-group v-model="formData.status"><t-radio :value="1">显示</t-radio><t-radio :value="0">隐藏</t-radio></t-radio-group></t-form-item></t-form></t-dialog>        </t-content>
       </t-layout>
     </t-layout>
   </div>
@@ -143,29 +143,29 @@
         const formData = ref({});
         const filters = ref({ keyword: '', courseId: null, type: null });
         const courseOptions = ref([]);
+        // 资料分类（DB category 字段的可选值）
         const typeOptions = [
-          { label: 'PDF', value: 'pdf' },
-          { label: '文档', value: 'doc' },
-          { label: '视频', value: 'video' },
+          { label: 'PDF文档', value: 'pdf' },
+          { label: '文字资料', value: 'doc' },
+          { label: '视频课程', value: 'video' },
+          { label: '图片资料', value: 'image' },
           { label: '其他', value: 'other' }
         ];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         
         const columns = [
           { colKey: 'title', title: '资料名称', width: 250 },
-          { colKey: 'course_name', title: '关联课程', width: 150 },
-          { colKey: 'type', title: '类型', width: 100, cell: 'type' },
-          { colKey: 'size', title: '大小', width: 120, cell: 'size' },
+          // DB 返回 category 字段（原 type）
+          { colKey: 'category', title: '分类', width: 100, cell: 'type' },
           { colKey: 'download_count', title: '下载次数', width: 100 },
           { colKey: 'created_at', title: '上传时间', width: 160 },
           { colKey: 'operation', title: '操作', width: 180, fixed: 'right', cell: 'operation' }
         ];
         
+        // 表单验证规则，name 与表单字段 camelCase 保持一致
         const rules = {
           title: [{ required: true, message: '请输入资料名称', type: 'error' }],
-          course_id: [{ required: true, message: '请选择关联课程', type: 'error' }],
-          type: [{ required: true, message: '请选择资料类型', type: 'error' }],
-          file_url: [{ required: true, message: '请输入文件URL', type: 'error' }]
+          category: [{ required: true, message: '请选择资料分类', type: 'error' }]
         };
         
         const fetchData = async () => {
@@ -219,7 +219,17 @@
         
         const handleEdit = (row) => {
           formMode.value = 'edit';
-          formData.value = { ...row };
+          // DB 返回 snake_case，映射为 camelCase 供表单使用
+          formData.value = {
+            id: row.id,
+            title: row.title,
+            category: row.category,
+            imageUrl: row.image_url,
+            videoUrl: row.video_url,
+            content: row.content,
+            sortOrder: row.sort_order,
+            status: row.status
+          };
           formVisible.value = true;
         };
         
@@ -241,7 +251,12 @@
         };
         
         const handleDownload = (row) => {
-          window.open(row.file_url, '_blank');
+          const url = row.video_url || row.image_url;
+          if (url) {
+            window.open(url, '_blank');
+          } else {
+            TDesign.MessagePlugin.warning('该资料暂无可下载文件');
+          }
         };
         
         const handleSubmit = async () => {

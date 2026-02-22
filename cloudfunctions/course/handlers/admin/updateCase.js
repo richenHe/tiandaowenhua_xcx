@@ -1,12 +1,39 @@
 /**
  * 更新案例（管理端接口）
+ *
+ * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
+ *
+ * DB 表：academy_cases
+ * 关键字段：student_name、student_avatar、summary、course_id、sort_order
+ *
+ * @param {Object} event
+ * @param {number} event.id            - 案例 ID（必填）
+ * @param {string} event.title         - 案例标题
+ * @param {string} event.studentName   - 学员姓名，对应 DB 字段 student_name
+ * @param {string} event.studentAvatar - 学员头像URL，对应 DB 字段 student_avatar
+ * @param {string} event.summary       - 案例摘要，对应 DB 字段 summary
+ * @param {string} event.content       - 案例详情
+ * @param {number} event.courseId      - 关联课程ID，对应 DB 字段 course_id
+ * @param {number} event.sortOrder     - 排序，对应 DB 字段 sort_order
+ * @param {number} event.status        - 状态：0隐藏/1显示
  */
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { id, ...updateData } = event;
+  // 接收 camelCase 参数
+  const {
+    id,
+    title,
+    studentName,
+    studentAvatar,
+    summary,
+    content,
+    courseId,
+    sortOrder,
+    status
+  } = event;
 
   try {
     // 参数验证
@@ -21,24 +48,23 @@ module.exports = async (event, context) => {
       return response.notFound('案例不存在');
     }
 
-    // 过滤允许更新的字段
-    const allowedFields = [
-      'title', 'category', 'cover_image', 'summary', 'content',
-      'author', 'sort_order', 'status'
-    ];
-
+    // 转换 camelCase → snake_case，构建 DB 更新字段
+    // 只添加实际传入的字段（undefined 表示未传，跳过）
     const fieldsToUpdate = {};
-    allowedFields.forEach(field => {
-      if (updateData[field] !== undefined) {
-        fieldsToUpdate[field] = updateData[field];
-      }
-    });
+    if (title !== undefined) fieldsToUpdate.title = title;
+    if (studentName !== undefined) fieldsToUpdate.student_name = studentName;
+    if (studentAvatar !== undefined) fieldsToUpdate.student_avatar = studentAvatar;
+    if (summary !== undefined) fieldsToUpdate.summary = summary;
+    if (content !== undefined) fieldsToUpdate.content = content;
+    if (courseId !== undefined) fieldsToUpdate.course_id = courseId;
+    if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
+    if (status !== undefined) fieldsToUpdate.status = status;
 
     if (Object.keys(fieldsToUpdate).length === 0) {
       return response.paramError('没有需要更新的字段');
     }
 
-    // 更新案例
+    // 更新案例（fieldsToUpdate 仅含 DB 真实存在的列）
     await update('academy_cases', fieldsToUpdate, { id });
 
     return response.success({

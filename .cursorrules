@@ -1096,6 +1096,7 @@ if (status != null && status !== '') {
    - MCP 查询必须明确指定数据库名：`tiandao_culture.表名`
    - 所有表必须包含 `_openid` 字段（CloudBase 权限控制必需）
    - 数据库连接配置在 `cloudfunctions/*/common/db.js` 中已正确设置
+   - **⚠️ 强制要求**：每次通过 MCP CloudBase 对数据库进行任何结构性修改（建表、改字段、加索引、删表等）后，必须同步更新 `docs/database/数据库详细信息.md`，保持文档与实际数据库结构一致
 8. **关联查询规范**：
    - **统一使用 Query Builder**（禁止原生 SQL）
    - 必须明确指定外键名称（格式：`fk_表名_字段名`）

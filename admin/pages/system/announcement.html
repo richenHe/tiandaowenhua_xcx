@@ -413,8 +413,8 @@
             title: '',
             content: '',
             link: '',
-            cover_image: '',        // fileID（保存到数据库）
-            coverImageURL: ''       // 临时 URL（用于显示）
+            coverImage: '',         // camelCase → 云函数转换为 DB cover_image
+            coverImageURL: ''       // 临时 URL（仅用于页面显示，不提交）
           };
           dialogVisible.value = true;
         };
@@ -422,13 +422,19 @@
         // 编辑
         const handleEdit = async (row) => {
           dialogMode.value = 'edit';
+          // DB 返回 snake_case（cover_image），映射为 camelCase 供表单使用
           formData.value = {
-            ...row,
-            cover_image: row.cover_image || '',
-            coverImageURL: ''
+            id: row.id,
+            title: row.title,
+            category: row.category,
+            content: row.content,
+            link: row.link,
+            status: row.status,
+            coverImage: row.cover_image || '',  // camelCase
+            coverImageURL: ''                    // 仅用于显示
           };
           
-          // 🔥 如果有封面图片，转换为临时 URL
+          // 如果有封面图片（fileID），转换为临时 URL 用于预览
           if (row.cover_image) {
             try {
               const tempURL = await window.CloudStorageHelper.getSingleTempURL(row.cover_image);
@@ -453,7 +459,7 @@
           try {
             await AdminAPI.deleteAnnouncement(row.id);
             
-            // 🔥 删除云存储文件
+            // 删除云存储文件（row 是 DB 返回的数据，字段仍为 snake_case cover_image）
             if (row.cover_image) {
               try {
                 await window.CloudStorageHelper.deleteFiles([row.cover_image]);
@@ -504,16 +510,16 @@
             
             console.log('📤 上传路径:', cloudPath);
             
-            // 🔥 删除旧文件（如果有）
-            if (formData.value.cover_image) {
-              await window.CloudStorageHelper.deleteFiles([formData.value.cover_image]);
+            // 删除旧文件（如果有）
+            if (formData.value.coverImage) {
+              await window.CloudStorageHelper.deleteFiles([formData.value.coverImage]);
             }
             
-            // 🔥 上传新文件
+            // 上传新文件
             const result = await window.CloudStorageHelper.uploadSingleFile(file, cloudPath);
             
-            // 🔥 保存 fileID 和临时 URL
-            formData.value.cover_image = result.fileID;
+            // 保存 fileID（camelCase）和临时 URL（仅用于显示）
+            formData.value.coverImage = result.fileID;
             formData.value.coverImageURL = result.tempFileURL;
             
             TDesign.MessagePlugin.closeAll();
@@ -530,16 +536,16 @@
           }
         };
         
-        // 🔥 删除图片
+        // 删除图片
         const removeImage = async () => {
           try {
-            // 🔥 删除云存储文件
-            if (formData.value.cover_image) {
-              await window.CloudStorageHelper.deleteFiles([formData.value.cover_image]);
+            // 删除云存储文件
+            if (formData.value.coverImage) {
+              await window.CloudStorageHelper.deleteFiles([formData.value.coverImage]);
             }
             
-            // 🔥 清空本地引用
-            formData.value.cover_image = '';
+            // 清空本地引用（camelCase）
+            formData.value.coverImage = '';
             formData.value.coverImageURL = '';
             
             TDesign.MessagePlugin.success('删除成功');
@@ -563,12 +569,13 @@
           }
           
           try {
+            // 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB
             const submitData = {
               title: formData.value.title,
               category: formData.value.category,
               content: formData.value.content,
               link: formData.value.link || '',
-              cover_image: formData.value.cover_image || '',  // 🔥 使用 fileID
+              coverImage: formData.value.coverImage || '',  // camelCase → DB cover_image
               status: formData.value.status
             };
             
