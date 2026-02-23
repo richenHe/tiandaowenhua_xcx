@@ -4,10 +4,18 @@
 
     <scroll-view class="scroll-content" scroll-y>
       <!-- Hero Banner -->
-      <view class="hero-banner">
-        <text class="hero-emoji">🏛️</text>
-        <text class="hero-title">孙膑道天道文化商学院</text>
-        <text class="hero-subtitle">传承国学智慧 · 弘扬天道文化</text>
+      <view class="hero-banner" :style="academyContent.cover_image ? {} : { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }">
+        <image
+          v-if="academyContent.cover_image"
+          :src="academyContent.cover_image"
+          class="hero-cover-img"
+          mode="aspectFill"
+        />
+        <view class="hero-overlay">
+          <text v-if="!academyContent.cover_image" class="hero-emoji">🏛️</text>
+          <text class="hero-title">{{ academyContent.title }}</text>
+          <text class="hero-subtitle">{{ academyContent.subtitle }}</text>
+        </view>
       </view>
 
       <view class="page-content">
@@ -167,7 +175,8 @@ const handleQuickAccess = (type: string) => {
 const academyContent = ref({
   title: '孙膑道天道文化商学院',
   subtitle: '传承国学智慧 · 弘扬天道文化',
-  intro: '孙膑道天道文化商学院，致力于传承和弘扬中华优秀传统文化...'
+  intro: '孙膑道天道文化商学院，致力于传承和弘扬中华优秀传统文化...',
+  cover_image: ''
 });
 
 // 加载商学院介绍
@@ -180,6 +189,7 @@ const loadAcademyIntro = async () => {
       const firstItem = result.list[0];
       academyContent.value.title = firstItem.title || academyContent.value.title;
       academyContent.value.intro = firstItem.summary || academyContent.value.intro;
+      academyContent.value.cover_image = firstItem.cover_image || '';
     }
     uni.hideLoading();
   } catch (error) {
@@ -297,11 +307,32 @@ const honorList = ref([
 // Hero Banner
 .hero-banner {
   height: 400rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.hero-cover-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.35);
   color: #FFFFFF;
   text-align: center;
   padding: 48rpx;
@@ -316,11 +347,13 @@ const honorList = ref([
   font-size: 48rpx;
   font-weight: 700;
   margin-bottom: 16rpx;
+  color: #FFFFFF;
 }
 
 .hero-subtitle {
   font-size: 28rpx;
   opacity: 0.9;
+  color: #FFFFFF;
 }
 
 // 页面内容

@@ -1,9 +1,9 @@
 /**
  * 取消预约（客户端接口）
  */
-const { findOne, update, transaction } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
-const { validateRequired, formatDateTime } = require('../../common/utils');
+const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { appointment_id } = event;
@@ -16,12 +16,17 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
-    // 查询预约记录
-    const appointment = await findOne(
-      'appointments',
-      'id = ? AND user_id = ? AND deleted_at IS NULL',
-      [appointment_id, user.id]
-    );
+    // 查询预约记录（appointments 表无 deleted_at 列）
+    const { data: appointment, error: findError } = await db
+      .from('appointments')
+      .select('*')
+      .eq('id', appointment_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (findError && !findError.message?.includes('0 rows')) {
+      throw findError;
+    }
 
     if (!appointment) {
       return response.notFound('预约记录不存在');
@@ -36,37 +41,28 @@ module.exports = async (event, context) => {
     }
 
     // 查询上课记录
-    const classRecord = await findOne(
-      'class_records',
-      'id = ?',
-      [appointment.class_record_id]
-    );
+    const { data: classRecord } = await db
+      .from('class_records')
+      .select('id, booked_quota')
+      .eq('id', appointment.class_record_id)
+      .single();
 
-    // 事务处理：取消预约 + 恢复名额
-    await transaction(async (conn) => {
-      // 更新预约状态
-      await update(
-        'appointments',
-        {
-          status: 3, // 已取消
-          cancelled_at: formatDateTime(new Date())
-        },
-        'id = ?',
-        [appointment_id],
-        conn
-      );
+    // 取消预约（cancel_time 为实际列名）
+    await db
+      .from('appointments')
+      .update({
+        status: 3,
+        cancel_time: new Date().toISOString()
+      })
+      .eq('id', appointment_id);
 
-      // 恢复名额
-      if (classRecord) {
-        await update(
-          'class_records',
-          { booked_quota: Math.max(0, classRecord.booked_quota - 1) },
-          'id = ?',
-          [appointment.class_record_id],
-          conn
-        );
-      }
-    });
+    // 恢复名额
+    if (classRecord) {
+      await db
+        .from('class_records')
+        .update({ booked_quota: Math.max(0, (classRecord.booked_quota || 0) - 1) })
+        .eq('id', appointment.class_record_id);
+    }
 
     return response.success({
       message: '取消预约成功'

@@ -12,7 +12,7 @@ module.exports = async (event, context) => {
 
     // 构建查询（注意：academy_cases 表没有 deleted_at 字段）
     let queryBuilder = db.from('academy_cases')
-      .select('id, category, category_label, badge_theme, student_surname, student_name, student_desc, student_avatar, student_title, avatar_theme, title, summary, content, quote, achievements, video_url, images, course_name, view_count, like_count, is_featured, sort_order, created_at', { count: 'exact' })
+      .select('id, student_name, student_avatar, student_title, title, summary, content, video_url, images, course_id, course_name, view_count, like_count, is_featured, sort_order, status, created_at', { count: 'exact' })
       .eq('status', 1)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
@@ -33,10 +33,6 @@ module.exports = async (event, context) => {
     // 处理返回数据 - 解析 JSON 字段
     const processedList = (result.list || []).map(caseItem => {
       try {
-        // 解析 achievements JSON 字符串
-        if (caseItem.achievements && typeof caseItem.achievements === 'string') {
-          caseItem.achievements = JSON.parse(caseItem.achievements);
-        }
         // 解析 images JSON 字符串
         if (caseItem.images && typeof caseItem.images === 'string') {
           caseItem.images = JSON.parse(caseItem.images);
@@ -89,6 +85,13 @@ module.exports = async (event, context) => {
         }
       });
     }
+
+    // 添加 cover_image：取 images 第一张，无图片时取 student_avatar 作为兜底
+    processedList.forEach(caseItem => {
+      caseItem.cover_image = (Array.isArray(caseItem.images) && caseItem.images.length > 0)
+        ? caseItem.images[0]
+        : (caseItem.student_avatar || null);
+    });
 
     return response.success({
       ...result,

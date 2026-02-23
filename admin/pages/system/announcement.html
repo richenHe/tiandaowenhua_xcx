@@ -130,81 +130,21 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="announcement-list"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="announcement-list"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
           <div class="c">
-            <h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">公告管理</h1>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h1 style="font-size:20px;font-weight:600;margin:0;">公告管理</h1>
+              <t-button theme="success" @click="handleAdd">+ 发布公告</t-button>
+            </div>
             
             <!-- 查询表单 -->
-            <div style="display:flex;gap:12px;margin-bottom:20px;">
-              <t-input v-model="keyword" placeholder="公告标题" clearable style="width:200px;"/>
+            <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;">
+              <div style="width:200px;flex:0 0 200px;"><t-input v-model="keyword" placeholder="公告标题" clearable /></div>
               <t-button theme="primary" @click="loadData">查询</t-button>
               <t-button @click="resetSearch">重置</t-button>
-              <t-button theme="success" @click="handleAdd">发布公告</t-button>
             </div>
             
             <!-- 数据表格 -->
@@ -220,7 +160,6 @@
               <template #type="{row}">
                 <t-tag v-if="row.category==='system'" theme="primary">系统</t-tag>
                 <t-tag v-else-if="row.category==='activity'" theme="success">活动</t-tag>
-                <t-tag v-else-if="row.category==='banner'" theme="warning">轮播图</t-tag>
                 <t-tag v-else>通知</t-tag>
               </template>
               
@@ -232,6 +171,9 @@
               <template #op="{row}">
                 <t-space>
                   <t-button size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+                  <t-button size="small" variant="text" :theme="row.status === 1 ? 'warning' : 'success'" @click="handleToggleStatus(row)">
+                    {{ row.status === 1 ? '隐藏' : '显示' }}
+                  </t-button>
                   <t-button size="small" variant="text" theme="danger" @click="handleDelete(row)">删除</t-button>
                 </t-space>
               </template>
@@ -255,41 +197,17 @@
                 <t-select v-model="formData.category" :options="typeOptions"/>
               </t-form-item>
               
-              <!-- 🔥 云存储上传组件 -->
+              <!-- 封面图片上传 -->
               <t-form-item label="封面图片">
-                <div class="upload-container">
-                  <!-- 隐藏的文件输入 -->
-                  <input 
-                    type="file" 
-                    ref="fileInput" 
-                    accept="image/*"
-                    @change="handleFileChange"
-                    style="display: none;"
-                  >
-                  
-                  <!-- 未上传时显示上传区域 -->
-                  <div v-if="!formData.coverImageURL" class="upload-placeholder" @click="triggerUpload">
-                    <t-icon name="upload" />
-                    <p>点击上传封面</p>
-                  </div>
-                  
-                  <!-- 已上传时显示预览 -->
-                  <div v-else class="image-preview">
-                    <img :src="formData.coverImageURL" alt="封面预览">
-                    <div class="image-actions">
-                      <t-button size="small" variant="outline" @click="triggerUpload">
-                        更换
-                      </t-button>
-                      <t-button size="small" theme="danger" variant="outline" @click="removeImage">
-                        删除
-                      </t-button>
-                    </div>
-                  </div>
-                  
-                  <div class="upload-tips">
-                    建议尺寸：750x400，支持 JPG、PNG，不超过 5MB
-                  </div>
-                </div>
+                <cloud-image-upload
+                  v-model="formData.coverImageURL"
+                  v-model:file-id="formData.coverImage"
+                  path-prefix="announcements/covers"
+                  :item-id="formData.id || 'new'"
+                  tips="建议尺寸：750×400，支持 JPG/PNG，不超过 5MB"
+                  :width="320"
+                  :height="160"
+                />
               </t-form-item>
               
               <t-form-item label="跳转链接">
@@ -351,15 +269,11 @@
           total: 0
         });
         
-        // 🔥 云存储相关状态
-        const fileInput = ref(null);
-        const uploadLoading = ref(false);
         
         // 选项配置
         const typeOptions = [
           { label: '系统公告', value: 'system' },
           { label: '活动公告', value: 'activity' },
-          { label: '轮播图', value: 'banner' },
           { label: '通知', value: 'general' }
         ];
         
@@ -379,7 +293,8 @@
             const data = await AdminAPI.getAnnouncementList({
               page: pagination.value.current,
               pageSize: pagination.value.pageSize,
-              keyword: keyword.value
+              keyword: keyword.value,
+              excludeCategory: 'banner'  // 公告管理排除轮播图，轮播图在轮播图管理单独展示
             });
             
             dataList.value = data.list;
@@ -448,6 +363,18 @@
         };
         
         // 删除
+        const handleToggleStatus = async (row) => {
+          const newStatus = row.status === 1 ? 0 : 1;
+          const action = newStatus === 1 ? '显示' : '隐藏';
+          try {
+            await AdminAPI.updateAnnouncement({ id: row.id, status: newStatus });
+            TDesign.MessagePlugin.success(`公告已${action}`);
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message);
+          }
+        };
+
         const handleDelete = async (row) => {
           const confirmed = await TDesign.DialogPlugin.confirm({
             header: '确认删除',
@@ -473,85 +400,6 @@
             loadData();
           } catch (e) {
             TDesign.MessagePlugin.error(e.message);
-          }
-        };
-        
-        // 🔥 触发文件选择
-        const triggerUpload = () => {
-          fileInput.value?.click();
-        };
-        
-        // 🔥 文件选择变化
-        const handleFileChange = async (event) => {
-          const file = event.target.files[0];
-          if (!file) return;
-          
-          // 验证文件
-          const validation = window.CloudStorageHelper.validateFile(file, {
-            acceptTypes: ['image/jpeg', 'image/png', 'image/jpg'],
-            maxSize: 5 * 1024 * 1024  // 5MB
-          });
-          
-          if (!validation.valid) {
-            TDesign.MessagePlugin.warning(validation.error);
-            return;
-          }
-          
-          try {
-            uploadLoading.value = true;
-            TDesign.MessagePlugin.loading('上传中...', 0);
-            
-            // 🔥 生成云存储路径
-            const cloudPath = window.CloudStorageHelper.generateCloudPath(
-              'announcements/covers',
-              formData.value.id || 'new',
-              file.name
-            );
-            
-            console.log('📤 上传路径:', cloudPath);
-            
-            // 删除旧文件（如果有）
-            if (formData.value.coverImage) {
-              await window.CloudStorageHelper.deleteFiles([formData.value.coverImage]);
-            }
-            
-            // 上传新文件
-            const result = await window.CloudStorageHelper.uploadSingleFile(file, cloudPath);
-            
-            // 保存 fileID（camelCase）和临时 URL（仅用于显示）
-            formData.value.coverImage = result.fileID;
-            formData.value.coverImageURL = result.tempFileURL;
-            
-            TDesign.MessagePlugin.closeAll();
-            TDesign.MessagePlugin.success('上传成功');
-            
-            // 清空 input
-            event.target.value = '';
-          } catch (error) {
-            console.error('上传失败:', error);
-            TDesign.MessagePlugin.closeAll();
-            TDesign.MessagePlugin.error('上传失败：' + error.message);
-          } finally {
-            uploadLoading.value = false;
-          }
-        };
-        
-        // 删除图片
-        const removeImage = async () => {
-          try {
-            // 删除云存储文件
-            if (formData.value.coverImage) {
-              await window.CloudStorageHelper.deleteFiles([formData.value.coverImage]);
-            }
-            
-            // 清空本地引用（camelCase）
-            formData.value.coverImage = '';
-            formData.value.coverImageURL = '';
-            
-            TDesign.MessagePlugin.success('删除成功');
-          } catch (error) {
-            console.error('删除失败:', error);
-            TDesign.MessagePlugin.error('删除失败');
           }
         };
         
@@ -609,7 +457,7 @@
         });
         
         return {
-          // 侧边栏导航
+          activeMenuKey: 'announcement-list',// 侧边栏导航
           adminInfo,
           handleMenuChange,
           handleLogout,
@@ -625,27 +473,22 @@
           typeOptions,
           columns,
           
-          // 🔥 云存储相关
-          fileInput,
-          uploadLoading,
-          
           // 方法
           loadData,
           resetSearch,
           handlePageChange,
           handleAdd,
           handleEdit,
+          handleToggleStatus,
           handleDelete,
           handleSave,
           handleDialogClose,
-          
-          // 🔥 云存储方法
-          triggerUpload,
-          handleFileChange,
-          removeImage
         };
       }
-    }).use(TDesign).mount('#app');
+    }).use(TDesign)
+      .component('sidebar-menu', SidebarNavigation.SidebarMenu)
+      .component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
+      .mount('#app');
   </script>
 </body>
 </html>

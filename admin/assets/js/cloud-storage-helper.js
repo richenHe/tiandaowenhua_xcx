@@ -295,3 +295,180 @@ window.CloudStorageHelper = {
 };
 
 console.log('✅ CloudStorageHelper 工具函数挂载成功');
+
+/* =====================================================================
+ * CloudImageUpload — 统一云存储图片上传 Vue 组件
+ *
+ * 用法（在 createApp 注册后使用）：
+ *   app.component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
+ *
+ * 模板示例：
+ *   <cloud-image-upload
+ *     v-model="formData.coverImageURL"
+ *     v-model:file-id="formData.coverImage"
+ *     path-prefix="banners"
+ *     :item-id="formData.id || 'new'"
+ *     tips="建议尺寸：750×360，支持 JPG/PNG，不超过 5MB"
+ *   />
+ * ===================================================================== */
+(function () {
+  // 注入全局 CSS（只注入一次）
+  if (!document.getElementById('cloud-upload-style')) {
+    const style = document.createElement('style');
+    style.id = 'cloud-upload-style';
+    style.textContent = `
+      .cu-wrap { display: inline-block; }
+      .cu-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #dcdcdc;
+        border-radius: 8px;
+        background: #fafafa;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .cu-area:hover { border-color: #0052d9; background: #f0f4ff; }
+      .cu-area input[type=file] { display: none; }
+      .cu-area .cu-icon { font-size: 36px; color: #bbb; margin-bottom: 6px; }
+      .cu-area .cu-text { color: #999; font-size: 13px; }
+      .cu-preview { border-radius: 8px; border: 1px solid #dcdcdc; box-sizing: border-box; overflow: hidden; }
+      .cu-preview img { display: block; width: 100%; object-fit: cover; }
+      .cu-actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+      .cu-btn-replace {
+        display: inline-flex; align-items: center; justify-content: center;
+        height: 28px; padding: 0 12px; border-radius: 4px; font-size: 13px;
+        border: 1px solid #dcdcdc; background: #fff; color: #333;
+        cursor: pointer; transition: border-color 0.2s, color 0.2s;
+        white-space: nowrap; outline: none;
+      }
+      .cu-btn-replace:hover:not(:disabled) { border-color: #0052d9; color: #0052d9; }
+      .cu-btn-replace:disabled { opacity: 0.6; cursor: not-allowed; }
+      .cu-tips { margin-top: 6px; font-size: 12px; color: #999; }
+      .cu-uploading { opacity: 0.6; pointer-events: none; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const CloudImageUpload = {
+    name: 'CloudImageUpload',
+    props: {
+      modelValue: { type: String, default: '' },
+      fileId:     { type: String, default: '' },
+      pathPrefix: { type: String, default: 'uploads' },
+      itemId:     { type: [String, Number], default: 'new' },
+      maxSize:    { type: Number, default: 5 * 1024 * 1024 },
+      accept:     { type: String, default: 'image/jpeg,image/png,image/jpg,image/gif,image/webp' },
+      tips:       { type: String, default: '' },
+      width:      { type: [Number, String], default: 320 },
+      height:     { type: [Number, String], default: 160 },
+    },
+    emits: ['update:modelValue', 'update:fileId', 'uploaded', 'removed'],
+    setup(props, { emit }) {
+      const { ref } = Vue;
+      const uploading = ref(false);
+
+      const w = () => (typeof props.width  === 'number' ? props.width  + 'px' : props.width);
+      const h = () => (typeof props.height === 'number' ? props.height + 'px' : props.height);
+
+      async function doUpload(file) {
+        const helper = window.CloudStorageHelper;
+        const validation = helper.validateFile(file, {
+          acceptTypes: props.accept.split(',').map(s => s.trim()),
+          maxSize: props.maxSize
+        });
+        if (!validation.valid) {
+          TDesign.MessagePlugin.warning(validation.error);
+          return;
+        }
+        try {
+          uploading.value = true;
+          TDesign.MessagePlugin.loading('上传中...', 0);
+          if (props.fileId) {
+            try { await helper.deleteFiles([props.fileId]); } catch (_) {}
+          }
+          const cloudPath = helper.generateCloudPath(props.pathPrefix, props.itemId || 'new', file.name);
+          const result = await helper.uploadSingleFile(file, cloudPath);
+          TDesign.MessagePlugin.closeAll();
+          TDesign.MessagePlugin.success('上传成功');
+          emit('update:fileId', result.fileID);
+          emit('update:modelValue', result.tempFileURL);
+          emit('uploaded', { fileId: result.fileID, url: result.tempFileURL });
+        } catch (err) {
+          TDesign.MessagePlugin.closeAll();
+          TDesign.MessagePlugin.error('上传失败：' + err.message);
+        } finally {
+          uploading.value = false;
+        }
+      }
+
+      // 通过动态创建 input 触发文件选择，绕过 Dialog 内的事件拦截问题
+      function openFilePicker() {
+        if (uploading.value) return;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = props.accept;
+        input.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+        document.body.appendChild(input);
+        input.addEventListener('change', function (e) {
+          const file = e.target.files[0];
+          if (file) doUpload(file);
+          document.body.removeChild(input);
+        });
+        input.addEventListener('cancel', function () {
+          document.body.removeChild(input);
+        });
+        input.click();
+      }
+
+      async function handleRemove() {
+        if (props.fileId) {
+          try { await window.CloudStorageHelper.deleteFiles([props.fileId]); } catch (_) {}
+        }
+        emit('update:fileId', '');
+        emit('update:modelValue', '');
+        emit('removed');
+        TDesign.MessagePlugin.success('已删除');
+      }
+
+      return { uploading, openFilePicker, handleRemove, w, h };
+    },
+    template: `
+      <div class="cu-wrap">
+        <!-- 无图片时：点击整块上传 -->
+        <div
+          v-if="!modelValue"
+          class="cu-area"
+          :class="{ 'cu-uploading': uploading }"
+          :style="{ width: w(), height: h() }"
+          @click="openFilePicker"
+        >
+          <span class="cu-icon">🖼</span>
+          <span class="cu-text">{{ uploading ? '上传中...' : '点击上传图片' }}</span>
+        </div>
+
+        <!-- 有图片时：显示预览 + 操作按钮 -->
+        <div v-else>
+          <div class="cu-preview" :style="{ width: w() }">
+            <img :src="modelValue" :style="{ height: h() }" />
+          </div>
+          <div class="cu-actions">
+            <button
+              class="cu-btn-replace"
+              :disabled="uploading"
+              @click="openFilePicker"
+            >{{ uploading ? '上传中...' : '更换图片' }}</button>
+            <t-button size="small" theme="danger" variant="outline" @click="handleRemove">删除图片</t-button>
+          </div>
+        </div>
+
+        <div v-if="tips" class="cu-tips">{{ tips }}</div>
+      </div>
+    `
+  };
+
+  window.CloudUploadComponents = { CloudImageUpload };
+})();

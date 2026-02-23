@@ -2,8 +2,8 @@
  * 客户端接口：大使升级
  * Action: upgrade
  */
-const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { findOne, update, insert } = require('../../common/db');
+const { response, utils } = require('../../common');
 const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
@@ -38,24 +38,23 @@ module.exports = async (event, context) => {
     // 根据升级类型处理
     if (upgrade_type === 'payment') {
       // 支付升级：创建升级订单
-      const { db } = require('../../common/db');
       const orderNo = business.generateOrderNo('UPG');
 
-      const [order] = await db
-        .from('orders')
-        .insert({
-          order_no: orderNo,
-          user_id: user.id,
-          order_type: 3,  // 升级订单
-          related_id: target_level,
-          original_amount: eligibility.upgrade_fee,
-          discount_amount: 0,
-          final_amount: eligibility.upgrade_fee,
-          pay_status: 0,
-          created_at: new Date().toISOString(),
-          expired_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-        })
-        .select();
+      const orderData = await insert('orders', {
+        _openid: user._openid || '',
+        order_no: orderNo,
+        order_name: `大使升级至${target_level}级`,
+        user_id: user.id,
+        order_type: 3,  // 升级订单
+        related_id: target_level,
+        original_amount: eligibility.upgrade_fee,
+        discount_amount: 0,
+        final_amount: eligibility.upgrade_fee,
+        pay_status: 0,
+        created_at: utils.formatDateTime(new Date()),
+        expire_at: utils.formatDateTime(new Date(Date.now() + 30 * 60 * 1000))
+      });
+      const order = orderData[0];
 
       return response.success({
         order_id: order.id,

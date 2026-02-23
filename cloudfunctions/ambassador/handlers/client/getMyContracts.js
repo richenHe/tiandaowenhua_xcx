@@ -51,8 +51,10 @@ module.exports = async (event, context) => {
 
     console.log(`[getMyContracts] 查询成功，共 ${contracts.length} 条协议`);
 
-    // 直接返回数组（前端期望直接得到数组）
-    return response.success(contracts);
+    return response.success({
+      total: contracts.length,
+      list: contracts
+    });
 
   } catch (error) {
     console.error(`[getMyContracts] 失败:`, error);

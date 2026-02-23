@@ -18,12 +18,20 @@
         <swiper-item v-for="(banner, index) in bannerList" :key="index">
           <view
             class="banner-slide"
-            :class="banner.theme"
+            :class="banner.cover_image ? '' : banner.theme"
             @click="onBannerClick(banner)"
           >
-            <text class="banner-emoji">{{ banner.emoji }}</text>
-            <text class="banner-title">{{ banner.title }}</text>
-            <text class="banner-subtitle">{{ banner.subtitle }}</text>
+            <image
+              v-if="banner.cover_image"
+              :src="banner.cover_image"
+              class="banner-cover-img"
+              mode="aspectFill"
+            />
+            <template v-else>
+              <text class="banner-emoji">{{ banner.emoji }}</text>
+              <text class="banner-title">{{ banner.title }}</text>
+              <text class="banner-subtitle">{{ banner.subtitle }}</text>
+            </template>
           </view>
         </swiper-item>
       </swiper>
@@ -79,8 +87,14 @@
             class="t-card t-card--bordered t-card--hoverable course-card"
             @click="goToCourseDetail(course)"
           >
-            <view class="course-image" :class="course.imageTheme">
-              <text class="course-emoji">{{ course.emoji }}</text>
+            <view class="course-image" :class="course.coverImage ? '' : course.imageTheme">
+              <image
+                v-if="course.coverImage"
+                :src="course.coverImage"
+                class="course-cover-img"
+                mode="aspectFill"
+              />
+              <text v-else class="course-emoji">{{ course.emoji }}</text>
             </view>
             <view class="t-card__body">
               <view class="course-header">
@@ -123,8 +137,8 @@ import { CourseApi, SystemApi } from '@/api';
 
 // 轮播图当前索引
 const currentBannerIndex = ref(0);
-// 当前选中的标签索引
-const currentTab = ref('all');
+// 当前选中的标签（'all'/'calendar' 为特殊值，其余为数字课程类型：1初探班/2密训班/3咨询服务）
+const currentTab = ref<string | number>('all');
 // 日历弹窗显示状态
 const calendarVisible = ref(false);
 
@@ -138,11 +152,11 @@ const announcementList = ref([
 // 轮播图数据
 const bannerList = ref<any[]>([]);
 
-// 标签页数据（包含日历）
+// 标签页数据（课程类型与数据库 courses.type 对齐：1初探班/2密训班；'calendar'为日历UI功能）
 const allTabList = ref([
   { label: '全部', value: 'all' },
-  { label: '初探班', value: 'beginner' },
-  { label: '密训班', value: 'advanced' },
+  { label: '初探班', value: 1 },
+  { label: '密训班', value: 2 },
   { label: '日历', value: 'calendar' }
 ]);
 
@@ -162,8 +176,9 @@ const loadCourseList = async () => {
       price: course.current_price || 0,
       emoji: getCourseEmoji(course.type),
       imageTheme: getCourseTheme(course.type),
-      type: getCourseTypeKey(course.type),
-      purchased: false // 需要从用户已购课程中判断
+      coverImage: course.cover_image || '',
+      type: course.type,
+      purchased: false
     }));
     uni.hideLoading()
   } catch (error) {
@@ -196,22 +211,12 @@ const getCourseTheme = (type: number): string => {
   return themeMap[type] || 'course-image--pink';
 };
 
-// 获取课程类型键
-const getCourseTypeKey = (type: number): string => {
-  const typeMap: Record<number, string> = {
-    1: 'beginner',
-    2: 'advanced',
-    3: 'retrain'
-  };
-  return typeMap[type] || 'beginner';
-};
-
 // 日历价格数据（从后台获取）
 const calendarPriceData = ref<Record<string, any>>({});
 
-// 根据标签筛选课程
+// 根据标签筛选课程（currentTab 为数字时按课程类型过滤）
 const filteredCourseList = computed(() => {
-  if (currentTab.value === 'all') {
+  if (currentTab.value === 'all' || currentTab.value === 'calendar') {
     return courseList.value;
   }
   return courseList.value.filter(course => course.type === currentTab.value);
@@ -225,12 +230,14 @@ const onSwiperChange = (e: any) => {
 // 轮播点击事件
 const onBannerClick = (banner: any) => {
   if (banner.link) {
+    // 规范化链接，确保以 / 开头
+    const link = banner.link.startsWith('/') ? banner.link : '/' + banner.link;
     // 判断是否为 tabBar 页面
-    const tabBarPages = ['/pages/index/index', '/pages/mall/index', '/pages/academy/index', '/pages/mine/index']
-    if (tabBarPages.includes(banner.link)) {
-      uni.switchTab({ url: banner.link })
+    const tabBarPages = ['/pages/index/index', '/pages/mall/index', '/pages/academy/index', '/pages/mine/index'];
+    if (tabBarPages.includes(link)) {
+      uni.switchTab({ url: link });
     } else {
-      uni.navigateTo({ url: banner.link })
+      uni.navigateTo({ url: link });
     }
   }
 }
@@ -238,32 +245,27 @@ const onBannerClick = (banner: any) => {
 // 加载轮播图列表
 const loadBannerList = async () => {
   try {
-    uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getBannerList();
     if (result.list && result.list.length > 0) {
-      // 将后台返回的数据转换为前端需要的格式
       bannerList.value = result.list.map((item: any) => ({
         id: item.id,
-        emoji: '', // 后台暂无emoji字段，使用空字符串
         title: item.title,
         subtitle: item.subtitle || '',
-        theme: getBannerTheme(item.id), // 根据ID或其他规则分配主题
+        cover_image: item.cover_image || '',
         link: item.link || '',
-        cover_image: item.cover_image
+        theme: getBannerTheme(item.id),
       }));
     }
-    uni.hideLoading()
   } catch (error) {
     console.error('加载轮播图失败:', error);
-    uni.hideLoading()
-    // 失败时使用默认数据
+    // 失败时展示默认兜底
     bannerList.value = [
       {
-        emoji: '',
+        id: 0,
         title: '天道文化课程平台',
-        subtitle: '传承国学智慧 · 弘扬天道文化',
+        cover_image: '',
+        link: '',
         theme: 'banner-slide--blue',
-        link: ''
       }
     ];
   }
@@ -380,20 +382,26 @@ const loadAnnouncements = async () => {
 // 轮播图
 .banner-swiper {
   width: 100%;
-  height: 560rpx;
+  height: 720rpx;
 }
 
 .banner-slide {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #FFFFFF;
-  text-align: center;
-  padding: 80rpx 40rpx;
-  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+
+  // 文字主题变体（无图片时）
+  &--blue, &--purple, &--pink {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #FFFFFF;
+    text-align: center;
+    padding: 80rpx 40rpx;
+    box-sizing: border-box;
+  }
   
   &--blue {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -411,6 +419,16 @@ const loadAnnouncements = async () => {
 swiper-item {
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+.banner-cover-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .banner-emoji {
@@ -436,7 +454,7 @@ swiper-item {
 .banner-pagination {
   position: absolute;
   left: 40rpx;
-  top: 500rpx;
+  top: 664rpx;
   display: flex;
   gap: 16rpx;
   z-index: 10;
@@ -559,6 +577,12 @@ swiper-item {
   &--purple {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
+}
+
+.course-cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .course-emoji {

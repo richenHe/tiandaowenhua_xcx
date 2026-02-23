@@ -40,7 +40,11 @@ const adminHandlers = {
   getRefundList: require('./handlers/admin/getRefundList'),
   refund: require('./handlers/admin/refund'),
   getWithdrawList: require('./handlers/admin/getWithdrawList'),
-  withdrawAudit: require('./handlers/admin/withdrawAudit')
+  withdrawAudit: require('./handlers/admin/withdrawAudit'),
+  getMallGoodsList: require('./handlers/admin/getMallGoodsList'),
+  createMallGoods: require('./handlers/admin/createMallGoods'),
+  updateMallGoods: require('./handlers/admin/updateMallGoods'),
+  deleteMallGoods: require('./handlers/admin/deleteMallGoods')
 };
 
 // 路由配置

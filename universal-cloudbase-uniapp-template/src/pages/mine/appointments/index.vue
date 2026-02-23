@@ -116,22 +116,24 @@ const handleScroll = (e: any) => {
   }
 }
 
-// Tab 标签
-const activeTab = ref(0)
+// Tab 标签（value 对应数据库 appointments.status：0待上课/1已签到/2缺席/3已取消）
+const activeTab = ref(-1)
 const tabOptions = [
-  { label: '全部', value: 0 },
-  { label: '待上课', value: 1 },
-  { label: '已完成', value: 2 },
+  { label: '全部', value: -1 },
+  { label: '待上课', value: 0 },
+  { label: '已签到', value: 1 },
+  { label: '缺席', value: 2 },
   { label: '已取消', value: 3 }
 ]
 
 // 预约数据
 const appointments = ref<any[]>([])
 
-// 状态映射
+// 状态映射（与数据库 appointments.status 一致：0待上课/1已签到/2缺席/3已取消）
 const statusMap: Record<number, { text: string; type: string; appointmentStatus: string }> = {
-  1: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
-  2: { text: '已签到', type: 'success', appointmentStatus: 'completed' },
+  0: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
+  1: { text: '已签到', type: 'success', appointmentStatus: 'completed' },
+  2: { text: '缺席', type: 'danger', appointmentStatus: 'absent' },
   3: { text: '已取消', type: 'default', appointmentStatus: 'cancelled' }
 }
 
@@ -140,14 +142,14 @@ const loadAppointments = async (status?: number) => {
   try {
     uni.showLoading({ title: '加载中...' })
     const params: any = { page: 1, page_size: 100 }
-    if (status && status > 0) {
+    if (status !== undefined && status >= 0) {
       params.status = status
     }
 
     const result = await CourseApi.getMyAppointments(params)
 
     appointments.value = result.list.map((item: any) => {
-      const statusInfo = statusMap[item.status] || statusMap[1]
+      const statusInfo = statusMap[item.status] ?? statusMap[0]
       return {
         id: item.id,
         title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
@@ -158,7 +160,8 @@ const loadAppointments = async (status?: number) => {
         status: statusInfo.text,
         statusType: statusInfo.type,
         appointmentStatus: statusInfo.appointmentStatus,
-        rating: item.status === 2 ? '⭐⭐⭐⭐⭐' : ''
+        dbStatus: item.status,
+        rating: item.status === 1 ? '⭐⭐⭐⭐⭐' : ''
       }
     })
     uni.hideLoading()
@@ -170,23 +173,16 @@ const loadAppointments = async (status?: number) => {
 
 // 过滤预约
 const filteredAppointments = computed(() => {
-  if (activeTab.value === 0) {
+  if (activeTab.value === -1) {
     return appointments.value
-  } else if (activeTab.value === 1) {
-    return appointments.value.filter(item => item.appointmentStatus === 'pending')
-  } else if (activeTab.value === 2) {
-    return appointments.value.filter(item => item.appointmentStatus === 'completed')
-  } else if (activeTab.value === 3) {
-    return appointments.value.filter(item => item.appointmentStatus === 'cancelled')
   }
-  return appointments.value
+  return appointments.value.filter(item => item.dbStatus === activeTab.value)
 })
 
 // 切换 Tab
 const handleTabChange = (value: number) => {
   activeTab.value = value
-  // 根据状态加载数据
-  const statusValue = value === 0 ? undefined : value
+  const statusValue = value === -1 ? undefined : value
   loadAppointments(statusValue)
 }
 

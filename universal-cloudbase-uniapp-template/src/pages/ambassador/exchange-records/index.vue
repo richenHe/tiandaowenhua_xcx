@@ -87,10 +87,12 @@ import type { ExchangeRecord } from '@/api/types/order';
 
 const activeTab = ref<number | null>(null);
 
+// 与数据库 mall_exchange_records.status 对齐：1已兑换/2已领取/3已取消
 const tabs = ref([
   { label: '全部', value: null },
   { label: '已兑换', value: 1 },
   { label: '已领取', value: 2 },
+  { label: '已取消', value: 3 },
 ]);
 
 // 兑换记录列表

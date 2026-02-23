@@ -81,13 +81,14 @@ const handleScroll = (e: any) => {
   }
 }
 
-// Tab 标签
-const activeTab = ref(0)
+// Tab 标签（value=-1表示全部；其余值与数据库 orders.pay_status 一致：0待支付/1已支付/2已取消/3已关闭/4已退款）
+const activeTab = ref(-1)
 const tabOptions = [
-  { label: '全部', value: 0 },
-  { label: '待支付', value: 1 },
-  { label: '已完成', value: 2 },
-  { label: '已取消', value: 3 }
+  { label: '全部', value: -1 },
+  { label: '待支付', value: 0 },
+  { label: '已支付', value: 1 },
+  { label: '已取消', value: 2 },
+  { label: '已退款', value: 4 }
 ]
 
 // 订单数据
@@ -100,31 +101,23 @@ const courseStyles: Record<number, { icon: string; iconBg: string }> = {
   3: { icon: '💬', iconBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }  // 咨询服务
 }
 
-// 订单状态映射
+// 订单状态映射（与数据库 orders.pay_status 一致：0待支付/1已支付/2已取消/3已关闭/4已退款）
 const statusMap: Record<number, { text: string; type: string; orderStatus: string }> = {
   0: { text: '待支付', type: 'warning', orderStatus: 'pending' },
   1: { text: '已支付', type: 'success', orderStatus: 'completed' },
   2: { text: '已取消', type: 'default', orderStatus: 'cancelled' },
-  3: { text: '已取消', type: 'default', orderStatus: 'cancelled' }  // 超时统一显示为已取消
+  3: { text: '已关闭', type: 'default', orderStatus: 'closed' },
+  4: { text: '已退款', type: 'danger', orderStatus: 'refunded' }
 }
 
 // 加载订单列表
 const loadOrders = async (tabValue?: number) => {
   try {
     uni.showLoading({ title: '加载中...' })
-    // 根据 tab 值设置状态过滤和分页大小
-    // 0-全部（100条）, 1-待支付(20条), 2-已完成(100条), 3-已取消(20条)
+    // tabValue=-1表示全部，否则直接传入数据库 pay_status 值
     const params: any = { page: 1, pageSize: 100 }
-    
-    if (tabValue === 1) {
-      params.status = 0 // 待支付
-      params.pageSize = 20 // 待支付最多20条
-    } else if (tabValue === 2) {
-      params.status = 1 // 已完成
-      params.pageSize = 100 // 已完成最多100条
-    } else if (tabValue === 3) {
-      params.status = 2 // 已取消
-      params.pageSize = 20 // 已取消最多20条
+    if (tabValue !== undefined && tabValue >= 0) {
+      params.status = tabValue
     }
 
     const result = await UserApi.getMyOrders(params)
@@ -142,7 +135,8 @@ const loadOrders = async (tabValue?: number) => {
         statusType: statusInfo.type,
         icon: style.icon,
         iconBg: style.iconBg,
-        orderStatus: statusInfo.orderStatus
+        orderStatus: statusInfo.orderStatus,
+        payStatus: item.pay_status
       }
       
       console.log('🔍 [订单映射] 订单号:', item.order_no, 
@@ -163,22 +157,12 @@ const loadOrders = async (tabValue?: number) => {
   }
 }
 
-// 过滤订单
+// 过滤订单（activeTab 直接对应数据库 pay_status，-1 表示全部）
 const filteredOrders = computed(() => {
-  if (activeTab.value === 0) {
-    // 全部订单
+  if (activeTab.value === -1) {
     return orders.value
-  } else if (activeTab.value === 1) {
-    // 待支付订单
-    return orders.value.filter(order => order.orderStatus === 'pending')
-  } else if (activeTab.value === 2) {
-    // 已完成订单
-    return orders.value.filter(order => order.orderStatus === 'completed')
-  } else if (activeTab.value === 3) {
-    // 已取消订单
-    return orders.value.filter(order => order.orderStatus === 'cancelled')
   }
-  return orders.value
+  return orders.value.filter(order => order.payStatus === activeTab.value)
 })
 
 // 切换 Tab
@@ -197,11 +181,17 @@ const goToOrderDetail = (orderNo: string, orderStatus: string) => {
     uni.navigateTo({
       url: `/pages/order/pending/index?orderNo=${orderNo}`
     })
-  } else if (orderStatus === 'cancelled') {
-    // 已取消/已超时订单跳转到已取消页面
+  } else if (orderStatus === 'cancelled' || orderStatus === 'closed') {
+    // 已取消/已超时/已关闭订单跳转到已取消页面
     console.log('✅ 跳转到已取消页面')
     uni.navigateTo({
       url: `/pages/order/cancelled/index?orderNo=${orderNo}`
+    })
+  } else if (orderStatus === 'refunded') {
+    // 已退款订单跳转到退款详情页面
+    console.log('✅ 跳转到退款详情页面')
+    uni.navigateTo({
+      url: `/pages/order/refunded/index?orderNo=${orderNo}`
     })
   } else {
     // 其他状态订单（已完成）跳转到订单详情页面

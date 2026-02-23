@@ -115,7 +115,7 @@ class AdminAPI {
 
   // 公告管理
   static async getAnnouncementList(params = {}) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'getAnnouncementList', params);
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'getAdminAnnouncementList', params);
   }
 
   static async createAnnouncement(data) {
@@ -128,6 +128,23 @@ class AdminAPI {
 
   static async deleteAnnouncement(id) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'deleteAnnouncement', { id });
+  }
+
+  // 轮播图管理
+  static async getBannerList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'getAdminBannerList', params);
+  }
+
+  static async createBanner(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'createBanner', data);
+  }
+
+  static async updateBanner(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'updateBanner', data);
+  }
+
+  static async deleteBanner(id) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'deleteBanner', { id });
   }
 
   // 反馈管理
@@ -173,10 +190,22 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'updateAmbassadorLevelConfig', data);
   }
 
+  static async createAmbassadorLevelConfig(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'createAmbassadorLevelConfig', data);
+  }
+
+  static async deleteAmbassadorLevelConfig(level) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'deleteAmbassadorLevelConfig', { level });
+  }
+
   // ==================== 用户模块 (4个接口) ====================
 
   static async getUserList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserList', params);
+  }
+
+  static async createUser(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'createUser', data);
   }
 
   static async getUserDetail(userId) {
@@ -382,6 +411,10 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getAmbassadorDetail', { ambassador_id });
   }
 
+  static async updateAmbassadorLevel(userId, level) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updateAmbassadorLevel', { user_id: userId, level });
+  }
+
   // 申请管理
   static async getApplicationList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getApplicationList', params);
@@ -448,6 +481,32 @@ class AdminAPI {
 
   static async getContractList(params = {}) {
     return this.getSignatureList(params);
+  }
+
+  static async renewContract(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'renewContract', data);
+  }
+
+  static async terminateContract(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'terminateContract', data);
+  }
+
+  // ==================== 商城商品模块 ====================
+
+  static async getMallGoodsList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getMallGoodsList', params);
+  }
+
+  static async createMallGoods(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'createMallGoods', data);
+  }
+
+  static async updateMallGoods(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'updateMallGoods', data);
+  }
+
+  static async deleteMallGoods(id) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'deleteMallGoods', { id });
   }
 
   // ==================== 系统模块别名方法 ====================

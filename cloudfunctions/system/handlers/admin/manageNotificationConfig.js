@@ -14,12 +14,14 @@ const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { action, id, template_id, scene, config_data } = event;
+  // 使用 operation 而非 action，因为路由层已用 action 字段做函数路由
+  // 测试端发送: { action: 'manageNotificationConfig', operation: 'list/create/update/delete' }
+  const { operation, id, template_id, scene, config_data } = event;
 
   try {
-    console.log(`[admin:manageNotificationConfig] 管理员 ${admin.id} 操作: ${action}`);
+    console.log(`[admin:manageNotificationConfig] 管理员 ${admin.id} 操作: ${operation}`);
 
-    switch (action) {
+    switch (operation) {
       case 'list': {
         // 获取配置列表
         const { data: configs, count, error } = await db
@@ -91,11 +93,11 @@ module.exports = async (event, context) => {
       }
 
       default:
-        return response.paramError(`未知的操作: ${action}`);
+        return response.paramError(`未知的操作: ${operation}`);
     }
 
   } catch (error) {
-    console.error(`[admin:manageNotificationConfig] ${action} 失败:`, error);
+    console.error(`[admin:manageNotificationConfig] ${operation} 失败:`, error);
     return response.error('操作失败', error);
   }
 };

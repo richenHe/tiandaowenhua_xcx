@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>轮播图管理</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+
+    .t-layout__content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+
+    .page-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    /* 表格缩略图 */
+    .banner-thumb {
+      width: 120px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+
+    .banner-thumb-empty {
+      width: 120px;
+      height: 60px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      border: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ccc;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <sidebar-menu active-key="banner-list"></sidebar-menu>
+
+        <!-- 主内容区 -->
+        <t-content class="t-layout__content">
+          <div class="page-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+              <h1 style="font-size:20px;font-weight:600;margin:0;">轮播图管理</h1>
+              <t-button theme="primary" @click="handleAdd">+ 新增轮播图</t-button>
+            </div>
+
+            <!-- 搜索栏 -->
+            <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
+              <div style="width:220px;flex:0 0 220px;"><t-input v-model="keyword" placeholder="轮播图标题" clearable @enter="loadData" /></div>
+              <div style="width:120px;flex:0 0 120px;"><t-select v-model="filterStatus" placeholder="状态筛选" clearable :options="statusOptions" /></div>
+              <t-button theme="primary" @click="loadData">查询</t-button>
+              <t-button @click="resetSearch">重置</t-button>
+            </div>
+
+            <!-- 数据表格 -->
+            <t-table
+              :data="dataList"
+              :columns="columns"
+              :loading="loading"
+              :pagination="pagination"
+              @page-change="handlePageChange"
+              bordered
+              stripe
+              row-key="id"
+            >
+              <!-- 图片缩略图：优先 cover_image_url（已转换的临时URL），回退 image_url -->
+              <template #thumb="{ row }">
+                <img v-if="row.cover_image_url || row.image_url" :src="row.cover_image_url || row.image_url" class="banner-thumb" alt="轮播图" />
+                <div v-else class="banner-thumb-empty">无图片</div>
+              </template>
+
+              <!-- 跳转链接：使用 link_url -->
+              <template #link="{ row }">
+                <span v-if="row.link_url" style="color:#0052d9; font-size:12px; word-break:break-all;">{{ row.link_url }}</span>
+                <span v-else style="color:#ccc;">—</span>
+              </template>
+
+              <!-- 展示时间 -->
+              <template #timeRange="{ row }">
+                <div v-if="row.start_time || row.end_time" style="font-size:12px; line-height:1.6;">
+                  <div v-if="row.start_time">开始：{{ row.start_time }}</div>
+                  <div v-if="row.end_time">结束：{{ row.end_time }}</div>
+                </div>
+                <span v-else style="color:#ccc;">长期展示</span>
+              </template>
+
+              <!-- 排序 -->
+              <template #sortOrder="{ row }">
+                <t-tag theme="default" size="small">{{ row.sort_order || 0 }}</t-tag>
+              </template>
+
+              <!-- 状态 -->
+              <template #status="{ row }">
+                <t-tag v-if="row.status === 1" theme="success">已启用</t-tag>
+                <t-tag v-else theme="default">已禁用</t-tag>
+              </template>
+
+              <!-- 操作 -->
+              <template #op="{ row }">
+                <t-space>
+                  <t-button size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+                  <t-button
+                    size="small"
+                    variant="text"
+                    :theme="row.status === 1 ? 'warning' : 'success'"
+                    @click="handleToggleStatus(row)"
+                  >
+                    {{ row.status === 1 ? '禁用' : '启用' }}
+                  </t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="handleDelete(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+        </t-content>
+      </t-layout>
+    </t-layout>
+
+    <!-- 新增 / 编辑弹窗 -->
+    <t-dialog
+      v-model:visible="dialogVisible"
+      :header="dialogMode === 'add' ? '新增轮播图' : '编辑轮播图'"
+      width="640px"
+      @confirm="handleSave"
+      @close="handleDialogClose"
+    >
+      <t-form :data="formData" label-width="100px">
+
+        <t-form-item label="标题" required>
+          <t-input v-model="formData.title" placeholder="请输入轮播图标题（仅后台识别）" />
+        </t-form-item>
+
+        <!-- 图片上传（必填） -->
+        <t-form-item label="轮播图片" required>
+          <cloud-image-upload
+            v-model="formData.coverImageURL"
+            v-model:file-id="formData.coverImage"
+            path-prefix="banners"
+            :item-id="formData.id || 'new'"
+            tips="建议尺寸：750×360，支持 JPG / PNG，不超过 5MB"
+            :width="320"
+            :height="160"
+          />
+        </t-form-item>
+
+        <t-form-item label="跳转链接">
+          <t-input v-model="formData.link" placeholder="选填，点击轮播图后跳转的小程序页面路径" />
+        </t-form-item>
+
+        <t-form-item label="排序权重">
+          <t-input-number v-model="formData.sortOrder" :min="0" :max="9999" style="width:160px;" />
+          <span style="margin-left:8px; color:#999; font-size:12px;">数值越大越靠前</span>
+        </t-form-item>
+
+        <t-form-item label="显示状态">
+          <t-radio-group v-model="formData.status">
+            <t-radio :value="1">启用</t-radio>
+            <t-radio :value="0">禁用</t-radio>
+          </t-radio-group>
+        </t-form-item>
+
+      </t-form>
+    </t-dialog>
+  </div>
+
+  <!-- 依赖脚本 -->
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/cloudbase.js"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+
+        // 列表状态
+        const loading = ref(false);
+        const dataList = ref([]);
+        const keyword = ref('');
+        const filterStatus = ref(null);
+        const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+
+        // 弹窗状态
+        const dialogVisible = ref(false);
+        const dialogMode = ref('add');
+        const formData = ref({});
+
+
+        // 选项
+        const statusOptions = [
+          { label: '已启用', value: 1 },
+          { label: '已禁用', value: 0 }
+        ];
+
+        // 表格列
+        const columns = [
+          { colKey: 'thumb',      title: '图片',     width: 150, cell: 'thumb' },
+          { colKey: 'title',      title: '标题',     width: 160 },
+          { colKey: 'link',       title: '跳转链接', width: 200, cell: 'link' },
+          { colKey: 'sortOrder',  title: '排序',     width: 80,  cell: 'sortOrder' },
+          { colKey: 'timeRange',  title: '展示时间', width: 180, cell: 'timeRange' },
+          { colKey: 'status',     title: '状态',     width: 90,  cell: 'status' },
+          { colKey: 'op',         title: '操作',     width: 160, cell: 'op' }
+        ];
+
+        // 加载轮播图数据（使用独立的 banner API，与公告完全分离）
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+            };
+            if (keyword.value) params.keyword = keyword.value;
+            if (filterStatus.value !== null && filterStatus.value !== undefined) {
+              params.status = filterStatus.value;
+            }
+
+            const data = await AdminAPI.getBannerList(params);
+            dataList.value = (data.list || []).map(item => ({
+              ...item,
+              coverImageURL: item.cover_image_url || ''
+            }));
+            pagination.value.total = data.total || 0;
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message || '加载失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const resetSearch = () => {
+          keyword.value = '';
+          filterStatus.value = null;
+          pagination.value.current = 1;
+          loadData();
+        };
+
+        const handlePageChange = (pageInfo) => {
+          pagination.value.current = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+
+        // 新增
+        const handleAdd = () => {
+          dialogMode.value = 'add';
+          formData.value = {
+            title: '',
+            subtitle: '',
+            coverImage: '',
+            coverImageURL: '',
+            link: '',
+            sortOrder: 0,
+            status: 1
+          };
+          dialogVisible.value = true;
+        };
+
+        // 编辑
+        const handleEdit = async (row) => {
+          dialogMode.value = 'edit';
+          // tiandao_culture.banners 字段: image_url, link_url
+          formData.value = {
+            id: row.id,
+            title: row.title,
+            subtitle: row.subtitle || '',
+            coverImage: row.image_url || '',
+            coverImageURL: row.cover_image_url || row.image_url || '',
+            link: row.link_url || '',
+            sortOrder: row.sort_order || 0,
+            status: row.status
+          };
+
+          // 若 image_url 是云存储 fileID，重新获取临时 URL 用于预览
+          if (row.image_url && row.image_url.startsWith('cloud://')) {
+            try {
+              const tempURL = await window.CloudStorageHelper.getSingleTempURL(row.image_url);
+              formData.value.coverImageURL = tempURL;
+            } catch (err) {
+              console.warn('获取封面临时URL失败:', err);
+            }
+          }
+
+          dialogVisible.value = true;
+        };
+
+        // 切换状态
+        const handleToggleStatus = async (row) => {
+          const newStatus = row.status === 1 ? 0 : 1;
+          const label = newStatus === 1 ? '启用' : '禁用';
+          try {
+            await AdminAPI.updateBanner({ id: row.id, status: newStatus });
+            TDesign.MessagePlugin.success(`已${label}`);
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message || '操作失败');
+          }
+        };
+
+        // 删除
+        const handleDelete = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确认删除轮播图「${row.title}」吗？此操作不可恢复。`
+          });
+          if (!confirmed) return;
+
+          try {
+            await AdminAPI.deleteBanner(row.id);
+
+            // image_url 若是云存储 fileID 则同步删除云存储文件
+            if (row.image_url && row.image_url.startsWith('cloud://')) {
+              try {
+                await window.CloudStorageHelper.deleteFiles([row.image_url]);
+              } catch (err) {
+                console.warn('云存储图片删除失败（不阻塞）:', err);
+              }
+            }
+
+            TDesign.MessagePlugin.success('删除成功');
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message || '删除失败');
+          }
+        };
+
+        // 保存
+        const handleSave = async () => {
+          if (!formData.value.title) {
+            TDesign.MessagePlugin.warning('请输入轮播图标题');
+            return false;
+          }
+          if (!formData.value.coverImage) {
+            TDesign.MessagePlugin.warning('请上传轮播图片');
+            return false;
+          }
+
+          try {
+            // 只传 tiandao_culture.banners 实际存在的字段
+            const submitData = {
+              title: formData.value.title,
+              subtitle: formData.value.subtitle || '',
+              coverImage: formData.value.coverImage,
+              link: formData.value.link || '',
+              sortOrder: formData.value.sortOrder || 0,
+              status: formData.value.status
+            };
+
+            if (dialogMode.value === 'add') {
+              await AdminAPI.createBanner(submitData);
+            } else {
+              submitData.id = formData.value.id;
+              await AdminAPI.updateBanner(submitData);
+            }
+
+            TDesign.MessagePlugin.success('保存成功');
+            dialogVisible.value = false;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message || '保存失败');
+            return false;
+          }
+        };
+
+        const handleDialogClose = () => {
+          formData.value = {};
+        };
+
+        onMounted(() => {
+          loadData();
+        });
+
+        return {
+          activeMenuKey: 'banner-list', adminInfo, handleMenuChange, handleLogout,
+          loading, dataList, keyword, filterStatus, pagination,
+          dialogVisible, dialogMode, formData,
+          statusOptions, columns,
+          loadData, resetSearch, handlePageChange,
+          handleAdd, handleEdit, handleToggleStatus, handleDelete,
+          handleSave, handleDialogClose,
+        };
+      }
+    }).use(TDesign)
+      .component('sidebar-menu', SidebarNavigation.SidebarMenu)
+      .component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
+      .mount('#app');
+  </script>
+</body>
+</html>

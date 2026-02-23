@@ -64,14 +64,16 @@ module.exports = async (event, context) => {
       return response.error('该课程名额已满');
     }
 
-    // 创建预约记录
+    // 创建预约记录（user_course_id 为 NOT NULL，必须包含）
     const { data: newAppointment, error: insertError } = await db
       .from('appointments')
       .insert({
         user_id: user.id,
+        _openid: user._openid || user.openid || '',
         course_id: classRecord.course_id,
         class_record_id: finalClassRecordId,
-        status: 1, // 待上�?        appointed_at: new Date().toISOString()
+        user_course_id: userCourses.id,
+        status: 1
       })
       .select()
       .single();

@@ -10,7 +10,7 @@
           <view class="t-card__body">
             <view class="info-title">{{ courseInfo.courseName }} 第{{ courseInfo.period }}期</view>
             <view class="info-details">
-              <view class="info-item">📅 {{ courseInfo.startDate }} 至 {{ courseInfo.endDate }}</view>
+              <view class="info-item">📅 {{ courseInfo.startDate }}{{ courseInfo.startTime ? ' ' + courseInfo.startTime : '' }}</view>
               <view class="info-item">📍 {{ courseInfo.location }}</view>
               <view v-if="courseInfo.userAttendCount > 1" class="info-item price-item">
                 💰 复训费用: ¥{{ courseInfo.retrainPrice }}
@@ -58,6 +58,7 @@ const courseInfo = ref({
   courseName: '',
   period: '',
   startDate: '',
+  startTime: '',
   endDate: '',
   location: '',
   userAttendCount: 0,
@@ -92,8 +93,10 @@ const loadClassRecordDetail = async (classRecordId: number) => {
     if (record) {
       courseInfo.value.courseName = record.course_name;
       courseInfo.value.period = record.period || '';
-      courseInfo.value.startDate = record.start_date || record.class_date;
-      courseInfo.value.endDate = record.end_date || '';
+      // start_time 格式: "HH:mm-HH:mm"，class_date 格式: "YYYY-MM-DD"
+      courseInfo.value.startDate = record.class_date || '';
+      courseInfo.value.startTime = record.start_time || '';
+      courseInfo.value.endDate = record.class_date || '';
       courseInfo.value.location = record.location;
     }
     uni.hideLoading()

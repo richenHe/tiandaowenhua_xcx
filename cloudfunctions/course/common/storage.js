@@ -4,6 +4,7 @@
  */
 
 const cloud = require('wx-server-sdk');
+const { app: cloudbaseApp } = require('./db');
 const fs = require('fs');
 const path = require('path');
 
@@ -65,24 +66,54 @@ async function uploadFiles(files) {
 
 /**
  * 获取文件临时下载链接
+ * 优先使用 @cloudbase/node-sdk（与数据库共用，稳定可靠），
+ * 失败时回退到 wx-server-sdk
  * @param {string|Array<string>} fileList - 文件ID或文件ID数组
  * @param {number} maxAge - 链接有效期（秒），默认2小时
  * @returns {Promise<Object>} - 下载链接结果
  */
 async function getTempFileURL(fileList, maxAge = 7200) {
+  const fileIDList = Array.isArray(fileList) ? fileList : [fileList];
+  const isSingle = !Array.isArray(fileList);
+
+  // 优先使用 @cloudbase/node-sdk
   try {
-    // 统一转换为数组格式
-    const fileIDList = Array.isArray(fileList) ? fileList : [fileList];
-    
-    const result = await cloud.getTempFileURL({
-      fileList: fileIDList.map(fileID => ({
-        fileID,
-        maxAge,
-      })),
+    const result = await cloudbaseApp.storage().getTempFileURL({
+      fileList: fileIDList,
     });
 
-    // 如果输入是单个文件，返回单个结果
-    if (!Array.isArray(fileList)) {
+    const files = result.fileList || [];
+
+    if (isSingle) {
+      const file = files[0] || {};
+      return {
+        success: !!file.tempFileURL,
+        fileID: file.fileID || fileIDList[0],
+        tempFileURL: file.tempFileURL || '',
+        message: '获取成功',
+      };
+    }
+
+    return {
+      success: true,
+      fileList: files.map(file => ({
+        fileID: file.fileID,
+        tempFileURL: file.tempFileURL || '',
+        status: file.tempFileURL ? 0 : -1,
+        message: '获取成功',
+      })),
+    };
+  } catch (nodeErr) {
+    console.warn('[云存储] @cloudbase/node-sdk 获取临时URL失败，回退 wx-server-sdk:', nodeErr.message);
+  }
+
+  // 回退：wx-server-sdk
+  try {
+    const result = await cloud.getTempFileURL({
+      fileList: fileIDList.map(fileID => ({ fileID, maxAge })),
+    });
+
+    if (isSingle) {
       const file = result.fileList[0];
       return {
         success: file.status === 0,
@@ -92,7 +123,6 @@ async function getTempFileURL(fileList, maxAge = 7200) {
       };
     }
 
-    // 批量文件返回完整列表
     return {
       success: true,
       fileList: result.fileList.map(file => ({

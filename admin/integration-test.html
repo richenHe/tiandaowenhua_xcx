@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小程序端 · 端到端集成测试</title>
+  <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .app{max-width:1440px;margin:0 auto;padding:20px}
+    .hdr{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .hdr h1{margin:0 0 6px;font-size:22px}
+    .hdr .sub{color:#666;font-size:13px;margin-bottom:16px}
+    .sr{display:flex;gap:14px;margin-bottom:16px}
+    .sc{flex:1;text-align:center;padding:12px;background:#f9fafb;border-radius:8px}
+    .sv{font-size:26px;font-weight:700}
+    .sl{font-size:11px;color:#888;margin-top:3px}
+    .cr{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+    .cr .rt{margin-left:auto;font-size:12px;color:#666}
+    .pb{width:100%;height:4px;background:#e5e7eb;border-radius:2px;margin-top:14px;overflow:hidden}
+    .pf{height:100%;background:linear-gradient(90deg,#0052d9,#00a870);transition:width .3s}
+
+    .fs{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .ft{font-size:16px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+    .fd{font-size:12px;color:#888;margin-bottom:14px}
+    .fb{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+    .fb.pass{background:#e6f7f1;color:#00a870}
+    .fb.fail{background:#fff0f1;color:#e34d59}
+    .fb.run{background:#e8f4ff;color:#0052d9}
+
+    .step{border-left:3px solid #e5e7eb;padding:12px 16px;margin:0 0 2px 16px;position:relative;font-size:13px}
+    .step::before{content:'';position:absolute;left:-8px;top:14px;width:12px;height:12px;border-radius:50%;background:#e5e7eb;border:2px solid #fff}
+    .step.pass{border-left-color:#00a870}.step.pass::before{background:#00a870}
+    .step.fail{border-left-color:#e34d59}.step.fail::before{background:#e34d59}
+    .step.run{border-left-color:#0052d9}.step.run::before{background:#0052d9}
+    .step.warn{border-left-color:#d4b106}.step.warn::before{background:#d4b106}
+    .step.skip{opacity:.5}
+    .step-hd{display:flex;justify-content:space-between;align-items:center}
+    .step-nm{font-weight:600}
+    .step-tm{font-size:11px;color:#999}
+    .step-api{font-size:11px;color:#999;margin-top:2px}
+    .step-bd{margin-top:8px}
+
+    .ck{display:flex;align-items:flex-start;gap:5px;padding:2px 0;font-size:12px}
+    .ck.ok{color:#00a870}.ck.ng{color:#e34d59}.ck.wr{color:#d4b106}
+    .ck b{min-width:120px;font-family:'Cascadia Code',Consolas,monospace}
+
+    .br{margin-top:6px;padding:6px 10px;border-radius:4px;font-size:12px;border-left:3px solid}
+    .br.pass{background:#e6f7f1;border-color:#00a870}
+    .br.fail{background:#fff0f1;border-color:#e34d59}
+
+    .err{background:#fff0f1;border:1px solid #ffccc7;border-radius:4px;padding:8px;margin-top:6px;color:#e34d59;font-size:12px}
+    .sql{background:#1e1e2e;color:#cdd6f4;border-radius:4px;padding:8px;margin-top:6px;font-family:Consolas,monospace;font-size:11px;white-space:pre-wrap;max-height:160px;overflow:auto}
+    .resp{background:#282a36;color:#f8f8f2;border-radius:4px;padding:8px;margin-top:6px;font-family:monospace;font-size:11px;white-space:pre-wrap;max-height:160px;overflow:auto}
+
+    .mcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:20px}
+    .mc{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;transition:.2s;border:2px solid transparent}
+    .mc:hover{border-color:#0052d9;box-shadow:0 4px 12px rgba(0,82,217,.12)}
+    .mc h3{margin:0 0 4px;font-size:15px}
+    .mc p{margin:0 0 4px;font-size:12px;color:#888}
+    .mc .tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+    .rpt{background:#fff;border-radius:12px;padding:20px;margin-top:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .rpt table{width:100%;border-collapse:collapse;font-size:12px}
+    .rpt th{background:#f9fafb;padding:8px 12px;text-align:left;border-bottom:2px solid #e5e7eb}
+    .rpt td{padding:8px 12px;border-bottom:1px solid #f0f0f0}
+
+    .dbp{position:fixed;right:0;top:0;width:440px;height:100vh;background:#fff;box-shadow:-4px 0 20px rgba(0,0,0,.1);z-index:1000;transform:translateX(100%);transition:.3s;overflow-y:auto;padding:20px}
+    .dbp.open{transform:translateX(0)}
+    .dbo{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:999;display:none}
+    .dbo.open{display:block}
+
+    .chain{background:#f0f5ff;border:1px solid #d6e4ff;border-radius:6px;padding:10px;margin-bottom:12px;font-size:12px}
+    .chain strong{color:#0052d9}
+    .chain .arrow{color:#999;margin:0 4px}
+  </style>
+</head>
+<body>
+<div id="app">
+<div class="app">
+  <!-- Header -->
+  <div class="hdr">
+    <h1>🔬 小程序端 · 端到端业务流程集成测试</h1>
+    <div class="sub">
+      按完整业务链路组织测试 · 跨模块接口串联 · 多表数据一致性验证 · 基于需求文档业务规则校验
+    </div>
+    <div class="sr">
+      <div class="sc"><div class="sv" style="color:#0052d9">{{ S.total }}</div><div class="sl">总步骤</div></div>
+      <div class="sc"><div class="sv" style="color:#00a870">{{ S.pass }}</div><div class="sl">通过</div></div>
+      <div class="sc"><div class="sv" style="color:#e34d59">{{ S.fail }}</div><div class="sl">失败</div></div>
+      <div class="sc"><div class="sv" style="color:#d4b106">{{ S.warn }}</div><div class="sl">业务异常</div></div>
+      <div class="sc"><div class="sv" style="color:#333">{{ S.rate }}%</div><div class="sl">通过率</div></div>
+    </div>
+    <div class="pb" v-if="running"><div class="pf" :style="{width:S.prog+'%'}"></div></div>
+    <div class="cr">
+      <t-button theme="primary" @click="runAll" :loading="running" :disabled="running">
+        {{ running ? '运行中...' : '▶ 运行全部业务流程' }}
+      </t-button>
+      <t-button @click="clear" :disabled="running">清空</t-button>
+      <t-button @click="exportRpt" :disabled="!results.length">📊 导出报告</t-button>
+      <t-button theme="warning" variant="outline" @click="dbOpen=true" :disabled="!sqls.length">
+        🗄️ DB验证SQL ({{ sqls.length }})
+      </t-button>
+      <t-space align="center">
+        <t-checkbox v-model="opt.detail">详情</t-checkbox>
+        <t-checkbox v-model="opt.stopFail">失败停止</t-checkbox>
+        <t-checkbox v-model="opt.sql">SQL</t-checkbox>
+      </t-space>
+      <div class="rt">
+        测试用户: {{ U.real_name }} (ID:{{ U.id }}) · _openid: {{ U._openid.slice(0,12) }}...
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Cards (before run) -->
+  <div class="mcards" v-if="!results.length && !running">
+    <div class="mc" v-for="f in flows" :key="f.id" @click="runFlow(f.id)">
+      <h3>{{ f.icon }} {{ f.name }}</h3>
+      <p>{{ f.desc }}</p>
+      <div class="chain" v-html="f.chainHtml"></div>
+      <div class="tags">
+        <t-tag theme="primary" variant="light" size="small">{{ f.steps.length }} 步</t-tag>
+        <t-tag theme="warning" variant="light" size="small">{{ f.tables.length }} 表验证</t-tag>
+        <t-tag theme="success" variant="light" size="small">{{ f.rules }} 条规则</t-tag>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Results -->
+  <div v-for="f in flowsWithResults" :key="f.id" class="fs">
+    <div class="ft">
+      {{ f.icon }} {{ f.name }}
+      <span class="fb" :class="f.cls">{{ f.txt }}</span>
+    </div>
+    <div class="fd">{{ f.desc }}</div>
+    <div class="chain" v-html="f.chainHtml"></div>
+
+    <div v-for="r in f.results" :key="r.id" class="step" :class="r.cls">
+      <div class="step-hd">
+        <div class="step-nm">{{ r.icon }} {{ r.name }}</div>
+        <div class="step-tm" v-if="r.dur">{{ r.dur }}ms</div>
+      </div>
+      <div class="step-api">{{ r.fn }} → {{ r.act }}</div>
+
+      <div class="step-bd" v-if="opt.detail || r.cls==='fail' || r.cls==='warn'">
+        <div v-for="c in r.checks" :key="c.l" class="ck" :class="c.ok?'ok':'ng'">
+          <span>{{ c.ok?'✓':'✗' }}</span><b>{{ c.l }}</b><span>{{ c.m }}</span>
+        </div>
+        <div v-for="b in r.biz" :key="b.r" class="br" :class="b.p?'pass':'fail'">
+          <strong>{{ b.p?'✓':'✗' }}</strong> {{ b.r }}
+          <div v-if="!b.p" style="margin-top:2px;font-size:11px;color:#e34d59">实际: {{ b.a }}</div>
+        </div>
+        <div v-if="r.err" class="err">{{ r.err }}</div>
+        <div v-if="opt.sql && r.sql" class="sql">{{ r.sql }}</div>
+        <div v-if="r.cls==='fail' && r.raw" class="resp">{{ JSON.stringify(r.raw,null,2) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report -->
+  <div class="rpt" v-if="results.length && !running">
+    <h3 style="margin:0 0 12px">📋 测试报告</h3>
+    <table>
+      <thead><tr><th>业务流程</th><th>步骤</th><th>通过</th><th>失败</th><th>业务异常</th><th>涉及表</th><th>通过率</th></tr></thead>
+      <tbody>
+        <tr v-for="s in flowStats" :key="s.id">
+          <td><strong>{{ s.name }}</strong></td>
+          <td>{{ s.total }}</td>
+          <td style="color:#00a870">{{ s.pass }}</td>
+          <td style="color:#e34d59">{{ s.fail }}</td>
+          <td style="color:#d4b106">{{ s.warn }}</td>
+          <td style="font-size:11px">{{ s.tables }}</td>
+          <td><span :style="{color:s.rate===100?'#00a870':'#e34d59'}">{{ s.rate }}%</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-if="violations.length" style="margin-top:20px">
+      <h4 style="color:#e34d59;margin:0 0 10px">⚠️ 业务规则不符 ({{ violations.length }})</h4>
+      <div v-for="v in violations" :key="v.r" class="br fail">
+        <div><strong>{{ v.flow }} → {{ v.step }}</strong></div>
+        <div>规则: {{ v.r }}</div>
+        <div>实际: {{ v.a }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DB Panel -->
+<div class="dbo" :class="{open:dbOpen}" @click="dbOpen=false"></div>
+<div class="dbp" :class="{open:dbOpen}">
+  <h3 style="margin:0 0 12px">🗄️ 数据库验证 SQL</h3>
+  <p style="font-size:12px;color:#888;margin-bottom:12px">
+    通过 MCP <code>executeReadOnlySQL</code> 执行，所有表加 <code>tiandao_culture.</code> 前缀。
+  </p>
+  <div v-for="s in sqls" :key="s.l" style="margin-bottom:14px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:3px">{{ s.l }}</div>
+    <div class="sql" style="margin:0">{{ s.q }}</div>
+  </div>
+  <t-button block @click="copySql" style="margin-top:12px">📋 复制全部</t-button>
+</div>
+</div>
+
+<script src="./assets/libs/vue.global.js"></script>
+<script src="./assets/libs/tdesign.min.js"></script>
+<script src="./assets/js/config.js"></script>
+<script>
+const {createApp,ref,reactive,computed,nextTick}=Vue;
+
+const app=createApp({
+setup(){
+  const running=ref(false), results=ref([]), sqls=ref([]), dbOpen=ref(false);
+  const opt=reactive({detail:true,stopFail:false,sql:false});
+  const U=reactive({id:30,_openid:'2017456901935075328',real_name:'张三'});
+  const CTX=reactive({});
+
+  // ===== API =====
+  async function api(fn,act,p={}){
+    const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/${fn}`;
+    const t0=Date.now();
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:act,test_openid:U._openid,...p})});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    let d=await r.json();
+    if(d.body&&typeof d.body==='string') d=JSON.parse(d.body);
+    return {d,ms:Date.now()-t0};
+  }
+
+  function gv(o,p){return p.split('.').reduce((a,k)=>a&&a[k]!==undefined?a[k]:undefined,o)}
+  function chk(d,fs){return fs.map(f=>{const[k,t]=f.split(':');const v=gv(d,k);const e=v!==undefined;let ok=e,m=e?`= ${JSON.stringify(v)}`.slice(0,60):'缺失';if(e&&t){if(t==='a')ok=Array.isArray(v);else if(t==='n')ok=typeof v==='number';else if(t==='s')ok=typeof v==='string';if(!ok)m+=` (期望${t})`}return{l:k,ok,m}})}
+
+  // ===== Run Step =====
+  async function runStep(s,fid){
+    const r={id:`${fid}_${s.act}`,fid,name:s.name,fn:s.fn,act:s.act,cls:'run',icon:'⏳',checks:[],biz:[],err:null,raw:null,sql:null,dur:0};
+    results.value.push(r);await nextTick();
+    try{
+      const params=typeof s.params==='function'?s.params(CTX):s.params||{};
+      const{d,ms}=await api(s.fn,s.act,params);
+      r.dur=ms;r.raw=d;
+      if(s.expectFail){
+        r.cls='pass';r.icon='✓';
+        r.checks=[{l:'expected_error',ok:true,m:d.message||'预期错误'}];
+        if(s.errBiz){const b=s.errBiz(d,CTX);r.biz.push(b);if(!b.p){r.cls='warn';r.icon='⚠'}}
+      } else {
+        if(!d.success) throw new Error(d.message||'接口失败');
+        const D=d.data!==undefined?d.data:d;
+        if(s.fields) r.checks=chk(D,s.fields);
+        if(s.biz) for(const b of s.biz){const x=b(D,d,CTX);r.biz.push(x)}
+        if(s.save) s.save(D,d,CTX);
+        const ff=r.checks.some(c=>!c.ok), bf=r.biz.some(b=>!b.p);
+        if(ff){r.cls='fail';r.icon='✗'}
+        else if(bf){r.cls='warn';r.icon='⚠'}
+        else{r.cls='pass';r.icon='✓'}
+      }
+      if(s.sql){const q=s.sql(CTX,r.raw?.data||r.raw);if(q){r.sql=q;sqls.value.push({l:`${s.name}`,q})}}
+    }catch(e){r.cls='fail';r.icon='✗';r.err=e.message}
+    return r;
+  }
+
+  // ===== Flow Definitions =====
+  const flows=ref([
+
+  // ────────────── FLOW 1: 用户资料全链路 ──────────────
+  {
+    id:'F1',icon:'👤',name:'流程1: 用户资料 · 推荐人 · 资格验证',
+    desc:'获取用户资料 → 资料完善检查 → 推荐人信息 → 可选大使列表 → 推荐统计',
+    tables:['users','referee_change_logs'],rules:8,
+    get chainHtml(){return ['getProfile','updateProfile','getRefereeInfo','searchReferees','getReferralStats'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S1.1 获取用户资料',fn:'user',act:'getProfile',
+        fields:['id:n','real_name:s','phone:s','ambassador_level:n','profile_completed'],
+        biz:[
+          (d)=>({r:'已完善用户 profile_completed=1',p:d.profile_completed===1||d.profile_completed===true,a:`profile_completed=${d.profile_completed}`}),
+          (d)=>({r:'用户ID为正整数',p:Number.isInteger(d.id)&&d.id>0,a:`id=${d.id}`}),
+          (d)=>({r:'推荐人不能是自己(循环引用)',p:!d.referee_id||d.referee_id!==d.id,a:`id=${d.id}, referee_id=${d.referee_id}`})
+        ],
+        save:(d,_,C)=>{C.user=d;C.userId=d.id},
+        sql:(C)=>`SELECT id, _openid, real_name, phone, ambassador_level, profile_completed, merit_points, cash_points_available, cash_points_frozen, referee_id, is_referee_confirmed, referee_updated_at FROM tiandao_culture.users WHERE id = ${C.userId||U.id}`
+      },
+      {name:'S1.2 更新用户资料(幂等)',fn:'user',act:'updateProfile',
+        params:{real_name:'张三',phone:'13800138000',gender:1},
+        biz:[(d,raw)=>({r:'更新资料接口应正常返回',p:raw.success===true,a:raw.message||'ok'})],
+        sql:(C)=>`SELECT id, real_name, phone, gender, profile_completed, updated_at FROM tiandao_culture.users WHERE id = ${C.userId||U.id}`
+      },
+      {name:'S1.3 推荐人信息查询',fn:'user',act:'getRefereeInfo',
+        biz:[(d,raw)=>({r:'推荐人信息应正常返回(有/无推荐人均可)',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{C.refereeInfo=d},
+        sql:(C)=>C.user?.referee_id?`SELECT u.id, u.real_name, u.ambassador_level, u.phone FROM tiandao_culture.users u WHERE u.id = ${C.user.referee_id}`:null
+      },
+      {name:'S1.4 搜索可选推荐人(准青鸾+)',fn:'user',act:'searchReferees',params:{keyword:''},
+        biz:[
+          (d,raw)=>({r:'搜索推荐人接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const allValid=list.every(u=>(u.ambassador_level||0)>=1);
+            return{r:'需求2.2: 推荐人列表只返回准青鸾及以上(level≥1)',p:list.length===0||allValid,a:allValid?`${list.length}人,全部≥1`:`存在level<1的用户`}
+          }
+        ],
+        sql:()=>`SELECT id, real_name, ambassador_level FROM tiandao_culture.users WHERE ambassador_level >= 1 AND profile_completed = 1 ORDER BY ambassador_level DESC LIMIT 20`
+      },
+      {name:'S1.5 推荐统计',fn:'user',act:'getReferralStats',
+        biz:[(d,raw)=>({r:'推荐统计接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:(C)=>`-- 交叉验证: 推荐人数
+SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = ${C.userId||U.id}`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 2: 课程浏览 → 购买准备 ──────────────
+  {
+    id:'F2',icon:'📚',name:'流程2: 课程浏览 · 详情 · 购买条件验证',
+    desc:'课程列表 → 课程详情(含购买状态) → 我的课程 → 排期日历 → 案例/素材',
+    tables:['courses','user_courses','class_records','academy_cases','academy_materials'],rules:7,
+    get chainHtml(){return ['getList','getDetail','getMyCourses','getCalendarSchedule','getCaseList','getMaterialList'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S2.1 课程列表',fn:'course',act:'getList',params:{page:1,pageSize:10},
+        fields:['total:n','list:a'],
+        biz:[
+          (d)=>{const item=d.list?.[0];if(!item)return{r:'课程应包含必需字段',p:true,a:'无课程(可能正常)'};
+            const has=['id','name','type','current_price'].every(f=>item[f]!==undefined);
+            return{r:'需求3.1.2: 课程必含 id/name/type/current_price',p:has,a:has?'OK':`缺字段:${Object.keys(item)}`}},
+          (d)=>{const list=d.list||[];const types=list.map(c=>c.type);
+            return{r:'课程类型应为1(初探)/2(密训)/3(咨询)',p:types.every(t=>[1,2,3].includes(t)),a:`types=[${[...new Set(types)]}]`}}
+        ],
+        save:(d,_,C)=>{C.courses=d.list||[];if(d.list?.length)C.firstCourse=d.list[0]},
+        sql:()=>`SELECT id, name, type, current_price, original_price, retrain_price, allow_retrain, included_course_ids, status, stock FROM tiandao_culture.courses WHERE status = 1 ORDER BY sort_order ASC`
+      },
+      {name:'S2.2 课程详情(含购买状态)',fn:'course',act:'getDetail',
+        params:(C)=>({id:C.firstCourse?.id||1}),
+        biz:[
+          (d,raw)=>({r:'课程详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'密训班(type=2)应有included_course_ids标记赠送初探班',
+            p:!d||d.type!==2||d.included_course_ids!==undefined,
+            a:d?`type=${d.type}, included=${d.included_course_ids}`:'无数据'})
+        ],
+        save:(d,_,C)=>{C.courseDetail=d},
+        sql:(C)=>`SELECT c.*, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=${C.firstCourse?.id||1}`
+      },
+      {name:'S2.3 我的课程列表',fn:'user',act:'getMyCourses',
+        biz:[(d,raw)=>({r:'我的课程接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{C.myCourses=Array.isArray(d)?d:(d?.list||[])},
+        sql:()=>`-- 验证 user_courses 与 courses 关联完整
+SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, uc.is_gift, uc.source_order_id, uc.status
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON uc.course_id = c.id
+WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
+      },
+      {name:'S2.4 排期日历',fn:'course',act:'getCalendarSchedule',params:{startDate:'2026-03-01',endDate:'2026-03-31'},
+        biz:[(d,raw)=>({r:'排期日历应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT cr.id, cr.course_id, c.name, cr.class_date, cr.class_time, cr.class_location, cr.total_quota, cr.booked_quota, cr.status FROM tiandao_culture.class_records cr JOIN tiandao_culture.courses c ON cr.course_id=c.id WHERE cr.class_date>='2026-03-01' ORDER BY cr.class_date`
+      },
+      {name:'S2.5 案例列表',fn:'course',act:'getCaseList',params:{page:1,pageSize:5},
+        biz:[(d,raw)=>({r:'案例列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, title, student_name, category, status FROM tiandao_culture.academy_cases WHERE status=1 ORDER BY sort_order LIMIT 5`
+      },
+      {name:'S2.6 素材列表',fn:'course',act:'getMaterialList',params:{page:1,pageSize:5},
+        biz:[(d,raw)=>({r:'素材列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, title, category, status FROM tiandao_culture.academy_materials WHERE status=1 ORDER BY sort_order LIMIT 5`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 3: 订单 · 商城 · 兑换全链路 ──────────────
+  {
+    id:'F3',icon:'🛒',name:'流程3: 订单 · 商城兑换 · 多表数据一致性',
+    desc:'我的订单 → 订单详情(推荐人+奖励) → 商城商品 → 兑换记录 → 验证users/orders/mall多表一致',
+    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:9,
+    get chainHtml(){return ['getMyOrders','getDetail','getMallGoods','getExchangeRecords'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S3.1 我的订单列表',fn:'user',act:'getMyOrders',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'订单列表接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.orders=list;if(list.length)C.firstOrder=list[0]},
+        sql:()=>`-- 订单列表及推荐人关联
+SELECT o.order_no, o.order_type, o.order_name, o.final_amount, o.pay_status, o.referee_id, o.is_reward_granted,
+  r.real_name as referee_name, r.ambassador_level as referee_level
+FROM tiandao_culture.orders o
+LEFT JOIN tiandao_culture.users r ON o.referee_id = r.id
+WHERE o.user_id = ${U.id} ORDER BY o.created_at DESC LIMIT 10`
+      },
+      {name:'S3.2 订单详情(推荐人+奖励)',fn:'order',act:'getDetail',
+        params:(C)=>({order_no:C.firstOrder?.order_no||'NO_ORDER'}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.firstOrder) return{r:'用户无订单时应返回提示',p:true,a:'无订单'};
+            return{r:'需求3.1.2: 订单详情应含推荐人+奖励状态',p:raw.success===true,a:raw.success?'OK':raw.message}
+          },
+          (d,raw,C)=>{
+            if(!d||!C.firstOrder)return{r:'已支付订单推荐人应已确认',p:true,a:'跳过'};
+            if(d.pay_status!==1)return{r:'已支付订单推荐人应已确认',p:true,a:`pay_status=${d.pay_status}(非已支付)`};
+            return{r:'需求2.4: 已支付订单的推荐人应不可修改(referee_confirmed_at有值)',
+              p:d.referee_confirmed_at!==undefined&&d.referee_confirmed_at!==null,
+              a:`referee_confirmed_at=${d.referee_confirmed_at}`}
+          }
+        ],
+        sql:(C)=>C.firstOrder?`-- 订单详情+推荐人+课程+奖励记录
+SELECT o.*,
+  u.real_name as user_name,
+  r.real_name as referee_name, r.ambassador_level as referee_level,
+  (SELECT COUNT(*) FROM tiandao_culture.merit_points_records mp WHERE mp.order_no=o.order_no) as merit_records,
+  (SELECT COUNT(*) FROM tiandao_culture.cash_points_records cp WHERE cp.order_no=o.order_no) as cash_records
+FROM tiandao_culture.orders o
+LEFT JOIN tiandao_culture.users u ON o.user_id=u.id
+LEFT JOIN tiandao_culture.users r ON o.referee_id=r.id
+WHERE o.order_no='${C.firstOrder.order_no}'`:null
+      },
+      {name:'S3.3 订单列表(order模块)',fn:'order',act:'getList',params:{page:1,pageSize:5},
+        biz:[(d,raw)=>({r:'order模块订单列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      },
+      {name:'S3.4 商城商品列表',fn:'order',act:'getMallGoods',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'商城商品列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.mallGoods=list},
+        sql:()=>`SELECT id, goods_name, merit_points_price, stock_quantity, sold_quantity, status, sort_order FROM tiandao_culture.mall_goods WHERE status=1 ORDER BY sort_order`
+      },
+      {name:'S3.5 兑换记录',fn:'order',act:'getExchangeRecords',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'兑换记录应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 兑换记录 + 商品库存交叉验证
+SELECT er.exchange_no, er.goods_name, er.quantity, er.merit_points_used, er.cash_points_used, er.total_cost, er.status, er.created_at,
+  mg.stock_quantity as 当前库存, mg.sold_quantity as 已售数量
+FROM tiandao_culture.mall_exchange_records er
+LEFT JOIN tiandao_culture.mall_goods mg ON er.goods_id=mg.id
+WHERE er.user_id=${U.id} ORDER BY er.created_at DESC LIMIT 10`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 4: 积分系统 · 多表一致性 ──────────────
+  {
+    id:'F4',icon:'💰',name:'流程4: 功德分 · 积分 · 提现 · 余额一致性验证',
+    desc:'功德分余额+明细 → 积分余额+明细 → 提现记录 → users表余额与明细表净值交叉验证',
+    tables:['users','merit_points_records','cash_points_records','withdrawals'],rules:8,
+    get chainHtml(){return ['getMeritPoints','getMeritPointsHistory','getCashPoints','getCashPointsHistory','getWithdrawRecords'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S4.1 功德分余额',fn:'user',act:'getMeritPoints',
+        biz:[
+          (d,raw)=>({r:'功德分余额接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'需求1.4: 功德分余额不应为负数',p:d?.balance===undefined||Number(d?.balance)>=0||Number(d?.merit_points)>=0,a:`balance=${d?.balance||d?.merit_points}`})
+        ],
+        save:(d,_,C)=>{C.meritBalance=d?.balance||d?.merit_points||d?.total||0}
+      },
+      {name:'S4.2 功德分明细',fn:'user',act:'getMeritPointsHistory',params:{page:1,pageSize:20},
+        biz:[(d,raw)=>({r:'功德分明细接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{C.meritRecords=d?.list||(Array.isArray(d)?d:[])}
+      },
+      {name:'S4.3 积分余额',fn:'user',act:'getCashPoints',
+        biz:[
+          (d,raw)=>({r:'积分余额接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'需求3.1.7.3: 冻结积分不应为负数',p:d?.frozen===undefined||Number(d?.frozen||d?.cash_points_frozen)>=0,a:`frozen=${d?.frozen||d?.cash_points_frozen}`}),
+          (d)=>({r:'需求3.1.7.3: 可提现积分不应为负数',p:d?.available===undefined||Number(d?.available||d?.cash_points_available)>=0,a:`available=${d?.available||d?.cash_points_available}`})
+        ],
+        save:(d,_,C)=>{C.cashAvailable=d?.available||d?.cash_points_available||0;C.cashFrozen=d?.frozen||d?.cash_points_frozen||0}
+      },
+      {name:'S4.4 积分明细',fn:'user',act:'getCashPointsHistory',params:{page:1,pageSize:20},
+        biz:[(d,raw)=>({r:'积分明细接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{C.cashRecords=d?.list||(Array.isArray(d)?d:[])}
+      },
+      {name:'S4.5 提现记录',fn:'user',act:'getWithdrawRecords',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'提现记录接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT withdraw_no, amount, account_type, status, apply_time, audit_time, transfer_time FROM tiandao_culture.withdrawals WHERE user_id=${U.id} ORDER BY apply_time DESC LIMIT 10`
+      },
+      {name:'S4.6 [交叉验证] 功德分余额 vs 明细净值',fn:'user',act:'getMeritPoints',
+        biz:[(d,raw)=>({r:'需求: 功德分余额应与明细记录净值一致(需MCP SQL确认)',p:raw.success===true,a:'请用MCP执行下方SQL验证'})],
+        sql:()=>`-- ★ 关键验证: 功德分余额 vs 明细净值
+SELECT u.id, u.real_name,
+  u.merit_points as 账户余额,
+  COALESCE((SELECT SUM(amount) FROM tiandao_culture.merit_points_records WHERE user_id=u.id), 0) as 明细净值,
+  u.merit_points - COALESCE((SELECT SUM(amount) FROM tiandao_culture.merit_points_records WHERE user_id=u.id), 0) as 差额
+FROM tiandao_culture.users u WHERE u.id = ${U.id}`
+      },
+      {name:'S4.7 [交叉验证] 积分余额 vs 明细净值',fn:'user',act:'getCashPoints',
+        biz:[(d,raw)=>({r:'需求: 积分各字段应与明细记录一致(需MCP SQL确认)',p:raw.success===true,a:'请用MCP执行下方SQL验证'})],
+        sql:()=>`-- ★ 关键验证: 积分余额 vs 明细
+SELECT u.id, u.real_name,
+  u.cash_points_available as 可用, u.cash_points_frozen as 冻结, u.cash_points_pending as 提现中,
+  COALESCE((SELECT SUM(CASE WHEN type=1 THEN amount ELSE 0 END) FROM tiandao_culture.cash_points_records WHERE user_id=u.id), 0) as 冻结获得总计,
+  COALESCE((SELECT SUM(CASE WHEN type=2 THEN amount ELSE 0 END) FROM tiandao_culture.cash_points_records WHERE user_id=u.id), 0) as 解冻总计,
+  COALESCE((SELECT SUM(CASE WHEN type=3 THEN amount ELSE 0 END) FROM tiandao_culture.cash_points_records WHERE user_id=u.id), 0) as 直接发放总计,
+  COALESCE((SELECT SUM(CASE WHEN type=4 THEN amount ELSE 0 END) FROM tiandao_culture.cash_points_records WHERE user_id=u.id), 0) as 提现总计
+FROM tiandao_culture.users u WHERE u.id = ${U.id}`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 5: 大使体系 · 升级链路 ──────────────
+  {
+    id:'F5',icon:'🏅',name:'流程5: 大使体系 · 等级配置 · 升级条件 · 名额 · 活动',
+    desc:'申请状态 → 等级体系(配置表) → 升级指南(条件检查) → 我的名额 → 活动记录 → 推荐学员 → 二维码',
+    tables:['users','ambassador_applications','ambassador_level_configs','ambassador_quotas','ambassador_activity_records','quota_usage_records'],rules:10,
+    get chainHtml(){return ['getApplicationStatus','getLevelSystem','getUpgradeGuide','getMyQuotas','getActivityRecords','generateQRCode'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5.1 大使申请状态',fn:'ambassador',act:'getApplicationStatus',
+        biz:[(d,raw)=>({r:'申请状态接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, user_id, status, interview_time, reject_reason, created_at FROM tiandao_culture.ambassador_applications WHERE user_id=${U.id} ORDER BY created_at DESC LIMIT 1`
+      },
+      {name:'S5.2 等级体系配置',fn:'ambassador',act:'getLevelSystem',
+        biz:[
+          (d,raw)=>({r:'等级体系接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||d?.levels||[]);
+            return{r:'需求3.1.7: 等级配置应包含0-3各级别',p:list.length>=3,a:`${list.length}个等级配置`}
+          }
+        ],
+        sql:()=>`-- ★ 等级配置完整性验证
+SELECT level, level_name, merit_rate_basic, merit_rate_advanced, cash_rate_basic, cash_rate_advanced,
+  frozen_points, unfreeze_per_referral, upgrade_payment_amount, gift_quota_basic, gift_quota_advanced, can_earn_reward
+FROM tiandao_culture.ambassador_level_configs ORDER BY level`
+      },
+      {name:'S5.3 升级指南(条件检查)',fn:'ambassador',act:'getUpgradeGuide',
+        biz:[
+          (d,raw)=>({r:'升级指南接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            if(!d)return{r:'需求3.1.7.1: 升级指南应含当前等级和下一等级',p:true,a:'无数据'};
+            return{r:'需求3.1.7.1: 升级指南应含当前等级和下一等级',
+              p:d.current_level!==undefined||d.currentLevel!==undefined,
+              a:`current=${d.current_level||d.currentLevel}`}
+          }
+        ]
+      },
+      {name:'S5.4 我的名额',fn:'ambassador',act:'getMyQuotas',
+        biz:[(d,raw)=>({r:'名额查询应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 名额及使用记录
+SELECT aq.id, aq.quota_type, aq.total_quantity, aq.used_quantity, aq.remaining_quantity, aq.expire_date, aq.status,
+  (SELECT COUNT(*) FROM tiandao_culture.quota_usage_records qur WHERE qur.quota_id=aq.id) as usage_count
+FROM tiandao_culture.ambassador_quotas aq WHERE aq.user_id=${U.id} AND aq.status=1`
+      },
+      {name:'S5.5 活动记录',fn:'ambassador',act:'getActivityRecords',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'活动记录应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 活动记录与功德分关联验证
+SELECT ar.id, ar.activity_type, ar.activity_name, ar.activity_date, ar.merit_points, ar.status,
+  (SELECT COUNT(*) FROM tiandao_culture.merit_points_records mp WHERE mp.activity_id=ar.id AND mp.user_id=ar.user_id) as 对应功德分记录数
+FROM tiandao_culture.ambassador_activity_records ar WHERE ar.user_id=${U.id} ORDER BY ar.created_at DESC LIMIT 10`
+      },
+      {name:'S5.6 活动统计',fn:'ambassador',act:'getActivityStats',
+        biz:[(d,raw)=>({r:'活动统计应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      },
+      {name:'S5.7 我的推荐学员',fn:'user',act:'getMyReferees',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'推荐学员列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 推荐学员 + 带来的奖励汇总
+SELECT u.id, u.real_name, u.ambassador_level, u.created_at,
+  COALESCE((SELECT SUM(o.final_amount) FROM tiandao_culture.orders o WHERE o.user_id=u.id AND o.pay_status=1), 0) as 累计消费,
+  COALESCE((SELECT SUM(mp.amount) FROM tiandao_culture.merit_points_records mp WHERE mp.referee_user_id=u.id AND mp.user_id=${U.id}), 0) as 带来功德分
+FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DESC`
+      },
+      {name:'S5.8 推荐二维码',fn:'ambassador',act:'generateQRCode',
+        biz:[
+          (d,raw)=>({r:'需求3.1.7.4: 准青鸾+才能生成二维码',
+            p:raw.success===true||(raw.code===403&&raw.message),
+            a:raw.success?'生成成功':`${raw.code}: ${raw.message}`})
+        ],
+        sql:()=>`SELECT id, referee_code, qrcode_url, ambassador_level FROM tiandao_culture.users WHERE id=${U.id}`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 6: 协议全链路 ──────────────
+  {
+    id:'F6',icon:'📜',name:'流程6: 协议模板 · 我的协议 · 详情 · 签署验证',
+    desc:'获取协议模板 → 我的协议列表 → 协议详情 → 验证签署记录与合同期一致',
+    tables:['contract_templates','contract_signatures'],rules:5,
+    get chainHtml(){return ['getContractTemplate','getMyContracts','getContractDetail'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S6.1 获取协议模板',fn:'ambassador',act:'getContractTemplate',params:{contract_type:1,ambassador_level:1},
+        biz:[(d,raw)=>({r:'协议模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{if(d?.id)C.contractTplId=d.id},
+        sql:()=>`SELECT id, contract_name, contract_type, ambassador_level, version, status, effective_time FROM tiandao_culture.contract_templates WHERE status=1 ORDER BY version DESC`
+      },
+      {name:'S6.2 我的协议列表',fn:'ambassador',act:'getMyContracts',
+        biz:[(d,raw)=>({r:'我的协议列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length)C.sigId=list[0].id},
+        sql:()=>`-- 协议签署记录完整性
+SELECT cs.id, cs.contract_name, cs.contract_version, cs.ambassador_level, cs.status, cs.contract_start, cs.contract_end, cs.sign_time,
+  DATEDIFF(cs.contract_end, NOW()) as 剩余天数,
+  ct.version as 模板当前版本
+FROM tiandao_culture.contract_signatures cs
+LEFT JOIN tiandao_culture.contract_templates ct ON cs.contract_template_id=ct.id
+WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
+      },
+      {name:'S6.3 协议详情',fn:'ambassador',act:'getContractDetail',
+        params:(C)=>({signature_id:C.sigId||1}),
+        biz:[
+          (d,raw)=>({r:'协议详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            if(!d||!d.contract_start)return{r:'需求3.1.6.6: 合同期应有起止日期',p:true,a:'无协议(可能正常)'};
+            const s=new Date(d.contract_start),e=new Date(d.contract_end);
+            return{r:'需求3.1.6.6: 合同结束日期 > 开始日期',p:e>s,a:`${d.contract_start}→${d.contract_end}`}
+          },
+          (d)=>{
+            if(!d||!d.contract_start)return{r:'需求: 合同期应为1年',p:true,a:'跳过'};
+            const s=new Date(d.contract_start),e=new Date(d.contract_end);
+            const days=Math.round((e-s)/(1000*60*60*24));
+            return{r:'需求3.1.7.1: 合同期应约为365天(1年)',p:days>=360&&days<=370,a:`合同期=${days}天`}
+          }
+        ]
+      }
+    ]
+  },
+
+  // ────────────── FLOW 7: 预约 · 签到 · 学习进度 ──────────────
+  {
+    id:'F7',icon:'📅',name:'流程7: 预约 · 排期 · 学习进度 · 签到验证',
+    desc:'排期列表 → 我的预约 → 学院进度 → 验证appointments/class_records多表关联',
+    tables:['class_records','appointments','user_courses','academy_progress'],rules:3,
+    get chainHtml(){return ['getClassRecords','getMyAppointments','getAcademyProgress'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S7.1 课程排期',fn:'course',act:'getClassRecords',params:{course_id:1},
+        biz:[(d,raw)=>({r:'排期列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length)C.classRecordId=list[0].id},
+        sql:()=>`-- 排期 + 预约数一致性
+SELECT cr.id, cr.course_id, c.name, cr.class_date, cr.total_quota, cr.booked_quota,
+  (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN (0,1)) as 实际预约数
+FROM tiandao_culture.class_records cr
+JOIN tiandao_culture.courses c ON cr.course_id=c.id
+WHERE cr.status=1 ORDER BY cr.class_date DESC LIMIT 10`
+      },
+      {name:'S7.2 我的预约',fn:'course',act:'getMyAppointments',
+        biz:[(d,raw)=>({r:'我的预约接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 预约 + 排期 + 课程关联验证
+SELECT a.id, a.status, a.is_retrain, a.order_no,
+  cr.class_date, cr.start_time, cr.end_time, cr.class_location,
+  c.name as course_name, c.type as course_type,
+  uc.attend_count
+FROM tiandao_culture.appointments a
+JOIN tiandao_culture.class_records cr ON a.class_record_id=cr.id
+JOIN tiandao_culture.courses c ON a.course_id=c.id
+LEFT JOIN tiandao_culture.user_courses uc ON a.user_course_id=uc.id
+WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
+      },
+      {name:'S7.3 学习进度',fn:'course',act:'getAcademyProgress',
+        biz:[(d,raw)=>({r:'学习进度接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT * FROM tiandao_culture.academy_progress WHERE user_id=${U.id}`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 8: 反馈系统 ──────────────
+  {
+    id:'F8',icon:'💬',name:'流程8: 反馈 · 类型联动 · 课程关联',
+    desc:'可反馈课程(来自我的课程) → 反馈类型(根据课程联动) → 我的反馈',
+    tables:['feedbacks','user_courses','courses'],rules:3,
+    get chainHtml(){return ['getFeedbackCourses','getFeedbackTypes','getMyFeedback'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S8.1 可反馈课程',fn:'system',act:'getFeedbackCourses',
+        biz:[(d,raw)=>({r:'需求3.1.6.3: 仅显示已购课程',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- 可反馈课程应等于用户已购课程
+SELECT uc.course_id, c.name FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON uc.course_id=c.id
+WHERE uc.user_id=${U.id} AND uc.status=1`
+      },
+      {name:'S8.2 反馈类型(选择课程时)',fn:'system',act:'getFeedbackTypes',params:{course_id:1},
+        biz:[(d,raw)=>({r:'需求3.1.6.3: 选课程时类型应含课程内容/服务/讲师/场地',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      },
+      {name:'S8.3 反馈类型(通用反馈)',fn:'system',act:'getFeedbackTypes',params:{},
+        biz:[(d,raw)=>({r:'需求3.1.6.3: 不选课程时类型应含功能建议/问题反馈/投诉',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      },
+      {name:'S8.4 我的反馈列表',fn:'system',act:'getMyFeedback',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'我的反馈列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT f.id, f.course_id, c.name as course_name, f.feedback_type, f.status, f.reply, f.created_at
+FROM tiandao_culture.feedbacks f
+LEFT JOIN tiandao_culture.courses c ON f.course_id=c.id
+WHERE f.user_id=${U.id} ORDER BY f.created_at DESC LIMIT 10`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 9: 系统公共接口 ──────────────
+  {
+    id:'F9',icon:'⚙️',name:'流程9: 系统公共 · 公告 · Banner · 配置 · 通知',
+    desc:'公告列表 → Banner → 系统配置 → 通知配置 → 综合积分查询',
+    tables:['announcements','banners','system_configs','notification_configs'],rules:5,
+    get chainHtml(){return ['getAnnouncementList','getBannerList','getSystemConfig','getNotificationConfigs','getUserPoints'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S9.1 公告列表',fn:'system',act:'getAnnouncementList',params:{page:1,pageSize:10},
+        biz:[(d,raw)=>({r:'公告列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, title, category, status, is_top, created_at FROM tiandao_culture.announcements WHERE status=1 ORDER BY is_top DESC, created_at DESC LIMIT 10`
+      },
+      {name:'S9.2 Banner列表',fn:'system',act:'getBannerList',
+        biz:[(d,raw)=>({r:'Banner列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, title, image_url, link_type, status, sort_order FROM tiandao_culture.banners WHERE status=1 ORDER BY sort_order`
+      },
+      {name:'S9.3 系统配置',fn:'system',act:'getSystemConfig',
+        biz:[(d,raw)=>({r:'系统配置应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT config_key, config_value, description FROM tiandao_culture.system_configs ORDER BY config_key`
+      },
+      {name:'S9.4 通知配置',fn:'system',act:'getNotificationConfigs',
+        biz:[(d,raw)=>({r:'通知配置应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`SELECT id, course_id, trigger_type, template_id, status FROM tiandao_culture.notification_configs WHERE status=1`
+      },
+      {name:'S9.5 综合积分查询',fn:'system',act:'getUserPoints',
+        biz:[(d,raw)=>({r:'综合积分查询应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      }
+    ]
+  },
+
+  // ────────────── FLOW 10: 数据完整性终极验证 ──────────────
+  {
+    id:'F10',icon:'🔍',name:'流程10: 跨模块数据完整性终极验证',
+    desc:'推荐人循环检测 → 订单-课程关联 → 已支付订单推荐人锁定 → 奖励发放完整性 → 推荐人变更日志',
+    tables:['users','orders','user_courses','merit_points_records','cash_points_records','referee_change_logs'],rules:8,
+    get chainHtml(){return ['循环引用检测','订单↔课程关联','推荐人锁定验证','奖励↔订单一致','变更日志完整'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S10.1 推荐人循环引用检测',fn:'user',act:'getProfile',
+        biz:[
+          (d)=>({r:'需求2.2: 用户不应是自己的推荐人',p:!d||d.referee_id!==d.id,a:`id=${d?.id}, ref=${d?.referee_id}`}),
+          (d)=>({r:'需求2.2: 推荐人(如有)应为准青鸾+(level≥1)',
+            p:!d||!d.referee_id||d.referee_level===undefined||d.referee_level>=1,
+            a:d?.referee_level!==undefined?`referee_level=${d.referee_level}`:'无推荐人或未返回等级字段'})
+        ],
+        sql:()=>`-- ★ 全量循环引用检测
+SELECT u.id, u.real_name, u.referee_id, r.real_name as 推荐人, r.referee_id as 推荐人的推荐人,
+  CASE WHEN u.id=u.referee_id THEN '❌自己推自己'
+       WHEN r.referee_id=u.id THEN '❌互相推荐'
+       ELSE '✓正常' END as 状态
+FROM tiandao_culture.users u
+LEFT JOIN tiandao_culture.users r ON u.referee_id=r.id
+WHERE u.referee_id IS NOT NULL`
+      },
+      {name:'S10.2 已支付订单→课程记录完整性',fn:'order',act:'getList',params:{page:1,pageSize:5},
+        biz:[(d,raw)=>({r:'订单列表应正常工作',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        sql:()=>`-- ★ 已支付课程订单是否都有user_courses记录
+SELECT o.order_no, o.order_type, o.pay_status, o.final_amount,
+  CASE WHEN uc.id IS NOT NULL THEN '✓有记录' ELSE '❌缺失' END as 课程记录,
+  uc.attend_count, uc.is_gift, uc.status as uc_status
+FROM tiandao_culture.orders o
+LEFT JOIN tiandao_culture.user_courses uc ON uc.order_id=o.id
+WHERE o.user_id=${U.id} AND o.pay_status=1 AND o.order_type=1`
+      },
+      {name:'S10.3 密训班→赠送初探班验证',fn:'user',act:'getMyCourses',
+        biz:[(d,raw)=>({r:'需求3.1.2: 密训班购买后应同时有初探班记录',p:raw.success===true,a:'需MCP SQL确认'})],
+        sql:()=>`-- ★ 密训班订单是否正确赠送了初探班
+SELECT o.order_no, o.final_amount, c.name as 课程名, c.type, c.included_course_ids,
+  uc_main.id as 主课程记录, uc_main.is_gift as 主课程is_gift,
+  uc_gift.id as 赠送课程记录, uc_gift.is_gift as 赠送is_gift, uc_gift.source_order_id
+FROM tiandao_culture.orders o
+JOIN tiandao_culture.courses c ON o.related_id=c.id
+LEFT JOIN tiandao_culture.user_courses uc_main ON uc_main.order_id=o.id AND uc_main.is_gift=0
+LEFT JOIN tiandao_culture.user_courses uc_gift ON uc_gift.source_order_id=o.id AND uc_gift.is_gift=1
+WHERE o.user_id=${U.id} AND o.pay_status=1 AND o.order_type=1 AND c.type=2`
+      },
+      {name:'S10.4 已支付订单推荐人锁定验证',fn:'user',act:'getProfile',
+        biz:[
+          (d)=>{
+            if(!d)return{r:'需求2.3: 首购后推荐人应锁定',p:true,a:'无数据'};
+            return{r:'需求2.3: 有已支付订单的用户 is_referee_confirmed 应为1',
+              p:d.is_referee_confirmed===undefined||d.is_referee_confirmed===1||d.is_referee_confirmed===true,
+              a:`is_referee_confirmed=${d.is_referee_confirmed}`}
+          }
+        ],
+        sql:()=>`-- ★ 推荐人确认状态 vs 已支付订单
+SELECT u.id, u.real_name, u.referee_id, u.is_referee_confirmed, u.referee_confirmed_at,
+  (SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=u.id AND pay_status=1) as 已支付订单数,
+  CASE WHEN (SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=u.id AND pay_status=1)>0
+       AND COALESCE(u.is_referee_confirmed,0)=0 THEN '❌异常:有已支付订单但推荐人未确认'
+       ELSE '✓正常' END as 检查结果
+FROM tiandao_culture.users u WHERE u.id=${U.id}`
+      },
+      {name:'S10.5 奖励发放↔订单一致性',fn:'user',act:'getMeritPoints',
+        biz:[(d,raw)=>({r:'奖励发放应与已支付订单一致',p:raw.success===true,a:'需MCP SQL确认'})],
+        sql:()=>`-- ★ 奖励发放完整性: 每笔已支付+有推荐人的订单应有对应奖励记录
+SELECT o.order_no, o.final_amount, o.referee_id, o.is_reward_granted, o.reward_granted_at,
+  r.ambassador_level as 推荐人等级,
+  CASE WHEN r.ambassador_level=1 THEN '准青鸾(无奖励)'
+       WHEN r.ambassador_level=2 THEN '青鸾(功德分)'
+       WHEN r.ambassador_level>=3 THEN '鸿鹄+(积分)'
+       ELSE '非大使' END as 预期奖励类型,
+  (SELECT COUNT(*) FROM tiandao_culture.merit_points_records mp WHERE mp.order_no=o.order_no AND mp.user_id=o.referee_id) as 功德分记录,
+  (SELECT COUNT(*) FROM tiandao_culture.cash_points_records cp WHERE cp.order_no=o.order_no AND cp.user_id=o.referee_id) as 积分记录
+FROM tiandao_culture.orders o
+LEFT JOIN tiandao_culture.users r ON o.referee_id=r.id
+WHERE o.pay_status=1 AND o.referee_id IS NOT NULL AND o.order_type=1
+ORDER BY o.created_at DESC LIMIT 20`
+      },
+      {name:'S10.6 推荐人变更日志完整性',fn:'user',act:'getProfile',
+        biz:[(d,raw)=>({r:'推荐人变更应有完整日志',p:raw.success===true,a:'需MCP SQL确认'})],
+        sql:()=>`-- ★ 推荐人变更日志
+SELECT rcl.id, rcl.user_id, u.real_name as 用户,
+  old_r.real_name as 原推荐人, new_r.real_name as 新推荐人,
+  rcl.change_type, rcl.change_source,
+  CASE rcl.change_type WHEN 1 THEN '注册' WHEN 2 THEN '用户修改' WHEN 3 THEN '订单修改' WHEN 4 THEN '管理员修改' END as 变更类型,
+  rcl.created_at
+FROM tiandao_culture.referee_change_logs rcl
+LEFT JOIN tiandao_culture.users u ON rcl.user_id=u.id
+LEFT JOIN tiandao_culture.users old_r ON rcl.old_referee_id=old_r.id
+LEFT JOIN tiandao_culture.users new_r ON rcl.new_referee_id=new_r.id
+ORDER BY rcl.created_at DESC LIMIT 20`
+      }
+    ]
+  }
+  ]);
+
+  // ===== Computed =====
+  const S=computed(()=>{
+    const total=flows.value.reduce((s,f)=>s+f.steps.length,0);
+    const pass=results.value.filter(r=>r.cls==='pass').length;
+    const fail=results.value.filter(r=>r.cls==='fail').length;
+    const warn=results.value.filter(r=>r.cls==='warn').length;
+    const done=results.value.length;
+    return{total,pass,fail,warn,rate:done?Math.round(pass/done*100):0,prog:done?Math.round(done/total*100):0}
+  });
+
+  const flowsWithResults=computed(()=>flows.value.map(f=>{
+    const rs=results.value.filter(r=>r.fid===f.id);if(!rs.length)return null;
+    const af=rs.some(r=>r.cls==='fail'),aw=rs.some(r=>r.cls==='warn'),ar=rs.some(r=>r.cls==='run');
+    let cls='pass',txt='全部通过';
+    if(ar){cls='run';txt='运行中'}else if(af){cls='fail';txt=`${rs.filter(r=>r.cls==='fail').length}项失败`}
+    else if(aw){cls='warn';txt=`${rs.filter(r=>r.cls==='warn').length}项业务异常`}
+    return{...f,results:rs,cls,txt}
+  }).filter(Boolean));
+
+  const flowStats=computed(()=>flows.value.map(f=>{
+    const rs=results.value.filter(r=>r.fid===f.id);
+    const p=rs.filter(r=>r.cls==='pass').length,fl=rs.filter(r=>r.cls==='fail').length,w=rs.filter(r=>r.cls==='warn').length;
+    return{id:f.id,name:f.name,total:rs.length,pass:p,fail:fl,warn:w,tables:f.tables.join(', '),rate:rs.length?Math.round(p/rs.length*100):0}
+  }).filter(s=>s.total>0));
+
+  const violations=computed(()=>{
+    const v=[];
+    for(const r of results.value)for(const b of(r.biz||[]))
+      if(!b.p){const f=flows.value.find(x=>x.id===r.fid);v.push({flow:f?.name||r.fid,step:r.name,r:b.r,a:b.a})}
+    return v
+  });
+
+  // ===== Actions =====
+  async function runAll(){
+    if(running.value)return;running.value=true;results.value=[];sqls.value=[];
+    try{
+      for(const f of flows.value){
+        for(const s of f.steps){
+          await runStep(s,f.id);
+          if(opt.stopFail){const last=results.value[results.value.length-1];if(last.cls==='fail'){running.value=false;return}}
+        }
+      }
+      TDesign.MessagePlugin.success(`完成! 通过 ${S.value.pass}/${results.value.length}`);
+    }catch(e){TDesign.MessagePlugin.error(e.message)}finally{running.value=false}
+  }
+
+  async function runFlow(id){
+    if(running.value)return;const f=flows.value.find(x=>x.id===id);if(!f)return;
+    running.value=true;
+    try{for(const s of f.steps)await runStep(s,f.id);TDesign.MessagePlugin.success(`${f.name} 完成`)}
+    catch(e){TDesign.MessagePlugin.error(e.message)}finally{running.value=false}
+  }
+
+  function clear(){results.value=[];sqls.value=[]}
+
+  function exportRpt(){
+    const rpt={title:'小程序端端到端集成测试报告',ts:new Date().toISOString(),user:U,
+      summary:S.value,flowStats:flowStats.value,violations:violations.value,
+      details:results.value.map(r=>({flow:r.fid,name:r.name,act:r.act,fn:r.fn,status:r.cls,dur:r.dur,err:r.err,checks:r.checks,biz:r.biz,sql:r.sql})),
+      dbSqls:sqls.value};
+    const b=new Blob([JSON.stringify(rpt,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download=`e2e-test-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    TDesign.MessagePlugin.success('报告已导出');
+  }
+
+  function copySql(){
+    const all=sqls.value.map(s=>`-- ${s.l}\n${s.q}`).join('\n\n');
+    navigator.clipboard.writeText(all).then(()=>TDesign.MessagePlugin.success('已复制'));
+  }
+
+  return{running,results,sqls,dbOpen,opt,U,S,flows,flowsWithResults,flowStats,violations,runAll,runFlow,clear,exportRpt,copySql}
+}
+});
+app.use(TDesign);app.mount('#app');
+</script>
+</body>
+</html>

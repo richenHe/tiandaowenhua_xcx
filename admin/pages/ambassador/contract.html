@@ -88,69 +88,7 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="contract-list"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="contract-list"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
@@ -222,6 +160,8 @@
                 <t-space>
                   <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">详情</t-button>
                   <t-button theme="default" size="small" variant="text" @click="viewVersions(row)">版本历史</t-button>
+                  <t-button theme="success" size="small" variant="text" @click="handleRenew(row)" v-if="row.status !== 4">续签</t-button>
+                  <t-button theme="danger" size="small" variant="text" @click="handleTerminate(row)" v-if="row.status === 1">终止</t-button>
                 </t-space>
               </template>
             </t-table>
@@ -332,6 +272,24 @@
               </div>
             </t-loading>
           </t-dialog>
+
+          <!-- 续签对话框 -->
+          <t-dialog
+            v-model:visible="renewVisible"
+            header="续签合约"
+            width="440px"
+            @confirm="submitRenew"
+            :confirm-btn="{ loading: renewLoading }"
+          >
+            <t-form :data="renewForm" label-width="100px">
+              <t-form-item label="大使姓名">
+                <t-input :value="renewForm.ambassadorName" disabled></t-input>
+              </t-form-item>
+              <t-form-item label="新到期日期" required>
+                <t-date-picker v-model="renewForm.contractEnd" style="width:100%;" placeholder="请选择新到期日期"></t-date-picker>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
         </t-content>
       </t-layout>
     </t-layout>
@@ -341,6 +299,7 @@
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/js/config.js"></script>
   <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -381,6 +340,7 @@
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
+            'mall-goods': '../order/mall-goods.html',
             'course-list': '../course/list.html',
             'schedule-list': '../course/schedule.html',
             'appointment-list': '../course/appointment.html',
@@ -528,11 +488,55 @@
           TDesign.MessagePlugin.info('版本内容查看功能开发中...');
         };
         
-        // 续约
-        const renewContract = async (row) => {
-          TDesign.MessagePlugin.info('续约功能开发中...');
+        // 续签
+        const renewVisible = ref(false);
+        const renewLoading = ref(false);
+        const renewForm = reactive({ signatureId: '', ambassadorName: '', contractEnd: '' });
+
+        const handleRenew = (row) => {
+          Object.assign(renewForm, {
+            signatureId: row.id,
+            ambassadorName: row.user_name || row.ambassador_name || '-',
+            contractEnd: ''
+          });
+          renewVisible.value = true;
         };
-        
+
+        const submitRenew = async () => {
+          if (!renewForm.contractEnd) {
+            TDesign.MessagePlugin.warning('请选择新到期日期');
+            return;
+          }
+          renewLoading.value = true;
+          try {
+            await AdminAPI.renewContract({ signatureId: renewForm.signatureId, contractEnd: renewForm.contractEnd });
+            TDesign.MessagePlugin.success('续签成功');
+            renewVisible.value = false;
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('续签失败: ' + error.message);
+          } finally {
+            renewLoading.value = false;
+          }
+        };
+
+        // 终止
+        const handleTerminate = async (row) => {
+          const confirmed = await TDesign.DialogPlugin.confirm({
+            header: '确认终止',
+            body: `确认终止 ${row.user_name || row.ambassador_name} 的合约吗？此操作不可恢复。`,
+            theme: 'danger'
+          });
+          if (!confirmed) return;
+          try {
+            await AdminAPI.terminateContract({ signatureId: row.id });
+            TDesign.MessagePlugin.success('合约已终止');
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('操作失败: ' + error.message);
+          }
+        };
+
         // 联系大使
         const contactAmbassador = (row) => {
           TDesign.MessagePlugin.info(`联系大使: ${row.ambassador_name} (${row.phone})`);
@@ -552,7 +556,7 @@
         });
         
         return {
-          adminInfo,
+          activeMenuKey: 'contract-list',adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -568,6 +572,9 @@
           versionsVisible,
           versionsLoading,
           versions,
+          renewVisible,
+          renewLoading,
+          renewForm,
           showExpiringList,
           handleSearch,
           handleReset,
@@ -575,7 +582,9 @@
           viewDetail,
           viewVersions,
           viewVersionContent,
-          renewContract,
+          handleRenew,
+          submitRenew,
+          handleTerminate,
           contactAmbassador,
           formatDateTime,
         };
@@ -583,6 +592,7 @@
     });
     
     app.use(TDesign);
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
     app.mount('#app');
   </script>
 </body>

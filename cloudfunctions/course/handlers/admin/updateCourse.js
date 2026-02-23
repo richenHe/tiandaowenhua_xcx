@@ -9,6 +9,7 @@
  * @param {Object} event
  * @param {number}  event.id            - 课程 ID（必填）
  * @param {string}  event.name          - 课程名称
+ * @param {string}  event.nickname      - 课程昵称，对应 DB 字段 nickname
  * @param {number}  event.type          - 课程类型（整数 1/2/3）
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
  * @param {number}  event.currentPrice  - 现价，对应 DB 字段 current_price
@@ -32,6 +33,7 @@ module.exports = async (event, context) => {
   const {
     id,
     name,
+    nickname,
     type,
     coverImage,
     currentPrice,
@@ -64,6 +66,7 @@ module.exports = async (event, context) => {
     // 只添加实际传入的字段（undefined 表示未传，跳过）
     const fieldsToUpdate = {};
     if (name !== undefined) fieldsToUpdate.name = name;
+    if (nickname !== undefined) fieldsToUpdate.nickname = nickname;
     if (type !== undefined) fieldsToUpdate.type = type;
     if (coverImage !== undefined) fieldsToUpdate.cover_image = coverImage;
     if (currentPrice !== undefined) fieldsToUpdate.current_price = currentPrice;

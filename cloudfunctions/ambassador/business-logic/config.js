@@ -22,13 +22,17 @@ async function getAllLevelConfigs() {
     return _levelConfigCache;
   }
 
-  const configs = await db.query(
-    'SELECT * FROM ambassador_level_configs WHERE status = 1 ORDER BY level ASC'
-  );
+  const { data: configList, error } = await db
+    .from('ambassador_level_configs')
+    .select('*')
+    .eq('status', 1)
+    .order('level', { ascending: true });
+
+  if (error) throw error;
 
   // 转为 { level: config } 的 Map 结构
   _levelConfigCache = {};
-  for (const config of configs) {
+  for (const config of (configList || [])) {
     _levelConfigCache[config.level] = config;
   }
   _levelConfigCacheTime = now;

@@ -27,8 +27,14 @@
         >
           <view class="t-card__body">
             <view class="course-header">
-              <view class="course-icon" :style="{ background: course.gradient }">
-                {{ course.icon }}
+              <view class="course-icon" :style="course.cover_image ? {} : { background: course.gradient }">
+                <image
+                  v-if="course.cover_image"
+                  :src="course.cover_image"
+                  class="course-cover-img"
+                  mode="aspectFill"
+                />
+                <text v-else>{{ course.icon }}</text>
               </view>
               <view class="course-info">
                 <text class="course-name">{{ course.name }}</text>
@@ -131,11 +137,12 @@ const loadMyCourses = async () => {
       return {
         id: item.course_id,
         name: item.title,
+        cover_image: item.cover_image || '',
         icon: style.icon,
         gradient: style.gradient,
-        purchaseDate: item.buy_time ? item.buy_time.split(' ')[0] : '',
+        purchaseDate: (item.purchase_date || item.buy_time || '').split(' ')[0],
         attendedCount: item.attend_count || 0,
-        canRetrain: item.attend_count > 0, // 上过课才能复训
+        canRetrain: item.attend_count > 0,
         status: item.attend_count > 0 ? 'completed' : 'ongoing'
       };
     });
@@ -225,6 +232,12 @@ const goToCourseSchedule = (courseId: string) => {
   justify-content: center;
   font-size: 64rpx;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.course-cover-img {
+  width: 100%;
+  height: 100%;
 }
 
 .course-info {

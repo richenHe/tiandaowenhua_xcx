@@ -26,8 +26,18 @@ module.exports = async (event, context) => {
       return response.error('仅大使可以赠送名额');
     }
 
-    // 查询接收人
-    const receiver = await findOne('users', { phone: receiver_phone });
+    const { db } = require('../../common/db');
+
+    // 查询接收人（phone 非唯一键，取第一条）
+    const { data: receiverList, error: receiverError } = await db
+      .from('users')
+      .select('*')
+      .eq('phone', receiver_phone)
+      .limit(1);
+
+    if (receiverError) throw receiverError;
+    const receiver = receiverList?.[0] || null;
+
     if (!receiver) {
       return response.error('接收人不存在');
     }
@@ -36,36 +46,40 @@ module.exports = async (event, context) => {
       return response.error('不能赠送给自己');
     }
 
-    const { db } = require('../../common/db');
-
-    // 查询可用名额
+    // 查询可用名额（使用实际列名 total_quantity / used_quantity / remaining_quantity）
     const { data: quotas, error: quotaError } = await db
       .from('ambassador_quotas')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('status', 1);
 
     if (quotaError) throw quotaError;
 
     let availableQuotas = 0;
     (quotas || []).forEach(quota => {
-      availableQuotas += (quota.total_count - quota.used_count);
+      availableQuotas += quota.remaining_quantity;
     });
 
     if (availableQuotas < quota_count) {
       return response.error(`可用名额不足，当前可用: ${availableQuotas}`);
     }
 
-    // 扣减名额（从最早的记录开始扣）
+    // 扣减名额（从最早的记录开始扣），并记录使用的 quota_id
     let remainingToDeduct = quota_count;
+    let usedQuotaId = null;
     for (const quota of quotas || []) {
       if (remainingToDeduct <= 0) break;
 
-      const available = quota.total_count - quota.used_count;
+      const available = quota.remaining_quantity;
       if (available > 0) {
         const deductCount = Math.min(available, remainingToDeduct);
+        if (!usedQuotaId) usedQuotaId = quota.id;
 
         await update('ambassador_quotas',
-          { used_count: quota.used_count + deductCount },
+          {
+            used_quantity: quota.used_quantity + deductCount,
+            remaining_quantity: quota.remaining_quantity - deductCount
+          },
           { id: quota.id }
         );
 
@@ -73,34 +87,52 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 创建使用记录
+    // 创建使用记录（使用实际列名）
     const [usageRecord] = await insert('quota_usage_records', {
-      giver_id: user.id,
-      receiver_id: receiver.id,
-      quota_count,
-      note: note || '',
-      created_at: new Date().toISOString()
+      quota_id: usedQuotaId,
+      ambassador_id: user.id,
+      _openid: OPENID || '',
+      recipient_id: receiver.id,
+      recipient_name: receiver.real_name || '',
+      recipient_phone: receiver_phone,
+      usage_type: 3,
+      remark: note || ''
     });
 
-    // 给接收人增加名额
-    const receiverQuota = await findOne('ambassador_quotas', {
-      user_id: receiver.id,
-      source_type: 'gift'
-    });
+    // 给接收人增加名额（查找已有的礼赠名额记录）
+    const { data: receiverQuotas } = await db
+      .from('ambassador_quotas')
+      .select('*')
+      .eq('user_id', receiver.id)
+      .eq('source_type', 3)
+      .limit(1);
+
+    const receiverQuota = receiverQuotas?.[0] || null;
 
     if (receiverQuota) {
       await update('ambassador_quotas',
-        { total_count: receiverQuota.total_count + quota_count },
+        {
+          total_quantity: receiverQuota.total_quantity + quota_count,
+          remaining_quantity: receiverQuota.remaining_quantity + quota_count
+        },
         { id: receiverQuota.id }
       );
     } else {
+      const expireDate = new Date();
+      expireDate.setFullYear(expireDate.getFullYear() + 1);
+      const expireDateStr = expireDate.toISOString().slice(0, 10);
+
       await insert('ambassador_quotas', {
         user_id: receiver.id,
-        source_type: 'gift',
-        source_id: usageRecord.id,
-        total_count: quota_count,
-        used_count: 0,
-        created_at: new Date().toISOString()
+        _openid: '',
+        ambassador_level: user.ambassador_level,
+        quota_type: 1,
+        source_type: 3,
+        total_quantity: quota_count,
+        used_quantity: 0,
+        remaining_quantity: quota_count,
+        expire_date: expireDateStr,
+        status: 1
       });
     }
 

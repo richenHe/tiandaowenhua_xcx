@@ -29,10 +29,25 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
+    // 字段映射：统一前端期望的字段名
+    const list = (result.list || []).map(item => ({
+      id: item.id,
+      withdraw_no: item.withdraw_no,
+      withdraw_type: item.account_type,    // account_type → withdraw_type
+      amount: item.amount,
+      account_type: item.account_type,
+      account_info: item.account_info,
+      status: item.status,
+      audit_remark: item.audit_remark,
+      apply_time: item.apply_time,
+      audit_time: item.audit_time,
+      created_at: item.apply_time          // apply_time → created_at
+    }));
+
     console.log('[getWithdrawRecords] 查询成功，共', result.total, '条');
     return response.success({
       ...result,
-      list: result.list || []
+      list
     });
 
   } catch (error) {

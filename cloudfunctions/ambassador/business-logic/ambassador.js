@@ -9,87 +9,32 @@ const { getLevelConfig } = require('./config');
 /**
  * 检查用户是否满足升级条件
  * 升级金额从 ambassador_level_configs 表的 upgrade_payment_amount 字段读取
- * @param {number} userId - 用户 ID
- * @param {number} targetLevel - 目标等级（1准青鸾/2青鸾/3鸿鹄）
- * @returns {Promise<Object>} 升级条件检查结果
+ * @param {Object} params - 参数对象
+ * @param {number} params.user_id - 用户 ID
+ * @param {number} params.current_level - 当前等级
+ * @param {number} params.target_level - 目标等级
+ * @param {string} params.upgrade_type - 升级类型
+ * @returns {Promise<Object>} 升级条件检查结果 { eligible, reason, upgrade_fee }
  */
-async function checkUpgradeEligibility(userId, targetLevel) {
+async function checkUpgradeEligibility({ user_id, current_level, target_level, upgrade_type }) {
   // 从数据库读取目标等级配置
-  const targetConfig = await getLevelConfig(targetLevel);
+  const targetConfig = await getLevelConfig(target_level);
   if (!targetConfig) {
-    return { canUpgrade: false, conditions: [{ condition: '目标等级配置不存在', isMet: false }] };
-  }
-
-  // 查询用户当前信息
-  const users = await db.query(
-    'SELECT id, ambassador_level, ambassador_start_date FROM users WHERE id = ? AND is_deleted = 0',
-    [userId]
-  );
-  const user = users[0];
-  if (!user) {
-    return { canUpgrade: false, conditions: [{ condition: '用户不存在', isMet: false }] };
+    return { eligible: false, reason: '目标等级配置不存在', upgrade_fee: 0 };
   }
 
   // 检查等级递增
-  if (user.ambassador_level >= targetLevel) {
-    return { canUpgrade: false, conditions: [{ condition: '已达到或超过目标等级', isMet: false }] };
+  if (current_level >= target_level) {
+    return { eligible: false, reason: '已达到或超过目标等级', upgrade_fee: 0 };
   }
 
-  // requiredAmount 从数据库读取
-  const requiredAmount = parseFloat(targetConfig.upgrade_payment_amount) || 0;
-  const conditions = [];
-
-  // 根据目标等级确定升级条件
-  if (targetLevel === 1) {
-    // 升级为准青鸾：推荐初探班成功1次
-    const referralCount = await db.query(
-      'SELECT COUNT(*) as count FROM orders WHERE referee_id = ? AND pay_status = 1 AND course_type = \'basic\' AND is_deleted = 0',
-      [userId]
-    );
-    conditions.push({
-      condition: '推荐初探班成功1次',
-      isMet: referralCount[0].count >= 1
-    });
-  } else if (targetLevel === 2) {
-    // 升级为青鸾：签署青鸾大使协议
-    const agreements = await db.query(
-      'SELECT COUNT(*) as count FROM ambassador_agreements WHERE user_id = ? AND agreement_type = 2 AND status = 1',
-      [userId]
-    );
-    conditions.push({
-      condition: '签署《青鸾大使协议》',
-      isMet: agreements[0].count > 0,
-      actionUrl: '/pages/ambassador/contract-sign/index?level=2'
-    });
-  } else if (targetLevel === 3) {
-    // 升级为鸿鹄：签署鸿鹄大使协议 + 支付升级费用
-    const agreements = await db.query(
-      'SELECT COUNT(*) as count FROM ambassador_agreements WHERE user_id = ? AND agreement_type = 3 AND status = 1',
-      [userId]
-    );
-    conditions.push({
-      condition: '签署《鸿鹄大使协议》',
-      isMet: agreements[0].count > 0,
-      actionUrl: '/pages/ambassador/contract-sign/index?level=3'
-    });
-
-    if (requiredAmount > 0) {
-      conditions.push({
-        condition: `支付升级费用 ¥${requiredAmount}`,
-        isMet: false, // 支付在升级流程中处理
-        actionUrl: '/pages/order/payment/index?type=upgrade&level=3'
-      });
-    }
-  }
-
-  const canUpgrade = conditions.every(c => c.isMet);
-  const upgradeType = requiredAmount > 0 ? 1 : 2; // 1=支付类型 2=协议类型
+  const upgrade_fee = parseFloat(targetConfig.upgrade_payment_amount) || 0;
 
   return {
-    canUpgrade,
-    upgradeType,
-    conditions,
-    requiredAmount
+    eligible: true,
+    reason: null,
+    upgrade_fee,
+    targetConfig
   };
 }
 

@@ -8,6 +8,7 @@
  *
  * @param {Object} event
  * @param {string}  event.name          - 课程名称（必填）
+ * @param {string}  event.nickname      - 课程昵称，对应 DB 字段 nickname
  * @param {number}  event.type          - 课程类型（必填，整数 1/2/3）
  * @param {number}  event.currentPrice  - 现价（必填），对应 DB 字段 current_price
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
@@ -27,23 +28,22 @@ const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  // 接收 camelCase 参数
-  const {
-    name,
-    type,
-    coverImage,
-    currentPrice,
-    originalPrice,
-    retrainPrice,
-    allowRetrain,
-    duration,
-    description,
-    content,
-    outline,
-    teacher,
-    sortOrder,
-    status
-  } = event;
+  // 接收 camelCase 参数，同时兼容 snake_case（防止旧客户端传参）
+  const name = event.name;
+  const nickname = event.nickname;
+  const type = event.type;
+  const coverImage = event.coverImage || event.cover_image;
+  const currentPrice = event.currentPrice || event.current_price;
+  const originalPrice = event.originalPrice || event.original_price;
+  const retrainPrice = event.retrainPrice || event.retrain_price;
+  const allowRetrain = event.allowRetrain !== undefined ? event.allowRetrain : event.allow_retrain;
+  const duration = event.duration;
+  const description = event.description;
+  const content = event.content;
+  const outline = event.outline;
+  const teacher = event.teacher;
+  const sortOrder = event.sortOrder || event.sort_order;
+  const status = event.status;
 
   try {
     // 参数验证（camelCase key）
@@ -58,6 +58,7 @@ module.exports = async (event, context) => {
     // camelCase → snake_case，写入 DB
     const [result] = await insert('courses', {
       name,
+      nickname: nickname || null,
       type,
       cover_image: coverImage || null,
       description: description || null,
@@ -74,9 +75,8 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      courseId: result.id,
-      message: '课程创建成功'
-    });
+      course_id: result.id
+    }, '课程创建成功');
 
   } catch (error) {
     console.error('[Course/createCourse] 创建失败:', error);

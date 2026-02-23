@@ -35,7 +35,8 @@ const adminHandlers = {
   getUserList: require('./handlers/admin/getUserList'),
   getUserDetail: require('./handlers/admin/getUserDetail'),
   updateUserReferee: require('./handlers/admin/updateUserReferee'),
-  getRefereeChangeLogs: require('./handlers/admin/getRefereeChangeLogs')
+  getRefereeChangeLogs: require('./handlers/admin/getRefereeChangeLogs'),
+  createUser: require('./handlers/admin/createUser')
 };
 
 // 路由配置

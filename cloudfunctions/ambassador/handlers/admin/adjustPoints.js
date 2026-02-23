@@ -32,41 +32,42 @@ module.exports = async (event, context) => {
 
     // 更新用户积分
     if (point_type === 'merit') {
-      const newBalance = (user.merit_points || 0) + amountNum;
+      const prevBalance = parseFloat(user.merit_points || 0);
+      const newBalance = prevBalance + amountNum;
       await update('users', {
         merit_points: newBalance
       }, { id: user_id });
 
-      // 记录功德点日志
+      // 记录功德点日志（字段名与 DB merit_points_records 表一致）
       await insert('merit_points_records', {
         user_id,
         user_uid: user.uid,
         _openid: user._openid || '',
-        change_type: amountNum > 0 ? 1 : 2,
+        type: amountNum > 0 ? 1 : 2,        // 1=获得, 2=使用
+        source: 7,                            // 7=其他（管理员手动调整）
         amount: Math.abs(amountNum),
-        before_balance: user.merit_points || 0,
-        after_balance: newBalance,
-        description: reason,
-        admin_id: admin.id,
+        balance_after: newBalance,            // DB 字段名为 balance_after
+        remark: reason,                       // DB 字段名为 remark
         created_at: formatDateTime(new Date())
       });
     } else {
-      const newAvailable = (user.cash_points_available || 0) + amountNum;
+      const prevAvailable = parseFloat(user.cash_points_available || 0);
+      const prevFrozen = parseFloat(user.cash_points_frozen || 0);
+      const newAvailable = prevAvailable + amountNum;
       await update('users', {
         cash_points_available: newAvailable
       }, { id: user_id });
 
-      // 记录现金积分日志
+      // 记录现金积分日志（字段名与 DB cash_points_records 表一致）
       await insert('cash_points_records', {
         user_id,
         user_uid: user.uid,
         _openid: user._openid || '',
-        change_type: amountNum > 0 ? 1 : 2,
+        type: 6,                              // 6=系统调整
         amount: Math.abs(amountNum),
-        before_balance: user.cash_points_available || 0,
-        after_balance: newAvailable,
-        description: reason,
-        admin_id: admin.id,
+        frozen_after: prevFrozen,             // 冻结余额不变
+        available_after: newAvailable,        // 变动后可用余额
+        remark: reason,
         created_at: formatDateTime(new Date())
       });
     }

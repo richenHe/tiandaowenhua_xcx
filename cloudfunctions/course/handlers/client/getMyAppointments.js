@@ -66,6 +66,7 @@ module.exports = async (event, context) => {
       course_type: a.course?.type,
       class_record_id: a.class_record_id,
       class_date: a.class_record?.class_date,
+      start_time: a.class_record?.class_time,
       class_time: a.class_record?.class_time,
       location: a.class_record?.class_location,
       teacher: a.class_record?.teacher,

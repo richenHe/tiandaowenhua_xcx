@@ -27,6 +27,7 @@ module.exports = async (event, context) => {
     imageUrl,
     videoUrl,
     content,
+    tags,
     sortOrder,
     status
   } = event;
@@ -48,7 +49,7 @@ module.exports = async (event, context) => {
       image_url: imageUrl || null,
       video_url: videoUrl || null,
       content: content || null,
-      tags: null,
+      tags: tags ? JSON.stringify(tags) : null,
       view_count: 0,
       download_count: 0,
       share_count: 0,
@@ -57,9 +58,8 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      materialId: result.id,
-      message: '资料创建成功'
-    });
+      material_id: result.id
+    }, '资料创建成功');
 
   } catch (error) {
     console.error('[Course/createMaterial] 创建失败:', error);

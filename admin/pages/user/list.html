@@ -98,74 +98,14 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="user-list"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐人管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="user-list"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
           <!-- 页面头部 -->
-          <div class="page-header">
+          <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <h1 class="page-title">学员列表</h1>
+            <t-button theme="primary" @click="handleAddUser"><template #icon><t-icon name="add" /></template>新增学员</t-button>
           </div>
     
     <!-- 搜索表单 -->
@@ -177,11 +117,10 @@
         
         <t-form-item label="大使等级">
           <t-select v-model="searchForm.ambassadorLevel" clearable placeholder="全部" style="width: 150px;">
-            <t-option value="0" label="普通用户"></t-option>
-            <t-option value="1" label="青鸾使者"></t-option>
-            <t-option value="2" label="青鸾大使"></t-option>
-            <t-option value="3" label="鸿鹄使者"></t-option>
-            <t-option value="4" label="鸿鹄大使"></t-option>
+            <t-option :value="0" label="普通用户"></t-option>
+            <t-option :value="1" label="准青鸾大使"></t-option>
+            <t-option :value="2" label="青鸾大使"></t-option>
+            <t-option :value="3" label="鸿鹄大使"></t-option>
           </t-select>
         </t-form-item>
         
@@ -208,12 +147,12 @@
           <t-avatar :image="row.avatar" size="40px"></t-avatar>
         </template>
         
+        <!-- 大使等级（与数据库 users.ambassador_level 一致：0普通用户/1准青鸾大使/2青鸾大使/3鸿鹄大使） -->
         <template #ambassadorLevel="{ row }">
           <t-tag v-if="row.ambassador_level === 0" theme="default">普通用户</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
           <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+          <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
         </template>
         
         <template #meritPoints="{ row }">
@@ -252,10 +191,9 @@
           <t-descriptions-item label="城市">{{ currentUser.city || '-' }}</t-descriptions-item>
           <t-descriptions-item label="大使等级">
             <t-tag v-if="currentUser.ambassador_level === 0">普通用户</t-tag>
-            <t-tag v-else-if="currentUser.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
             <t-tag v-else-if="currentUser.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-            <t-tag v-else-if="currentUser.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
-            <t-tag v-else-if="currentUser.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+            <t-tag v-else-if="currentUser.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
           </t-descriptions-item>
           <t-descriptions-item label="功德积分">{{ currentUser.merit_points || 0 }}</t-descriptions-item>
           <t-descriptions-item label="现金积分">¥{{ ((currentUser.cash_points_available || 0) / 100).toFixed(2) }}</t-descriptions-item>
@@ -286,6 +224,35 @@
         </t-form-item>
       </t-form>
     </t-dialog>
+
+    <!-- 新增学员对话框 -->
+    <t-dialog
+      v-model:visible="addUserVisible"
+      header="新增学员"
+      width="500px"
+      @confirm="submitAddUser"
+      :confirm-btn="{ loading: addUserLoading }"
+    >
+      <t-form ref="addUserFormRef" :data="addUserForm" label-width="100px">
+        <t-form-item label="真实姓名" name="realName" :rules="[{ required: true, message: '请输入姓名', type: 'error' }]">
+          <t-input v-model="addUserForm.realName" placeholder="请输入学员真实姓名"></t-input>
+        </t-form-item>
+        <t-form-item label="手机号" name="phone" :rules="[{ required: true, message: '请输入手机号', type: 'error' }]">
+          <t-input v-model="addUserForm.phone" placeholder="请输入手机号"></t-input>
+        </t-form-item>
+        <t-form-item label="城市" name="city">
+          <t-input v-model="addUserForm.city" placeholder="请输入城市（可选）"></t-input>
+        </t-form-item>
+        <t-form-item label="大使等级" name="ambassadorLevel">
+          <t-select v-model="addUserForm.ambassadorLevel" style="width:100%;">
+            <t-option :value="0" label="普通用户"></t-option>
+            <t-option :value="1" label="准青鸾大使"></t-option>
+            <t-option :value="2" label="青鸾大使"></t-option>
+            <t-option :value="3" label="鸿鹄大使"></t-option>
+          </t-select>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
         </t-content>
       </t-layout>
     </t-layout>
@@ -301,6 +268,7 @@
   <script src="../../assets/js/config.js"></script>
   <!-- API -->
   <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -337,9 +305,11 @@
             'dashboard': '../../index.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
+            'mall-goods': '../order/mall-goods.html',
             'course-list': '../course/list.html',
             'schedule-list': '../course/schedule.html',
             'appointment-list': '../course/appointment.html',
@@ -492,6 +462,40 @@
           if (!datetime) return '-';
           return new Date(datetime).toLocaleString('zh-CN');
         };
+
+        // 新增学员
+        const addUserVisible = ref(false);
+        const addUserLoading = ref(false);
+        const addUserFormRef = ref(null);
+        const addUserForm = reactive({
+          realName: '',
+          phone: '',
+          city: '',
+          ambassadorLevel: 0,
+        });
+
+        const handleAddUser = () => {
+          Object.assign(addUserForm, { realName: '', phone: '', city: '', ambassadorLevel: 0 });
+          addUserVisible.value = true;
+        };
+
+        const submitAddUser = async () => {
+          if (!addUserForm.realName || !addUserForm.phone) {
+            TDesign.MessagePlugin.warning('请填写姓名和手机号');
+            return;
+          }
+          addUserLoading.value = true;
+          try {
+            await AdminAPI.createUser({ ...addUserForm });
+            TDesign.MessagePlugin.success('新增学员成功');
+            addUserVisible.value = false;
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('新增失败: ' + error.message);
+          } finally {
+            addUserLoading.value = false;
+          }
+        };
         
         onMounted(() => {
           if (checkAuth()) {
@@ -500,7 +504,7 @@
         });
         
         return {
-          adminInfo,
+          activeMenuKey: 'user-list',adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -514,6 +518,12 @@
           refereeVisible,
           refereeLoading,
           refereeForm,
+          addUserVisible,
+          addUserLoading,
+          addUserFormRef,
+          addUserForm,
+          handleAddUser,
+          submitAddUser,
           handleSearch,
           handleReset,
           onPageChange,
@@ -526,6 +536,7 @@
     });
     
     app.use(TDesign);
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
     app.mount('#app');
   </script>
 </body>

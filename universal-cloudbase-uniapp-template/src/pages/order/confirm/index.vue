@@ -10,8 +10,14 @@
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="course-info">
-              <view class="course-icon" :style="{ background: courseInfo.gradient }">
-                {{ courseInfo.icon }}
+              <view class="course-icon" :style="courseInfo.coverImage ? {} : { background: courseInfo.gradient }">
+                <image
+                  v-if="courseInfo.coverImage"
+                  :src="courseInfo.coverImage"
+                  class="course-cover-img"
+                  mode="aspectFill"
+                />
+                <text v-else>{{ courseInfo.icon }}</text>
               </view>
               <view class="course-details">
                 <view class="course-name">{{ courseInfo.name }}</view>
@@ -107,6 +113,7 @@ const courseInfo = ref({
   name: '',
   description: '',
   price: 0,
+  coverImage: '',
   icon: '📚',
   gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
 });
@@ -165,7 +172,8 @@ const loadPageData = async () => {
       id: course.id,
       name: course.name,
       description: course.description || '',
-      price: course.current_price || 0, // 使用 current_price 而不是 price
+      price: course.current_price || 0,
+      coverImage: course.cover_image || '',
       icon: getCourseIcon(course.type),
       gradient: getCourseGradient(course.type)
     };
@@ -330,6 +338,12 @@ const handleConfirm = () => {
   justify-content: center;
   font-size: 48rpx;
   flex-shrink: 0;
+  overflow: hidden;
+
+  .course-cover-img {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .course-details {

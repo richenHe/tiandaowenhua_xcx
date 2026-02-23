@@ -62,7 +62,13 @@
               @click="handleProductClick(product)"
             >
               <view class="product-image">
-                <text>{{ product.icon }}</text>
+                <image
+                  v-if="product.image"
+                  :src="product.image"
+                  class="product-cover-img"
+                  mode="aspectFill"
+                />
+                <text v-else>{{ product.icon }}</text>
               </view>
               <view class="product-info">
                 <text class="product-name">{{ product.name }}</text>
@@ -115,8 +121,14 @@
               class="course-card"
               @click="handleCourseClick(course)"
             >
-              <view class="course-image" :style="{ background: course.gradient }">
-                <text>{{ course.icon }}</text>
+              <view class="course-image" :style="course.coverImage ? {} : { background: course.gradient }">
+                <image
+                  v-if="course.coverImage"
+                  :src="course.coverImage"
+                  class="course-cover-img"
+                  mode="aspectFill"
+                />
+                <text v-else>{{ course.icon }}</text>
               </view>
               <view class="course-info">
                 <view class="course-header">
@@ -171,7 +183,6 @@ import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi, UserApi, SystemApi } from '@/api';
-import { calculateMixedPayment } from '@/utils/mixed-payment-calculator';
 
 // 用户功德分和积分
 const userMeritPoints = ref(0);
@@ -244,9 +255,10 @@ const loadMallGoods = async (isLoadMore = false) => {
       id: item.id,
       name: item.goods_name,
       icon: '🎁',
+      image: item.goods_image || '',
       stock: item.stock_quantity === -1 ? 999 : item.stock_quantity,
       points: item.merit_points_price,
-      category: 'stationery'
+      category: item.category || 'stationery'
     }))
     
     if (isLoadMore) {
@@ -288,9 +300,9 @@ const handleLoadMore = () => {
 // 加载用户积分
 const loadUserPoints = async () => {
   try {
-    const points = await SystemApi.getUserPoints()
-    userMeritPoints.value = points.meritPoints || 0
-    userCashPoints.value = points.cashPointsAvailable || 0
+    const points = await SystemApi.getUserPoints() as any
+    userMeritPoints.value = points.merit_points ?? points.meritPoints ?? 0
+    userCashPoints.value = points.cash_points_available ?? points.cashPointsAvailable ?? 0
   } catch (error) {
     console.error('加载用户积分失败:', error)
   }
@@ -333,8 +345,9 @@ const loadMallCourses = async () => {
       name: item.name,
       icon: getCourseIcon(item.type),
       gradient: getCourseGradient(item.type),
-      desc: `${item.nickname} - 课程`,
-      points: item.currentPrice * 100, // 假设1元=100积分
+      coverImage: item.coverImage || '',
+      desc: `${item.nickname || item.name} - 课程`,
+      points: item.currentPrice * 100,
       originalPrice: item.originalPrice,
       badge: item.soldCount > 100 ? '热门' : '',
       badgeType: item.soldCount > 100 ? 'success' : ''
@@ -465,49 +478,58 @@ const handleCourseClick = (course: any) => {
 
 // 兑换课程
 const handleExchangeCourse = (course: any) => {
-  // 计算混合支付方案
-  const paymentPlan = calculateMixedPayment(
-    course.points,
-    userMeritPoints.value,
-    userCashPoints.value
-  );
+  const coursePoints = course.points;
+  const meritPoints = userMeritPoints.value;
+  const cashPoints = userCashPoints.value;
 
-  // 如果需要现金支付，提示用户
-  if (paymentPlan.needsCashPayment) {
+  // 情况1：功德分和积分都不足
+  if (meritPoints < coursePoints && cashPoints < coursePoints) {
     uni.showModal({
-      title: '功德分和积分不足',
-      content: `兑换《${course.name}》需要${course.points}功德分。您的功德分和积分不足以完成兑换，请先充值或获取更多积分。`,
+      title: '提示',
+      content: '功德分或积分不够',
       showCancel: false,
     });
     return;
   }
 
-  // 构建确认内容
-  let confirmContent = `兑换课程: ${course.name}\n`;
-  confirmContent += `需要功德分: ${course.points}\n\n`;
-  
-  // 如果需要使用积分抵扣，增加明确提示
-  if (paymentPlan.cashPointsToUse > 0) {
-    confirmContent += `⚠️ 功德分不足，需要积分抵扣\n\n`;
+  // 情况2：功德分不足，但积分足够 - 只用积分支付
+  if (meritPoints < coursePoints && cashPoints >= coursePoints) {
+    uni.showModal({
+      title: '提示',
+      content: '功德分不足，需要用积分兑换课程吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          const paymentPlan = {
+            meritPointsToUse: 0,
+            cashPointsToUse: coursePoints,
+            needsCashPayment: false,
+            remainingMeritPoints: meritPoints,
+            remainingCashPoints: cashPoints - coursePoints
+          };
+          performExchange('course', course.id, paymentPlan);
+        }
+      },
+    });
+    return;
   }
-  
-  confirmContent += `将扣除:\n`;
-  confirmContent += `• 功德分: ${paymentPlan.meritPointsToUse}\n`;
-  if (paymentPlan.cashPointsToUse > 0) {
-    confirmContent += `• 积分(抵扣): ${paymentPlan.cashPointsToUse}\n`;
-  }
-  confirmContent += `\n剩余:\n`;
-  confirmContent += `• 功德分: ${paymentPlan.remainingMeritPoints}\n`;
-  confirmContent += `• 积分: ${paymentPlan.remainingCashPoints}`;
 
+  // 情况3：功德分充足 - 只用功德分支付
   uni.showModal({
-    title: '确认兑换',
-    content: confirmContent,
-    confirmText: '确认兑换',
+    title: '提示',
+    content: '确定用功德分兑换课程吗？',
+    confirmText: '确定',
     cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
-        // 调用后端API兑换
+        const paymentPlan = {
+          meritPointsToUse: coursePoints,
+          cashPointsToUse: 0,
+          needsCashPayment: false,
+          remainingMeritPoints: meritPoints - coursePoints,
+          remainingCashPoints: cashPoints
+        };
         performExchange('course', course.id, paymentPlan);
       }
     },
@@ -518,7 +540,7 @@ const handleExchangeCourse = (course: any) => {
 const performExchange = async (
   type: 'goods' | 'course',
   itemId: number,
-  paymentPlan: ReturnType<typeof calculateMixedPayment>
+  paymentPlan: { meritPointsToUse: number; cashPointsToUse: number; needsCashPayment: boolean; remainingMeritPoints: number; remainingCashPoints: number }
 ) => {
   console.log('Performing exchange:', { type, itemId, paymentPlan });
 
@@ -634,6 +656,13 @@ const performExchange = async (
   align-items: center;
   justify-content: center;
   font-size: 96rpx;
+  overflow: hidden;
+}
+
+.product-cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .product-info {
@@ -760,6 +789,13 @@ const performExchange = async (
   align-items: center;
   justify-content: center;
   font-size: 96rpx;
+  overflow: hidden;
+}
+
+.course-cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .course-info {

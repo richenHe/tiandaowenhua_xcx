@@ -11,9 +11,13 @@
  * @param {string} event.title         - 案例标题
  * @param {string} event.studentName   - 学员姓名，对应 DB 字段 student_name
  * @param {string} event.studentAvatar - 学员头像URL，对应 DB 字段 student_avatar
+ * @param {string} event.studentTitle  - 学员头衔/职业，对应 DB 字段 student_title
  * @param {string} event.summary       - 案例摘要，对应 DB 字段 summary
  * @param {string} event.content       - 案例详情
+ * @param {string} event.videoUrl      - 视频URL，对应 DB 字段 video_url
+ * @param {Array}  event.images        - 图片数组，对应 DB 字段 images（JSON）
  * @param {number} event.courseId      - 关联课程ID，对应 DB 字段 course_id
+ * @param {string} event.courseName    - 课程名称，对应 DB 字段 course_name
  * @param {number} event.sortOrder     - 排序，对应 DB 字段 sort_order
  * @param {number} event.status        - 状态：0隐藏/1显示
  */
@@ -28,9 +32,13 @@ module.exports = async (event, context) => {
     title,
     studentName,
     studentAvatar,
+    studentTitle,
     summary,
     content,
+    videoUrl,
+    images,
     courseId,
+    courseName,
     sortOrder,
     status
   } = event;
@@ -48,15 +56,28 @@ module.exports = async (event, context) => {
       return response.notFound('案例不存在');
     }
 
+    // 如果有 courseId 但没有 courseName，自动查询课程名称
+    let finalCourseName = courseName;
+    if (courseId !== undefined && courseName === undefined) {
+      const course = await findOne('courses', { id: courseId });
+      if (course) {
+        finalCourseName = course.name;
+      }
+    }
+
     // 转换 camelCase → snake_case，构建 DB 更新字段
     // 只添加实际传入的字段（undefined 表示未传，跳过）
     const fieldsToUpdate = {};
     if (title !== undefined) fieldsToUpdate.title = title;
     if (studentName !== undefined) fieldsToUpdate.student_name = studentName;
     if (studentAvatar !== undefined) fieldsToUpdate.student_avatar = studentAvatar;
+    if (studentTitle !== undefined) fieldsToUpdate.student_title = studentTitle;
     if (summary !== undefined) fieldsToUpdate.summary = summary;
     if (content !== undefined) fieldsToUpdate.content = content;
+    if (videoUrl !== undefined) fieldsToUpdate.video_url = videoUrl;
+    if (images !== undefined) fieldsToUpdate.images = images ? JSON.stringify(images) : null;
     if (courseId !== undefined) fieldsToUpdate.course_id = courseId;
+    if (finalCourseName !== undefined) fieldsToUpdate.course_name = finalCourseName;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     if (status !== undefined) fieldsToUpdate.status = status;
 

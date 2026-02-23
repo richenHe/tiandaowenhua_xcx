@@ -20,7 +20,7 @@ module.exports = async (event, context) => {
     });
 
     if (!userCourses || userCourses.length === 0) {
-      return response.success([], '暂无已购买的课程');
+      return response.success({ list: [] }, '暂无已购买的课程');
     }
 
     const courseIds = userCourses.map(uc => uc.course_id);
@@ -34,7 +34,7 @@ module.exports = async (event, context) => {
     // 过滤出用户已购买的课程
     const purchasedCourses = courses.filter(c => courseIds.includes(c.id));
 
-    return response.success(purchasedCourses, '获取成功');
+    return response.success({ list: purchasedCourses }, '获取成功');
 
   } catch (error) {
     console.error('[getFeedbackCourses] 失败:', error);

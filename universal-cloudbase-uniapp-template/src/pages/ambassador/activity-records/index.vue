@@ -204,13 +204,14 @@ const loadActivityRecords = async (activityType?: number) => {
   }
 }
 
-// 获取活动类型对应的值
+// 获取活动类型对应的值（与数据库 ambassador_activity_records.activity_type 一致：1辅导员/2会务义工/3沙龙组织/4其他）
 const getActivityTypeValue = (tabValue: string): number => {
   const typeMap: Record<string, number> = {
     'all': 0,
     'tutor': 1,
     'volunteer': 2,
-    'salon': 3
+    'salon': 3,
+    'other': 4
   }
   return typeMap[tabValue] || 0
 }
@@ -234,11 +235,13 @@ const handleScroll = (e: any) => {
   }
 }
 
+// tabs 与数据库 ambassador_activity_records.activity_type 对齐：1辅导员/2会务义工/3沙龙组织/4其他
 const tabs = ref([
   { label: '全部', value: 'all' },
   { label: '辅导员', value: 'tutor' },
   { label: '义工', value: 'volunteer' },
-  { label: '沙龙', value: 'salon' }
+  { label: '沙龙', value: 'salon' },
+  { label: '其他', value: 'other' }
 ])
 
 const activeTab = ref('all')

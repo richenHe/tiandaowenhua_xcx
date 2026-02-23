@@ -1,0 +1,368 @@
+<template>
+  <view class="page-container">
+    <TdPageHeader title="订单详情" :showBack="true" />
+    
+    <scroll-view scroll-y class="scroll-area">
+      <view class="page-content">
+        <!-- 状态卡片 -->
+        <view class="status-card">
+          <view class="status-icon">💰</view>
+          <view class="status-title">退款成功</view>
+          <view class="status-desc">退款已原路返回，预计1-7个工作日到账</view>
+        </view>
+
+        <!-- 退款信息 -->
+        <view class="t-card order-info">
+          <view class="info-row">
+            <text class="label">退款金额</text>
+            <text class="value refund-amount">¥{{ orderInfo.price }}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">退款方式</text>
+            <text class="value">原路退回</text>
+          </view>
+          <view v-if="orderInfo.refundTime" class="info-row">
+            <text class="label">退款时间</text>
+            <text class="value">{{ orderInfo.refundTime }}</text>
+          </view>
+        </view>
+
+        <!-- 订单信息 -->
+        <view class="t-card order-info">
+          <view class="info-row">
+            <text class="label">订单编号</text>
+            <text class="value">{{ orderInfo.orderNo }}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">下单时间</text>
+            <text class="value">{{ orderInfo.createTime }}</text>
+          </view>
+        </view>
+
+        <!-- 课程信息 -->
+        <view class="t-card course-info">
+          <view class="course-header">
+            <view :class="['course-icon', orderInfo.iconBg]">
+              <text>{{ orderInfo.icon }}</text>
+            </view>
+            <view class="course-details">
+              <view class="course-name">{{ orderInfo.courseName }}</view>
+              <view class="course-price">
+                <text class="price">¥{{ orderInfo.price }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 推荐人信息 -->
+        <view v-if="orderInfo.refereeName" class="t-card referee-info">
+          <view class="info-row">
+            <text class="label">推荐人</text>
+            <text class="value">{{ orderInfo.refereeName }}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 底部操作栏 -->
+    <view class="fixed-bottom">
+      <view class="bottom-actions">
+        <button 
+          class="t-button t-button--theme-default t-button--size-large back-btn" 
+          @click="goBack"
+        >
+          <text class="t-button__text">返回订单列表</text>
+        </button>
+        <button 
+          class="t-button t-button--theme-primary t-button--size-large reorder-btn" 
+          @click="handleReorder"
+        >
+          <text class="t-button__text">重新下单</text>
+        </button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { OrderApi } from '@/api'
+
+interface OrderInfo {
+  orderNo: string
+  courseName: string
+  price: string
+  createTime: string
+  refundTime: string
+  refereeName: string
+  icon: string
+  iconBg: string
+  orderType: number
+  itemId: number
+}
+
+const orderInfo = ref<OrderInfo>({
+  orderNo: '',
+  courseName: '',
+  price: '0.00',
+  createTime: '',
+  refundTime: '',
+  refereeName: '',
+  icon: '📚',
+  iconBg: 'bg-blue',
+  orderType: 1,
+  itemId: 0
+})
+
+const courseStyles: Record<number, { icon: string; iconBg: string }> = {
+  1: { icon: '📚', iconBg: 'bg-blue' },
+  2: { icon: '🎓', iconBg: 'bg-purple' },
+  3: { icon: '💼', iconBg: 'bg-orange' }
+}
+
+const loadOrderDetail = async (orderNo: string) => {
+  try {
+    uni.showLoading({ title: '加载中...' })
+    const order = await OrderApi.getDetail(orderNo)
+    const style = courseStyles[order.order_type] || courseStyles[1]
+    orderInfo.value = {
+      orderNo: order.order_no,
+      courseName: order.order_name,
+      price: String(order.final_amount || '0.00'),
+      createTime: order.created_at,
+      refundTime: (order as any).updated_at || '',
+      refereeName: order.referee_name || '',
+      icon: style.icon,
+      iconBg: style.iconBg,
+      orderType: order.order_type,
+      itemId: (order as any).item_id || 0
+    }
+    uni.hideLoading()
+  } catch (error) {
+    console.error('加载订单详情失败:', error)
+    uni.hideLoading()
+    uni.showToast({ title: '加载失败', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 1500)
+  }
+}
+
+const goBack = () => {
+  uni.navigateBack()
+}
+
+const handleReorder = () => {
+  if (orderInfo.value.orderType === 1) {
+    uni.navigateTo({ url: `/pages/course/detail/index?id=${orderInfo.value.itemId}` })
+  } else if (orderInfo.value.orderType === 2) {
+    uni.navigateTo({ url: '/pages/course/retrain/index' })
+  } else if (orderInfo.value.orderType === 3) {
+    uni.navigateTo({ url: '/pages/service/index' })
+  }
+}
+
+onMounted(() => {
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1] as any
+  const orderNo = currentPage.$page?.options?.orderNo || currentPage.options?.orderNo
+  if (orderNo) {
+    loadOrderDetail(orderNo)
+  } else {
+    uni.showToast({ title: '订单号不存在', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 1500)
+  }
+})
+</script>
+
+<style lang="scss" scoped>
+@import '@/styles/tdesign-vars.scss';
+
+.page-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $td-bg-color-page;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.page-content {
+  padding: 24rpx;
+  padding-bottom: 140rpx;
+}
+
+/* 状态卡片 */
+.status-card {
+  background: linear-gradient(135deg, #00C48C 0%, #00A67E 100%);
+  border-radius: 16rpx;
+  padding: 48rpx 32rpx;
+  margin-bottom: 24rpx;
+  text-align: center;
+  color: white;
+}
+
+.status-icon {
+  font-size: 72rpx;
+  margin-bottom: 16rpx;
+}
+
+.status-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.status-desc {
+  font-size: 28rpx;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* 订单/退款信息 */
+.order-info,
+.referee-info {
+  margin-bottom: 24rpx;
+  padding: 32rpx;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+
+  &:not(:last-child) {
+    border-bottom: 1rpx solid $td-border-level-1;
+  }
+}
+
+.label {
+  font-size: 28rpx;
+  color: $td-text-color-secondary;
+}
+
+.value {
+  font-size: 28rpx;
+  color: $td-text-color-primary;
+  font-weight: 500;
+}
+
+.refund-amount {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #00A67E;
+}
+
+/* 课程信息 */
+.course-info {
+  margin-bottom: 24rpx;
+  padding: 32rpx;
+}
+
+.course-header {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.course-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  flex-shrink: 0;
+
+  &.bg-blue {
+    background: linear-gradient(135deg, $td-brand-color-light 0%, $td-brand-color 100%);
+  }
+
+  &.bg-purple {
+    background: linear-gradient(135deg, #9C27B0 0%, #673AB7 100%);
+  }
+
+  &.bg-orange {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  }
+}
+
+.course-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.course-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $td-text-color-primary;
+  margin-bottom: 12rpx;
+}
+
+.price {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: $td-error-color;
+}
+
+/* 底部操作栏 */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1rpx solid $td-border-level-1;
+  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.bottom-actions {
+  display: flex;
+  gap: 24rpx;
+}
+
+.t-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $td-radius-default;
+  border: none;
+
+  &--size-large {
+    height: 88rpx;
+  }
+
+  &--theme-default {
+    background-color: $td-bg-color-container-hover;
+
+    .t-button__text {
+      color: $td-text-color-primary;
+      font-size: 32rpx;
+      font-weight: 500;
+    }
+  }
+
+  &--theme-primary {
+    background-color: $td-brand-color;
+
+    .t-button__text {
+      color: white;
+      font-size: 32rpx;
+      font-weight: 500;
+    }
+  }
+}
+
+.back-btn {
+  flex: 1;
+}
+
+.reorder-btn {
+  flex: 2;
+}
+</style>

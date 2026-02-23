@@ -17,11 +17,11 @@ module.exports = async (event, context) => {
       return response.paramError('缺少必要参数: level');
     }
 
-    // 查询指定等级的最新协议模板
+    // 查询指定等级的最新协议模板（数据库列名为 ambassador_level）
     const { data: templates, error } = await db
       .from('contract_templates')
       .select('*')
-      .eq('level', level)
+      .eq('ambassador_level', level)
       .eq('status', 1)  // 启用状态
       .order('version', { ascending: false })
       .limit(1)
@@ -42,7 +42,7 @@ module.exports = async (event, context) => {
       .from('contract_signatures')
       .select('*')
       .eq('user_id', user.id)
-      .eq('template_id', template.id)
+      .eq('contract_template_id', template.id)
       .single();
 
     const signature = signatures;
@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
       signed: !!signature,
       signature: signature ? {
         id: signature.id,
-        signed_at: signature.signed_at,
+        signed_at: signature.sign_time,
         status: signature.status
       } : null
     });

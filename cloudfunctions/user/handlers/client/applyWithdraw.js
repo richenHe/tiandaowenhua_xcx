@@ -52,23 +52,27 @@ module.exports = async (event, context) => {
         { id: user.id }
       );
 
-      // 2. 创建提现记录
+      // 2. 创建提现记录（使用数据库实际列名）
       const withdrawNo = utils.generateOrderNo('WD');
       await insert('withdrawals', {
         user_id: user.id,
+        _openid: user._openid || '',
         withdraw_no: withdrawNo,
         amount: amount,
-        withdraw_type: withdrawType,
+        account_type: withdrawType,          // 实际列名（非 withdraw_type）
         account_info: JSON.stringify(accountInfo),
-        status: 0
+        status: 0,
+        apply_time: utils.formatDateTime(new Date()) // NOT NULL，必须填写
       });
 
-      // 3. 记录积分变动
+      // 3. 记录积分变动（使用数据库实际列名）
       await insert('cash_points_records', {
         user_id: user.id,
-        change_amount: -amount,
-        balance_after: user.cash_points_available - amount,
-        change_type: 'withdraw',
+        _openid: user._openid || '',
+        type: 3,                                           // 3=提现申请（非 change_type 字符串）
+        amount: amount,                                    // 实际列名（非 change_amount）
+        available_after: user.cash_points_available - amount, // 实际列名（非 balance_after）
+        withdraw_no: withdrawNo,
         remark: '申请提现'
       });
 

@@ -34,7 +34,7 @@ async function calculateMeritPoints(orderAmount, ambassadorLevel, courseType) {
   }
 
   return {
-    meritPoints: Math.round(orderAmount * rate * 100) / 100,
+    meritPoints: Math.round(orderAmount * rate),
     rate,
     description
   };
@@ -60,7 +60,7 @@ async function calculateCashPoints(orderAmount, ambassadorLevel, frozenBalance, 
   if (courseType === 'advanced') {
     const rate = parseFloat(config.cash_rate_advanced) || 0;
     return {
-      cashPoints: Math.round(orderAmount * rate * 100) / 100,
+      cashPoints: Math.round(orderAmount * rate),
       unfreezePoints: 0,
       isFrozenDeduction: false,
       description: `密训班${(rate * 100).toFixed(0)}%可提现积分`
@@ -81,7 +81,7 @@ async function calculateCashPoints(orderAmount, ambassadorLevel, frozenBalance, 
   // 无冻结积分: 按配置比例发放可提现
   const rate = parseFloat(config.cash_rate_basic) || 0;
   return {
-    cashPoints: Math.round(orderAmount * rate * 100) / 100,
+    cashPoints: Math.round(orderAmount * rate),
     unfreezePoints: 0,
     isFrozenDeduction: false,
     description: `${(rate * 100).toFixed(0)}%可提现积分`

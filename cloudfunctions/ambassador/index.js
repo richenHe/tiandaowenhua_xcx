@@ -51,7 +51,9 @@ const adminHandlers = {
   getContractList: require('./handlers/admin/getContractList'),
   getContractVersions: require('./handlers/admin/getContractVersions'),
   getSignatureList: require('./handlers/admin/getSignatureList'),
-  getExpiringContracts: require('./handlers/admin/getExpiringContracts')
+  getExpiringContracts: require('./handlers/admin/getExpiringContracts'),
+  renewContract: require('./handlers/admin/renewContract'),
+  terminateContract: require('./handlers/admin/terminateContract')
 };
 
 // 路由配置

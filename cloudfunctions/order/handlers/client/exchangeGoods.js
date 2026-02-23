@@ -49,11 +49,9 @@ module.exports = async (event, context) => {
     let cash_points_used = 0;
 
     if (user.merit_points >= totalCost) {
-      // 功德分足够
       merit_points_used = totalCost;
       cash_points_used = 0;
     } else if (use_cash_points_if_not_enough) {
-      // 功德分不足，使用积分补充
       merit_points_used = user.merit_points;
       cash_points_used = totalCost - merit_points_used;
 
@@ -67,13 +65,13 @@ module.exports = async (event, context) => {
     // 6. 生成兑换单号
     const exchange_no = generateExchangeNo();
 
-    // 7. 开启事务处理
+    // 7. 执行兑换操作（CloudBase SDK 不支持 db.raw，使用 JS 计算值）
     try {
-      // 7.1 扣除功德分和积分
+      // 7.1 扣除功德分和积分（用 JS 计算后的值直接更新）
       await update('users',
         {
-          merit_points: db.raw(`merit_points - ${merit_points_used}`),
-          cash_points_available: db.raw(`cash_points_available - ${cash_points_used}`)
+          merit_points: parseFloat(user.merit_points) - merit_points_used,
+          cash_points_available: parseFloat(user.cash_points_available) - cash_points_used
         },
         { id: user.id }
       );
@@ -82,60 +80,61 @@ module.exports = async (event, context) => {
       if (goods.stock_quantity !== -1) {
         await update('mall_goods',
           {
-            sold_quantity: db.raw(`sold_quantity + ${quantity}`),
-            stock_quantity: db.raw(`stock_quantity - ${quantity}`)
+            sold_quantity: (goods.sold_quantity || 0) + quantity,
+            stock_quantity: goods.stock_quantity - quantity
           },
           { id: goods_id }
         );
       } else {
         await update('mall_goods',
-          { sold_quantity: db.raw(`sold_quantity + ${quantity}`) },
+          { sold_quantity: (goods.sold_quantity || 0) + quantity },
           { id: goods_id }
         );
       }
 
-      // 7.3 创建兑换记录
+      // 7.3 创建兑换记录（使用数据库实际列名）
       await insert('mall_exchange_records', {
         exchange_no,
         user_id: user.id,
+        _openid: OPENID || '',
         goods_id: goods_id,
         goods_name: goods.goods_name,
         quantity,
+        unit_price: goods.merit_points_price,  // NOT NULL，必须填写
         merit_points_used,
         cash_points_used,
         total_cost: totalCost,
-        status: 1 // 已兑换
+        status: 1
       });
 
-      // 7.4 插入功德分明细记录
+      // 7.4 插入功德分明细记录（使用数据库实际列名）
       if (merit_points_used > 0) {
         await insert('merit_points_records', {
           user_id: user.id,
-          type: 2, // 消费
+          _openid: OPENID || '',
+          type: 2,                                              // 消费
+          source: 3,                                            // 实际列名（非 source_type）：3=商城兑换
           amount: -merit_points_used,
-          balance_after: user.merit_points - merit_points_used,
-          source_type: 3, // 商城兑换
-          source_id: goods_id,
-          description: `兑换商品：${goods.goods_name}`
+          balance_after: parseFloat(user.merit_points) - merit_points_used,
+          exchange_no,                                          // 关联兑换单号（非 source_id）
+          remark: `兑换商品：${goods.goods_name}`              // 实际列名（非 description）
         });
       }
 
-      // 7.5 插入积分明细记录
+      // 7.5 插入积分明细记录（使用数据库实际列名）
       if (cash_points_used > 0) {
         await insert('cash_points_records', {
           user_id: user.id,
-          type: 2, // 消费
+          _openid: OPENID || '',
+          type: 2,                                              // 消费
           amount: -cash_points_used,
-          balance_after: user.cash_points_available - cash_points_used,
-          source_type: 3, // 商城兑换
-          source_id: goods_id,
-          description: `兑换商品：${goods.goods_name}`
+          available_after: parseFloat(user.cash_points_available) - cash_points_used,  // 实际列名（非 balance_after）
+          remark: `兑换商品：${goods.goods_name}`              // 实际列名（非 description）
         });
       }
 
       console.log(`[exchangeGoods] 兑换成功:`, exchange_no);
 
-      // 8. 返回兑换结果
       return response.success({
         exchange_no,
         goods_name: goods.goods_name,
@@ -149,7 +148,7 @@ module.exports = async (event, context) => {
 
     } catch (txError) {
       console.error(`[exchangeGoods] 事务失败:`, txError);
-      throw new Error('兑换失败，请重试');
+      throw txError;
     }
 
   } catch (error) {
@@ -160,9 +159,7 @@ module.exports = async (event, context) => {
 
 /**
  * 生成兑换单号
- * 格式：EX + 年月日 + 8位随机数
  */
 function generateExchangeNo() {
-  // 使用 business-logic 的 generateOrderNo，但替换前缀为 EX
   return business.generateOrderNo('EX');
 }

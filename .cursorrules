@@ -1,7 +1,73 @@
 # 项目开发规范
 
+## 🔴 【最高优先级】数据库实例区分规则
+
+> ⚠️ **此规则凌驾于所有其他规则之上，违反将直接导致查错数据、功能失效。**
+
+### 两个数据库实例说明
+
+| 实例名 | 用途 | 是否为业务数据库 |
+|--------|------|-----------------|
+| **`tiandao_culture`** | ✅ 业务数据库，云函数实际连接的数据库，所有业务表都在这里 | **是，必须用这个** |
+| `cloud1-0gnn3mn17b581124` | ❌ CloudBase 默认实例，与业务无关，仅有少量系统表 | 否，禁止用于业务查询 |
+
+### 强制执行规则
+
+1. **所有 SQL 查询必须显式指定数据库**：使用 `tiandao_culture.表名` 格式，例如：
+   ```sql
+   -- ✅ 正确
+   DESCRIBE tiandao_culture.banners
+   SELECT * FROM tiandao_culture.banners
+   INSERT INTO tiandao_culture.users ...
+
+   -- ❌ 错误（会默认连接 cloud1-0gnn3mn17b581124，查到错误数据或报错）
+   DESCRIBE banners
+   SELECT * FROM banners
+   ```
+
+2. **MCP `executeReadOnlySQL` / `executeWriteSQL` 工具默认连接 `cloud1-0gnn3mn17b581124`**，不加库名前缀将查错数据库。
+
+3. **云函数代码中无需指定库名**（云函数的 `db` 对象已自动连接 `tiandao_culture`），但在 MCP SQL 工具中必须加前缀。
+
+4. **验证字段/表结构时**，必须执行 `DESCRIBE tiandao_culture.表名`，禁止直接 `DESCRIBE 表名`。
+
+5. **发现数据查询结果异常（字段不对、表不存在）时**，第一反应是检查是否忘记加 `tiandao_culture.` 前缀。
+
+### 两个实例的 banners 表对比（典型案例）
+
+| 字段 | `tiandao_culture.banners`（正确） | `cloud1-0gnn3mn17b581124.banners`（错误） |
+|------|----------------------------------|------------------------------------------|
+| 图片 | `image_url` | `cover_image` |
+| 链接 | `link_url` | `link` |
+| 副标题 | `subtitle` | 无 |
+
+---
+
+## 🔴 【强制规则】收到集成测试报告后必须阅读并执行验证规范
+
+收到 `integration-test.html` 测试结果（截图/JSON/文字）时，**立即读取 `admin/INTEGRATION-TEST-README.md`**，按其中"AI 助手强制规则"章节执行数据库交叉验证，不可跳过，不可等待用户提醒。
+
+---
+
+## 🚨 必读文档（每次执行前强制阅读）
+
+**以下文档在每次对话/任务开始时必须优先读取，不得跳过：**
+
+| 文档 | 路径 | 说明 |
+|------|------|------|
+| 数据库详细信息 | `docs/database/数据库详细信息.md` | 数据库表结构、字段定义、字段名称映射，涉及任何数据库/云函数/API操作时必读 |
+
+**执行规则：**
+1. 每次对话开始或收到新任务时，**立即读取上述文档**
+2. 涉及数据库字段、表结构、API 接口时，**以该文档为权威参考**，不得凭记忆或猜测使用字段名
+3. 云函数代码中的字段名必须与文档保持一致
+4. 若文档与现有代码不一致，以文档为准并修正代码
+
+---
+
 ## 通用开发规范 ⚠️
 
+##默认说中文
 ### 文档创建确认原则
 - **强制执行**：创建任何文档（.md、.txt、README 等）前必须先向用户确认
 - **确认内容**：
@@ -1055,6 +1121,66 @@ Error: failed to find relationship between orders and users
    // ✅ 正确
    .select('*, referee:users!fk_orders_referee(id, real_name)')
    ```
+
+#### 错误7：cloud:// fileID 在小程序前端无法显示图片 ⚠️
+
+**现象**：上传到云存储的图片在数据库中已有值，但 `<image>` 组件显示空白或加载失败。
+
+**根本原因**：
+本项目前端使用 `@cloudbase/js-sdk`（HTTP 方式）+ UniApp 适配器，**没有调用 `wx.cloud.init()`**。
+因此小程序的 `<image>` 组件收到 `cloud://` fileID 时**完全无法解析和渲染**，必须在云函数侧将 `cloud://` 转换为 HTTPS 临时 URL 后再返回给前端。
+
+**错误写法**（直接把 cloud:// 返回给前端）：
+```javascript
+// ❌ 错误 - 前端收到 cloud:// 无法显示
+return response.success({
+  cover_image: course.cover_image  // cloud://env-id/path/to/file.jpg
+});
+```
+
+**正确写法**（云函数侧转换为 HTTPS）：
+```javascript
+// ✅ 正确 - 使用 storage 工具转换为 HTTPS 临时 URL
+const { getTempFileURL } = require('./common/storage');
+
+// 单个文件
+const { tempFileURL } = await getTempFileURL(course.cover_image);
+return response.success({
+  cover_image: tempFileURL  // https://...
+});
+
+// 批量转换（列表接口）
+const fileIDs = list.filter(item => item.cover_image).map(item => item.cover_image);
+if (fileIDs.length > 0) {
+  const { fileList } = await getTempFileURL(fileIDs);
+  const urlMap = {};
+  fileList.forEach(f => { urlMap[f.fileID] = f.tempFileURL; });
+  list.forEach(item => {
+    if (item.cover_image) item.cover_image = urlMap[item.cover_image] || '';
+  });
+}
+```
+
+**涉及图片字段的接口，Code Review 必检项**：
+- [ ] `cover_image`、`goods_image`、`avatar`、`background_image`、`image_url` 等图片字段
+- [ ] 凡从数据库读取后直接返回给前端的，**必须先通过 `getTempFileURL` 转换**
+- [ ] 列表接口性能优化：批量传入 fileID 数组，一次转换所有 URL
+
+**前端显示注意事项**：
+```vue
+<!-- ✅ 正确 - 使用 API 返回的 HTTPS URL -->
+<image :src="course.coverImage" mode="aspectFill" />
+
+<!-- ✅ 有图显示图，无图降级到 emoji/渐变色 -->
+<view class="cover" :style="item.cover_image ? {} : { background: fallbackGradient }">
+  <image v-if="item.cover_image" :src="item.cover_image" mode="aspectFill" />
+  <text v-else>{{ fallbackEmoji }}</text>
+</view>
+```
+
+**教训**：测试时图片字段显示为 `object` 类型或值为 `cloud://` 开头时，应立即判定为未经转换，需在云函数侧修复，而非前端问题。
+
+---
 
 #### 错误7：查询参数为 null 导致返回空数据
 ```

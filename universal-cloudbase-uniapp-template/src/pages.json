@@ -106,6 +106,13 @@
       }
     },
 	{
+		"path": "pages/order/refunded/index",
+		"style": {
+        "navigationBarTitleText": "退款详情",
+        "navigationStyle": "custom"
+      }
+    },
+	{
 		"path": "pages/order/detail/index",
 		"style": {
         "navigationBarTitleText": "订单详情",

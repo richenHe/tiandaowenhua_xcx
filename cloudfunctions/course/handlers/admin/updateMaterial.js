@@ -13,6 +13,7 @@
  * @param {string} event.imageUrl   - 图片URL，对应 DB 字段 image_url
  * @param {string} event.videoUrl   - 视频URL，对应 DB 字段 video_url
  * @param {string} event.content    - 文字内容，对应 DB 字段 content
+ * @param {Array}  event.tags       - 标签数组，对应 DB 字段 tags（JSON）
  * @param {number} event.sortOrder  - 排序，对应 DB 字段 sort_order
  * @param {number} event.status     - 状态：0隐藏/1显示
  */
@@ -29,6 +30,7 @@ module.exports = async (event, context) => {
     imageUrl,
     videoUrl,
     content,
+    tags,
     sortOrder,
     status
   } = event;
@@ -54,6 +56,7 @@ module.exports = async (event, context) => {
     if (imageUrl !== undefined) fieldsToUpdate.image_url = imageUrl;
     if (videoUrl !== undefined) fieldsToUpdate.video_url = videoUrl;
     if (content !== undefined) fieldsToUpdate.content = content;
+    if (tags !== undefined) fieldsToUpdate.tags = tags ? JSON.stringify(tags) : null;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     if (status !== undefined) fieldsToUpdate.status = status;
 

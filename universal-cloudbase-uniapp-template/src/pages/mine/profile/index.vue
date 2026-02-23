@@ -215,7 +215,7 @@ const formData = ref({
   backgroundImageFileID: '', // 背景图片 fileID（用于保存）
   realName: '',
   phone: '',
-  gender: 'male',
+  gender: 1,
   birthdate: {
     year: '',
     month: '',
@@ -233,10 +233,10 @@ const refereeInfo = ref({
   status: ''
 })
 
-// 性别选项
+// 性别选项（与数据库 users.gender 一致：0女/1男）
 const genderOptions = [
-  { label: '男', value: 'male' },
-  { label: '女', value: 'female' },
+  { label: '男', value: 1 },
+  { label: '女', value: 0 },
 ]
 
 // 出生八字字段
@@ -339,11 +339,11 @@ const loadProfile = async () => {
       formData.value.backgroundImage = await StorageApi.getSingleTempFileURL(profile.background_image)
     }
     
-    // 解析性别
-    if (profile.gender === '男') {
-      formData.value.gender = 'male'
-    } else if (profile.gender === '女') {
-      formData.value.gender = 'female'
+    // 解析性别（数据库 0=女/1=男，兼容字符串'男'/'女'）
+    if (profile.gender === 1 || profile.gender === '男') {
+      formData.value.gender = 1
+    } else if (profile.gender === 0 || profile.gender === '女') {
+      formData.value.gender = 0
     }
 
     // 解析出生八字
@@ -384,13 +384,12 @@ const loadProfile = async () => {
     if (profile.referee_id) {
       refereeInfo.value.name = profile.referee_name || '未设置' // 使用推荐人姓名（referee_name）
       refereeInfo.value.status = profile.referee_confirmed_at ? '已确认' : '未确认'
-      // 使用推荐人等级（referee_level）显示等级
+      // 使用推荐人等级（referee_level）显示等级（与数据库 users.ambassador_level 一致：0普通用户/1准青鸾大使/2青鸾大使/3鸿鹄大使）
       const levelMap: Record<number, string> = {
         0: '普通用户',
         1: '准青鸾大使',
         2: '青鸾大使',
-        3: '鸿鹄大使',
-        4: '金凤大使'
+        3: '鸿鹄大使'
       }
       refereeInfo.value.level = levelMap[profile.referee_level || 0] || '普通用户'
     } else {
@@ -616,7 +615,7 @@ const handleSave = async () => {
       city: formData.value.region || '',
       avatar: formData.value.avatarFileID || '', // 使用 fileID 而不是临时URL
       backgroundImage: formData.value.backgroundImageFileID || '', // 使用 fileID
-      gender: formData.value.gender === 'male' ? '男' : '女',
+      gender: formData.value.gender,
       industry: formData.value.industry || '',
       birthday: birthday
     })

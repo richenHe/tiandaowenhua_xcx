@@ -42,6 +42,8 @@ const adminHandlers = {
   batchUpdateConfig: require('./handlers/admin/batchUpdateConfig'),
   getAmbassadorLevelConfigs: require('./handlers/admin/getAmbassadorLevelConfigs'),
   updateAmbassadorLevelConfig: require('./handlers/admin/updateAmbassadorLevelConfig'),
+  createAmbassadorLevelConfig: require('./handlers/admin/createAmbassadorLevelConfig'),
+  deleteAmbassadorLevelConfig: require('./handlers/admin/deleteAmbassadorLevelConfig'),
   initAmbassadorLevelConfigs: require('./handlers/admin/initAmbassadorLevelConfigs'),
   getStatistics: require('./handlers/admin/getStatistics'),
   getFeedbackList: require('./handlers/admin/getFeedbackList'),
@@ -59,10 +61,16 @@ const adminHandlers = {
   updateAnnouncement: require('./handlers/admin/updateAnnouncement'),
   deleteAnnouncement: require('./handlers/admin/deleteAnnouncement'),
   getAnnouncementList: require('./handlers/admin/getAnnouncementList'),
+  getAdminAnnouncementList: require('./handlers/admin/getAnnouncementList'),
   createAdminUser: require('./handlers/admin/createAdminUser'),
   updateAdminUser: require('./handlers/admin/updateAdminUser'),
   deleteAdminUser: require('./handlers/admin/deleteAdminUser'),
-  getAdminUserList: require('./handlers/admin/getAdminUserList')
+  getAdminUserList: require('./handlers/admin/getAdminUserList'),
+  // 轮播图管理
+  getAdminBannerList: require('./handlers/admin/getAdminBannerList'),
+  createBanner: require('./handlers/admin/createBanner'),
+  updateBanner: require('./handlers/admin/updateBanner'),
+  deleteBanner: require('./handlers/admin/deleteBanner')
 };
 
 // 路由配置

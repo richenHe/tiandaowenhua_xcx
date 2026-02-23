@@ -133,69 +133,7 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="withdraw-audit"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="withdraw-audit"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
@@ -227,71 +165,55 @@
       </div>
 
       <!-- 搜索栏 -->
-      <div class="search-bar">
-        <t-input 
-          v-model="filters.keyword" 
-          placeholder="大使姓名/手机号"
-          clearable
-          style="width: 220px;"
-        >
-          <template #prefix-icon>
-            <t-icon name="search" />
-          </template>
-        </t-input>
-        
-        <t-select 
-          v-model="filters.status" 
-          :options="statusOptions"
-          placeholder="提现状态"
-          clearable
-          style="width: 150px;"
-        />
-
-        <t-date-range-picker
-          v-model="filters.dateRange"
-          clearable
-          placeholder="申请时间"
-          style="width: 280px;"
-        />
-        
-        <t-button theme="primary" @click="handleSearch">
-          <template #icon><t-icon name="search" /></template>
-          查询
-        </t-button>
-        
-        <t-button theme="default" @click="handleReset">
-          <template #icon><t-icon name="refresh" /></template>
-          重置
-        </t-button>
-
-        <t-button 
-          theme="success" 
-          @click="handleBatchApprove"
-          :disabled="selectedRowKeys.length === 0"
-        >
-          <template #icon><t-icon name="check-circle" /></template>
-          批量通过
-        </t-button>
-
-        <t-button 
-          theme="danger" 
-          @click="handleBatchReject"
-          :disabled="selectedRowKeys.length === 0"
-        >
-          <template #icon><t-icon name="close-circle" /></template>
-          批量驳回
-        </t-button>
-
-        <t-button 
-          theme="warning" 
-          variant="outline"
-          @click="handleExportTransferList"
-          :disabled="!tableData.find(item => item.status === 1 && item.transfer_status === 0)"
-        >
-          <template #icon><t-icon name="download" /></template>
-          导出待打款列表
-        </t-button>
-      </div>
+      <t-form layout="inline" style="margin-bottom: 20px; background: white; padding: 16px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+        <t-form-item label="关键词">
+          <t-input 
+            v-model="filters.keyword" 
+            placeholder="大使姓名/手机号"
+            clearable
+            style="width: 220px;"
+          >
+            <template #prefix-icon><t-icon name="search" /></template>
+          </t-input>
+        </t-form-item>
+        <t-form-item label="提现状态">
+          <t-select 
+            v-model="filters.status" 
+            :options="statusOptions"
+            placeholder="全部"
+            clearable
+            style="width: 150px;"
+          />
+        </t-form-item>
+        <t-form-item label="申请时间">
+          <t-date-range-picker
+            v-model="filters.dateRange"
+            clearable
+            placeholder="选择日期范围"
+            style="width: 280px;"
+          />
+        </t-form-item>
+        <t-form-item>
+          <t-space>
+            <t-button theme="primary" @click="handleSearch">
+              <template #icon><t-icon name="search" /></template>查询
+            </t-button>
+            <t-button theme="default" @click="handleReset">
+              <template #icon><t-icon name="refresh" /></template>重置
+            </t-button>
+            <t-button theme="success" @click="handleBatchApprove" :disabled="selectedRowKeys.length === 0">
+              <template #icon><t-icon name="check-circle" /></template>批量通过
+            </t-button>
+            <t-button theme="danger" @click="handleBatchReject" :disabled="selectedRowKeys.length === 0">
+              <template #icon><t-icon name="close-circle" /></template>批量驳回
+            </t-button>
+            <t-button theme="warning" variant="outline" @click="handleExportTransferList"
+              :disabled="!tableData.find(item => item.status === 1)">
+              <template #icon><t-icon name="download" /></template>导出待转账列表
+            </t-button>
+          </t-space>
+        </t-form-item>
+      </t-form>
 
       <!-- 数据表格 -->
       <t-table
@@ -307,11 +229,12 @@
         stripe
         hover
       >
+        <!-- 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝） -->
         <template #status="{ row }">
           <t-tag v-if="row.status === 0" theme="warning">待审核</t-tag>
-          <t-tag v-else-if="row.status === 1 && row.transfer_status === 0" theme="primary">已通过(待打款)</t-tag>
-          <t-tag v-else-if="row.status === 1 && row.transfer_status === 1" theme="success">已打款</t-tag>
-          <t-tag v-else-if="row.status === 2" theme="danger">已驳回</t-tag>
+          <t-tag v-else-if="row.status === 1" theme="primary">审核通过待转账</t-tag>
+          <t-tag v-else-if="row.status === 2" theme="success">已转账</t-tag>
+          <t-tag v-else-if="row.status === 3" theme="danger">已拒绝</t-tag>
         </template>
 
         <template #amount="{ row }">
@@ -350,13 +273,13 @@
               驳回
             </t-button>
             <t-button 
-              v-if="row.status === 1 && row.transfer_status === 0"
+              v-if="row.status === 1"
               theme="warning" 
               size="small" 
               variant="text"
               @click="handleMarkTransferred(row)"
             >
-              标记已打款
+              标记已转账
             </t-button>
           </t-space>
         </template>
@@ -375,9 +298,9 @@
           <t-descriptions-item label="申请编号" :span="2">{{ currentRecord.withdraw_no }}</t-descriptions-item>
           <t-descriptions-item label="大使姓名">{{ currentRecord.user_name }}</t-descriptions-item>
           <t-descriptions-item label="大使等级">
-            <t-tag v-if="currentRecord.ambassador_level === 1" theme="default">云雀</t-tag>
-            <t-tag v-else-if="currentRecord.ambassador_level === 2" theme="primary">青鸾</t-tag>
-            <t-tag v-else-if="currentRecord.ambassador_level === 3" theme="warning">鸿鹄</t-tag>
+            <t-tag v-if="currentRecord.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
+            <t-tag v-else-if="currentRecord.ambassador_level === 2" theme="success">青鸾大使</t-tag>
+            <t-tag v-else-if="currentRecord.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
           </t-descriptions-item>
           <t-descriptions-item label="手机号">{{ currentRecord.user_phone }}</t-descriptions-item>
           <t-descriptions-item label="提现金额">
@@ -394,9 +317,9 @@
           </t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
             <t-tag v-if="currentRecord.status === 0" theme="warning">待审核</t-tag>
-            <t-tag v-else-if="currentRecord.status === 1 && currentRecord.transfer_status === 0" theme="primary">已通过(待打款)</t-tag>
-            <t-tag v-else-if="currentRecord.status === 1 && currentRecord.transfer_status === 1" theme="success">已打款</t-tag>
-            <t-tag v-else-if="currentRecord.status === 2" theme="danger">已驳回</t-tag>
+            <t-tag v-else-if="currentRecord.status === 1" theme="primary">审核通过待转账</t-tag>
+            <t-tag v-else-if="currentRecord.status === 2" theme="success">已转账</t-tag>
+            <t-tag v-else-if="currentRecord.status === 3" theme="danger">已拒绝</t-tag>
           </t-descriptions-item>
           <t-descriptions-item v-if="currentRecord.reject_reason" label="驳回原因" :span="2">
             {{ currentRecord.reject_reason }}
@@ -435,6 +358,7 @@
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/js/config.js"></script>
   <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -475,6 +399,7 @@
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
+            'mall-goods': '../order/mall-goods.html',
             'course-list': '../course/list.html',
             'schedule-list': '../course/schedule.html',
             'appointment-list': '../course/appointment.html',
@@ -520,11 +445,13 @@
           dateRange: []
         });
 
+        // 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝）
         const statusOptions = [
           { label: '全部', value: null },
           { label: '待审核', value: 0 },
-          { label: '已通过', value: 1 },
-          { label: '已驳回', value: 2 }
+          { label: '审核通过待转账', value: 1 },
+          { label: '已转账', value: 2 },
+          { label: '已拒绝', value: 3 }
         ];
 
         const pagination = ref({
@@ -666,7 +593,7 @@
 
         const handleMarkTransferred = async (row) => {
           const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '标记已打款',
+            header: '标记已转账',
             body: `确认已向 ${row.user_name} 转账 ¥${(row.amount / 100).toFixed(2)} 吗？`,
             theme: 'warning'
           });
@@ -675,7 +602,7 @@
 
           try {
             await AdminAPI.markWithdrawTransferred({ withdrawId: row.id });
-            TDesign.MessagePlugin.success('已标记为已打款');
+            TDesign.MessagePlugin.success('已标记为已转账');
             fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
@@ -722,7 +649,7 @@
         });
 
         return {
-          adminInfo,
+          activeMenuKey: 'withdraw-audit',adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -754,6 +681,7 @@
     });
 
     app.use(TDesign);
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
     app.mount('#app');
   </script>
 </body>

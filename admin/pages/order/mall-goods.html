@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商城商品管理 - 天道文化后台</title>
+  
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+
+    .page-content {
+      height: 100%;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 24px;
+    }
+
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .page-title { font-size: 20px; font-weight: 600; }
+
+    .search-form {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .status-on  { background: #e8f5e9; color: #388e3c; }
+    .status-off { background: #ffebee; color: #c62828; }
+
+    .stock-unlimited { color: #666; font-style: italic; }
+    .stock-normal    { color: #333; }
+    .stock-low       { color: #f57c00; font-weight: 600; }
+    .stock-out       { color: #c62828; font-weight: 600; }
+
+    /* 图片上传 */
+    .upload-container { margin-bottom: 8px; }
+    .upload-placeholder {
+      width: 160px; height: 160px;
+      border: 2px dashed #dcdcdc; border-radius: 6px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #fafafa; transition: all .2s;
+    }
+    .upload-placeholder:hover { border-color: #0052d9; background: #f0f4ff; }
+    .image-preview { position: relative; width: 160px; }
+    .image-preview img { width: 160px; height: 160px; object-fit: cover; border-radius: 6px; border: 1px solid #dcdcdc; display: block; }
+    .image-actions { margin-top: 8px; display: flex; gap: 8px; }
+    .upload-tips { margin-top: 6px; font-size: 12px; color: #999; }
+    .goods-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #eee; vertical-align: middle; }
+    .goods-thumb-placeholder { width: 48px; height: 48px; background: #f5f5f5; border-radius: 4px; border: 1px solid #eee; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; vertical-align: middle; }
+
+    /* TDesign 布局样式 - 必需！*/
+    .t-layout {
+      height: 100vh;
+    }
+
+    .t-layout__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      background: #fff;
+      border-bottom: 1px solid #dcdcdc;
+    }
+
+    .t-layout__sider {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+      width: 240px !important;
+      flex-shrink: 0;
+    }
+
+    .t-layout__content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 24px; background: #fff; border-bottom: 1px solid #dcdcdc;
+      ">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <sidebar-menu active-key="mall-goods"></sidebar-menu>
+
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+
+          <!-- 页面头部 -->
+          <div class="page-header">
+            <h1 class="page-title">商城商品管理</h1>
+            <t-button theme="primary" @click="openCreateDialog">
+              <template #icon><t-icon name="add" /></template>
+              新增商品
+            </t-button>
+          </div>
+
+          <!-- 搜索表单 -->
+          <div class="search-form">
+            <t-form :data="searchForm" layout="inline" @submit="handleSearch" @reset="handleReset">
+              <t-form-item label="商品名称" name="keyword">
+                <t-input v-model="searchForm.keyword" placeholder="请输入商品名称" style="width: 200px;" />
+              </t-form-item>
+              <t-form-item label="状态" name="status">
+                <t-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 120px;">
+                  <t-option :value="1" label="上架" />
+                  <t-option :value="0" label="下架" />
+                </t-select>
+              </t-form-item>
+              <t-form-item>
+                <t-button theme="primary" type="submit">查询</t-button>
+                <t-button theme="default" type="reset" style="margin-left: 8px;">重置</t-button>
+              </t-form-item>
+            </t-form>
+          </div>
+
+          <!-- 数据表格 -->
+          <div class="table-card">
+            <t-table
+              :data="goodsList"
+              :columns="columns"
+              :loading="loading"
+              :pagination="pagination"
+              row-key="id"
+              @page-change="handlePageChange"
+            >
+              <!-- 图片 -->
+              <template #image="{ row }">
+                <img v-if="row._imageURL" :src="row._imageURL" class="goods-thumb" />
+                <span v-else class="goods-thumb-placeholder">🎁</span>
+              </template>
+
+              <!-- 状态 -->
+              <template #status="{ row }">
+                <span :class="['status-tag', row.status === 1 ? 'status-on' : 'status-off']">
+                  {{ row.status === 1 ? '上架' : '下架' }}
+                </span>
+              </template>
+
+              <!-- 库存 -->
+              <template #stock="{ row }">
+                <span v-if="row.stock_quantity === -1" class="stock-unlimited">无限库存</span>
+                <span v-else-if="row.stock_quantity === 0" class="stock-out">已售罄</span>
+                <span v-else-if="row.stock_quantity <= 10" class="stock-low">{{ row.stock_quantity }}件（库存紧张）</span>
+                <span v-else class="stock-normal">{{ row.stock_quantity }}件</span>
+              </template>
+
+              <!-- 操作 -->
+              <template #operation="{ row }">
+                <t-space>
+                  <t-link theme="primary" @click="openEditDialog(row)">编辑</t-link>
+                  <t-link
+                    :theme="row.status === 1 ? 'warning' : 'success'"
+                    @click="toggleStatus(row)"
+                  >
+                    {{ row.status === 1 ? '下架' : '上架' }}
+                  </t-link>
+                  <t-link theme="danger" @click="handleDelete(row)">删除</t-link>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+
+          <!-- 新增/编辑对话框 -->
+          <t-dialog
+            v-model:visible="dialogVisible"
+            :header="isEdit ? '编辑商品' : '新增商品'"
+            width="600px"
+            :confirm-btn="{ loading: submitting, content: '保存' }"
+            @confirm="handleSubmit"
+            @close="resetForm"
+          >
+            <t-form
+              ref="formRef"
+              :data="formData"
+              :rules="formRules"
+              label-width="100px"
+              @submit="handleSubmit"
+            >
+              <t-form-item label="商品名称" name="goods_name">
+                <t-input v-model="formData.goods_name" placeholder="请输入商品名称" />
+              </t-form-item>
+
+              <t-form-item label="商品图片" name="goods_image">
+                <cloud-image-upload
+                  :model-value="formData._imageURL"
+                  @update:model-value="val => formData._imageURL = val"
+                  :file-id="formData.goods_image"
+                  @update:file-id="val => formData.goods_image = val"
+                  path-prefix="mall/goods"
+                  :item-id="formData.id || 'new'"
+                  :max-size="3 * 1024 * 1024"
+                  tips="支持 JPG/PNG/WEBP，不超过 3MB"
+                  :width="280"
+                  :height="160"
+                />
+              </t-form-item>
+
+              <t-form-item label="商品描述" name="description">
+                <t-textarea
+                  v-model="formData.description"
+                  placeholder="请输入商品描述（可选）"
+                  :maxlength="500"
+                  :autosize="{ minRows: 3, maxRows: 6 }"
+                />
+              </t-form-item>
+
+              <t-form-item label="功德分价格" name="merit_points_price">
+                <t-input-number
+                  v-model="formData.merit_points_price"
+                  placeholder="请输入功德分价格"
+                  :min="1"
+                  :step="1"
+                  style="width: 100%;"
+                />
+              </t-form-item>
+
+              <t-form-item label="库存数量" name="stock_quantity">
+                <t-space direction="vertical" style="width: 100%;">
+                  <t-checkbox v-model="unlimitedStock" @change="handleUnlimitedChange">无限库存</t-checkbox>
+                  <t-input-number
+                    v-if="!unlimitedStock"
+                    v-model="formData.stock_quantity"
+                    placeholder="请输入库存数量"
+                    :min="0"
+                    :step="1"
+                    style="width: 100%;"
+                  />
+                </t-space>
+              </t-form-item>
+
+              <t-form-item label="每人限兑" name="limit_per_user">
+                <t-space>
+                  <t-input-number
+                    v-model="formData.limit_per_user"
+                    :min="0"
+                    :step="1"
+                    style="width: 160px;"
+                  />
+                  <span style="color: #999; font-size: 13px;">0 = 不限制</span>
+                </t-space>
+              </t-form-item>
+
+              <t-form-item label="排序权重" name="sort_order">
+                <t-space>
+                  <t-input-number
+                    v-model="formData.sort_order"
+                    :min="0"
+                    :step="1"
+                    style="width: 160px;"
+                  />
+                  <span style="color: #999; font-size: 13px;">数字越小越靠前</span>
+                </t-space>
+              </t-form-item>
+
+              <t-form-item label="上架状态" name="status">
+                <t-radio-group v-model="formData.status">
+                  <t-radio :value="1">上架</t-radio>
+                  <t-radio :value="0">下架</t-radio>
+                </t-radio-group>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/libs/tcb-v2.js"></script>
+  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/cloudbase.js"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
+
+  <script>
+    const { createApp, ref, reactive, onMounted, computed } = Vue;
+
+    createApp({
+      setup() {
+        const adminInfo = ref(null);
+
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../login.html';
+            return false;
+          }
+          return true;
+        };
+
+        const handleLogout = () => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认退出',
+            body: '确定要退出登录吗？',
+            onConfirm: () => { AdminAPI.logout(); }
+          });
+        };
+
+        const handleMenuChange = (value) => {
+          const routes = {
+            'dashboard': '../../index.html',
+            'user-list': '../user/list.html',
+            'user-referee': '../user/referee.html',
+            'user-referee-logs': '../user/referee-logs.html',
+            'order-list': '../order/list.html',
+            'order-refund': '../order/refund.html',
+            'withdraw-audit': '../order/withdraw-audit.html',
+            'mall-goods': '../order/mall-goods.html',
+            'course-list': '../course/list.html',
+            'schedule-list': '../course/schedule.html',
+            'appointment-list': '../course/appointment.html',
+            'case-list': '../course/case.html',
+            'material-list': '../course/material.html',
+            'ambassador-list': '../ambassador/list.html',
+            'application-audit': '../ambassador/application-audit.html',
+            'activity-list': '../ambassador/activity.html',
+            'contract-list': '../ambassador/contract.html',
+            'admin-list': '../system/admin.html',
+            'config': '../system/config.html',
+            'announcement-list': '../system/announcement.html',
+            'feedback-list': '../system/feedback.html',
+            'notification-list': '../system/notification.html',
+            'level-config': '../system/level-config.html',
+          };
+          if (routes[value]) window.location.href = routes[value];
+        };
+
+        // ========== 列表相关 ==========
+        const loading = ref(false);
+        const goodsList = ref([]);
+        const searchForm = reactive({ keyword: '', status: '' });
+        const pagination = reactive({ current: 1, pageSize: 20, total: 0 });
+
+        const columns = [
+          { colKey: 'id', title: 'ID', width: 70 },
+          { colKey: 'image', title: '图片', width: 80 },
+          { colKey: 'goods_name', title: '商品名称', width: 160 },
+          { colKey: 'description', title: '描述', width: 180, ellipsis: true },
+          { colKey: 'merit_points_price', title: '功德分价格', width: 110 },
+          { colKey: 'stock', title: '库存', width: 140 },
+          { colKey: 'sold_quantity', title: '已售', width: 70 },
+          { colKey: 'limit_per_user', title: '每人限兑', width: 90,
+            cell: (h, { row }) => row.limit_per_user === 0 ? '不限' : `${row.limit_per_user}件` },
+          { colKey: 'sort_order', title: '排序', width: 70 },
+          { colKey: 'status', title: '状态', width: 80 },
+          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' }
+        ];
+
+        const fetchList = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.current,
+              page_size: pagination.pageSize,
+              keyword: searchForm.keyword || undefined,
+              status: searchForm.status !== '' ? searchForm.status : undefined
+            };
+            const data = await AdminAPI.getMallGoodsList(params);
+            const list = data.list || [];
+
+            // 批量转换图片 fileID → 临时 URL
+            await Promise.all(list.map(async (item) => {
+              if (item.goods_image) {
+                try {
+                  item._imageURL = await window.CloudStorageHelper.getSingleTempURL(item.goods_image);
+                } catch (e) {
+                  item._imageURL = '';
+                }
+              } else {
+                item._imageURL = '';
+              }
+            }));
+
+            goodsList.value = list;
+            pagination.total = data.total || 0;
+          } catch (error) {
+            TDesign.MessagePlugin.error('获取商品列表失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const handleSearch = () => { pagination.current = 1; fetchList(); };
+        const handleReset = () => {
+          Object.assign(searchForm, { keyword: '', status: '' });
+          handleSearch();
+        };
+        const handlePageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          fetchList();
+        };
+
+        // ========== 上下架 ==========
+        const toggleStatus = async (row) => {
+          const newStatus = row.status === 1 ? 0 : 1;
+          const label = newStatus === 1 ? '上架' : '下架';
+          TDesign.DialogPlugin.confirm({
+            header: `确认${label}`,
+            body: `确定要${label}商品"${row.goods_name}"吗？`,
+            onConfirm: async () => {
+              try {
+                await AdminAPI.updateMallGoods({ id: row.id, status: newStatus });
+                TDesign.MessagePlugin.success(`${label}成功`);
+                fetchList();
+              } catch (error) {
+                TDesign.MessagePlugin.error(`${label}失败: ` + error.message);
+              }
+            }
+          });
+        };
+
+        // ========== 删除 ==========
+        const handleDelete = (row) => {
+          TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除商品"${row.goods_name}"吗？此操作不可恢复。`,
+            theme: 'danger',
+            onConfirm: async () => {
+              try {
+                await AdminAPI.deleteMallGoods(row.id);
+                TDesign.MessagePlugin.success('删除成功');
+                fetchList();
+              } catch (error) {
+                TDesign.MessagePlugin.error('删除失败: ' + error.message);
+              }
+            }
+          });
+        };
+
+        // ========== 新增/编辑对话框 ==========
+        const dialogVisible = ref(false);
+        const isEdit = ref(false);
+        const submitting = ref(false);
+        const unlimitedStock = ref(true);
+        const formRef = ref(null);
+
+
+        const defaultForm = () => ({
+          id: null,
+          goods_name: '',
+          description: '',
+          merit_points_price: null,
+          stock_quantity: -1,
+          limit_per_user: 0,
+          sort_order: 0,
+          status: 1,
+          goods_image: '',    // 存 fileID
+          _imageURL: ''       // 仅前端展示用的临时 URL
+        });
+
+        const formData = reactive(defaultForm());
+
+        const formRules = {
+          goods_name: [{ required: true, message: '商品名称不能为空', trigger: 'blur' }],
+          merit_points_price: [{ required: true, message: '功德分价格不能为空', trigger: 'blur' }]
+        };
+
+
+        const handleUnlimitedChange = (val) => {
+          formData.stock_quantity = val ? -1 : 100;
+        };
+
+        const openCreateDialog = () => {
+          isEdit.value = false;
+          Object.assign(formData, defaultForm());
+          unlimitedStock.value = true;
+          dialogVisible.value = true;
+        };
+
+        const openEditDialog = async (row) => {
+          isEdit.value = true;
+          Object.assign(formData, {
+            id: row.id,
+            goods_name: row.goods_name,
+            description: row.description || '',
+            merit_points_price: row.merit_points_price,
+            stock_quantity: row.stock_quantity,
+            limit_per_user: row.limit_per_user || 0,
+            sort_order: row.sort_order || 0,
+            status: row.status,
+            goods_image: row.goods_image || '',
+            _imageURL: row._imageURL || ''
+          });
+          unlimitedStock.value = row.stock_quantity === -1;
+          dialogVisible.value = true;
+        };
+
+        const resetForm = () => {
+          Object.assign(formData, defaultForm());
+          unlimitedStock.value = true;
+        };
+
+        const handleSubmit = async () => {
+          if (!formData.goods_name.trim()) {
+            TDesign.MessagePlugin.warning('请填写商品名称');
+            return;
+          }
+          if (!formData.merit_points_price || formData.merit_points_price <= 0) {
+            TDesign.MessagePlugin.warning('请填写有效的功德分价格');
+            return;
+          }
+
+          submitting.value = true;
+          try {
+            const payload = {
+              goods_name: formData.goods_name.trim(),
+              description: formData.description,
+              merit_points_price: formData.merit_points_price,
+              stock_quantity: unlimitedStock.value ? -1 : formData.stock_quantity,
+              limit_per_user: formData.limit_per_user,
+              sort_order: formData.sort_order,
+              status: formData.status,
+              goods_image: formData.goods_image || ''
+            };
+
+            if (isEdit.value) {
+              await AdminAPI.updateMallGoods({ id: formData.id, ...payload });
+              TDesign.MessagePlugin.success('更新成功');
+            } else {
+              await AdminAPI.createMallGoods(payload);
+              TDesign.MessagePlugin.success('创建成功');
+            }
+
+            dialogVisible.value = false;
+            fetchList();
+          } catch (error) {
+            TDesign.MessagePlugin.error((isEdit.value ? '更新' : '创建') + '失败: ' + error.message);
+          } finally {
+            submitting.value = false;
+          }
+        };
+
+        onMounted(() => {
+          if (checkAuth()) fetchList();
+        });
+
+        return {
+          activeMenuKey: 'mall-goods',adminInfo, handleLogout, handleMenuChange,
+          loading, goodsList, searchForm, pagination, columns,
+          handleSearch, handleReset, handlePageChange,
+          toggleStatus, handleDelete,
+          dialogVisible, isEdit, submitting, unlimitedStock, formRef,
+          formData, formRules,
+          handleUnlimitedChange, openCreateDialog, openEditDialog, resetForm, handleSubmit
+        };
+      }
+    }).use(TDesign)
+      .component('sidebar-menu', SidebarNavigation.SidebarMenu)
+      .component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
+      .mount('#app');
+  </script>
+</body>
+</html>

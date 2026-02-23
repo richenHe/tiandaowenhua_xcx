@@ -202,7 +202,7 @@ const formData = ref({
   nickName: '', // 微信昵称
   realName: '',
   phone: '',
-  gender: 'male',
+  gender: 1,
   birthdate: {
     year: '',
     month: '',
@@ -213,10 +213,10 @@ const formData = ref({
   region: '',
 });
 
-// 性别选项
+// 性别选项（与数据库 users.gender 一致：0女/1男）
 const genderOptions = [
-  { label: '男', value: 'male' },
-  { label: '女', value: 'female' },
+  { label: '男', value: 1 },
+  { label: '女', value: 0 },
 ];
 
 // 出生八字字段
@@ -456,7 +456,7 @@ const handleSubmit = async () => {
       city: formData.value.region || '',
       avatar: formData.value.avatarUrl || '',
       nickname: formData.value.nickName || '',
-      gender: formData.value.gender === 'male' ? '男' : '女',
+      gender: formData.value.gender,
       industry: formData.value.industry || '',
       birthday: birthday
     });

@@ -118,69 +118,7 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="order-list"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="order-list"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
@@ -203,9 +141,9 @@
         
         <t-form-item label="订单类型" name="orderType">
           <t-select v-model="searchForm.orderType" placeholder="请选择订单类型" clearable>
-            <t-option value="course" label="课程订单" />
-            <t-option value="retrain" label="复训订单" />
-            <t-option value="upgrade" label="升级订单" />
+            <t-option :value="1" label="课程订单" />
+            <t-option :value="2" label="复训订单" />
+            <t-option :value="4" label="大使升级" />
           </t-select>
         </t-form-item>
         
@@ -213,9 +151,9 @@
           <t-select v-model="searchForm.status" placeholder="请选择订单状态" clearable>
             <t-option :value="0" label="待支付" />
             <t-option :value="1" label="已支付" />
-            <t-option :value="2" label="退款中" />
-            <t-option :value="3" label="已退款" />
-            <t-option :value="-1" label="已取消" />
+            <t-option :value="2" label="已取消" />
+            <t-option :value="3" label="已关闭" />
+            <t-option :value="4" label="已退款" />
           </t-select>
         </t-form-item>
         
@@ -253,11 +191,11 @@
         row-key="id"
         @page-change="handlePageChange"
       >
-        <!-- 订单类型 -->
+        <!-- 订单类型（与数据库 orders.order_type 一致：1课程/2复训/4大使升级） -->
         <template #orderType="{ row }">
-          <span v-if="row.order_type === 'course'">课程订单</span>
-          <span v-else-if="row.order_type === 'retrain'">复训订单</span>
-          <span v-else-if="row.order_type === 'upgrade'">升级订单</span>
+          <span v-if="row.order_type === 1">课程订单</span>
+          <span v-else-if="row.order_type === 2">复训订单</span>
+          <span v-else-if="row.order_type === 4">大使升级</span>
           <span v-else>{{ row.order_type }}</span>
         </template>
         
@@ -320,9 +258,10 @@
           <t-descriptions-item label="订单编号">{{ currentOrder.order_no }}</t-descriptions-item>
           <t-descriptions-item label="用户昵称">{{ currentOrder.user_nickname }}</t-descriptions-item>
           <t-descriptions-item label="订单类型">
-            <span v-if="currentOrder.order_type === 'course'">课程订单</span>
-            <span v-else-if="currentOrder.order_type === 'retrain'">复训订单</span>
-            <span v-else-if="currentOrder.order_type === 'upgrade'">升级订单</span>
+            <span v-if="currentOrder.order_type === 1">课程订单</span>
+            <span v-else-if="currentOrder.order_type === 2">复训订单</span>
+            <span v-else-if="currentOrder.order_type === 4">大使升级</span>
+            <span v-else>{{ currentOrder.order_type }}</span>
           </t-descriptions-item>
           <t-descriptions-item label="商品名称">{{ currentOrder.item_name }}</t-descriptions-item>
           <t-descriptions-item label="订单金额">¥{{ currentOrder.total_amount }}</t-descriptions-item>
@@ -359,6 +298,7 @@
   <script src="../../assets/js/config.js"></script>
   <!-- API 封装 -->
   <script src="../../assets/js/admin-api.js"></script>
+  <script src="../../assets/js/sidebar-navigation.js"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -399,6 +339,7 @@
             'order-list': '../order/list.html',
             'order-refund': '../order/refund.html',
             'withdraw-audit': '../order/withdraw-audit.html',
+            'mall-goods': '../order/mall-goods.html',
             'course-list': '../course/list.html',
             'schedule-list': '../course/schedule.html',
             'appointment-list': '../course/appointment.html',
@@ -596,16 +537,16 @@
           }
         };
 
-        // 获取状态文本
+        // 获取状态文本（与数据库 orders.pay_status 一致：0待支付/1已支付/2已取消/3已关闭/4已退款）
         const getStatusText = (status) => {
           const statusMap = {
             0: '待支付',
             1: '已支付',
-            2: '退款中',
-            3: '已退款',
-            '-1': '已取消'
+            2: '已取消',
+            3: '已关闭',
+            4: '已退款'
           };
-          return statusMap[status] || '未知';
+          return statusMap[status] ?? '未知';
         };
 
         // 获取状态样式类
@@ -613,9 +554,9 @@
           const classMap = {
             0: 'status-pending',
             1: 'status-paid',
-            2: 'status-refunding',
-            3: 'status-refunded',
-            '-1': 'status-cancelled'
+            2: 'status-cancelled',
+            3: 'status-closed',
+            4: 'status-refunded'
           };
           return classMap[status] || '';
         };
@@ -630,7 +571,7 @@
         });
 
         return {
-          adminInfo,
+          activeMenuKey: 'order-list',adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -652,7 +593,7 @@
           getStatusClass,
           };
       }
-    }).use(TDesign).mount('#app');
+    }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
   </script>
 </body>
 </html>

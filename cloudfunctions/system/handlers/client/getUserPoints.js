@@ -9,12 +9,22 @@ module.exports = async (event, context) => {
   const { user } = context;  // user 已通过 checkClientAuth 鉴权
 
   try {
-    // 返回用户积分信息（使用下划线命名，与数据库一致）
+    const meritPoints = Math.round(parseFloat(user.merit_points) || 0);
+    const cashPointsAvailable = Math.round(parseFloat(user.cash_points_available) || 0);
+    const cashPointsFrozen = Math.round(parseFloat(user.cash_points_frozen) || 0);
+    const cashPointsPending = Math.round(parseFloat(user.cash_points_pending) || 0);
+
     return response.success({
-      merit_points: parseFloat(user.merit_points) || 0,          // 功德分
-      cash_points_frozen: parseFloat(user.cash_points_frozen) || 0,      // 冻结积分
-      cash_points_available: parseFloat(user.cash_points_available) || 0, // 可用积分
-      cash_points_pending: parseFloat(user.cash_points_pending) || 0     // 提现中积分
+      // camelCase（前端规范）
+      meritPoints,
+      cashPointsAvailable,
+      cashPointsFrozen,
+      cashPointsPending,
+      // snake_case 兼容字段
+      merit_points: meritPoints,
+      cash_points_available: cashPointsAvailable,
+      cash_points_frozen: cashPointsFrozen,
+      cash_points_pending: cashPointsPending
     }, '获取成功');
 
   } catch (error) {

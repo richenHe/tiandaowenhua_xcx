@@ -211,10 +211,10 @@ const loadReferralStats = async () => {
 const loadUserPoints = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
-    const points = await SystemApi.getUserPoints();
+    const points = await SystemApi.getUserPoints() as any;
     userPoints.value = {
-      meritPoints: points.meritPoints || 0,
-      cashPointsAvailable: points.cashPointsAvailable || 0
+      meritPoints: points.merit_points ?? points.meritPoints ?? 0,
+      cashPointsAvailable: points.cash_points_available ?? points.cashPointsAvailable ?? 0
     };
     uni.hideLoading()
   } catch (error) {
@@ -374,10 +374,14 @@ const handleMenuClick = (type: string) => {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding: 48rpx 32rpx;
-  padding-top: calc(48rpx + var(--status-bar-height));
+  // 顶部让出状态栏 + 胶囊按钮，内容紧跟其下
+  padding: 0 32rpx 40rpx;
+  padding-top: calc(var(--status-bar-height) + 80rpx);
   color: white;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 // 背景图片遮罩层
@@ -502,9 +506,9 @@ const handleMenuClick = (type: string) => {
   color: $td-text-color-secondary;
 }
 
-// 滚动区域
+// 滚动区域（头部约 250rpx + 统计区 168rpx = 418rpx）
 .scroll-area {
-  height: calc(100vh - 394rpx - var(--status-bar-height));
+  height: calc(100vh - 418rpx - var(--status-bar-height));
 }
 
 .scroll-content {

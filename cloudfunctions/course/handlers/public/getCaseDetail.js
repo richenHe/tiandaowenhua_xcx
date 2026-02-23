@@ -1,7 +1,7 @@
 /**
  * 获取案例详情（公开接口）
  */
-const { findOne, update } = require('../../common/db');
+const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -15,26 +15,29 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
-    // 查询案例详情
-    const caseDetail = await findOne(
-      'academy_cases',
-      'id = ? AND status = 1 AND deleted_at IS NULL',
-      [id]
-    );
+    // 查询案例详情（使用 Query Builder，academy_cases 无 deleted_at 列）
+    const { data: caseDetail, error } = await db
+      .from('academy_cases')
+      .select('*')
+      .eq('id', id)
+      .eq('status', 1)
+      .single();
+
+    if (error && !error.message?.includes('0 rows')) {
+      throw error;
+    }
 
     if (!caseDetail) {
       return response.notFound('案例不存在或已下架');
     }
 
     // 增加浏览次数
-    await update(
-      'academy_cases',
-      { view_count: caseDetail.view_count + 1 },
-      'id = ?',
-      [id]
-    );
+    await db
+      .from('academy_cases')
+      .update({ view_count: (caseDetail.view_count || 0) + 1 })
+      .eq('id', id);
 
-    caseDetail.view_count += 1;
+    caseDetail.view_count = (caseDetail.view_count || 0) + 1;
 
     return response.success(caseDetail);
 

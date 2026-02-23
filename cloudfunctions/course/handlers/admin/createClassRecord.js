@@ -21,17 +21,15 @@ const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  // 接收 camelCase 参数
-  const {
-    courseId,
-    classDate,
-    startTime,
-    endTime,
-    classLocation,
-    teacher,
-    totalQuota,
-    remark
-  } = event;
+  // 接收 camelCase 参数，同时兼容 snake_case（防止旧客户端传参）
+  const courseId = event.courseId || event.course_id;
+  const classDate = event.classDate || event.class_date;
+  const startTime = event.startTime || event.start_time;
+  const endTime = event.endTime || event.end_time;
+  const classLocation = event.classLocation || event.class_location;
+  const teacher = event.teacher;
+  const totalQuota = event.totalQuota || event.total_quota;
+  const remark = event.remark;
 
   try {
     // 参数验证（camelCase key）
@@ -60,7 +58,7 @@ module.exports = async (event, context) => {
     });
 
     return response.success({
-      classRecordId: result.id
+      class_record_id: result.id
     }, '上课排期创建成功');
 
   } catch (error) {

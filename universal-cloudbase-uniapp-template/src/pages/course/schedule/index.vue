@@ -17,7 +17,7 @@
             <view class="schedule-title">{{ schedule.courseName }} 第{{ schedule.period }}期</view>
 
             <view class="schedule-info">
-              <view class="info-item">📅 {{ schedule.startDate }} 至 {{ schedule.endDate }}</view>
+              <view class="info-item">📅 {{ schedule.startDate }}{{ schedule.startTime ? ' ' + schedule.startTime : '' }}</view>
               <view class="info-item">📍 {{ schedule.location }}</view>
               <view class="info-item">👨‍🏫 {{ schedule.instructor }}</view>
               <view class="info-item">👥 剩余: {{ schedule.remainingSlots }}/{{ schedule.totalSlots }}</view>
@@ -72,14 +72,14 @@ const loadSchedules = async () => {
     schedules.value = result.list.map((item: any) => ({
       id: item.id,
       courseName: item.course_name,
-      period: '', // 期数信息需要从其他字段获取
+      period: '',
       startDate: item.class_date,
-      endDate: item.class_date, // 如果有结束日期字段可以使用
+      startTime: item.start_time || '',   // 格式: "HH:mm-HH:mm"
       location: item.location,
       instructor: item.teacher,
       remainingSlots: item.available_quota,
       totalSlots: item.total_quota,
-      registrationDeadline: item.class_date, // 报名截止时间
+      registrationDeadline: item.class_date,
       isAppointed: item.is_appointed === 1
     }));
     uni.hideLoading()

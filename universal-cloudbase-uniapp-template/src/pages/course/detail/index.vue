@@ -6,7 +6,15 @@
       <!-- 课程内容 -->
       <view v-if="!isLoading">
         <!-- 封面图片 -->
-        <view class="cover-image">📚</view>
+        <view class="cover-image" :style="courseInfo.coverImage ? {} : { background: getCourseGradient(courseInfo.type) }">
+          <image
+            v-if="courseInfo.coverImage"
+            :src="courseInfo.coverImage"
+            class="cover-image-img"
+            mode="aspectFill"
+          />
+          <text v-else class="cover-image-emoji">{{ getCourseEmoji(courseInfo.type) }}</text>
+        </view>
 
         <view class="page-content">
           <!-- 课程基本信息 -->
@@ -113,6 +121,7 @@ const courseInfo = ref({
   type: 1,
   price: 0,
   soldCount: 0,
+  coverImage: '',
   description: '',
   outline: [] as string[],
   instructor: '',
@@ -120,6 +129,20 @@ const courseInfo = ref({
   user_course_id: null as number | null,
   attend_count: 1,
 });
+
+const getCourseEmoji = (type: number): string => {
+  const map: Record<number, string> = { 1: '📚', 2: '🎓', 3: '🔄' };
+  return map[type] || '📚';
+};
+
+const getCourseGradient = (type: number): string => {
+  const map: Record<number, string> = {
+    1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    3: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+  };
+  return map[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+};
 
 // 加载状态
 const isLoading = ref(true);
@@ -136,6 +159,7 @@ const loadCourseDetail = async (courseId: number) => {
     courseInfo.value.type = course.type;
     courseInfo.value.price = course.current_price || 0;
     courseInfo.value.soldCount = course.sold_count || 0;
+    courseInfo.value.coverImage = course.cover_image || '';
     courseInfo.value.description = course.description || '';
     courseInfo.value.instructor = course.teacher || '';
     courseInfo.value.is_purchased = course.is_purchased || false;
@@ -245,6 +269,17 @@ const handleBuy = () => {
   align-items: center;
   justify-content: center;
   font-size: 128rpx;
+  overflow: hidden;
+
+  .cover-image-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .cover-image-emoji {
+    font-size: 128rpx;
+  }
 }
 
 .page-content {

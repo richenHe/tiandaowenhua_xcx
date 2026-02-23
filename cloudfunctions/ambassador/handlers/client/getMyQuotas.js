@@ -32,18 +32,15 @@ module.exports = async (event, context) => {
     let usedQuotas = 0;
 
     (quotas || []).forEach(quota => {
-      totalQuotas += quota.total_count;
-      usedQuotas += quota.used_count;
+      totalQuotas += quota.total_quantity;
+      usedQuotas += quota.used_quantity;
     });
 
-    // 查询名额使用记录
+    // 查询名额使用记录（不使用FK join，直接查询）
     const { data: usageRecords, error: usageError } = await db
       .from('quota_usage_records')
-      .select(`
-        *,
-        receiver:users!receiver_id(real_name, phone)
-      `)
-      .eq('giver_id', user.id)
+      .select('*')
+      .eq('ambassador_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
 

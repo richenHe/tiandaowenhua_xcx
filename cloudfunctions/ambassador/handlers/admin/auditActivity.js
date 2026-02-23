@@ -66,17 +66,17 @@ module.exports = async (event, context) => {
         merit_points: newBalance
       }, { id: user.id });
 
-      // 记录功德点日志
+      // 记录功德点日志（字段名与 DB merit_points_records 表一致）
       await insert('merit_points_records', {
         user_id: user.id,
         user_uid: user.uid,
         _openid: user._openid || '',
-        change_type: 1,
+        type: 1,                          // 1=获得
+        source: 5,                        // 5=沙龙活动
         amount: meritPointsNum,
-        before_balance: user.merit_points || 0,
-        after_balance: newBalance,
-        description: `活动审核通过：${activity.activity_name || ''}`,
-        admin_id: admin.id,
+        balance_after: newBalance,
+        activity_name: activity.activity_name || null,
+        remark: `活动审核通过：${activity.activity_name || ''}`,
         created_at: formatDateTime(new Date())
       });
     }

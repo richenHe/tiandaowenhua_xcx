@@ -35,6 +35,7 @@ module.exports = async (event, context) => {
     // 使用 upsert 更新或插入订阅记录
     await upsert('notification_subscriptions', {
       user_id: user.id,
+      _openid: user._openid || '',
       config_id,
       subscribed: subscribed ? 1 : 0,
       updated_at: utils.formatDateTime(new Date())

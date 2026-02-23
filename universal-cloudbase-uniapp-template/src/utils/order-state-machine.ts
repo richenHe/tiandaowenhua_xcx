@@ -10,20 +10,22 @@ export enum OrderType {
   UPGRADE = 4     // 大使升级
 }
 
-// 订单状态
+// 订单支付状态（与数据库 orders.pay_status 一致）
 export enum OrderStatus {
   PENDING = 0,    // 待支付
   PAID = 1,       // 已支付
   CANCELLED = 2,  // 已取消
-  REFUNDED = 3    // 已退款
+  CLOSED = 3,     // 已关闭
+  REFUNDED = 4    // 已退款
 }
 
-// 支付状态
+// 支付状态（与数据库 orders.pay_status 一致）
 export enum PayStatus {
-  UNPAID = 0,     // 未支付
+  UNPAID = 0,     // 待支付
   PAID = 1,       // 已支付
-  REFUNDING = 2,  // 退款中
-  REFUNDED = 3    // 已退款
+  CANCELLED = 2,  // 已取消
+  CLOSED = 3,     // 已关闭
+  REFUNDED = 4    // 已退款
 }
 
 // 订单类型名称映射
@@ -38,14 +40,16 @@ export const OrderStatusNames: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: '待支付',
   [OrderStatus.PAID]: '已支付',
   [OrderStatus.CANCELLED]: '已取消',
+  [OrderStatus.CLOSED]: '已关闭',
   [OrderStatus.REFUNDED]: '已退款'
 }
 
 // 支付状态名称映射
 export const PayStatusNames: Record<PayStatus, string> = {
-  [PayStatus.UNPAID]: '未支付',
+  [PayStatus.UNPAID]: '待支付',
   [PayStatus.PAID]: '已支付',
-  [PayStatus.REFUNDING]: '退款中',
+  [PayStatus.CANCELLED]: '已取消',
+  [PayStatus.CLOSED]: '已关闭',
   [PayStatus.REFUNDED]: '已退款'
 }
 

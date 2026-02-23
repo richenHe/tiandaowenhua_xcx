@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
       { value: 5, label: '其他反馈', icon: 'chat' }
     ];
 
-    return response.success(feedbackTypes, '获取成功');
+    return response.success({ list: feedbackTypes }, '获取成功');
 
   } catch (error) {
     console.error('[getFeedbackTypes] 失败:', error);

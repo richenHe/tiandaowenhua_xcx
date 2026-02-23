@@ -3,7 +3,7 @@
  * 订单过期检查、用户课程记录生成
  */
 
-const { db } = require('common');
+const { getDb } = require('../common/db');
 
 /**
  * 检查订单是否已过期（创建后 30 分钟未支付自动关闭）
@@ -11,11 +11,16 @@ const { db } = require('common');
  * @returns {Promise<boolean>} 是否已过期
  */
 async function checkOrderExpiry(orderNo) {
-  const orders = await db.query(
-    'SELECT * FROM orders WHERE order_no = ? AND pay_status = 0 AND is_deleted = 0',
-    [orderNo]
-  );
-  const order = orders[0];
+  const db = getDb();
+
+  const { data: orders } = await db
+    .from('orders')
+    .select('*')
+    .eq('order_no', orderNo)
+    .eq('pay_status', 0)
+    .eq('is_deleted', 0);
+
+  const order = orders?.[0];
   if (!order) return true; // 订单不存在视为过期
 
   // 订单时效固定 30 分钟
@@ -24,51 +29,25 @@ async function checkOrderExpiry(orderNo) {
 
   // 如果已过期，自动关闭订单
   if (isExpired) {
-    await db.query(
-      'UPDATE orders SET pay_status = 3, remark = \'超时自动关闭\' WHERE order_no = ? AND pay_status = 0',
-      [orderNo]
-    );
+    await db.from('orders').update({
+      pay_status: 3,
+      remark: '超时自动关闭'
+    }).eq('order_no', orderNo).eq('pay_status', 0);
   }
 
   return isExpired;
 }
 
 /**
- * 支付成功后生成用户课程记录
+ * 支付成功后生成用户课程记录（已废弃，逻辑已迁移到 payment.js）
+ * @deprecated 使用 payment.js 中的 handleCoursePurchase 替代
  * @param {Object} conn - 事务连接对象
  * @param {Object} order - 订单信息
- * @param {number} order.id - 订单 ID
- * @param {string} order._openid - 用户 openid
- * @param {number} order.user_id - 用户 ID
- * @param {number} order.course_id - 课程 ID
- * @param {string} order.course_type - 课程类型（'basic'/'advanced'）
  * @returns {Promise<void>}
  */
 async function generateUserCourseRecord(conn, order) {
-  if (!conn || !order) {
-    throw new Error('缺少必要的参数：conn, order');
-  }
-
-  // 创建用户课程记录
-  await conn.execute(
-    'INSERT INTO user_courses (_openid, user_id, course_id, order_id, status) VALUES (?, ?, ?, ?, 1)',
-    [order._openid, order.user_id, order.course_id, order.id]
-  );
-
-  // 密训班额外赠送初探班
-  if (order.course_type === 'advanced') {
-    const [rows] = await conn.execute(
-      'SELECT id FROM courses WHERE type = 1 AND status = 1 LIMIT 1'
-    );
-    const basicCourse = rows[0] || rows;
-
-    if (basicCourse && basicCourse.id) {
-      await conn.execute(
-        'INSERT INTO user_courses (_openid, user_id, course_id, order_id, is_gift, source_order_id, status) VALUES (?, ?, ?, ?, 1, ?, 1)',
-        [order._openid, order.user_id, basicCourse.id, order.id, order.id]
-      );
-    }
-  }
+  console.warn('[Order] generateUserCourseRecord 已废弃，请使用 payment.js 中的业务逻辑');
+  throw new Error('此方法已废弃，业务逻辑已迁移到 payment.js');
 }
 
 /**

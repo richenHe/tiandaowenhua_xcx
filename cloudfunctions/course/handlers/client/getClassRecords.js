@@ -37,15 +37,20 @@ module.exports = async (event, context) => {
       page
     });
 
+    // 查询课程名称
+    const { data: courseInfo } = await db
+      .from('courses')
+      .select('name')
+      .eq('id', finalCourseId)
+      .single();
+    const courseName = courseInfo ? courseInfo.name : null;
+
     // 构建查询
     let queryBuilder = db
       .from('class_records')
       .select(`
         id,
         course_id,
-        course_name,
-        course_type,
-        period,
         class_date,
         class_time,
         class_location,
@@ -88,9 +93,10 @@ module.exports = async (event, context) => {
     const list = (result.list || []).map(cr => ({
       id: cr.id,
       course_id: cr.course_id,
-      course_name: cr.course_name,
+      course_name: courseName,
       class_date: cr.class_date,
       class_time: cr.class_time,
+      start_time: cr.class_time ? cr.class_time.split('-')[0] : null,
       location: cr.class_location,
       teacher: cr.teacher,
       total_quota: cr.total_quota,
