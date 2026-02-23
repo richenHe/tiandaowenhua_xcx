@@ -179,6 +179,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
@@ -317,6 +318,11 @@ const filteredProducts = computed(() => {
   const category = categoryMap[activeCategory.value]
   return products.value.filter(p => p.category === category)
 })
+
+// 每次页面显示时刷新积分（从兑换页返回后同步最新余额）
+onShow(() => {
+  loadUserPoints();
+});
 
 onMounted(() => {
   // 获取系统信息计算实际的头部高度
@@ -536,38 +542,43 @@ const handleExchangeCourse = (course: any) => {
   });
 };
 
-// 执行兑换
+// 执行兑换（真实 API 调用）
 const performExchange = async (
   type: 'goods' | 'course',
   itemId: number,
   paymentPlan: { meritPointsToUse: number; cashPointsToUse: number; needsCashPayment: boolean; remainingMeritPoints: number; remainingCashPoints: number }
 ) => {
-  console.log('Performing exchange:', { type, itemId, paymentPlan });
+  try {
+    if (type === 'goods') {
+      await OrderApi.exchangeGoods({
+        goods_id: itemId,
+        quantity: 1,
+        use_cash_points_if_not_enough: paymentPlan.cashPointsToUse > 0
+      });
+    } else {
+      // 课程兑换：传 course_id，调用独立接口
+      await OrderApi.exchangeCourse({
+        course_id: itemId,
+        use_cash_points_if_not_enough: paymentPlan.cashPointsToUse > 0
+      });
+    }
 
-  // 模拟API调用
-  uni.showLoading({ title: '兑换中...' });
-
-  setTimeout(() => {
-    uni.hideLoading();
-
-    // 更新本地功德分和积分
-    userMeritPoints.value = paymentPlan.remainingMeritPoints;
-    userCashPoints.value = paymentPlan.remainingCashPoints;
+    // 从服务端重新拉取最新积分，确保数据一致性
+    await loadUserPoints();
 
     uni.showToast({
       title: '兑换成功',
       icon: 'success',
       duration: 2000,
     });
-
-    // 实际应该调用: POST /api/merit-points/exchange
-    // body: {
-    //   goods_id: itemId (if type === 'goods'),
-    //   course_id: itemId (if type === 'course'),
-    //   merit_points_used: paymentPlan.meritPointsToUse,
-    //   cash_points_used: paymentPlan.cashPointsToUse
-    // }
-  }, 1500);
+  } catch (error: any) {
+    console.error('兑换失败:', error);
+    uni.showToast({
+      title: error?.message || '兑换失败，请重试',
+      icon: 'none',
+      duration: 2500,
+    });
+  }
 };
 </script>
 

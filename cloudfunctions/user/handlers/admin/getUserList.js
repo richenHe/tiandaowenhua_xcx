@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
 
     // 关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`real_name.ilike.%${keyword}%,phone.ilike.%${keyword}%,referee_code.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`real_name.like.%${keyword}%,phone.like.%${keyword}%,referee_code.like.%${keyword}%`);
     }
 
     // 大使等级筛选

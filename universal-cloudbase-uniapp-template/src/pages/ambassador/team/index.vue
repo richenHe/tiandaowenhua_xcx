@@ -47,6 +47,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 
@@ -85,6 +86,10 @@ const loadTeamMembers = async () => {
 }
 
 onMounted(() => {
+  loadTeamMembers()
+})
+
+onShow(() => {
   loadTeamMembers()
 })
 </script>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>资料管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-header{margin-bottom:24px}.page-title{font-size:20px;font-weight:600;color:#333;margin:0 0 8px 0}.page-desc{font-size:14px;color:#999;margin:0}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>素材管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-header{margin-bottom:24px}.page-title{font-size:20px;font-weight:600;color:#333;margin:0 0 8px 0}.page-desc{font-size:14px;color:#999;margin:0}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
     .upload-placeholder{width:200px;height:160px;border:2px dashed #dcdcdc;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;}
     .upload-placeholder:hover{border-color:#0052d9;background:#f3f3f3;}
     .image-preview{position:relative;width:200px;}
@@ -62,13 +62,13 @@
         <sidebar-menu active-key="material-list"></sidebar-menu>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">资料管理</h1><p class="page-desc">管理课程学习资料和文档</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="资料名称" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.type" :options="typeOptions" placeholder="资料类型" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">上传资料</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.category==='pdf'" theme="primary">PDF</t-tag><t-tag v-else-if="row.category==='doc'" theme="success">文档</t-tag><t-tag v-else-if="row.category==='video'" theme="warning">视频</t-tag><t-tag v-else-if="row.category==='image'" theme="success">图片</t-tag><t-tag v-else theme="default">其他</t-tag></template><template #fileSize="{ row }"><span>{{ row.file_size != null ? (row.file_size / (1024 * 1024)).toFixed(2) + ' MB' : '-' }}</span></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传资料':'编辑资料'" width="650px" @confirm="handleSubmit">
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">素材管理</h1><p class="page-desc">管理朋友圈推广素材（海报、文案、视频）</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="素材名称" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.category" :options="typeOptions" placeholder="素材分类" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">上传素材</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.category==='poster'" theme="primary">海报</t-tag><t-tag v-else-if="row.category==='copywriting'" theme="success">文案</t-tag><t-tag v-else-if="row.category==='video'" theme="warning">视频</t-tag><t-tag v-else theme="default">{{ row.category }}</t-tag></template><template #fileSize="{ row }"><span>{{ row.file_size != null ? (row.file_size / (1024 * 1024)).toFixed(2) + ' MB' : '-' }}</span></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传素材':'编辑素材'" width="650px" @confirm="handleSubmit">
   <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
-    <t-form-item label="资料名称" name="title"><t-input v-model="formData.title" placeholder="请输入资料名称"/></t-form-item>
-    <t-form-item label="资料分类" name="category"><t-select v-model="formData.category" :options="typeOptions" placeholder="选择分类"/></t-form-item>
+    <t-form-item label="素材名称" name="title"><t-input v-model="formData.title" placeholder="请输入素材名称"/></t-form-item>
+    <t-form-item label="素材分类" name="category"><t-select v-model="formData.category" :options="typeOptions" placeholder="选择分类"/></t-form-item>
 
     <!-- 图片上传 - 云存储 image_url -->
-    <t-form-item label="图片资料" name="imageUrl">
+    <t-form-item label="素材图片" name="imageUrl">
       <cloud-image-upload
         v-model="formData.imageUrlDisplay"
         v-model:file-id="formData.imageUrl"
@@ -93,7 +93,7 @@
           <t-button size="small" theme="danger" variant="outline" @click="removeVideo">删除</t-button>
         </div>
       </div>
-      <p class="upload-tips">支持 MP4/MOV，不超过 100MB</p>
+      <p class="upload-tips">支持 MP4/MOV，不超过 1GB</p>
     </t-form-item>
 
     <t-form-item label="资料内容" name="content"><t-textarea v-model="formData.content" placeholder="资料文字内容" :maxlength="5000" :autosize="{minRows:3,maxRows:6}"/></t-form-item>
@@ -129,24 +129,21 @@
         const formVisible = ref(false);
         const formMode = ref('add');
         const formData = ref({});
-        const filters = ref({ keyword: '', courseId: null, type: null });
-        const courseOptions = ref([]);
+        const filters = ref({ keyword: '', category: null });
 
         // 视频上传
         const videoFileInput = ref(null);
         const videoUploading = ref(false);
-        // 资料分类（DB category 字段的可选值）
+        // 素材分类（与小程序端保持一致）
         const typeOptions = [
-          { label: 'PDF文档', value: 'pdf' },
-          { label: '文字资料', value: 'doc' },
-          { label: '视频课程', value: 'video' },
-          { label: '图片资料', value: 'image' },
-          { label: '其他', value: 'other' }
+          { label: '海报', value: 'poster' },
+          { label: '文案', value: 'copywriting' },
+          { label: '视频', value: 'video' }
         ];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         
         const columns = [
-          { colKey: 'title', title: '资料名称', width: 250 },
+          { colKey: 'title', title: '素材名称', width: 250 },
           // DB 返回 category 字段（原 type）
           { colKey: 'category', title: '分类', width: 100, cell: 'type' },
           { colKey: 'file_size', title: '文件大小', width: 100, cell: 'fileSize' },
@@ -157,8 +154,8 @@
         
         // 表单验证规则，name 与表单字段 camelCase 保持一致
         const rules = {
-          title: [{ required: true, message: '请输入资料名称', type: 'error' }],
-          category: [{ required: true, message: '请选择资料分类', type: 'error' }]
+          title: [{ required: true, message: '请输入素材名称', type: 'error' }],
+          category: [{ required: true, message: '请选择素材分类', type: 'error' }]
         };
         
         const fetchData = async () => {
@@ -179,14 +176,6 @@
           }
         };
         
-        const fetchCourses = async () => {
-          try {
-            const data = await AdminAPI.getAllCourses();
-            courseOptions.value = data.map(c => ({ label: c.name, value: c.id }));
-          } catch (error) {
-            console.error('获取课程列表失败', error);
-          }
-        };
         
         const handleSearch = () => {
           pagination.value.current = 1;
@@ -194,7 +183,7 @@
         };
         
         const handleReset = () => {
-          filters.value = { keyword: '', courseId: null, type: null };
+          filters.value = { keyword: '', category: null };
           handleSearch();
         };
         
@@ -209,16 +198,26 @@
         const handleVideoChange = async (e) => {
           const file = e.target.files[0];
           if (!file) return;
-          const valid = CloudStorageHelper.validateFile(file, { maxSize: 100 * 1024 * 1024, accept: ['video/mp4', 'video/quicktime', 'video/x-msvideo'] });
-          if (!valid.valid) { TDesign.MessagePlugin.error(valid.message); return; }
+          const valid = CloudStorageHelper.validateFile(file, {
+            maxSize: 1024 * 1024 * 1024,
+            acceptTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/*']
+          });
+          if (!valid.valid) { TDesign.MessagePlugin.error(valid.error); return; }
           videoUploading.value = true;
+          TDesign.MessagePlugin.loading('视频上传中，请稍候...', 0);
           try {
-            const cloudPath = CloudStorageHelper.generateCloudPath('materials', file.name);
+            const cloudPath = CloudStorageHelper.generateCloudPath(
+              'academy/materials/videos',
+              formData.value.id || 'new',
+              file.name
+            );
             const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
             formData.value.videoUrl = result.fileID;
-            const urlResult = await CloudStorageHelper.getSingleTempURL(result.fileID);
-            formData.value.videoUrlDisplay = urlResult;
+            formData.value.videoUrlDisplay = result.tempFileURL;
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('视频上传成功');
           } catch (error) {
+            TDesign.MessagePlugin.closeAll();
             TDesign.MessagePlugin.error('视频上传失败：' + error.message);
           } finally {
             videoUploading.value = false;
@@ -264,7 +263,7 @@
         const handleDelete = async (row) => {
           const confirmed = await TDesign.DialogPlugin.confirm({
             header: '确认删除',
-            body: '确认删除该资料吗？',
+            body: '确认删除该素材吗？',
             theme: 'warning'
           });
           if (!confirmed) return;
@@ -283,7 +282,7 @@
           if (url) {
             window.open(url, '_blank');
           } else {
-            TDesign.MessagePlugin.warning('该资料暂无可下载文件');
+            TDesign.MessagePlugin.warning('该素材暂无可下载文件');
           }
         };
         
@@ -307,7 +306,6 @@
         
         onMounted(() => {
           fetchData();
-          fetchCourses();
         });
         
         return {
@@ -322,7 +320,6 @@
           formMode,
           formData,
           filters,
-          courseOptions,
           typeOptions,
           pagination,
           columns,

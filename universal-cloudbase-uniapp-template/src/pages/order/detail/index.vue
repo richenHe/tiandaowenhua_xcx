@@ -130,6 +130,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi } from '@/api';
 
@@ -224,6 +225,12 @@ onMounted(() => {
       title: '订单号不存在',
       icon: 'none'
     });
+  }
+});
+
+onShow(() => {
+  if (orderDetail.value.orderNo) {
+    loadOrderDetail(orderDetail.value.orderNo);
   }
 });
 

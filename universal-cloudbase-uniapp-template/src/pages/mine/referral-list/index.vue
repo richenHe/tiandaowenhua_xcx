@@ -150,6 +150,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 import type { RefereeInfo, RefereeListItem } from '@/api/types/user'
@@ -250,6 +251,11 @@ const loadReferralList = async (reset = false) => {
 }
 
 onMounted(() => {
+  loadRefereeInfo()
+  loadReferralList()
+})
+
+onShow(() => {
   loadRefereeInfo()
   loadReferralList()
 })

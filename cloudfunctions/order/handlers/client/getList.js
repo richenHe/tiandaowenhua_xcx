@@ -5,7 +5,7 @@
  * 使用 Supabase 风格 JOIN 查询，利用外键约束优化性能（消除 N+1 查询）
  */
 const { db } = require('../../common/db');
-const { response, executePaginatedQuery } = require('../../common');
+const { response, utils, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -67,7 +67,7 @@ module.exports = async (event, context) => {
           .from('orders')
           .update({
             pay_status: 3,
-            updated_at: new Date().toISOString()
+            updated_at: utils.formatDateTime(new Date())
           })
           .in('order_no', timeoutOrders);
 

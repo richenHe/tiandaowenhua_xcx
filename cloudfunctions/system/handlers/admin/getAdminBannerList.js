@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
       .order('created_at', { ascending: false });
 
     if (keyword) {
-      queryBuilder = queryBuilder.ilike('title', `%${keyword}%`);
+      queryBuilder = queryBuilder.like('title', `%${keyword}%`);
     }
     if (status !== undefined && status !== null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);

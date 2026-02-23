@@ -12,7 +12,11 @@
         <!-- 公告列表 -->
         <view class="announcement-card" v-for="item in announcements" :key="item.id" @tap="goToDetail(item)">
           <view class="announcement-header">
-            <view class="announcement-icon" :class="getAnnouncementType(item.category)">
+            <!-- 封面图片缩略图（有图时显示，否则显示分类图标） -->
+            <view v-if="item.cover_image" class="announcement-thumb">
+              <image :src="item.cover_image" mode="aspectFill" class="announcement-thumb__img" />
+            </view>
+            <view v-else class="announcement-icon" :class="getAnnouncementType(item.category)">
               {{ getAnnouncementIcon(item.category) }}
             </view>
             <view class="announcement-info">
@@ -42,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { SystemApi } from '@/api'
 import type { Announcement } from '@/api/types/system'
@@ -59,6 +64,10 @@ const total = ref(0)
 const finished = ref(false)
 
 onMounted(() => {
+  loadAnnouncements()
+})
+
+onShow(() => {
   loadAnnouncements()
 })
 
@@ -111,9 +120,12 @@ const getAnnouncementType = (category: string) => {
 }
 
 // 判断是否为新公告（3天内）
+// iOS 不支持 "yyyy-MM-dd HH:mm:ss" 格式，需将空格替换为 T
 const isNewAnnouncement = (publishedAt: string | null) => {
   if (!publishedAt) return false
-  const publishDate = new Date(publishedAt)
+  const normalized = publishedAt.replace(' ', 'T')
+  const publishDate = new Date(normalized)
+  if (isNaN(publishDate.getTime())) return false
   const now = new Date()
   const diffDays = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60 * 24)
   return diffDays <= 3
@@ -160,6 +172,19 @@ const goToDetail = (item: Announcement) => {
   align-items: flex-start;
   gap: 24rpx;
   margin-bottom: 24rpx;
+}
+
+.announcement-thumb {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  &__img {
+    width: 80rpx;
+    height: 80rpx;
+  }
 }
 
 .announcement-icon {

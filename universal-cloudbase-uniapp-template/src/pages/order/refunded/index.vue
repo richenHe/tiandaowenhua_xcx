@@ -86,6 +86,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { OrderApi } from '@/api'
 
@@ -136,7 +137,7 @@ const loadOrderDetail = async (orderNo: string) => {
       icon: style.icon,
       iconBg: style.iconBg,
       orderType: order.order_type,
-      itemId: (order as any).item_id || 0
+      itemId: order.course_id || (order as any).related_id || 0
     }
     uni.hideLoading()
   } catch (error) {
@@ -153,7 +154,14 @@ const goBack = () => {
 
 const handleReorder = () => {
   if (orderInfo.value.orderType === 1) {
-    uni.navigateTo({ url: `/pages/course/detail/index?id=${orderInfo.value.itemId}` })
+    if (orderInfo.value.itemId > 0) {
+      uni.navigateTo({ url: `/pages/course/detail/index?id=${orderInfo.value.itemId}` })
+    } else {
+      uni.showToast({ title: '请重新选择课程', icon: 'none' })
+      setTimeout(() => {
+        uni.switchTab({ url: '/pages/index/index' })
+      }, 1000)
+    }
   } else if (orderInfo.value.orderType === 2) {
     uni.navigateTo({ url: '/pages/course/retrain/index' })
   } else if (orderInfo.value.orderType === 3) {
@@ -170,6 +178,12 @@ onMounted(() => {
   } else {
     uni.showToast({ title: '订单号不存在', icon: 'none' })
     setTimeout(() => uni.navigateBack(), 1500)
+  }
+})
+
+onShow(() => {
+  if (orderInfo.value.orderNo) {
+    loadOrderDetail(orderInfo.value.orderNo)
   }
 })
 </script>

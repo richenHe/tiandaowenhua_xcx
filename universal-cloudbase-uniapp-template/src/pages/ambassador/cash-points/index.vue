@@ -138,6 +138,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
@@ -236,6 +237,11 @@ onMounted(() => {
   pageHeaderHeight.value = statusBarHeight + navbarHeight
 
   // 加载数据
+  loadCashPoints()
+  loadRecords()
+})
+
+onShow(() => {
   loadCashPoints()
   loadRecords()
 })

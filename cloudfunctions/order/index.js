@@ -31,6 +31,8 @@ const clientHandlers = {
   getMallGoods: require('./handlers/client/getMallGoods'),
   getMallCourses: require('./handlers/client/getMallCourses'),
   exchangeGoods: require('./handlers/client/exchangeGoods'),
+  exchangeCourse: require('./handlers/client/exchangeCourse'),
+  cancelExchange: require('./handlers/client/cancelExchange'),
   getExchangeRecords: require('./handlers/client/getExchangeRecords')
 };
 
@@ -44,7 +46,9 @@ const adminHandlers = {
   getMallGoodsList: require('./handlers/admin/getMallGoodsList'),
   createMallGoods: require('./handlers/admin/createMallGoods'),
   updateMallGoods: require('./handlers/admin/updateMallGoods'),
-  deleteMallGoods: require('./handlers/admin/deleteMallGoods')
+  deleteMallGoods: require('./handlers/admin/deleteMallGoods'),
+  getExchangeList: require('./handlers/admin/getExchangeList'),
+  confirmPickup: require('./handlers/admin/confirmPickup')
 };
 
 // 路由配置

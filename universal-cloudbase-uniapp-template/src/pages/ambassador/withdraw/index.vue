@@ -115,6 +115,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 import type { CashPointsInfo, WithdrawRecord } from '@/api/types/user'
@@ -163,6 +164,11 @@ const loadWithdrawRecords = async () => {
 }
 
 onMounted(() => {
+  loadAvailablePoints()
+  loadWithdrawRecords()
+})
+
+onShow(() => {
   loadAvailablePoints()
   loadWithdrawRecords()
 })

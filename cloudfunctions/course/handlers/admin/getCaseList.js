@@ -43,7 +43,7 @@ module.exports = async (event, context) => {
 
     // 添加关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,summary.ilike.%${keyword}%,student_name.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`title.like.%${keyword}%,summary.like.%${keyword}%,student_name.like.%${keyword}%`);
     }
 
     // 执行分页查询

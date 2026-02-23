@@ -509,6 +509,16 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'deleteMallGoods', { id });
   }
 
+  // ==================== 兑换管理模块 ====================
+
+  static async getExchangeList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getExchangeList', params);
+  }
+
+  static async confirmPickup(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'confirmPickup', data);
+  }
+
   // ==================== 系统模块别名方法 ====================
 
   static async getAdminList(params = {}) {

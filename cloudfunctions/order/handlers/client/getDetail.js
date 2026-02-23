@@ -3,7 +3,7 @@
  * Action: getDetail
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -47,7 +47,7 @@ module.exports = async (event, context) => {
             .from('orders')
             .update({ 
               pay_status: 3,  // 已关闭（超时）
-              updated_at: new Date().toISOString()
+              updated_at: utils.formatDateTime(new Date())
             })
             .eq('order_no', order_no);
 
@@ -120,6 +120,7 @@ module.exports = async (event, context) => {
       transaction_id: order.transaction_id,
       is_reward_granted: order.is_reward_granted,
       reward_granted_at: order.reward_granted_at,
+      referee_confirmed_at: order.referee_updated_at || null,
       created_at: order.created_at,
       expires_at: order.expire_at,
       ...refereeInfo,

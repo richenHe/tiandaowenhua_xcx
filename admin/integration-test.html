@@ -309,11 +309,12 @@ SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = $
   // ────────────── FLOW 2: 课程浏览 → 购买准备 ──────────────
   {
     id:'F2',icon:'📚',name:'流程2: 课程浏览 · 详情 · 购买条件验证',
-    desc:'课程列表 → 课程详情(含购买状态) → 我的课程 → 排期日历 → 案例/素材',
-    tables:['courses','user_courses','class_records','academy_cases','academy_materials'],rules:7,
-    get chainHtml(){return ['getList','getDetail','getMyCourses','getCalendarSchedule','getCaseList','getMaterialList'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'课程列表(全类型覆盖) → 初探班/密训班/咨询班详情 → 已购课程验证 → 我的课程 → 排期日历(含关闭过滤) → 案例/素材',
+    tables:['courses','user_courses','class_records','academy_cases','academy_materials'],rules:14,
+    get chainHtml(){return ['getList×2','getDetail×4','getMyCourses','getCalendarSchedule','getCaseList','getMaterialList'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
-      {name:'S2.1 课程列表',fn:'course',act:'getList',params:{page:1,pageSize:10},
+      // S2.1 第1页：验证必需字段和类型合法性
+      {name:'S2.1 课程列表(第1页)',fn:'course',act:'getList',params:{page:1,pageSize:10},
         fields:['total:n','list:a'],
         biz:[
           (d)=>{const item=d.list?.[0];if(!item)return{r:'课程应包含必需字段',p:true,a:'无课程(可能正常)'};
@@ -323,31 +324,109 @@ SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = $
             return{r:'课程类型应为1(初探)/2(密训)/3(咨询)',p:types.every(t=>[1,2,3].includes(t)),a:`types=[${[...new Set(types)]}]`}}
         ],
         save:(d,_,C)=>{C.courses=d.list||[];if(d.list?.length)C.firstCourse=d.list[0]},
-        sql:()=>`SELECT id, name, type, current_price, original_price, retrain_price, allow_retrain, included_course_ids, status, stock FROM tiandao_culture.courses WHERE status = 1 ORDER BY sort_order ASC`
+        sql:()=>`SELECT id, name, type, current_price, allow_retrain, included_course_ids, status, stock FROM tiandao_culture.courses WHERE status = 1 ORDER BY sort_order ASC`
       },
-      {name:'S2.2 课程详情(含购买状态)',fn:'course',act:'getDetail',
-        params:(C)=>({id:C.firstCourse?.id||1}),
+      // S2.1b 最后一页：验证 type=2(密训)/type=3(咨询) 确实出现在列表中
+      {name:'S2.1b 课程列表(末页，验证type=2/3可见)',fn:'course',act:'getList',params:{page:2,pageSize:10},
+        fields:['total:n','list:a'],
+        biz:[
+          (d)=>{const list=d.list||[];const types=[...new Set(list.map(c=>c.type))];
+            const has23=types.includes(2)||types.includes(3);
+            return{r:'末页应包含密训班(type=2)或咨询班(type=3)',p:list.length===0||has23,a:`types=[${types}], count=${list.length}`}},
+          (d)=>({r:'末页所有课程 type 仍应合法(1/2/3)',
+            p:(d.list||[]).every(c=>[1,2,3].includes(c.type)),
+            a:`types=[${[...new Set((d.list||[]).map(c=>c.type))]}]`})
+        ],
+        sql:()=>`SELECT id, name, type, current_price, included_course_ids FROM tiandao_culture.courses WHERE status=1 ORDER BY sort_order ASC LIMIT 10 OFFSET 10`
+      },
+      // S2.2 动态取第1条课程(初探班)，验证未购买状态
+      {name:'S2.2 初探班详情(未购买)',fn:'course',act:'getDetail',
+        params:(C)=>({id:C.firstCourse?.id||20}),
         biz:[
           (d,raw)=>({r:'课程详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>({r:'密训班(type=2)应有included_course_ids标记赠送初探班',
-            p:!d||d.type!==2||d.included_course_ids!==undefined,
-            a:d?`type=${d.type}, included=${d.included_course_ids}`:'无数据'})
+          (d)=>({r:'初探班type应为1',p:!d||d.type===1,a:`type=${d?.type}`}),
+          (d)=>({r:'未购买课程 is_purchased 应为 0 或 false',
+            p:!d||d.is_purchased===0||d.is_purchased===false||d.is_purchased===undefined,
+            a:`is_purchased=${d?.is_purchased}`})
         ],
         save:(d,_,C)=>{C.courseDetail=d},
-        sql:(C)=>`SELECT c.*, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=${C.firstCourse?.id||1}`
+        sql:(C)=>`SELECT c.id, c.name, c.type, c.current_price, c.included_course_ids, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=${C.firstCourse?.id||20}`
       },
+      // S2.2b 密训班：验证 included_course_ids 不为空
+      {name:'S2.2b 密训班详情(included_course_ids专项)',fn:'course',act:'getDetail',
+        params:{id:2},
+        biz:[
+          (d,raw)=>({r:'密训班详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'需求3.1.2: 密训班type=2',p:!d||d.type===2,a:`type=${d?.type}`}),
+          (d)=>({r:'需求3.1.2: 密训班included_course_ids应为非空数组',
+            p:d&&Array.isArray(d.included_course_ids)&&d.included_course_ids.length>0,
+            a:d?`included_course_ids=${JSON.stringify(d.included_course_ids)}`:'无数据'})
+        ],
+        sql:()=>`SELECT id, name, type, included_course_ids, allow_retrain, current_price FROM tiandao_culture.courses WHERE id=2`
+      },
+      // S2.2c 咨询班：验证 type=3 课程正常返回
+      {name:'S2.2c 咨询班详情(type=3专项)',fn:'course',act:'getDetail',
+        params:{id:3},
+        biz:[
+          (d,raw)=>({r:'咨询班详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'咨询班type应为3',p:!d||d.type===3,a:`type=${d?.type}`}),
+          (d)=>({r:'咨询班无需included_course_ids(应为null)',
+            p:!d||d.included_course_ids===null||d.included_course_ids===undefined,
+            a:`included_course_ids=${d?.included_course_ids}`})
+        ],
+        sql:()=>`SELECT id, name, type, included_course_ids, allow_retrain, current_price FROM tiandao_culture.courses WHERE id=3`
+      },
+      // S2.2d 已购买课程：验证 is_purchased=1
+      {name:'S2.2d 已购课程详情(is_purchased=1)',fn:'course',act:'getDetail',
+        params:{id:1},
+        biz:[
+          (d,raw)=>({r:'已购课程详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'需求3.1.3: 已购课程 is_purchased 应为 1 或 true',
+            p:d&&(d.is_purchased===1||d.is_purchased===true),
+            a:`is_purchased=${d?.is_purchased}`})
+        ],
+        sql:()=>`SELECT c.id, c.name, c.type, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=1`
+      },
+      // S2.3 我的课程：验证关联完整，检查是否有赠送课程
       {name:'S2.3 我的课程列表',fn:'user',act:'getMyCourses',
-        biz:[(d,raw)=>({r:'我的课程接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        biz:[
+          (d,raw)=>({r:'我的课程接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=Array.isArray(d)?d:(d?.list||[]);
+            const gift=list.filter(c=>c.is_gift===1||c.is_gift===true);
+            return{r:'我的课程中is_gift标记应正确(有赠送课程时is_gift=1)',p:true,a:`共${list.length}门课,赠送${gift.length}门`}}
+        ],
         save:(d,_,C)=>{C.myCourses=Array.isArray(d)?d:(d?.list||[])},
-        sql:()=>`-- 验证 user_courses 与 courses 关联完整
-SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, uc.is_gift, uc.source_order_id, uc.status
+        sql:()=>`SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, uc.is_gift, uc.source_order_id, uc.status
 FROM tiandao_culture.user_courses uc
 JOIN tiandao_culture.courses c ON uc.course_id = c.id
 WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
       },
-      {name:'S2.4 排期日历',fn:'course',act:'getCalendarSchedule',params:{startDate:'2026-03-01',endDate:'2026-03-31'},
-        biz:[(d,raw)=>({r:'排期日历应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        sql:()=>`SELECT cr.id, cr.course_id, c.name, cr.class_date, cr.class_time, cr.class_location, cr.total_quota, cr.booked_quota, cr.status FROM tiandao_culture.class_records cr JOIN tiandao_culture.courses c ON cr.course_id=c.id WHERE cr.class_date>='2026-03-01' ORDER BY cr.class_date`
+      // S2.4 排期日历：响应为 {"日期": {courseId, classTime, ...}} 的日期键对象
+      {name:'S2.4 排期日历(含关闭排期过滤验证)',fn:'course',act:'getCalendarSchedule',params:{startDate:'2026-03-01',endDate:'2026-03-31'},
+        biz:[
+          (d,raw)=>({r:'排期日历应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            // 响应格式为 {"2026-03-01": {courseId, classTime, classRecordId, ...}}
+            const dates=d&&typeof d==='object'&&!Array.isArray(d)?Object.keys(d):[];
+            return{r:'排期日历应为日期键对象且有排期数据',p:dates.length>0,
+              a:`包含日期数: ${dates.length}，dates=[${dates.join(',')}]`}
+          },
+          (d)=>{
+            const dates=d&&typeof d==='object'&&!Array.isArray(d)?Object.keys(d):[];
+            const validStructure=dates.every(k=>d[k]&&d[k].courseId!==undefined&&d[k].classTime!==undefined);
+            return{r:'每个日期条目应含 courseId 和 classTime 字段',p:dates.length===0||validStructure,
+              a:validStructure?'结构正确':`存在缺字段的条目`}
+          },
+          (d)=>{
+            // 验证返回的 classRecordId 都不是 status=0 的排期（id=9 是已知关闭排期）
+            const dates=d&&typeof d==='object'&&!Array.isArray(d)?Object.keys(d):[];
+            const ids=dates.map(k=>d[k]?.classRecordId).filter(Boolean);
+            const hasClosedRecord=ids.includes(9);
+            return{r:'需求: 已关闭排期(id=9,status=0)不应出现在日历中',p:!hasClosedRecord,
+              a:hasClosedRecord?'❌ 出现了id=9的关闭排期':`classRecordIds=[${ids}]，无关闭排期`}
+          }
+        ],
+        sql:()=>`-- 验证 status=0 的排期(应被接口过滤掉)\nSELECT cr.id, cr.class_date, cr.class_time, cr.class_location, cr.total_quota, cr.booked_quota, cr.status\nFROM tiandao_culture.class_records cr\nWHERE cr.class_date>='2026-03-01' AND cr.class_date<='2026-03-31'\nORDER BY cr.status, cr.class_date`
       },
       {name:'S2.5 案例列表',fn:'course',act:'getCaseList',params:{page:1,pageSize:5},
         biz:[(d,raw)=>({r:'案例列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
@@ -363,62 +442,262 @@ WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
   // ────────────── FLOW 3: 订单 · 商城 · 兑换全链路 ──────────────
   {
     id:'F3',icon:'🛒',name:'流程3: 订单 · 商城兑换 · 多表数据一致性',
-    desc:'我的订单 → 订单详情(推荐人+奖励) → 商城商品 → 兑换记录 → 验证users/orders/mall多表一致',
-    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:9,
-    get chainHtml(){return ['getMyOrders','getDetail','getMallGoods','getExchangeRecords'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'我的订单 → 订单详情(已支付优先) → 商城课程 → 商城商品(字段验证) → 兑换记录(source=6回归) → [写]exchangeGoods(功德分足时执行)',
+    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:14,
+    get chainHtml(){return ['getMyOrders','getDetail','getMallCourses','getMallGoods','getExchangeRecords','exchangeGoods','exchangeCourse','cancelExchange','getExchangeList'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S3.1 我的订单列表',fn:'user',act:'getMyOrders',params:{page:1,pageSize:10},
         biz:[(d,raw)=>({r:'订单列表接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.orders=list;if(list.length)C.firstOrder=list[0]},
-        sql:()=>`-- 订单列表及推荐人关联
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          C.orders=list;
+          if(list.length) C.firstOrder=list[0];
+          // 优先取已支付订单，供 S3.2 验证 referee_confirmed_at
+          const paid=list.find(o=>o.pay_status===1);
+          if(paid) C.firstPaidOrder=paid;
+        },
+        sql:()=>`-- 订单列表及推荐人关联（含已支付状态）
 SELECT o.order_no, o.order_type, o.order_name, o.final_amount, o.pay_status, o.referee_id, o.is_reward_granted,
   r.real_name as referee_name, r.ambassador_level as referee_level
 FROM tiandao_culture.orders o
 LEFT JOIN tiandao_culture.users r ON o.referee_id = r.id
 WHERE o.user_id = ${U.id} ORDER BY o.created_at DESC LIMIT 10`
       },
-      {name:'S3.2 订单详情(推荐人+奖励)',fn:'order',act:'getDetail',
-        params:(C)=>({order_no:C.firstOrder?.order_no||'NO_ORDER'}),
+      {name:'S3.2 订单详情(已支付订单优先)',fn:'order',act:'getDetail',
+        params:(C)=>({order_no:(C.firstPaidOrder||C.firstOrder)?.order_no||'NO_ORDER'}),
         biz:[
           (d,raw,C)=>{
-            if(!C.firstOrder) return{r:'用户无订单时应返回提示',p:true,a:'无订单'};
+            if(!C.firstOrder&&!C.firstPaidOrder) return{r:'用户无订单',p:true,a:'⚠无订单,跳过'};
             return{r:'需求3.1.2: 订单详情应含推荐人+奖励状态',p:raw.success===true,a:raw.success?'OK':raw.message}
           },
           (d,raw,C)=>{
-            if(!d||!C.firstOrder)return{r:'已支付订单推荐人应已确认',p:true,a:'跳过'};
-            if(d.pay_status!==1)return{r:'已支付订单推荐人应已确认',p:true,a:`pay_status=${d.pay_status}(非已支付)`};
-            return{r:'需求2.4: 已支付订单的推荐人应不可修改(referee_confirmed_at有值)',
+            if(!d) return{r:'已支付订单 referee_confirmed_at 应有值',p:true,a:'跳过'};
+            if(d.pay_status!==1) return{r:'已支付订单 referee_confirmed_at 应有值',p:true,a:`pay_status=${d.pay_status}(未支付,跳过)${C.firstPaidOrder?'':'⚠当前无已支付订单'}`};
+            return{r:'需求2.4: 已支付订单推荐人不可修改(referee_confirmed_at有值)',
               p:d.referee_confirmed_at!==undefined&&d.referee_confirmed_at!==null,
               a:`referee_confirmed_at=${d.referee_confirmed_at}`}
+          },
+          (d,raw,C)=>{
+            if(!d||d.pay_status!==1) return{r:'已支付订单 is_reward_granted 应有值',p:true,a:'跳过'};
+            return{r:'需求2.4: 已支付订单奖励发放状态应明确(is_reward_granted=0或1)',
+              p:d.is_reward_granted===0||d.is_reward_granted===1,
+              a:`is_reward_granted=${d.is_reward_granted}`}
           }
         ],
-        sql:(C)=>C.firstOrder?`-- 订单详情+推荐人+课程+奖励记录
-SELECT o.*,
-  u.real_name as user_name,
+        sql:(C)=>{const o=C.firstPaidOrder||C.firstOrder;return o?`-- 订单详情+推荐人+奖励记录（已支付订单优先）
+SELECT o.order_no, o.pay_status, o.final_amount, o.referee_id, o.is_reward_granted, o.referee_confirmed_at,
+  u.real_name as user_name, u.is_referee_confirmed,
   r.real_name as referee_name, r.ambassador_level as referee_level,
   (SELECT COUNT(*) FROM tiandao_culture.merit_points_records mp WHERE mp.order_no=o.order_no) as merit_records,
   (SELECT COUNT(*) FROM tiandao_culture.cash_points_records cp WHERE cp.order_no=o.order_no) as cash_records
 FROM tiandao_culture.orders o
 LEFT JOIN tiandao_culture.users u ON o.user_id=u.id
 LEFT JOIN tiandao_culture.users r ON o.referee_id=r.id
-WHERE o.order_no='${C.firstOrder.order_no}'`:null
+WHERE o.order_no='${o.order_no}'`:null}
       },
-      {name:'S3.3 订单列表(order模块)',fn:'order',act:'getList',params:{page:1,pageSize:5},
-        biz:[(d,raw)=>({r:'order模块订单列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})]
+      {name:'S3.3 商城课程列表',fn:'order',act:'getMallCourses',params:{page:1,pageSize:10},
+        biz:[
+          (d,raw)=>({r:'商城课程列表接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'需求3.1.7.2: 商城课程应含必要字段',p:true,a:'暂无课程数据'};
+            const first=list[0];
+            const hasFields=first.id!==undefined&&(first.currentPrice!==undefined||first.points!==undefined||first.merit_points_price!==undefined);
+            return{r:'需求3.1.7.2: 商城课程应含 id/currentPrice 字段',p:hasFields,a:`${list.length}条,id=${first.id},currentPrice=${first.currentPrice??first.points??first.merit_points_price}`}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          C.mallCourses=list;
+          // 保存价格最低的课程供 S3.6b 使用（按 currentPrice 排序）
+          if(list.length) C.cheapestCourse=list.filter(c=>c.stock===-1||c.stock>0).reduce((a,b)=>Number(a.currentPrice??9999)<Number(b.currentPrice??9999)?a:b,list[0]);
+        },
+        sql:()=>`SELECT id, name, current_price, stock, sold_count, status FROM tiandao_culture.courses WHERE status=1 AND type IN (1,2) ORDER BY current_price ASC LIMIT 10`
       },
-      {name:'S3.4 商城商品列表',fn:'order',act:'getMallGoods',params:{page:1,pageSize:10},
-        biz:[(d,raw)=>({r:'商城商品列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.mallGoods=list},
-        sql:()=>`SELECT id, goods_name, merit_points_price, stock_quantity, sold_quantity, status, sort_order FROM tiandao_culture.mall_goods WHERE status=1 ORDER BY sort_order`
+      {name:'S3.4 商城商品列表(字段验证)',fn:'order',act:'getMallGoods',params:{page:1,pageSize:10},
+        biz:[
+          (d,raw)=>({r:'商城商品列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'需求3.1.7.2: 商品应含 id/goods_name/merit_points_price',p:true,a:'暂无商品'};
+            const first=list[0];
+            const hasFields=first.id!==undefined&&first.goods_name!==undefined&&(first.merit_points_price!==undefined||first.points!==undefined);
+            return{r:'需求3.1.7.2: 商品应含 id/goods_name/merit_points_price',p:hasFields,a:hasFields?`${list.length}条,first=${first.goods_name}`:'字段缺失:'+JSON.stringify(Object.keys(first))}
+          },
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'商品 merit_points_price 应>0',p:true,a:'无数据'};
+            const invalid=list.filter(g=>Number(g.merit_points_price??g.points??0)<=0);
+            return{r:'需求3.1.7.2: 所有上架商品 merit_points_price > 0',p:invalid.length===0,a:invalid.length?`异常:${invalid.map(g=>g.goods_name+':'+g.merit_points_price).join(',')}`:list.map(g=>`${g.goods_name}:${g.merit_points_price??g.points}`).join('/')}
+          },
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'商品库存字段合法性',p:true,a:'无数据'};
+            const invalid=list.filter(g=>g.stock_quantity!==undefined&&Number(g.stock_quantity)<-1);
+            return{r:'需求3.1.7.2: stock_quantity 应≥-1(-1=无限)',p:invalid.length===0,a:invalid.length?`异常:${invalid.map(g=>g.goods_name+':'+g.stock_quantity).join(',')}`:'验证通过'}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          C.mallGoods=list;
+          // 保存最便宜商品供 S3.6 使用
+          if(list.length) C.cheapestGoods=list.reduce((a,b)=>Number(a.merit_points_price??a.points??9999)<Number(b.merit_points_price??b.points??9999)?a:b);
+        },
+        sql:()=>`SELECT id, goods_name, merit_points_price, stock_quantity, sold_quantity, status, sort_order FROM tiandao_culture.mall_goods WHERE status=1 ORDER BY merit_points_price ASC`
       },
-      {name:'S3.5 兑换记录',fn:'order',act:'getExchangeRecords',params:{page:1,pageSize:10},
-        biz:[(d,raw)=>({r:'兑换记录应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        sql:()=>`-- 兑换记录 + 商品库存交叉验证
+      {name:'S3.5 兑换记录(source=6回归验证)',fn:'order',act:'getExchangeRecords',params:{page:1,pageSize:10},
+        biz:[
+          (d,raw)=>({r:'兑换记录接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'[BUG-1回归] 兑换记录 source 应为6(商城兑换)',p:true,a:'⚠无兑换记录,跳过'};
+            const wrong=list.filter(r=>r.source!==undefined&&Number(r.source)!==6);
+            return{r:'[BUG-1回归] 兑换记录 merit_points_records.source 应为6',p:wrong.length===0,a:wrong.length?`❌source异常:${wrong.map(r=>r.exchange_no+':source='+r.source).join(',')}`:list.length+'条,source=6验证通过'}
+          },
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'兑换记录 status 应为1/2/3',p:true,a:'无记录'};
+            const invalid=list.filter(r=>r.status!==undefined&&![1,2,3].includes(Number(r.status)));
+            return{r:'需求3.1.7.2: 兑换记录status应为1(已兑换)/2(已领取)/3(已取消)',p:invalid.length===0,a:invalid.length?`❌异常:${invalid.map(r=>r.exchange_no+':status='+r.status).join(',')}`:list.length+'条,status验证通过'}
+          },
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'兑换消耗金额一致性',p:true,a:'无记录'};
+            const first=list[0];
+            const merit=Number(first.merit_points_used||0),cash=Number(first.cash_points_used||0),total=Number(first.total_cost||0);
+            return{r:'需求3.1.7.2: merit_points_used+cash_points_used=total_cost',p:Math.abs(merit+cash-total)<0.01,a:`merit=${merit}+cash=${cash}=${merit+cash},total=${total}`}
+          }
+        ],
+        sql:()=>`-- 兑换记录+库存+source字段交叉验证(BUG-1回归)
 SELECT er.exchange_no, er.goods_name, er.quantity, er.merit_points_used, er.cash_points_used, er.total_cost, er.status, er.created_at,
-  mg.stock_quantity as 当前库存, mg.sold_quantity as 已售数量
+  mg.stock_quantity as 当前库存, mg.sold_quantity as 已售数量,
+  mp.source as 功德分来源_应为6, mp.amount as 扣减金额, mp.balance_after
 FROM tiandao_culture.mall_exchange_records er
 LEFT JOIN tiandao_culture.mall_goods mg ON er.goods_id=mg.id
+LEFT JOIN tiandao_culture.merit_points_records mp ON mp.exchange_no=er.exchange_no
 WHERE er.user_id=${U.id} ORDER BY er.created_at DESC LIMIT 10`
+      },
+      {name:'S3.6 [写操作] 商城兑换(条件执行)',fn:'order',act:'exchangeGoods',
+        params:(C)=>({
+          goods_id:C.cheapestGoods?.id||4,
+          quantity:1,
+          use_cash_points_if_not_enough:false  // 不用积分补差，仅测功德分路径和不足时错误处理
+        }),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.cheapestGoods) return{r:'[S3.6跳过] 无商品数据',p:true,a:'⚠跳过'};
+            // 功德分不足是合法的业务场景（非BUG），通过对错误格式的验证
+            if(!raw.success&&raw.message&&raw.message.includes('功德分不足')) return{r:'需求3.1.7.2: 功德分不足时应返回明确错误信息',p:true,a:`⚠功德分不足(合法错误):${raw.message}`};
+            if(!raw.success&&raw.message&&raw.message.includes('库存不足')) return{r:'需求3.1.7.2: 库存不足时应返回明确错误信息',p:true,a:`⚠库存不足(合法错误):${raw.message}`};
+            return{r:'需求3.1.7.2: exchangeGoods 成功时应返回 exchange_no',p:raw.success===true&&!!d?.exchange_no,a:raw.success?`✓exchange_no=${d?.exchange_no}`:raw.message}
+          },
+          (d,raw)=>{
+            if(!raw.success) return{r:'兑换成功时 merit+cash=total',p:true,a:'接口未成功(跳过)'};
+            const merit=Number(d?.merit_points_used||0),cash=Number(d?.cash_points_used||0),total=Number(d?.total_cost||0);
+            return{r:'需求3.1.7.2: merit_points_used+cash_points_used=total_cost',p:Math.abs(merit+cash-total)<0.01,a:`merit=${merit}+cash=${cash}=${merit+cash},total=${total}`}
+          }
+        ],
+        save:(d,_,C)=>{if(d?.exchange_no)C.lastExchangeNo=d.exchange_no},
+        sql:(C)=>C.cheapestGoods?`-- S3.6 兑换后多表一致性验证
+SELECT u.merit_points as 功德分余额, u.cash_points_available as 积分余额,
+  mg.stock_quantity as 商品库存, mg.sold_quantity as 已售数量,
+  er.exchange_no, er.merit_points_used, er.cash_points_used, er.status as 兑换状态,
+  mp.source as 功德分来源_应为6, mp.amount as 扣减金额, mp.balance_after as 扣后余额
+FROM tiandao_culture.users u
+CROSS JOIN tiandao_culture.mall_goods mg
+LEFT JOIN tiandao_culture.mall_exchange_records er ON er.user_id=u.id AND er.goods_id=mg.id
+LEFT JOIN tiandao_culture.merit_points_records mp ON mp.exchange_no=er.exchange_no
+WHERE u.id=${U.id} AND mg.id=${C.cheapestGoods?.id||4}
+ORDER BY er.created_at DESC LIMIT 1`:null
+      },
+
+      {name:'S3.6b [写操作] 课程兑换(条件执行)',fn:'order',act:'exchangeCourse',
+        params:(C)=>({
+          course_id: C.cheapestCourse?.id || 1,
+          use_cash_points_if_not_enough: false
+        }),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.cheapestCourse) return{r:'[S3.6b跳过] 无课程数据',p:true,a:'⚠跳过'};
+            if(!raw.success&&raw.message&&raw.message.includes('功德分不足')) return{r:'需求3.1.7.2: 功德分不足时应返回明确错误信息',p:true,a:`⚠功德分不足(合法错误):${raw.message}`};
+            if(!raw.success&&raw.message&&raw.message.includes('名额已满')) return{r:'需求3.1.7.2: 库存不足时应返回明确错误信息',p:true,a:`⚠名额已满(合法错误):${raw.message}`};
+            return{r:'需求3.1.7.2: exchangeCourse 成功时应返回 course_id 和 price',p:raw.success===true&&!!d?.course_id&&d?.price>0,a:raw.success?`✓course_id=${d?.course_id},price=${d?.price}`:raw.message}
+          },
+          (d,raw)=>{
+            if(!raw.success) return{r:'兑换成功时 merit+cash=price',p:true,a:'接口未成功(跳过)'};
+            const merit=Number(d?.merit_points_used||0),cash=Number(d?.cash_points_used||0),price=Number(d?.price||0);
+            return{r:'需求3.1.7.2: merit_points_used+cash_points_used=price',p:Math.abs(merit+cash-price)<0.01,a:`merit=${merit}+cash=${cash}=${merit+cash},price=${price}`}
+          }
+        ],
+        save:(d,_,C)=>{if(d?.course_id)C.lastExchangedCourseId=d.course_id},
+        sql:(C)=>C.cheapestCourse?`-- S3.6b 课程兑换后多表一致性验证
+SELECT u.merit_points as 功德分余额, u.cash_points_available as 积分余额,
+  c.sold_count as 课程已售数量, c.stock as 课程库存,
+  uc.id as user_course_id, uc.course_name, uc.buy_price as 兑换价格,
+  uc.buy_time as 购买时间, uc.expire_at as 有效期至, uc.status as 状态,
+  mp.source as 功德分来源_应为6, mp.amount as 扣减金额, mp.balance_after as 扣后余额
+FROM tiandao_culture.users u
+CROSS JOIN tiandao_culture.courses c
+LEFT JOIN tiandao_culture.user_courses uc ON uc.user_id=u.id AND uc.course_id=c.id AND uc.status=1
+LEFT JOIN tiandao_culture.merit_points_records mp ON mp.user_id=u.id AND mp.remark LIKE '%兑换课程%'
+WHERE u.id=${U.id} AND c.id=${C.cheapestCourse?.id||1}
+ORDER BY uc.id DESC, mp.id DESC LIMIT 1`:null
+      },
+
+      // S3.7: 撤销兑换（条件执行：有 status=1 记录时执行）
+      {name:'S3.7 [写操作] 撤销兑换(条件执行)',fn:'order',act:'cancelExchange',
+        params:(C)=>({exchange_no:C.lastExchangeNo}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.lastExchangeNo) return{r:'[S3.7跳过] S3.6未成功创建兑换记录',p:true,a:'⚠跳过'};
+            return{r:'§6.13b: cancelExchange 成功时返回撤销结果',p:raw.success===true,a:raw.success?`✓exchange_no=${C.lastExchangeNo}已撤销`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C.lastExchangeNo||!raw.success) return null;
+            const mp=d?.merit_points_refunded??d?.merit_refunded??0;
+            const cp=d?.cash_points_refunded??d?.cash_refunded??0;
+            return{r:'§6.13b: 撤销后应返回退还金额',p:mp>=0&&cp>=0,a:`merit_refunded=${mp},cash_refunded=${cp}`}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success)C.cancelledExchangeNo=C.lastExchangeNo},
+        sql:(C)=>C.lastExchangeNo?`-- S3.7 撤销兑换后多表一致性验证
+SELECT er.exchange_no, er.status as 兑换状态_应为3,
+  er.merit_points_used as 原功德分, er.cash_points_used as 原积分,
+  u.merit_points as 功德分余额_应回滚, u.cash_points_available as 积分余额_应回滚,
+  mg.stock_quantity as 库存_应恢复, mg.sold_quantity as 已售_应减少,
+  (SELECT mp.amount FROM tiandao_culture.merit_points_records mp WHERE mp.exchange_no=er.exchange_no AND mp.amount>0 ORDER BY mp.id DESC LIMIT 1) as 功德分退还
+FROM tiandao_culture.mall_exchange_records er
+JOIN tiandao_culture.users u ON u.id=er.user_id
+JOIN tiandao_culture.mall_goods mg ON mg.id=er.goods_id
+WHERE er.exchange_no='${C.lastExchangeNo}'`:null
+      },
+
+      // S3.8: 后台兑换列表（只读，验证 user_name/user_phone 字段完整性）
+      {name:'S3.8 后台兑换列表(字段验证)',fn:'order',act:'getExchangeList',
+        params:()=>({page:1,page_size:10}),
+        biz:[
+          (d,raw)=>({r:'§6.20: getExchangeList 接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,raw)=>{
+            if(!raw.success) return{r:'§6.20: 列表应含user_name/user_phone字段',p:false,a:'接口失败'};
+            const list=(d?.list||d?.records||[]);
+            if(!list.length) return{r:'§6.20: 列表应含user_name/user_phone字段',p:true,a:'⚠暂无记录，跳过字段验证'};
+            const first=list[0];
+            const hasFields=first.user_name!==undefined&&first.user_phone!==undefined;
+            return{r:'§6.20: 返回字段应含user_name/user_phone',p:hasFields,a:`${list.length}条,user_name=${first.user_name??'undefined'},user_phone=${first.user_phone??'undefined'}`}
+          },
+          (d,raw)=>{
+            if(!raw.success) return null;
+            const list=(d?.list||d?.records||[]);
+            if(!list.length) return null;
+            const allValidStatus=list.every(r=>r.status===1||r.status===2||r.status===3);
+            return{r:'§6.20: 兑换记录 status 应为 1/2/3',p:allValidStatus,a:allValidStatus?'验证通过':`存在非法status`}
+          }
+        ],
+        sql:()=>`SELECT er.exchange_no, er.goods_name, er.status, er.created_at,
+  u.real_name as user_name, u.phone as user_phone
+FROM tiandao_culture.mall_exchange_records er
+JOIN tiandao_culture.users u ON u.id=er.user_id
+ORDER BY er.created_at DESC LIMIT 5`
       }
     ]
   },

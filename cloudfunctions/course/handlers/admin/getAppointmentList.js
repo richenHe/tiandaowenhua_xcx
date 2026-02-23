@@ -36,7 +36,7 @@ module.exports = async (event, context) => {
 
     // 添加关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     console.log('[getAppointmentList] 执行分页查询...');

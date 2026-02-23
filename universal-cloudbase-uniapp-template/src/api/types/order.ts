@@ -204,6 +204,29 @@ export interface ExchangeGoodsResponse {
 }
 
 /**
+ * 兑换课程请求参数
+ */
+export interface ExchangeCourseParams {
+  /** 课程ID */
+  course_id: number
+  /** 功德分不足时是否使用积分补充 */
+  use_cash_points_if_not_enough?: boolean
+}
+
+/**
+ * 兑换课程响应数据
+ */
+export interface ExchangeCourseResponse {
+  user_course_id: number | null
+  course_id: number
+  course_name: string
+  course_type: number
+  merit_points_used: number
+  cash_points_used: number
+  price: number
+}
+
+/**
  * 兑换记录
  */
 export interface ExchangeRecord {
@@ -239,6 +262,30 @@ export interface GetExchangeRecordsParams extends PaginationParams {
  * 获取兑换记录响应数据
  */
 export interface GetExchangeRecordsResponse extends PaginationResponse<ExchangeRecord> {}
+
+/**
+ * 撤销兑换请求参数
+ */
+export interface CancelExchangeParams {
+  /** 兑换单号 */
+  exchange_no: string
+}
+
+/**
+ * 撤销兑换响应数据
+ */
+export interface CancelExchangeResponse {
+  /** 兑换单号 */
+  exchange_no: string
+  /** 商品名称 */
+  goods_name: string
+  /** 退还的功德分 */
+  merit_points_refunded: number
+  /** 退还的积分 */
+  cash_points_refunded: number
+  /** 状态 */
+  status: string
+}
 
 /**
  * 商城课程

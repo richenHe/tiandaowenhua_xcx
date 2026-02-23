@@ -78,73 +78,8 @@
       </t-header>
       
       <t-layout>
-        <!-- 侧边菜单 -->
-        <t-aside width="240px">
-          <t-menu
-            v-model:value="activeMenu"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-              <t-menu-item value="mall-goods">商城商品</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="banner-list">轮播图管理</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-            
-            <t-menu-item value="playground">
-              <template #icon><t-icon name="play" /></template>
-              组件展示
-            </t-menu-item>
-          </t-menu>
-        </t-aside>
+        <!-- 侧边菜单（使用共享组件，与其他页面保持一致） -->
+        <sidebar-menu active-key="dashboard"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content>
@@ -154,62 +89,52 @@
           </t-card>
           
           <!-- 统计数据 -->
-          <div v-if="activeMenu === 'dashboard'">
-            <t-row :gutter="16" class="stats-row">
-              <t-col :span="6">
-                <t-card :bordered="true">
-                  <t-statistic
-                    title="总用户数"
-                    :value="stats.users?.total || 0"
-                    :trend="stats.users?.today > 0 ? 'increase' : null"
-                    :trend-num="stats.users?.today || 0"
-                  />
-                </t-card>
-              </t-col>
-              
-              <t-col :span="6">
-                <t-card :bordered="true">
-                  <t-statistic
-                    title="总订单数"
-                    :value="stats.orders?.total || 0"
-                    :trend="stats.orders?.today > 0 ? 'increase' : null"
-                    :trend-num="stats.orders?.today || 0"
-                  />
-                </t-card>
-              </t-col>
-              
-              <t-col :span="6">
-                <t-card :bordered="true">
-                  <t-statistic
-                    title="总预约数"
-                    :value="stats.courses?.total_appointments || 0"
-                  />
-                </t-card>
-              </t-col>
-              
-              <t-col :span="6">
-                <t-card :bordered="true">
-                  <t-statistic
-                    title="大使数"
-                    :value="stats.ambassadors?.total || 0"
-                  />
-                </t-card>
-              </t-col>
-            </t-row>
+          <t-row :gutter="16" class="stats-row">
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总用户数"
+                  :value="stats.users?.total || 0"
+                  :trend="stats.users?.today > 0 ? 'increase' : null"
+                  :trend-num="stats.users?.today || 0"
+                />
+              </t-card>
+            </t-col>
             
-            <t-card title="今日数据">
-              <p>新增用户：{{ stats.today?.users || 0 }}</p>
-              <p>新增订单：{{ stats.today?.orders || 0 }}</p>
-              <p>新增预约：{{ stats.today?.appointments || 0 }}</p>
-            </t-card>
-          </div>
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总订单数"
+                  :value="stats.orders?.total || 0"
+                  :trend="stats.orders?.today > 0 ? 'increase' : null"
+                  :trend-num="stats.orders?.today || 0"
+                />
+              </t-card>
+            </t-col>
+            
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总预约数"
+                  :value="stats.courses?.total_appointments || 0"
+                />
+              </t-card>
+            </t-col>
+            
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="大使数"
+                  :value="stats.ambassadors?.total || 0"
+                />
+              </t-card>
+            </t-col>
+          </t-row>
           
-          <!-- 其他页面占位 -->
-          <t-card v-else :title="getPageTitle()">
-            <p>{{ getPageTitle() }}功能开发中...</p>
-            <p style="margin-top: 16px; color: #999;">
-              提示：具体页面请使用 Claude Code 或其他工具实现
-            </p>
+          <t-card title="今日数据">
+            <p>新增用户：{{ stats.today?.users || 0 }}</p>
+            <p>新增订单：{{ stats.today?.orders || 0 }}</p>
+            <p>新增预约：{{ stats.today?.appointments || 0 }}</p>
           </t-card>
         </t-content>
       </t-layout>
@@ -230,27 +155,18 @@
   
   <!-- API 封装 -->
   <script src="./assets/js/admin-api.js"></script>
+
+  <!-- 侧边栏导航（共享组件） -->
+  <script src="./assets/js/sidebar-navigation.js"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
     
     const app = createApp({
       setup() {
-        const activeMenu = ref('dashboard');
-        const adminInfo = ref(null);
         const stats = ref({});
-        
-        // 检查登录状态
-        const checkAuth = () => {
-          adminInfo.value = AdminAPI.getCurrentAdmin();
-          
-          if (!adminInfo.value) {
-            window.location.href = 'login.html';
-            return false;
-          }
-          
-          return true;
-        };
+        // 复用共享 composable，获得统一的 adminInfo / handleMenuChange / handleLogout
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
         
         // 加载统计数据
         const loadStats = async () => {
@@ -263,91 +179,24 @@
           }
         };
         
-        // 退出登录
-        const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
-        };
-        
-        // 菜单切换
-        const handleMenuChange = (value) => {
-          // 组件展示跳转到新页面
-          if (value === 'playground') {
-            window.open('playground.html', '_blank');
-            return;
-          }
-          
-          // 页面路由映射（✅ 修复文件名错误）
-          const routes = {
-            'dashboard': 'index.html',
-            'user-list': 'pages/user/list.html',
-            'user-referee': 'pages/user/referee.html',
-            'order-list': 'pages/order/list.html',
-            'order-refund': 'pages/order/refund.html',
-            'withdraw-audit': 'pages/order/withdraw-audit.html',  // ✅ 修复：withdraw.html → withdraw-audit.html
-            'course-list': 'pages/course/list.html',
-            'schedule-list': 'pages/course/schedule.html',
-            'appointment-list': 'pages/course/appointment.html',
-            'case-list': 'pages/course/case.html',
-            'material-list': 'pages/course/material.html',
-            'ambassador-list': 'pages/ambassador/list.html',
-            'application-audit': 'pages/ambassador/application-audit.html',  // ✅ 修复：application.html → application-audit.html
-            'activity-list': 'pages/ambassador/activity.html',
-            'contract-list': 'pages/ambassador/contract.html',
-            'admin-list': 'pages/system/admin.html',
-            'config': 'pages/system/config.html',
-            'announcement-list': 'pages/system/announcement.html',
-            'feedback-list': 'pages/system/feedback.html',
-            'notification-list': 'pages/system/notification.html',
-            'level-config': 'pages/system/level-config.html',  // ✅ 修复：level.html → level-config.html
-          };
-          
-          // 跳转页面
-          if (routes[value]) {
-            window.location.href = routes[value];
-          } else {
-            activeMenu.value = value;
-          }
-        };
-        
-        // 获取页面标题
-        const getPageTitle = () => {
-          const titles = {
-            'dashboard': '数据概览',
-            'users': '学员列表',
-            'orders': '订单列表',
-            'withdraw': '提现审核',
-            'courses': '课程列表',
-            'appointments': '预约管理',
-            'ambassadors': '大使列表',
-            'applications': '申请审核',
-          };
-          return titles[activeMenu.value] || '页面';
-        };
-        
         onMounted(() => {
-          if (checkAuth()) {
+          if (AdminAPI.getCurrentAdmin()) {
             loadStats();
           }
         });
         
         return {
-          activeMenu,
           adminInfo,
           stats,
           handleLogout,
           handleMenuChange,
-          getPageTitle,
         };
       }
     });
     
     app.use(TDesign);
+    // 注册共享侧边栏组件
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
     app.mount('#app');
   </script>
 </body>

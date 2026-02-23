@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi, UserApi } from '@/api'
 
@@ -166,6 +167,11 @@ const shareQrcode = () => {
 }
 
 onMounted(() => {
+  loadQRCode()
+  loadStats()
+})
+
+onShow(() => {
   loadQRCode()
   loadStats()
 })

@@ -115,6 +115,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
@@ -177,8 +178,8 @@ const onTabChange = (value: string) => {
 }
 
 const goToCourseDetail = () => {
-  uni.navigateTo({
-    url: '/pages/course/detail/index'
+  uni.switchTab({
+    url: '/pages/mall/index'
   })
 }
 
@@ -190,6 +191,10 @@ onMounted(() => {
   pageHeaderHeight.value = statusBarHeight + navbarHeight
 
   // 加载案例列表
+  loadCaseList()
+})
+
+onShow(() => {
   loadCaseList()
 })
 </script>

@@ -51,7 +51,7 @@ module.exports = async (event, context) => {
 
     // 关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`withdraw_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`withdraw_no.like.%${keyword}%,user_name.like.%${keyword}%`);
     }
 
     // 执行分页查询

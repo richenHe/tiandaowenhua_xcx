@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi, AmbassadorApi } from '@/api'
 import type { LevelConfig } from '@/api/types/ambassador'
@@ -253,6 +254,13 @@ const getBadgeTheme = (level: number): string => {
 
 // 页面加载时获取数据
 onMounted(() => {
+  loadUserInfo()
+  loadReferralStats()
+  loadPoints()
+  loadLevelSystem()
+})
+
+onShow(() => {
   loadUserInfo()
   loadReferralStats()
   loadPoints()

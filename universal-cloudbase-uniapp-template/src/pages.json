@@ -279,6 +279,13 @@
         "navigationBarTitleText": "平台公告",
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/common/announcement-detail/index",
+      "style": {
+        "navigationBarTitleText": "公告详情",
+        "navigationStyle": "custom"
+      }
     }
 	],
 	"globalStyle": {

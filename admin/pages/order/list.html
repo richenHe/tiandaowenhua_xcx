@@ -420,7 +420,7 @@
             pagination.total = data.total || 0;
           } catch (error) {
             console.error('获取订单列表失败:', error);
-            TDesign.Message.error('获取订单列表失败: ' + error.message);
+            TDesign.MessagePlugin.error('获取订单列表失败: ' + error.message);
           } finally {
             loading.value = false;
           }
@@ -483,10 +483,10 @@
                 status: 1,
                 paidAt: new Date().toISOString()
               });
-              TDesign.Message.success('支付确认成功');
+              TDesign.MessagePlugin.success('支付确认成功');
               fetchOrders();
             } catch (error) {
-              TDesign.Message.error('支付确认失败: ' + error.message);
+              TDesign.MessagePlugin.error('支付确认失败: ' + error.message);
             }
           }
         };
@@ -506,10 +506,10 @@
                 orderId: order.id,
                 status: 2
               });
-              TDesign.Message.success('退款申请已提交');
+              TDesign.MessagePlugin.success('退款申请已提交');
               fetchOrders();
             } catch (error) {
-              TDesign.Message.error('退款申请失败: ' + error.message);
+              TDesign.MessagePlugin.error('退款申请失败: ' + error.message);
             }
           }
         };
@@ -529,10 +529,10 @@
                 orderId: order.id,
                 status: -1
               });
-              TDesign.Message.success('订单已取消');
+              TDesign.MessagePlugin.success('订单已取消');
               fetchOrders();
             } catch (error) {
-              TDesign.Message.error('取消订单失败: ' + error.message);
+              TDesign.MessagePlugin.error('取消订单失败: ' + error.message);
             }
           }
         };

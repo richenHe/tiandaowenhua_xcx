@@ -3,7 +3,19 @@
  * 订单过期检查、用户课程记录生成
  */
 
-const { db } = require('common');
+const { db, findOne, insert, update } = require('common');
+
+/**
+ * 将日期加一年，返回 UTC+8 格式字符串（YYYY-MM-DD HH:mm:ss）
+ * @param {string|Date|null} base - 起始时间，为空则用当前时间
+ */
+function addOneYear(base) {
+  const d = base ? new Date(base) : new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  const d8 = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d8.getUTCFullYear()}-${pad(d8.getUTCMonth() + 1)}-${pad(d8.getUTCDate())} ${pad(d8.getUTCHours())}:${pad(d8.getUTCMinutes())}:${pad(d8.getUTCSeconds())}`;
+}
 
 /**
  * 检查订单是否已过期（创建后 30 分钟未支付自动关闭）
@@ -11,22 +23,22 @@ const { db } = require('common');
  * @returns {Promise<boolean>} 是否已过期
  */
 async function checkOrderExpiry(orderNo) {
-  const orders = await db.query(
-    'SELECT * FROM orders WHERE order_no = ? AND pay_status = 0 AND is_deleted = 0',
-    [orderNo]
-  );
-  const order = orders[0];
-  if (!order) return true; // 订单不存在视为过期
+  const { data: orders } = await db
+    .from('orders')
+    .select('*')
+    .eq('order_no', orderNo)
+    .eq('pay_status', 0);
 
-  // 订单时效固定 30 分钟
+  const order = orders && orders[0];
+  if (!order) return true;
+
   const expireTime = new Date(order.created_at).getTime() + 30 * 60 * 1000;
   const isExpired = Date.now() > expireTime;
 
-  // 如果已过期，自动关闭订单
   if (isExpired) {
-    await db.query(
-      'UPDATE orders SET pay_status = 3, remark = \'超时自动关闭\' WHERE order_no = ? AND pay_status = 0',
-      [orderNo]
+    await update('orders',
+      { pay_status: 3, remark: '超时自动关闭' },
+      { order_no: orderNo, pay_status: 0 }
     );
   }
 
@@ -34,41 +46,46 @@ async function checkOrderExpiry(orderNo) {
 }
 
 /**
- * 支付成功后生成用户课程记录
- * @param {Object} conn - 事务连接对象
- * @param {Object} order - 订单信息
- * @param {number} order.id - 订单 ID
- * @param {string} order._openid - 用户 openid
- * @param {number} order.user_id - 用户 ID
- * @param {number} order.course_id - 课程 ID
- * @param {string} order.course_type - 课程类型（'basic'/'advanced'）
+ * 支付成功后生成用户课程记录（有效期 1 年）
+ * @param {Object} params - 参数对象
+ * @param {number} params.user_id - 用户 ID
+ * @param {number} params.order_id - 订单 ID
+ * @param {number} params.course_id - 课程 ID
+ * @param {string} [params._openid] - 用户 openid
  * @returns {Promise<void>}
  */
-async function generateUserCourseRecord(conn, order) {
-  if (!conn || !order) {
-    throw new Error('缺少必要的参数：conn, order');
+async function generateUserCourseRecord({ user_id, order_id, course_id, _openid }) {
+  if (!user_id || !course_id) {
+    throw new Error('缺少必要的参数：user_id, course_id');
   }
 
-  // 创建用户课程记录
-  await conn.execute(
-    'INSERT INTO user_courses (_openid, user_id, course_id, order_id, status) VALUES (?, ?, ?, ?, 1)',
-    [order._openid, order.user_id, order.course_id, order.id]
-  );
+  // 查询课程信息
+  const course = await findOne('courses', { id: course_id });
+  if (!course) throw new Error(`课程不存在：${course_id}`);
 
-  // 密训班额外赠送初探班
-  if (order.course_type === 'advanced') {
-    const [rows] = await conn.execute(
-      'SELECT id FROM courses WHERE type = 1 AND status = 1 LIMIT 1'
-    );
-    const basicCourse = rows[0] || rows;
+  // 当前 UTC+8 时间
+  const nowD8 = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  const nowStr = `${nowD8.getUTCFullYear()}-${pad(nowD8.getUTCMonth() + 1)}-${pad(nowD8.getUTCDate())} ${pad(nowD8.getUTCHours())}:${pad(nowD8.getUTCMinutes())}:${pad(nowD8.getUTCSeconds())}`;
+  const expireAt = addOneYear(nowStr);
 
-    if (basicCourse && basicCourse.id) {
-      await conn.execute(
-        'INSERT INTO user_courses (_openid, user_id, course_id, order_id, is_gift, source_order_id, status) VALUES (?, ?, ?, ?, 1, ?, 1)',
-        [order._openid, order.user_id, basicCourse.id, order.id, order.id]
-      );
-    }
-  }
+  // 写入用户课程记录，有效期 1 年
+  await insert('user_courses', {
+    user_id,
+    _openid: _openid || '',
+    course_id,
+    course_type: course.type,
+    course_name: course.name,
+    source_order_id: order_id,
+    buy_price: parseFloat(course.current_price) || 0,
+    buy_time: nowStr,
+    expire_at: expireAt,
+    is_gift: 0,
+    attend_count: 1,
+    status: 1
+  });
+
+  console.log(`[generateUserCourseRecord] 课程记录生成成功，有效期至：${expireAt}`);
 }
 
 /**

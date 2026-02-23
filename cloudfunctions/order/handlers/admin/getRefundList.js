@@ -56,7 +56,7 @@ module.exports = async (event, context) => {
 
     // 关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`order_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`order_no.like.%${keyword}%,user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     // 执行分页查询
@@ -81,7 +81,7 @@ module.exports = async (event, context) => {
     }
 
     if (keyword) {
-      statsQuery = statsQuery.or(`order_no.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
+      statsQuery = statsQuery.or(`order_no.like.%${keyword}%,user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     const { data: statsData } = await statsQuery;

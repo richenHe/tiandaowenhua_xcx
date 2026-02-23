@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api';
 
@@ -111,6 +112,10 @@ onMounted(() => {
     courseId.value = Number(options.course_id);
     loadSchedules();
   }
+});
+
+onShow(() => {
+  loadSchedules();
 });
 </script>
 

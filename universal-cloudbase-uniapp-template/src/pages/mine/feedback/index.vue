@@ -140,8 +140,18 @@ const formData = ref({
 
 // 可选课程列表
 const courses = ref<FeedbackCourse[]>([])
-// 反馈类型列表
-const feedbackTypes = ref<FeedbackType[]>([])
+
+// 默认反馈类型（本地兜底，防止接口未实现或返回非数组时报错）
+const DEFAULT_FEEDBACK_TYPES: FeedbackType[] = [
+  { value: 1, label: 'Bug反馈', icon: 'bug' },
+  { value: 2, label: '功能建议', icon: 'light' },
+  { value: 3, label: '内容问题', icon: 'content' },
+  { value: 4, label: '服务投诉', icon: 'service' },
+  { value: 5, label: '其他', icon: 'other' }
+]
+
+// 反馈类型列表（初始化为默认值，接口成功后覆盖）
+const feedbackTypes = ref<FeedbackType[]>([...DEFAULT_FEEDBACK_TYPES])
 
 onMounted(() => {
   loadFeedbackTypes()
@@ -152,9 +162,12 @@ onMounted(() => {
 const loadFeedbackTypes = async () => {
   try {
     const result = await SystemApi.getFeedbackTypes()
-    feedbackTypes.value = result
+    // 防御性赋值：只有返回数组且非空时才覆盖默认值
+    if (Array.isArray(result) && result.length > 0) {
+      feedbackTypes.value = result
+    }
   } catch (error) {
-    console.error('获取反馈类型失败:', error)
+    console.error('获取反馈类型失败，使用默认类型:', error)
   }
 }
 
@@ -162,15 +175,17 @@ const loadFeedbackTypes = async () => {
 const loadFeedbackCourses = async () => {
   try {
     const result = await SystemApi.getFeedbackCourses()
-    courses.value = result
+    // 防御性赋值：确保赋值的是数组
+    courses.value = Array.isArray(result) ? result : []
   } catch (error) {
     console.error('获取课程列表失败:', error)
+    courses.value = []
   }
 }
 
 // 选择课程
 const handleSelectCourse = () => {
-  if (courses.value.length === 0) {
+  if (!Array.isArray(courses.value) || courses.value.length === 0) {
     uni.showToast({
       title: '暂无已购买的课程',
       icon: 'none'

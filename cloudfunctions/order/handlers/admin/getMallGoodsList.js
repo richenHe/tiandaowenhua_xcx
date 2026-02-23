@@ -24,7 +24,7 @@ module.exports = async (event, context) => {
     }
 
     if (keyword && keyword.trim()) {
-      queryBuilder = queryBuilder.ilike('goods_name', `%${keyword.trim()}%`);
+      queryBuilder = queryBuilder.like('goods_name', `%${keyword.trim()}%`);
     }
 
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

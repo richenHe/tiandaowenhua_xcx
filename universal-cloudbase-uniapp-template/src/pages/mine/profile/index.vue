@@ -203,6 +203,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 import StorageApi, { StoragePathHelper } from '@/api/modules/storage'
@@ -406,6 +407,10 @@ const loadProfile = async () => {
 }
 
 onMounted(() => {
+  loadProfile()
+})
+
+onShow(() => {
   loadProfile()
 })
 

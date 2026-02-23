@@ -55,6 +55,10 @@
                 <text>兑换单号: {{ record.exchange_no }}</text>
                 <text>{{ formatDateTime(record.created_at) }}</text>
               </view>
+              <!-- 撤销按钮：仅 status=1（已兑换/未领取）可操作 -->
+              <view v-if="record.status === 1" class="record-actions">
+                <button class="btn-cancel-exchange" @click="handleCancelExchange(record)">撤销兑换</button>
+              </view>
             </view>
           </view>
         </view>
@@ -81,9 +85,37 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi } from '@/api';
 import type { ExchangeRecord } from '@/api/types/order';
+
+// 撤销兑换
+const handleCancelExchange = (record: ExchangeRecord) => {
+  uni.showModal({
+    title: '确认撤销',
+    content: `确定要撤销「${record.goods_name}」的兑换吗？功德分/积分将原路退还。`,
+    confirmText: '撤销',
+    cancelText: '取消',
+    confirmColor: '#e34d59',
+    success: async (res) => {
+      if (!res.confirm) return;
+      try {
+        const result = await OrderApi.cancelExchange({ exchange_no: record.exchange_no });
+        uni.showToast({ title: '撤销成功', icon: 'success', duration: 2000 });
+        // 本地更新状态，避免重新拉取
+        const target = records.value.find(r => r.exchange_no === record.exchange_no);
+        if (target) {
+          target.status = 3;
+          target.status_name = '已取消';
+        }
+        console.log('[cancelExchange] 退还:', result);
+      } catch (error: any) {
+        uni.showToast({ title: error?.message || '撤销失败', icon: 'none', duration: 2500 });
+      }
+    }
+  });
+};
 
 const activeTab = ref<number | null>(null);
 
@@ -124,6 +156,10 @@ const filteredRecords = computed(() => {
 });
 
 onMounted(() => {
+  loadExchangeRecords();
+});
+
+onShow(() => {
   loadExchangeRecords();
 });
 
@@ -343,6 +379,26 @@ const loadMore = () => {
 .empty-text {
   font-size: 28rpx;
   color: #999;
+}
+
+.record-actions {
+  margin-top: 16rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-cancel-exchange {
+  font-size: 24rpx;
+  color: #e34d59;
+  background: transparent;
+  border: 1rpx solid #e34d59;
+  border-radius: 8rpx;
+  padding: 8rpx 24rpx;
+  line-height: 1.5;
+
+  &::after {
+    border: none;
+  }
 }
 
 .load-more {

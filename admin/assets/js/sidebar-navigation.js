@@ -30,6 +30,7 @@ function handleMenuChange(value) {
     'order-refund':       'pages/order/refund.html',
     'withdraw-audit':     'pages/order/withdraw-audit.html',
     'mall-goods':         'pages/order/mall-goods.html',
+    'exchange-records':   'pages/order/exchange-records.html',
     'course-list':        'pages/course/list.html',
     'schedule-list':      'pages/course/schedule.html',
     'appointment-list':   'pages/course/appointment.html',
@@ -133,6 +134,7 @@ const SidebarMenu = {
           <t-menu-item value="order-refund">退款管理</t-menu-item>
           <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
           <t-menu-item value="mall-goods">商城商品</t-menu-item>
+          <t-menu-item value="exchange-records">兑换管理</t-menu-item>
         </t-submenu>
 
         <t-submenu value="course">
@@ -142,7 +144,7 @@ const SidebarMenu = {
           <t-menu-item value="schedule-list">排期管理</t-menu-item>
           <t-menu-item value="appointment-list">预约管理</t-menu-item>
           <t-menu-item value="case-list">案例管理</t-menu-item>
-          <t-menu-item value="material-list">资料管理</t-menu-item>
+          <t-menu-item value="material-list">素材管理</t-menu-item>
         </t-submenu>
 
         <t-submenu value="ambassador">

@@ -44,13 +44,15 @@ function getPagination(page = 1, pageSize = 20) {
  */
 function formatDateTime(date) {
   const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hour = String(d.getHours()).padStart(2, '0');
-  const minute = String(d.getMinutes()).padStart(2, '0');
-  const second = String(d.getSeconds()).padStart(2, '0');
-  
+  // 固定偏移到 UTC+8（北京时间），避免云函数服务器时区（UTC+0）与数据库时区（UTC+8）不一致
+  const d8 = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const year = d8.getUTCFullYear();
+  const month = String(d8.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d8.getUTCDate()).padStart(2, '0');
+  const hour = String(d8.getUTCHours()).padStart(2, '0');
+  const minute = String(d8.getUTCMinutes()).padStart(2, '0');
+  const second = String(d8.getUTCSeconds()).padStart(2, '0');
+
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 

@@ -40,7 +40,7 @@ module.exports = async (event, context) => {
 
     // 关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`order_no.ilike.%${keyword}%,order_name.ilike.%${keyword}%,user_name.ilike.%${keyword}%,user_phone.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`order_no.like.%${keyword}%,order_name.like.%${keyword}%,user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     // 执行分页查询

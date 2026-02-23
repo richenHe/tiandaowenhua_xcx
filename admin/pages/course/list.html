@@ -462,7 +462,7 @@
             pagination.total = data.total || 0;
           } catch (error) {
             console.error('获取课程列表失败:', error);
-            TDesign.Message.error('获取课程列表失败: ' + error.message);
+            TDesign.MessagePlugin.error('获取课程列表失败: ' + error.message);
           } finally {
             loading.value = false;
           }
@@ -565,18 +565,18 @@
 
             if (editMode.value === 'add') {
               await AdminAPI.createCourse(params);
-              TDesign.Message.success('课程创建成功');
+              TDesign.MessagePlugin.success('课程创建成功');
             } else {
               // 更新时传 id（云函数 updateCourse 用 id 查询）
               params.id = editForm.id;
               await AdminAPI.updateCourse(params);
-              TDesign.Message.success('课程更新成功');
+              TDesign.MessagePlugin.success('课程更新成功');
             }
 
             editDialogVisible.value = false;
             fetchCourses();
           } catch (error) {
-            TDesign.Message.error('保存失败: ' + error.message);
+            TDesign.MessagePlugin.error('保存失败: ' + error.message);
           }
         };
 
@@ -587,10 +587,10 @@
               courseId: course.id,
               status: course.status === 1 ? 0 : 1
             });
-            TDesign.Message.success('状态更新成功');
+            TDesign.MessagePlugin.success('状态更新成功');
             fetchCourses();
           } catch (error) {
-            TDesign.Message.error('状态更新失败: ' + error.message);
+            TDesign.MessagePlugin.error('状态更新失败: ' + error.message);
           }
         };
 
@@ -606,10 +606,10 @@
           if (confirmed) {
             try {
               await AdminAPI.deleteCourse({ courseId: course.id });
-              TDesign.Message.success('课程删除成功');
+              TDesign.MessagePlugin.success('课程删除成功');
               fetchCourses();
             } catch (error) {
-              TDesign.Message.error('删除失败: ' + error.message);
+              TDesign.MessagePlugin.error('删除失败: ' + error.message);
             }
           }
         };

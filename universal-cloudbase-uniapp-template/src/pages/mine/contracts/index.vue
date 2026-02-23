@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi } from '@/api'
 import type { Contract } from '@/api/types/ambassador'
@@ -91,6 +92,10 @@ const contracts = ref<Contract[]>([])
 const loading = ref(false)
 
 onMounted(() => {
+  loadContracts()
+})
+
+onShow(() => {
   loadContracts()
 })
 

@@ -18,8 +18,12 @@ import type {
   GetMallGoodsResponse,
   ExchangeGoodsParams,
   ExchangeGoodsResponse,
+  ExchangeCourseParams,
+  ExchangeCourseResponse,
   GetExchangeRecordsParams,
   GetExchangeRecordsResponse,
+  CancelExchangeParams,
+  CancelExchangeResponse,
   GetMallCoursesParams,
   GetMallCoursesResponse
 } from '../types/order'
@@ -174,6 +178,15 @@ export class OrderApi {
     })
   }
 
+  static async exchangeCourse(params: ExchangeCourseParams): Promise<ExchangeCourseResponse> {
+    return callCloudFunction<ExchangeCourseResponse>({
+      name: 'order',
+      action: 'exchangeCourse',
+      data: params,
+      loadingText: '兑换中...'
+    })
+  }
+
   /**
    * 8. 获取兑换记录列表
    * @param params 查询参数
@@ -189,7 +202,21 @@ export class OrderApi {
   }
 
   /**
-   * 9. 获取商城课程列表
+   * 9. 撤销兑换
+   * @param params 撤销参数（兑换单号）
+   * @returns 撤销结果
+   */
+  static async cancelExchange(params: CancelExchangeParams): Promise<CancelExchangeResponse> {
+    return callCloudFunction<CancelExchangeResponse>({
+      name: 'order',
+      action: 'cancelExchange',
+      data: params,
+      loadingText: '撤销中...'
+    })
+  }
+
+  /**
+   * 10. 获取商城课程列表
    * @param params 查询参数
    * @returns 课程列表
    */
@@ -212,6 +239,7 @@ export const {
   cancel,
   getMallGoods,
   exchangeGoods,
+  cancelExchange,
   getExchangeRecords,
   getMallCourses
 } = OrderApi

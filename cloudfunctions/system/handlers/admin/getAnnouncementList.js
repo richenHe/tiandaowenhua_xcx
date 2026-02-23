@@ -31,7 +31,7 @@ module.exports = async (event, context) => {
 
     // 筛选条件
     if (keyword) {
-      queryBuilder = queryBuilder.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`title.like.%${keyword}%,content.like.%${keyword}%`);
     }
     if (category) {
       queryBuilder = queryBuilder.eq('category', category);

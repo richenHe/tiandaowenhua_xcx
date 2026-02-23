@@ -77,6 +77,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { OrderApi } from '@/api'
 
@@ -170,7 +171,7 @@ const loadOrderDetail = async (orderNo: string) => {
       // ⚠️ 强制使用已取消状态（2或3），避免显示错误状态
       payStatus: order.pay_status === 0 ? 3 : order.pay_status,
       orderType: order.order_type,
-      itemId: (order as any).item_id || 0
+      itemId: order.course_id || (order as any).related_id || 0
     }
     
     uni.hideLoading()
@@ -194,12 +195,19 @@ const goBack = () => {
 
 // 重新下单
 const handleReorder = () => {
-  // 根据订单类型跳转到对应的课程详情页
   if (orderInfo.value.orderType === 1) {
     // 课程订单 -> 跳转到课程详情
-    uni.navigateTo({
-      url: `/pages/course/detail/index?id=${orderInfo.value.itemId}`
-    })
+    if (orderInfo.value.itemId > 0) {
+      uni.navigateTo({
+        url: `/pages/course/detail/index?id=${orderInfo.value.itemId}`
+      })
+    } else {
+      // 课程ID无效，返回首页重新选课
+      uni.showToast({ title: '请重新选择课程', icon: 'none' })
+      setTimeout(() => {
+        uni.switchTab({ url: '/pages/index/index' })
+      }, 1000)
+    }
   } else if (orderInfo.value.orderType === 2) {
     // 复训订单 -> 跳转到复训列表
     uni.navigateTo({
@@ -228,6 +236,12 @@ onMounted(() => {
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
+  }
+})
+
+onShow(() => {
+  if (orderInfo.value.orderNo) {
+    loadOrderDetail(orderInfo.value.orderNo)
   }
 })
 </script>

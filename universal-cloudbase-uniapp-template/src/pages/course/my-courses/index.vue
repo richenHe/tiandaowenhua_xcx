@@ -84,6 +84,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
@@ -161,6 +162,10 @@ onMounted(() => {
   pageHeaderHeight.value = statusBarHeight + navbarHeight;
 
   // 加载课程列表
+  loadMyCourses();
+});
+
+onShow(() => {
   loadMyCourses();
 });
 

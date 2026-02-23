@@ -139,6 +139,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api';
 
@@ -199,6 +200,10 @@ const loadAcademyIntro = async () => {
 };
 
 onMounted(() => {
+  loadAcademyIntro();
+});
+
+onShow(() => {
   loadAcademyIntro();
 });
 

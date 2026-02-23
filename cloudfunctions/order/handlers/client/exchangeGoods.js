@@ -43,22 +43,25 @@ module.exports = async (event, context) => {
       return response.error('库存不足');
     }
 
-    // 5. 计算混合支付
+    // 5. 计算支付方式（与前端三种情况对应）
     const totalCost = goods.merit_points_price * quantity;
     let merit_points_used = 0;
     let cash_points_used = 0;
 
     if (user.merit_points >= totalCost) {
+      // 情况1：功德分充足，只用功德分
       merit_points_used = totalCost;
       cash_points_used = 0;
     } else if (use_cash_points_if_not_enough) {
-      merit_points_used = user.merit_points;
-      cash_points_used = totalCost - merit_points_used;
+      // 情况2：功德分不足但积分足够，只用积分全额支付（不动功德分）
+      merit_points_used = 0;
+      cash_points_used = totalCost;
 
       if (user.cash_points_available < cash_points_used) {
         return response.error(`现金积分不足，还需 ${cash_points_used - user.cash_points_available} 积分`);
       }
     } else {
+      // 情况3：功德分不足且未允许积分补足
       return response.error(`功德分不足，还需 ${totalCost - user.merit_points} 功德分`);
     }
 
@@ -113,7 +116,7 @@ module.exports = async (event, context) => {
           user_id: user.id,
           _openid: OPENID || '',
           type: 2,                                              // 消费
-          source: 3,                                            // 实际列名（非 source_type）：3=商城兑换
+          source: 6,                                            // 实际列名（非 source_type）：6=商城兑换
           amount: -merit_points_used,
           balance_after: parseFloat(user.merit_points) - merit_points_used,
           exchange_no,                                          // 关联兑换单号（非 source_id）

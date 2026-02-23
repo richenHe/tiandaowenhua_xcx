@@ -34,7 +34,7 @@ module.exports = async (event, context) => {
 
     // 添加关键词搜索
     if (keyword) {
-      queryBuilder = queryBuilder.or(`name.ilike.%${keyword}%,description.ilike.%${keyword}%`);
+      queryBuilder = queryBuilder.or(`name.like.%${keyword}%,description.like.%${keyword}%`);
     }
 
     console.log('[getCourseList] 执行分页查询...');

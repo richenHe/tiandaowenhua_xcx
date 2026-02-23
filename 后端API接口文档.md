@@ -2082,10 +2082,10 @@ Page({
 ### 🔵 6.13 创建兑换订单
 **接口**: `POST /api/mall/exchange`
 
-**接口概述**: 使用功德分(+积分)兑换商品,直接完成扣除
+**接口概述**: 使用功德分（或积分）兑换商品，直接完成扣除，不走支付流程
 
 **重要说明**:
-- 不走支付接口,在商城页面直接完成
+- 不走支付接口，在商城页面直接完成
 - 不创建 orders 表记录
 - 直接扣除功德分/积分并创建兑换记录
 
@@ -2098,19 +2098,38 @@ Page({
 }
 ```
 
+**前端调用场景说明（三种情况）**:
+```
+情况 1：功德分 >= 总价格
+  → use_cash_points_if_not_enough = false
+  → 弹框提示："确定用功德分兑换商品吗？"
+  → 后端仅扣功德分，不动积分
+
+情况 2：功德分 < 总价格，且积分 >= 总价格
+  → use_cash_points_if_not_enough = true
+  → 弹框提示："功德分不足，需要用积分兑换商品吗？"
+  → 后端先扣尽现有功德分，剩余部分用积分补差
+  → 注意：积分门槛是"积分 >= 全价"，而非"积分 >= 补差额"
+
+情况 3：功德分 < 总价格，且积分 < 总价格
+  → 前端直接弹框提示"功德分或积分不够"，不调用接口
+```
+
 **业务逻辑**:
 ```
 1. 验证用户已完善资料(profile_completed = 1)
 2. 验证商品存在和库存充足
-3. 计算混合支付:
+3. 计算支付方式:
    总成本 = goods.merit_points_price * quantity
    
    IF user.merit_points >= 总成本:
+       // 情况1：只用功德分
        merit_points_used = 总成本
        cash_points_used = 0
    ELSE IF use_cash_points_if_not_enough = true:
-       merit_points_used = user.merit_points
-       cash_points_used = 总成本 - merit_points_used
+       // 情况2：只用积分全额支付，功德分不动
+       merit_points_used = 0
+       cash_points_used = 总成本
        
        IF user.cash_points_available < cash_points_used:
            返回错误:"现金积分不足,还需XXX积分"
@@ -2168,6 +2187,229 @@ Page({
   - 无需物流字段(现场兑换)
   - 无需虚拟/实物区分字段
   - status 可用于追踪领取状态
+
+### 🔵 6.13b 撤销兑换
+**云函数**: `order`，**Action**: `cancelExchange`
+
+**接口概述**: 用户主动撤销尚未领取的兑换订单，退还功德分/积分并恢复商品库存
+
+**适用场景**: 仅限 `status=1`（已兑换/未领取）的记录，`status=2`（已领取）和 `status=3`（已取消）不可撤销
+
+**请求参数**:
+```json
+{
+  "exchange_no": "EX202401150001"
+}
+```
+
+**业务逻辑**:
+```
+1. 验证用户身份（通过 CloudBase context 获取 uid）
+2. 查询兑换记录：
+   SELECT * FROM mall_exchange_records WHERE exchange_no = {exchange_no} AND user_id = {user_id}
+   - 不存在 → 返回错误："兑换记录不存在"
+   - status = 2 → 返回错误："商品已领取，无法撤销"
+   - status = 3 → 返回错误："该记录已取消"
+
+3. 查询商品当前库存（用于恢复）
+   SELECT stock_quantity, sold_quantity FROM mall_goods WHERE id = {goods_id}
+
+4. 开启事务：
+
+5. 更新兑换状态为已取消：
+   UPDATE mall_exchange_records SET status = 3 WHERE exchange_no = {exchange_no}
+
+6. 退还功德分和积分：
+   UPDATE users SET
+     merit_points = merit_points + {merit_points_used},
+     cash_points_available = cash_points_available + {cash_points_used}
+   WHERE id = {user_id}
+
+7. 恢复商品库存（仅当 stock_quantity != -1 时）：
+   UPDATE mall_goods SET
+     stock_quantity = stock_quantity + {quantity},
+     sold_quantity = sold_quantity - {quantity}
+   WHERE id = {goods_id}
+
+8. 插入功德分退还明细（仅当 merit_points_used > 0）：
+   INSERT INTO merit_points_records (
+     user_id, type=1（收入）, source=6（商城兑换）,
+     amount=+{merit_points_used},
+     balance_after={用户退还后的功德分},
+     exchange_no={exchange_no},
+     remark="撤销兑换：{goods_name}"
+   )
+
+9. 插入积分退还明细（仅当 cash_points_used > 0）：
+   INSERT INTO cash_points_records (
+     user_id, type=3（直接发放）,
+     amount=+{cash_points_used},
+     available_after={用户退还后的积分},
+     remark="撤销兑换：{goods_name}"
+   )
+
+10. 提交事务
+
+11. 返回撤销成功
+```
+
+**响应数据**:
+```json
+{
+  "exchange_no": "EX202401150001",
+  "goods_name": "道天文化帆布包",
+  "merit_points_refunded": 0.00,
+  "cash_points_refunded": 80.00,
+  "status": "已取消"
+}
+```
+
+**错误响应**:
+```json
+{ "code": 400, "message": "商品已领取，无法撤销" }
+{ "code": 400, "message": "该记录已取消" }
+{ "code": 404, "message": "兑换记录不存在" }
+```
+
+**数据库变更说明**:
+
+| 表 | 字段 | 变化 |
+|----|------|------|
+| `mall_exchange_records` | `status` | 1 → 3（已取消） |
+| `users` | `merit_points` | + merit_points_used |
+| `users` | `cash_points_available` | + cash_points_used |
+| `mall_goods` | `stock_quantity` | + quantity（非无限库存时） |
+| `mall_goods` | `sold_quantity` | - quantity |
+| `merit_points_records` | 新增记录 | type=1, source=6, amount=正值（退还） |
+| `cash_points_records` | 新增记录（若有积分支付） | type=3, amount=正值（退还） |
+
+---
+
+### 🔵 6.13c 兑换课程
+**云函数**: `order`，**Action**: `exchangeCourse`
+
+**接口概述**: 使用功德分（或积分）兑换商城课程，直接解锁 `user_courses`，无需线下领取，不创建 `orders` 表记录。
+
+**重要说明**:
+- 兑换价格以 `courses.current_price`（人民币价格）作为功德分/积分消耗数量（1元 = 1功德分/积分）
+- 允许重复兑换同一课程（如复训场景），只要余额足够即可
+- 密训班兑换**不赠送**初探班（与支付购买不同）
+- 功德分/积分支付逻辑与 §6.13 商品兑换完全相同（三种情况）
+
+**请求参数**:
+```json
+{
+  "action": "exchangeCourse",
+  "course_id": 1,
+  "use_cash_points_if_not_enough": false
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `course_id` | int | 是 | 课程ID |
+| `use_cash_points_if_not_enough` | bool | 否 | 功德分不足时是否改用积分，默认 false |
+
+**支付场景**:
+```
+情况1（功德分充足）:
+  use_cash_points_if_not_enough = false/true
+  → 只扣功德分 merit_points -= price
+
+情况2（功德分不足 + use_cash_points_if_not_enough=true）:
+  → 只扣积分 cash_points_available -= price
+  （功德分保持不变）
+
+情况3（功德分不足 + use_cash_points_if_not_enough=false）:
+  → 返回错误"功德分不足，是否使用积分兑换？"
+```
+
+**业务逻辑**:
+```
+1. 权限验证：检查用户资料是否完善（profile_completed=1）
+2. 查询课程：courses WHERE id=course_id AND status=1 AND type IN (1,2)
+   - 课程不存在或未上架 → 返回错误
+3. 库存验证：stock=-1（无限库存）跳过；stock>0 才允许兑换
+4. 计算价格：price = courses.current_price（精确到分，取整）
+5. 判断支付方式（见支付场景）
+6. 事务执行：
+   a. 扣减 users.merit_points 或 cash_points_available
+   b. 写入 user_courses（见写入规则）
+   c. 写入 merit_points_records 或 cash_points_records（见明细规则）
+   d. 更新 courses.sold_count +1
+      若 stock != -1：courses.stock -1
+```
+
+**user_courses 写入规则**:
+```
+查询 user_courses WHERE user_id=? AND course_id=? AND status=1：
+
+IF 已有记录（重复兑换/续期）:
+  → UPDATE user_courses SET expire_at = 原 expire_at + 1年
+    （在原有效期基础上顺延，不新建记录）
+
+IF 无记录（首次兑换）:
+  → INSERT INTO user_courses:
+      user_id        = user.id
+      _openid        = OPENID
+      course_id      = course_id
+      course_type    = courses.type
+      course_name    = courses.name
+      order_no       = NULL（功德分兑换无订单号）
+      buy_price      = price（消耗的功德分/积分数量）
+      buy_time       = 当前时间（UTC+8）
+      expire_at      = 当前时间 + 1年（UTC+8）
+      is_gift        = 0
+      attend_count   = 1
+      status         = 1
+
+所有课程（无论购买方式）有效期均为 1 年。
+```
+
+**积分明细写入规则**:
+```
+功德分消耗时 → INSERT INTO merit_points_records:
+  type          = 2（支出）
+  source        = 6（商城兑换）
+  amount        = price
+  balance_after = 扣减后余额
+  remark        = "兑换课程：{courses.name}"
+
+积分消耗时 → INSERT INTO cash_points_records:
+  type          = 4（支出/消费）
+  amount        = price
+  available_after = 扣减后余额
+  remark        = "兑换课程：{courses.name}"
+```
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "code": 0,
+  "message": "兑换成功",
+  "data": {
+    "user_course_id": 101,
+    "course_id": 1,
+    "course_name": "初探班",
+    "course_type": 1,
+    "merit_points_used": 1688.00,
+    "cash_points_used": 0.00,
+    "price": 1688
+  }
+}
+```
+
+**错误码**:
+| 场景 | message |
+|------|---------|
+| 课程不存在或未上架 | "课程不存在或已下架" |
+| 库存不足 | "课程名额已满" |
+| 功德分不足且未选积分 | "功德分不足，是否使用积分兑换？" |
+| 功德分和积分都不足 | "功德分和积分均不足，无法兑换" |
+| 用户资料未完善 | "请先完善个人资料" |
+
+---
 
 ### 🔵 6.14 兑换记录列表
 **接口**: `GET /api/merit-points/exchange-records`
@@ -2649,6 +2891,131 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
   "action": "approve",  // approve/reject
   "reject_reason": "拒绝原因"
 }
+```
+
+### 🔴 6.20 兑换记录管理 - 列表
+**云函数**: `order`，**Action**: `getExchangeList`
+
+**接口概述**: 管理员查询所有用户的兑换记录，含用户信息，用于现场核对并确认领取
+
+**请求参数**:
+```json
+{
+  "status": 1,
+  "keyword": "张三",
+  "page": 1,
+  "page_size": 20
+}
+```
+
+**参数说明**:
+- `status`：可选，1=已兑换(待领取) / 2=已领取 / 3=已取消；不传则查全部
+- `keyword`：可选，按用户姓名或兑换单号模糊搜索
+
+**业务逻辑**:
+```
+1. 验证管理员身份
+2. 查询 mall_exchange_records JOIN users，返回用户信息用于现场核对：
+   SELECT er.*, u.real_name, u.phone, u.id as user_db_id,
+          mg.goods_name as goods_name_verify
+   FROM mall_exchange_records er
+   JOIN users u ON er.user_id = u.id
+   LEFT JOIN mall_goods mg ON er.goods_id = mg.id
+   WHERE [status/keyword条件]
+   ORDER BY er.created_at DESC
+3. 返回分页结果
+```
+
+**响应数据**:
+```json
+{
+  "total": 10,
+  "page": 1,
+  "page_size": 20,
+  "list": [
+    {
+      "exchange_no": "EX202401150001",
+      "user_id": 30,
+      "user_name": "张三",
+      "user_phone": "138****8888",
+      "goods_name": "道天文化帆布包",
+      "goods_id": 4,
+      "quantity": 1,
+      "merit_points_used": 0.00,
+      "cash_points_used": 80.00,
+      "total_cost": 80.00,
+      "status": 1,
+      "status_name": "已兑换(待领取)",
+      "created_at": "2026-02-23 21:05:33"
+    }
+  ]
+}
+```
+
+---
+
+### 🔴 6.21 兑换记录管理 - 确认领取
+**云函数**: `order`，**Action**: `confirmPickup`
+
+**接口概述**: 管理员在现场确认用户凭兑换单号领取商品后，将兑换状态从 `status=1`（已兑换/待领取）改为 `status=2`（已领取）
+
+**适用场景**: 仅限 `status=1` 的记录；`status=2`（已领取）和 `status=3`（已取消）不可操作
+
+**请求参数**:
+```json
+{
+  "exchange_no": "EX202401150001",
+  "remark": "已现场核对，正常领取"
+}
+```
+
+**业务逻辑**:
+```
+1. 验证管理员身份
+2. 查询兑换记录：
+   SELECT * FROM mall_exchange_records WHERE exchange_no = {exchange_no}
+   - 不存在 → 返回错误："兑换记录不存在"
+   - status = 2 → 返回错误："该订单已确认领取"
+   - status = 3 → 返回错误："该订单已取消，无法操作"
+3. 更新兑换状态：
+   UPDATE mall_exchange_records SET
+     status = 2,
+     pickup_admin_id = {admin.id},
+     pickup_time = NOW(),
+     remark = {remark}
+   WHERE exchange_no = {exchange_no}
+4. 返回成功
+```
+
+**响应数据**:
+```json
+{
+  "exchange_no": "EX202401150001",
+  "goods_name": "道天文化帆布包",
+  "user_name": "张三",
+  "status": 2,
+  "status_name": "已领取",
+  "pickup_time": "2026-02-23 21:30:00"
+}
+```
+
+**数据库变更**:
+
+| 表 | 字段 | 变化 |
+|----|------|------|
+| `mall_exchange_records` | `status` | 1 → 2 |
+| `mall_exchange_records` | `pickup_admin_id` | null → 管理员ID |
+| `mall_exchange_records` | `pickup_time` | null → 当前时间 |
+| `mall_exchange_records` | `remark` | null → 备注 |
+
+> ⚠️ **注意**：`mall_exchange_records` 表若无 `pickup_admin_id`、`pickup_time`、`remark` 字段，需先执行 DDL 添加（见下方）
+
+**所需 DDL（首次部署时执行）**:
+```sql
+ALTER TABLE tiandao_culture.mall_exchange_records
+  ADD COLUMN pickup_admin_id INT NULL COMMENT '确认领取的管理员ID',
+  ADD COLUMN pickup_time DATETIME NULL COMMENT '领取时间',
+  ADD COLUMN remark VARCHAR(200) NULL COMMENT '领取备注';
 ```
 
 ---

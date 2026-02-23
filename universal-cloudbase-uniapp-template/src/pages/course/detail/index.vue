@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api';
 
@@ -196,9 +197,10 @@ onMounted(() => {
   const options = (currentPage as any).options || {};
 
   // 支持多种参数名：id、courseId、course_id（兼容性）
-  const courseId = options.id || options.courseId || options.course_id;
-  if (courseId) {
-    loadCourseDetail(Number(courseId));
+  // ⚠️ 先转 Number 再判断，避免字符串 "0" 被误判为 truthy
+  const courseId = Number(options.id || options.courseId || options.course_id || 0);
+  if (courseId > 0) {
+    loadCourseDetail(courseId);
   } else {
     // 没有课程ID，显示错误并停止加载
     isLoading.value = false;
@@ -206,6 +208,12 @@ onMounted(() => {
       title: '课程ID不存在',
       icon: 'none'
     });
+  }
+});
+
+onShow(() => {
+  if (courseInfo.value.id > 0) {
+    loadCourseDetail(courseInfo.value.id);
   }
 });
 

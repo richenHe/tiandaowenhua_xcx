@@ -24,7 +24,7 @@ module.exports = async (event, context) => {
     // 关键词过滤
     if (keyword && keyword.trim()) {
       queryBuilder = queryBuilder.or(
-        `goods_name.ilike.%${keyword}%,description.ilike.%${keyword}%`
+        `goods_name.like.%${keyword}%,description.like.%${keyword}%`
       );
     }
 

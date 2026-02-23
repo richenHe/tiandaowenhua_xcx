@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import Calendar from '@/components/Calendar.vue';
 import { CourseApi, SystemApi } from '@/api';
@@ -344,6 +345,13 @@ const goToCourseDetail = (course: any) => {
 };
 
 onMounted(() => {
+  loadBannerList();
+  loadCalendarPriceData();
+  loadCourseList();
+  loadAnnouncements();
+});
+
+onShow(() => {
   loadBannerList();
   loadCalendarPriceData();
   loadCourseList();

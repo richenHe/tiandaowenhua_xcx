@@ -46,14 +46,14 @@
               <view class="material-title">{{ item.title }}</view>
               <view v-if="item.content" class="material-desc">{{ item.content }}</view>
               <view class="material-actions">
-                <view @tap="saveMaterial(item)">
+                <view @tap="saveMaterial(item)" class="action-btn-main">
                   <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
                     <span class="t-button__text">💾 保存图片</span>
                   </button>
                 </view>
-                <view>
-                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
-                    <span class="t-button__text">📤</span>
+                <view v-if="item.content" @tap="copyText(item)" class="action-btn-copy">
+                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+                    <span class="t-button__text">📋 复制文案</span>
                   </button>
                 </view>
               </view>
@@ -66,13 +66,8 @@
           <view v-if="copywritingList.length > 0">
             <view class="t-section-title t-section-title--simple">✍️ 推广文案</view>
             <view v-for="item in copywritingList" :key="item.id" class="copywriting-card">
-              <view class="copywriting-header">
-                <view class="copywriting-icon blue">📝</view>
-                <view class="copywriting-info">
-                  <view class="copywriting-title">{{ item.title }}</view>
-                </view>
-              </view>
-              <view class="copywriting-content" v-html="item.content"></view>
+              <view class="copywriting-title">{{ item.title }}</view>
+              <view class="copywriting-content">{{ item.content }}</view>
               <view @tap="copyText(item)">
                 <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
                   <span class="t-button__text">📋 复制文案</span>
@@ -91,14 +86,14 @@
               <view class="material-title">{{ item.title }}</view>
               <view v-if="item.content" class="material-desc">{{ item.content }}</view>
               <view class="material-actions">
-                <view @tap="saveVideo(item)">
+                <view @tap="saveVideo(item)" class="action-btn-main">
                   <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
                     <span class="t-button__text">💾 保存视频</span>
                   </button>
                 </view>
-                <view>
-                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--size-small">
-                    <span class="t-button__text">📤</span>
+                <view v-if="item.content" @tap="copyText(item)" class="action-btn-copy">
+                  <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
+                    <span class="t-button__text">📋 复制文案</span>
                   </button>
                 </view>
               </view>
@@ -134,6 +129,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
@@ -158,6 +154,10 @@ onMounted(() => {
   pageHeaderHeight.value = statusBarHeight + navbarHeight
   
   // 加载素材数据
+  loadMaterials()
+})
+
+onShow(() => {
   loadMaterials()
 })
 
@@ -205,58 +205,148 @@ const onTabChange = (value: string) => {
   activeTab.value = value
 }
 
-const saveMaterial = (item: Material) => {
+/**
+ * 将云存储 cloud:// URL 转换为可下载的临时链接
+ * 普通 http/https URL 直接返回
+ */
+const getDownloadUrl = (url: string): Promise<string> => {
+  if (!url.startsWith('cloud://')) {
+    return Promise.resolve(url)
+  }
+  return new Promise((resolve, reject) => {
+    // #ifdef MP-WEIXIN
+    wx.cloud.getTempFileURL({
+      fileList: [url],
+      success: (res: any) => {
+        const file = res.fileList?.[0]
+        if (file && file.tempFileURL) {
+          resolve(file.tempFileURL)
+        } else {
+          reject(new Error('获取临时链接失败'))
+        }
+      },
+      fail: reject
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    reject(new Error('当前平台不支持云存储 URL'))
+    // #endif
+  })
+}
+
+/**
+ * 申请相册写入权限，已有权限则直接 resolve
+ */
+const requestAlbumPermission = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // #ifdef MP-WEIXIN
+    wx.getSetting({
+      success: (settingRes: any) => {
+        if (settingRes.authSetting['scope.writePhotosAlbum']) {
+          resolve()
+        } else {
+          wx.authorize({
+            scope: 'scope.writePhotosAlbum',
+            success: () => resolve(),
+            fail: () => {
+              // 用户拒绝，引导去设置页开启
+              uni.showModal({
+                title: '需要相册权限',
+                content: '请在设置中开启相册权限，以保存图片/视频',
+                confirmText: '去设置',
+                success: (modalRes) => {
+                  if (modalRes.confirm) {
+                    wx.openSetting({ success: () => resolve(), fail: reject })
+                  } else {
+                    reject(new Error('用户取消授权'))
+                  }
+                }
+              })
+            }
+          })
+        }
+      },
+      fail: reject
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    resolve()
+    // #endif
+  })
+}
+
+const saveMaterial = async (item: Material) => {
   if (!item.image_url) {
     uni.showToast({ title: '图片链接无效', icon: 'none' })
     return
   }
-  
-  uni.downloadFile({
-    url: item.image_url,
-    success: (res) => {
-      if (res.statusCode === 200) {
-        uni.saveImageToPhotosAlbum({
-          filePath: res.tempFilePath,
-          success: () => {
-            uni.showToast({ title: '保存成功', icon: 'success' })
-          },
-          fail: () => {
-            uni.showToast({ title: '保存失败', icon: 'none' })
+
+  try {
+    uni.showLoading({ title: '保存中...' })
+    await requestAlbumPermission()
+    const downloadUrl = await getDownloadUrl(item.image_url)
+    await new Promise<void>((resolve, reject) => {
+      uni.downloadFile({
+        url: downloadUrl,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            uni.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => resolve(),
+              fail: (err) => reject(err)
+            })
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}`))
           }
-        })
-      }
-    },
-    fail: () => {
-      uni.showToast({ title: '下载失败', icon: 'none' })
-    }
-  })
+        },
+        fail: (err) => reject(err)
+      })
+    })
+    uni.hideLoading()
+    uni.showToast({ title: '保存成功', icon: 'success' })
+  } catch (err: any) {
+    uni.hideLoading()
+    if (err?.message === '用户取消授权') return
+    console.error('保存图片失败:', err)
+    uni.showToast({ title: '保存失败，请重试', icon: 'none' })
+  }
 }
 
-const saveVideo = (item: Material) => {
+const saveVideo = async (item: Material) => {
   if (!item.video_url) {
     uni.showToast({ title: '视频链接无效', icon: 'none' })
     return
   }
-  
-  uni.downloadFile({
-    url: item.video_url,
-    success: (res) => {
-      if (res.statusCode === 200) {
-        uni.saveVideoToPhotosAlbum({
-          filePath: res.tempFilePath,
-          success: () => {
-            uni.showToast({ title: '保存成功', icon: 'success' })
-          },
-          fail: () => {
-            uni.showToast({ title: '保存失败', icon: 'none' })
+
+  try {
+    uni.showLoading({ title: '保存中...' })
+    await requestAlbumPermission()
+    const downloadUrl = await getDownloadUrl(item.video_url)
+    await new Promise<void>((resolve, reject) => {
+      uni.downloadFile({
+        url: downloadUrl,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            uni.saveVideoToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => resolve(),
+              fail: (err) => reject(err)
+            })
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}`))
           }
-        })
-      }
-    },
-    fail: () => {
-      uni.showToast({ title: '下载失败', icon: 'none' })
-    }
-  })
+        },
+        fail: (err) => reject(err)
+      })
+    })
+    uni.hideLoading()
+    uni.showToast({ title: '保存成功', icon: 'success' })
+  } catch (err: any) {
+    uni.hideLoading()
+    if (err?.message === '用户取消授权') return
+    console.error('保存视频失败:', err)
+    uni.showToast({ title: '保存失败，请重试', icon: 'none' })
+  }
 }
 
 const copyText = (item: Material) => {
@@ -394,7 +484,13 @@ const copyText = (item: Material) => {
 
 .material-actions {
   display: flex;
+  flex-direction: column;
   gap: 16rpx;
+}
+
+.action-btn-main,
+.action-btn-copy {
+  width: 100%;
 }
 
 .copywriting-card {
@@ -404,49 +500,17 @@ const copyText = (item: Material) => {
   margin-bottom: 24rpx;
 }
 
-.copywriting-header {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-bottom: 24rpx;
-}
-
-.copywriting-icon {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40rpx;
-  flex-shrink: 0;
-  
-  &.blue {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  }
-  
-  &.pink {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-  }
-  
-  &.purple {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
-  }
-}
-
-.copywriting-info {
-  flex: 1;
-}
 
 .copywriting-title {
-  font-size: 28rpx;
-  font-weight: 500;
+  font-size: 28rpx !important;
+  font-weight: 500 !important;
   color: #333;
+  margin-bottom: 16rpx;
 }
 
 .copywriting-content {
-  font-size: 26rpx;
+  font-size: 28rpx !important;
+  font-weight: 500 !important;
   line-height: 1.8;
   color: #666;
   background: #F5F5F5;
