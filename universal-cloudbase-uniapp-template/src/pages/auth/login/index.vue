@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { signInWithOpenId } from '@/utils/cloudbase';
+import { login as signInAnonymously } from '@/utils/cloudbase';
 import { UserApi } from '@/api';
 
 const handleWechatLogin = async () => {
@@ -40,9 +40,9 @@ const handleWechatLogin = async () => {
   try {
     console.log('[登录] ========== 开始微信登录 ==========');
     
-    // 1. 先进行微信登录认证（获取 CloudBase 授权）
-    console.log('[登录] 步骤1：CloudBase 认证...');
-    await signInWithOpenId();
+    // 1. 匿名登录获取 CloudBase 访问凭证（无需小程序认证）
+    console.log('[登录] 步骤1：CloudBase 匿名认证...');
+    await signInAnonymously();
     console.log('[登录] ✅ CloudBase 认证成功');
 
     // 2. 获取微信登录凭证 code（用于后端换取真实 openid）
@@ -93,9 +93,7 @@ const handleWechatLogin = async () => {
     uni.hideLoading();
 
     let errorMessage = '登录失败，请重试';
-    if (error.message?.includes('小程序认证')) {
-      errorMessage = '请先在云开发控制台配置小程序认证';
-    } else if (error.message?.includes('环境')) {
+    if (error.message?.includes('环境')) {
       errorMessage = '云开发环境配置错误';
     }
 

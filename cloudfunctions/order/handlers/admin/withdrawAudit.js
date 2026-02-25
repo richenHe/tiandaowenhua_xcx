@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
       return response.paramError('缺少提现记录ID');
     }
     if (status !== 1 && status !== 2) {
-      return response.paramError('状态参数错误（1通过/2拒绝）');
+      return response.paramError('状态参数错误（1通过/2拒绝）'); // 入参 1=通过 2=拒绝，DB 写入 1=通过 3=拒绝
     }
     if (status === 2 && !reject_reason) {
       return response.paramError('拒绝时需要提供原因');
@@ -83,10 +83,10 @@ module.exports = async (event, context) => {
       }, '审核通过');
 
     } else {
-      // 审核拒绝
+      // 审核拒绝（DB status=3）
       await update('withdrawals',
         {
-          status: 2,
+          status: 3,
           audit_admin_id: admin.id,
           audit_time: utils.formatDateTime(new Date()),
           audit_remark: reject_reason
@@ -118,7 +118,7 @@ module.exports = async (event, context) => {
 
       return response.success({
         withdrawal_id,
-        status: 2,
+        status: 3,
         status_name: '审核拒绝',
         reject_reason
       }, '审核拒绝');

@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>退款审核</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
@@ -314,9 +315,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js"></script>
-  <script src="../../assets/js/admin-api.js"></script>
-  <script src="../../assets/js/sidebar-navigation.js"></script>
+  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -488,8 +489,9 @@
           if (!confirmed) return;
 
           try {
-            await AdminAPI.approveRefund({ refundIds: [row.id] });
-            TDesign.MessagePlugin.success('审核通过');
+            // 使用 refund action，需要 order_no
+            await AdminAPI.refund(row.order_no, row.amount, row.refund_reason || '管理员审核通过退款');
+            TDesign.MessagePlugin.success('退款已处理');
             fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
@@ -511,8 +513,13 @@
           if (!confirmed) return;
 
           try {
-            await AdminAPI.approveRefund({ refundIds: selectedRowKeys.value });
-            TDesign.MessagePlugin.success('批量审核通过');
+            // 批量退款：根据选中 ID 找到对应 order_no 逐条处理
+            const ids = new Set(selectedRowKeys.value);
+            const rows = tableData.value.filter(r => ids.has(r.id));
+            for (const r of rows) {
+              await AdminAPI.refund(r.order_no, r.amount, r.refund_reason || '管理员批量审核通过退款');
+            }
+            TDesign.MessagePlugin.success(`批量退款处理完成 ${rows.length} 条`);
             selectedRowKeys.value = [];
             fetchData();
           } catch (error) {
@@ -532,16 +539,11 @@
           }
 
           try {
-            await AdminAPI.rejectRefund({
-              refundIds: rejectTarget.value,
-              rejectReason: rejectReason.value
-            });
-
-            TDesign.MessagePlugin.success('已驳回');
+            // 注意：后端暂无独立"拒绝退款"接口，此操作不会修改数据库状态
+            // 如需拒绝退款，请联系技术团队添加 rejectRefund action
+            TDesign.MessagePlugin.warning('驳回功能暂未上线，请联系技术团队处理');
             rejectVisible.value = false;
             rejectReason.value = '';
-            selectedRowKeys.value = [];
-            fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
           }

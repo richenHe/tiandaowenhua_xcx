@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>预约管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
@@ -118,7 +119,7 @@
           <t-space size="small">
             <t-button theme="primary" size="small" variant="text" @click="handleView(row)">查看详情</t-button>
             <t-button v-if="row.status === 2" theme="success" size="small" variant="text" @click="handleCheckIn(row)">签到</t-button>
-            <t-button v-if="row.status < 2" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
+            <t-button v-if="row.status === 1" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
           </t-space>
         </template>
       </t-table>
@@ -148,9 +149,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js"></script>
-  <script src="../../assets/js/admin-api.js"></script>
-  <script src="../../assets/js/sidebar-navigation.js"></script>
+  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;

@@ -47,6 +47,8 @@ function handleMenuChange(value) {
     'feedback-list':      'pages/system/feedback.html',
     'notification-list':  'pages/system/notification.html',
     'level-config':       'pages/system/level-config.html',
+    'auto-test':          'auto-test.html',
+    'method-check':       'method-check.html',
   };
 
   if (routes[value]) {
@@ -166,6 +168,8 @@ const SidebarMenu = {
           <t-menu-item value="feedback-list">反馈管理</t-menu-item>
           <t-menu-item value="notification-list">通知管理</t-menu-item>
           <t-menu-item value="level-config">等级配置</t-menu-item>
+          <t-menu-item value="auto-test">🔍 接口健康检查</t-menu-item>
+          <t-menu-item value="method-check">🔧 前端方法检查</t-menu-item>
         </t-submenu>
       </t-menu>
     </div>

@@ -43,6 +43,7 @@ const adminHandlers = {
   refund: require('./handlers/admin/refund'),
   getWithdrawList: require('./handlers/admin/getWithdrawList'),
   withdrawAudit: require('./handlers/admin/withdrawAudit'),
+  markWithdrawTransferred: require('./handlers/admin/markWithdrawTransferred'),
   getMallGoodsList: require('./handlers/admin/getMallGoodsList'),
   createMallGoods: require('./handlers/admin/createMallGoods'),
   updateMallGoods: require('./handlers/admin/updateMallGoods'),

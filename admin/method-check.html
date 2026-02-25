@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>前端方法检查 · 天道文化后台</title>
+  <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;padding:20px;background:#f0f2f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+    h1{margin:0 0 4px;font-size:20px;font-weight:700}
+    .sub{color:#666;font-size:12px;margin-bottom:16px}
+    .stats{display:flex;gap:10px;margin-bottom:16px}
+    .stat{background:#fff;border-radius:8px;padding:12px 20px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .sv{font-size:24px;font-weight:700}
+    .sl{font-size:11px;color:#888;margin-top:2px}
+    .sv-ok{color:#00a870}.sv-err{color:#e34d59}.sv-warn{color:#d4b106}.sv-blue{color:#0052d9}
+    .module{background:#fff;border-radius:8px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+    .mod-hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#fafafa;border-bottom:1px solid #f0f0f0;font-weight:700;font-size:14px}
+    .mod-cnt{font-size:11px;color:#888;margin-left:auto}
+    table{width:100%;border-collapse:collapse}
+    th{background:#f9fafb;padding:8px 12px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #eee;font-size:11px;text-transform:uppercase}
+    td{padding:7px 12px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr.ok td{background:#f6fef9}
+    tr.err td{background:#fff5f5}
+    tr.warn td{background:#fffbf0}
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+    .badge-ok{background:#e6f7f1;color:#00a870}
+    .badge-err{background:#fff0f1;color:#e34d59}
+    .badge-warn{background:#fff7e6;color:#d4b106}
+    .method{font-family:Consolas,'Cascadia Code',monospace;font-size:12px;font-weight:600}
+    .page-tag{display:inline-block;background:#f0f5ff;color:#0052d9;border-radius:4px;padding:1px 6px;font-size:11px;margin:1px}
+    .fix{font-size:11px;color:#666;margin-top:2px}
+    .fix code{background:#f5f5f5;border-radius:3px;padding:1px 4px;font-family:monospace;color:#e34d59}
+    .fix-ok code{color:#00a870}
+    .summary-bar{background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .err-list{margin-top:8px}
+    .err-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff5f5;border-radius:6px;margin-bottom:4px;border-left:3px solid #e34d59}
+    .err-method{font-family:monospace;font-weight:700;color:#e34d59;min-width:200px}
+    .err-pages{color:#666}
+    .warn-item{border-left-color:#d4b106;background:#fffbf0}
+    .warn-method{color:#d4b106}
+  </style>
+</head>
+<body>
+<div id="app">
+  <h1>🔧 前端方法存在性检查</h1>
+  <div class="sub">检查所有页面调用的 AdminAPI.xxx() 方法是否存在 · 无需登录 · 即时结果</div>
+
+  <!-- 统计 -->
+  <div class="stats">
+    <div class="stat"><div class="sv sv-blue">{{ total }}</div><div class="sl">总调用数</div></div>
+    <div class="stat"><div class="sv sv-ok">{{ okCount }}</div><div class="sl">方法存在</div></div>
+    <div class="stat"><div class="sv sv-err">{{ errCount }}</div><div class="sl">方法不存在 ❌</div></div>
+    <div class="stat"><div class="sv sv-warn">{{ warnCount }}</div><div class="sl">参数/逻辑警告 ⚠️</div></div>
+  </div>
+
+  <!-- 错误汇总 -->
+  <div class="summary-bar" v-if="errItems.length > 0 || warnItems.length > 0">
+    <div style="font-weight:700;font-size:14px;margin-bottom:8px;color:#e34d59">
+      ⚠️ 需要立即修复的问题 ({{ errItems.length + warnItems.length }} 个)
+    </div>
+    <div class="err-list">
+      <div v-for="item in errItems" :key="item.method" class="err-item">
+        <span class="badge badge-err">不存在</span>
+        <span class="err-method">AdminAPI.{{ item.method }}</span>
+        <span class="err-pages">
+          <span class="page-tag" v-for="p in item.pages" :key="p">{{ p }}</span>
+        </span>
+        <span v-if="item.suggest" style="margin-left:auto;font-size:11px;color:#888">
+          → 建议改用: <code style="background:#e6f7f1;color:#00a870;border-radius:3px;padding:1px 5px;font-family:monospace">AdminAPI.{{ item.suggest }}</code>
+        </span>
+      </div>
+      <div v-for="item in warnItems" :key="item.method+'w'" class="err-item warn-item">
+        <span class="badge badge-warn">警告</span>
+        <span class="err-method warn-method">AdminAPI.{{ item.method }}</span>
+        <span class="err-pages">
+          <span class="page-tag" v-for="p in item.pages" :key="p">{{ p }}</span>
+        </span>
+        <span style="margin-left:auto;font-size:11px;color:#888">{{ item.warn }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="summary-bar" v-else style="color:#00a870;font-weight:700">
+    ✅ 所有方法均存在，无错误！
+  </div>
+
+  <!-- 按模块分组 -->
+  <div class="module" v-for="mod in modules" :key="mod.name">
+    <div class="mod-hdr">
+      <span>{{ mod.icon }}</span>
+      <span>{{ mod.name }}</span>
+      <span class="badge badge-err" v-if="mod.errCount > 0" style="margin-left:8px">{{ mod.errCount }} 个错误</span>
+      <span class="badge badge-warn" v-if="mod.warnCount > 0" style="margin-left:4px">{{ mod.warnCount }} 个警告</span>
+      <span class="mod-cnt">{{ mod.items.length }} 个调用</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:220px">方法名</th>
+          <th style="width:100px">状态</th>
+          <th>来源页面</th>
+          <th>说明/建议</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in mod.items" :key="item.method+item.pages[0]" :class="item.status">
+          <td><span class="method">AdminAPI.{{ item.method }}</span></td>
+          <td>
+            <span class="badge badge-ok" v-if="item.status==='ok'">✓ 存在</span>
+            <span class="badge badge-err" v-else-if="item.status==='err'">✗ 不存在</span>
+            <span class="badge badge-warn" v-else>⚠ 警告</span>
+          </td>
+          <td>
+            <span class="page-tag" v-for="p in item.pages" :key="p">{{ p }}</span>
+          </td>
+          <td>
+            <div v-if="item.status==='err'" class="fix">
+              <span v-if="item.suggest">建议改用：<code>AdminAPI.{{ item.suggest }}</code></span>
+              <span v-else style="color:#e34d59">后端无对应 action，需添加</span>
+            </div>
+            <div v-else-if="item.status==='warn'" class="fix">{{ item.warn }}</div>
+            <div v-else class="fix fix-ok"><code>typeof AdminAPI.{{ item.method }} === 'function' ✓</code></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="./assets/libs/vue.global.js"></script>
+<script src="./assets/libs/tdesign.min.js"></script>
+<script src="./assets/js/config.js?v=20260226"></script>
+<script src="./assets/js/admin-api.js?v=20260226b"></script>
+<script>
+const { createApp, computed } = Vue;
+
+// ============================================================
+// 所有页面的 AdminAPI 方法调用清单（从源码中扫描得来）
+// status: ok=方法存在, err=方法不存在, warn=有问题
+// ============================================================
+const RAW_CALLS = [
+  // ---- 用户管理 ----
+  { module: 'user', pages: ['user/list.html'],        method: 'getUserList' },
+  { module: 'user', pages: ['user/list.html'],        method: 'getUserDetail' },
+  { module: 'user', pages: ['user/list.html'],        method: 'updateUserReferee' },
+  { module: 'user', pages: ['user/list.html'],        method: 'createUser' },
+  { module: 'user', pages: ['user/referee.html'],     method: 'getCurrentAdmin' },
+  { module: 'user', pages: ['user/referee.html'],     method: 'logout' },
+  { module: 'user', pages: ['user/referee.html'],     method: 'getReferralTree',      suggest: null, note: '后端无此 action，需补充' },
+  { module: 'user', pages: ['user/referee-logs.html'],method: 'getRefereeChangeLogs' },
+
+  // ---- 订单管理 ----
+  { module: 'order', pages: ['order/list.html'],         method: 'getOrderList' },
+  { module: 'order', pages: ['order/list.html'],         method: 'getOrderDetail' },
+  { module: 'order', pages: ['order/list.html'],         method: 'refund' },
+  { module: 'order', pages: ['order/refund.html'],       method: 'getRefundList' },
+  { module: 'order', pages: ['order/withdraw-audit.html'], method: 'getWithdrawList' },
+  { module: 'order', pages: ['order/withdraw-audit.html'], method: 'withdrawAudit' },
+  { module: 'order', pages: ['order/mall-goods.html'],   method: 'getMallGoodsList' },
+  { module: 'order', pages: ['order/mall-goods.html'],   method: 'createMallGoods' },
+  { module: 'order', pages: ['order/mall-goods.html'],   method: 'updateMallGoods' },
+  { module: 'order', pages: ['order/mall-goods.html'],   method: 'deleteMallGoods' },
+  { module: 'order', pages: ['order/exchange-records.html'], method: 'getExchangeList' },
+  { module: 'order', pages: ['order/exchange-records.html'], method: 'confirmPickup' },
+
+  // ---- 课程管理 ----
+  { module: 'course', pages: ['course/list.html'],      method: 'getCourseList' },
+  { module: 'course', pages: ['course/list.html'],      method: 'createCourse' },
+  { module: 'course', pages: ['course/list.html'],      method: 'updateCourse' },
+  { module: 'course', pages: ['course/list.html'],      method: 'deleteCourse' },
+  { module: 'course', pages: ['course/schedule.html'],  method: 'getScheduleList' },
+  { module: 'course', pages: ['course/schedule.html'],  method: 'createSchedule' },
+  { module: 'course', pages: ['course/schedule.html'],  method: 'updateSchedule' },
+  { module: 'course', pages: ['course/schedule.html'],  method: 'deleteSchedule' },
+  { module: 'course', pages: ['course/schedule.html', 'course/case.html', 'course/appointment.html', 'system/notification.html'],
+                                                         method: 'getAllCourses' },
+  { module: 'course', pages: ['course/appointment.html'], method: 'getAppointmentList' },
+  { module: 'course', pages: ['course/appointment.html'], method: 'checkInAppointment',  suggest: 'updateAppointmentStatus' },
+  { module: 'course', pages: ['course/appointment.html'], method: 'cancelAppointment',   suggest: 'updateAppointmentStatus' },
+  { module: 'course', pages: ['course/appointment.html'], method: 'batchCheckIn' },
+  { module: 'course', pages: ['course/case.html'],       method: 'getCaseList' },
+  { module: 'course', pages: ['course/case.html'],       method: 'createCase' },
+  { module: 'course', pages: ['course/case.html'],       method: 'updateCase' },
+  { module: 'course', pages: ['course/case.html'],       method: 'deleteCase' },
+  { module: 'course', pages: ['course/case.html'],       method: 'updateCaseStatus' },
+  { module: 'course', pages: ['course/material.html'],   method: 'getMaterialList' },
+  { module: 'course', pages: ['course/material.html'],   method: 'createMaterial' },
+  { module: 'course', pages: ['course/material.html'],   method: 'updateMaterial' },
+  { module: 'course', pages: ['course/material.html'],   method: 'deleteMaterial' },
+  { module: 'course', pages: ['course/academy.html'],    method: 'manageAcademyContent' },
+
+  // ---- 大使管理 ----
+  { module: 'ambassador', pages: ['ambassador/list.html', 'ambassador/list-new.html'], method: 'getAmbassadorList' },
+  { module: 'ambassador', pages: ['ambassador/list.html', 'ambassador/list-new.html'], method: 'getAmbassadorDetail' },
+  { module: 'ambassador', pages: ['ambassador/list.html', 'ambassador/list-new.html'], method: 'adjustAmbassadorPoints', suggest: 'adjustPoints' },
+  { module: 'ambassador', pages: ['ambassador/list.html', 'ambassador/list-new.html'], method: 'upgradeAmbassador',      suggest: null, note: '后端无此 action（大使升级由小程序端发起）' },
+  { module: 'ambassador', pages: ['ambassador/list.html'], method: 'updateAmbassadorLevel' },
+  { module: 'ambassador', pages: ['ambassador/application-audit.html'], method: 'getAmbassadorApplicationList' },
+  { module: 'ambassador', pages: ['ambassador/activity.html'], method: 'getAmbassadorActivityList' },
+  { module: 'ambassador', pages: ['ambassador/activity.html'], method: 'deleteAmbassadorActivity', suggest: 'deleteActivity' },
+  { module: 'ambassador', pages: ['ambassador/activity.html'], method: 'createAmbassadorActivity', suggest: 'createActivity' },
+  { module: 'ambassador', pages: ['ambassador/activity.html'], method: 'updateAmbassadorActivity', suggest: 'updateActivity' },
+  { module: 'ambassador', pages: ['ambassador/contract.html'], method: 'getContractList' },
+  { module: 'ambassador', pages: ['ambassador/contract.html'], method: 'getContractVersions' },
+  { module: 'ambassador', pages: ['ambassador/contract.html'], method: 'getExpiringContracts' },
+  { module: 'ambassador', pages: ['ambassador/contract.html'], method: 'renewContract' },
+  { module: 'ambassador', pages: ['ambassador/contract.html'], method: 'terminateContract' },
+
+  // ---- 系统管理 ----
+  { module: 'system', pages: ['system/admin.html'],       method: 'getAdminUserList' },
+  { module: 'system', pages: ['system/admin.html'],       method: 'toggleAdminStatus',    suggest: null, note: '后端无此 action（需通过 updateAdminUser 实现）' },
+  { module: 'system', pages: ['system/admin.html'],       method: 'deleteAdmin',           suggest: 'deleteAdminUser' },
+  { module: 'system', pages: ['system/admin.html'],       method: 'createAdmin',           suggest: 'createAdminUser' },
+  { module: 'system', pages: ['system/admin.html'],       method: 'updateAdmin',           suggest: 'updateAdminUser' },
+  { module: 'system', pages: ['system/config.html'],      method: 'getSystemConfig' },
+  { module: 'system', pages: ['system/config.html'],      method: 'updateSystemConfig' },
+  { module: 'system', pages: ['system/banner.html'],      method: 'getBannerList' },
+  { module: 'system', pages: ['system/banner.html'],      method: 'createBanner' },
+  { module: 'system', pages: ['system/banner.html'],      method: 'updateBanner' },
+  { module: 'system', pages: ['system/banner.html'],      method: 'deleteBanner' },
+  { module: 'system', pages: ['system/announcement.html'], method: 'getAnnouncementList' },
+  { module: 'system', pages: ['system/announcement.html'], method: 'createAnnouncement' },
+  { module: 'system', pages: ['system/announcement.html'], method: 'updateAnnouncement' },
+  { module: 'system', pages: ['system/announcement.html'], method: 'deleteAnnouncement' },
+  { module: 'system', pages: ['system/feedback.html'],    method: 'getFeedbackList' },
+  { module: 'system', pages: ['system/feedback.html'],    method: 'handleFeedback' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'getNotificationList' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'getNotificationConfigList' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'getNotificationLogs' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'sendNotification' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'createNotificationConfig' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'updateNotificationConfig' },
+  { module: 'system', pages: ['system/notification.html', 'system/notification-new.html'], method: 'deleteNotificationConfig', suggest: null, note: '后端无此 action，需添加或移除按钮' },
+  { module: 'system', pages: ['system/level-config.html'], method: 'getLevelConfig' },
+  { module: 'system', pages: ['system/level-config.html'], method: 'updateLevelConfig' },
+];
+
+const MODULE_CONFIG = {
+  user:       { name: '用户管理', icon: '👤' },
+  order:      { name: '订单管理', icon: '📦' },
+  course:     { name: '课程管理', icon: '📚' },
+  ambassador: { name: '大使管理', icon: '🌟' },
+  system:     { name: '系统管理', icon: '⚙️' },
+};
+
+createApp({
+  setup() {
+    // 检查每个方法是否存在
+    const items = RAW_CALLS.map(raw => {
+      const exists = typeof AdminAPI[raw.method] === 'function';
+      let status = 'ok';
+      let warn = raw.warn || '';
+
+      if (!exists) {
+        status = 'err';
+      } else if (raw.warn) {
+        status = 'warn';
+      }
+
+      return {
+        ...raw,
+        status,
+        suggest: raw.suggest || null,
+        warn: exists && raw.warn ? raw.warn : (raw.note || ''),
+      };
+    });
+
+    // 去重（同一方法可能多个页面调用）
+    const seen = new Set();
+    const deduped = items.filter(item => {
+      if (seen.has(item.method)) return false;
+      seen.add(item.method);
+      return true;
+    });
+
+    const total = computed(() => deduped.length);
+    const okCount = computed(() => deduped.filter(i => i.status === 'ok').length);
+    const errCount = computed(() => deduped.filter(i => i.status === 'err').length);
+    const warnCount = computed(() => deduped.filter(i => i.status === 'warn').length);
+
+    const errItems = computed(() => deduped.filter(i => i.status === 'err'));
+    const warnItems = computed(() => deduped.filter(i => i.status === 'warn'));
+
+    // 按模块分组
+    const modules = computed(() => {
+      return Object.entries(MODULE_CONFIG).map(([key, cfg]) => {
+        const moduleItems = deduped.filter(i => i.module === key);
+        return {
+          ...cfg,
+          key,
+          items: moduleItems,
+          errCount: moduleItems.filter(i => i.status === 'err').length,
+          warnCount: moduleItems.filter(i => i.status === 'warn').length,
+        };
+      }).filter(m => m.items.length > 0);
+    });
+
+    return { total, okCount, errCount, warnCount, errItems, warnItems, modules };
+  }
+}).use(TDesign).mount('#app');
+</script>
+</body>
+</html>

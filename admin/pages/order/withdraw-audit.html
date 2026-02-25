@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>提现审核</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
@@ -356,9 +357,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js"></script>
-  <script src="../../assets/js/admin-api.js"></script>
-  <script src="../../assets/js/sidebar-navigation.js"></script>
+  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -485,7 +486,12 @@
             
             tableData.value = data.list;
             pagination.value.total = data.total;
-            statistics.value = data.statistics;
+            statistics.value = data.statistics || {
+              pending: 0,
+              approved: 0,
+              rejected: 0,
+              pendingAmount: 0
+            };
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '获取数据失败');
           } finally {
@@ -523,16 +529,18 @@
         };
 
         const handleApprove = async (row) => {
+          const userName = row.user_name || (row.user && row.user.real_name) || '该用户';
           const confirmed = await TDesign.DialogPlugin.confirm({
             header: '确认通过',
-            body: `确认通过 ${row.user_name} 的提现申请吗？\n提现金额：¥${(row.amount / 100).toFixed(2)}`,
+            body: `确认通过 ${userName} 的提现申请吗？\n提现金额：¥${(row.amount / 100).toFixed(2)}`,
             theme: 'success'
           });
 
           if (!confirmed) return;
 
           try {
-            await AdminAPI.approveWithdraw({ withdrawIds: [row.id] });
+            // 使用 withdrawAudit，status=1 表示审核通过
+            await AdminAPI.withdrawAudit(row.id, 1);
             TDesign.MessagePlugin.success('审核通过');
             fetchData();
           } catch (error) {
@@ -555,8 +563,12 @@
           if (!confirmed) return;
 
           try {
-            await AdminAPI.approveWithdraw({ withdrawIds: selectedRowKeys.value });
-            TDesign.MessagePlugin.success('批量审核通过');
+            // 批量逐条调用 withdrawAudit，status=1 表示审核通过
+            const ids = selectedRowKeys.value.slice();
+            for (const wid of ids) {
+              await AdminAPI.withdrawAudit(wid, 1);
+            }
+            TDesign.MessagePlugin.success(`批量审核通过 ${ids.length} 条`);
             selectedRowKeys.value = [];
             fetchData();
           } catch (error) {
@@ -576,11 +588,11 @@
           }
 
           try {
-            await AdminAPI.rejectWithdraw({
-              withdrawIds: rejectTarget.value,
-              rejectReason: rejectReason.value
-            });
-
+            // 批量逐条调用 withdrawAudit，status=2 表示拒绝
+            const ids = rejectTarget.value.slice();
+            for (const wid of ids) {
+              await AdminAPI.withdrawAudit(wid, 2, rejectReason.value);
+            }
             TDesign.MessagePlugin.success('已驳回');
             rejectVisible.value = false;
             rejectReason.value = '';
@@ -592,17 +604,18 @@
         };
 
         const handleMarkTransferred = async (row) => {
+          const userName = row.user_name || (row.user && row.user.real_name) || '该用户';
           const confirmed = await TDesign.DialogPlugin.confirm({
             header: '标记已转账',
-            body: `确认已向 ${row.user_name} 转账 ¥${(row.amount / 100).toFixed(2)} 吗？`,
+            body: `确认已向 ${userName} 转账 ¥${(row.amount / 100).toFixed(2)} 吗？`,
             theme: 'warning'
           });
 
           if (!confirmed) return;
 
           try {
-            await AdminAPI.markWithdrawTransferred({ withdrawId: row.id });
-            TDesign.MessagePlugin.success('已标记为已转账');
+            await AdminAPI.markWithdrawTransferred(row.id);
+            TDesign.MessagePlugin.success('已标记为转账完成');
             fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
@@ -611,17 +624,19 @@
 
         const handleExportTransferList = async () => {
           try {
-            const data = await AdminAPI.exportWithdrawTransferList();
-            
-            // 创建 CSV 文件并下载
-            const csv = convertToCSV(data);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            // 从当前已加载的列表数据中导出已审核通过（待打款）的记录
+            const approvedList = tableData.value.filter(r => r.status === 1);
+            if (approvedList.length === 0) {
+              TDesign.MessagePlugin.warning('当前没有待打款记录，请先筛选"审核通过待转账"状态');
+              return;
+            }
+            const csv = convertToCSV(approvedList);
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `待打款列表_${new Date().toLocaleDateString()}.csv`;
             link.click();
-            
-            TDesign.MessagePlugin.success('导出成功');
+            TDesign.MessagePlugin.success(`导出成功，共 ${approvedList.length} 条`);
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '导出失败');
           }

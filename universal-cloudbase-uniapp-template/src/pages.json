@@ -32,9 +32,9 @@
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "我的",
-				"navigationStyle": "custom"
-			}
-		},
+        "navigationStyle": "custom"
+      }
+    },
 		{
 			"path": "pages/auth/complete-profile/index",
 			"style": {
@@ -43,250 +43,272 @@
       }
     },
 		{
-			"path": "pages/course/detail/index",
-			"style": {
-        "navigationBarTitleText": "课程详情",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/course/my-courses/index",
-			"style": {
-        "navigationBarTitleText": "我的课程",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/course/schedule/index",
-			"style": {
-        "navigationBarTitleText": "课程排期",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/course/appointment-confirm/index",
-			"style": {
-        "navigationBarTitleText": "预约确认",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/order/confirm/index",
-			"style": {
-        "navigationBarTitleText": "确认订单",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/order/select-referee/index",
-			"style": {
-        "navigationBarTitleText": "选择推荐人",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/order/payment/index",
-		"style": {
-        "navigationBarTitleText": "确认支付",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/order/pending/index",
-		"style": {
-        "navigationBarTitleText": "待支付订单",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/order/cancelled/index",
-		"style": {
-        "navigationBarTitleText": "已取消订单",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/order/refunded/index",
-		"style": {
-        "navigationBarTitleText": "退款详情",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/order/detail/index",
-		"style": {
-        "navigationBarTitleText": "订单详情",
-        "navigationStyle": "custom"
-      }
-    },
-		{
 			"path": "pages/mine/profile/index",
 			"style": {
-        "navigationBarTitleText": "个人资料",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "个人资料",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/orders/index",
 			"style": {
-        "navigationBarTitleText": "我的订单",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "我的订单",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/appointments/index",
 			"style": {
-        "navigationBarTitleText": "我的预约",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "我的预约",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/contracts/index",
 			"style": {
-        "navigationBarTitleText": "我的协议",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "我的协议",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/feedback/index",
 			"style": {
-        "navigationBarTitleText": "意见反馈",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "意见反馈",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/consultation/index",
 			"style": {
-        "navigationBarTitleText": "在线咨询",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "在线咨询",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/referral-list/index",
 			"style": {
-        "navigationBarTitleText": "引荐人列表",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "引荐人列表",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/mine/referee-manage/index",
 			"style": {
-        "navigationBarTitleText": "推荐人管理",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/level/index",
-			"style": {
-        "navigationBarTitleText": "大使等级",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/apply/index",
-			"style": {
-        "navigationBarTitleText": "申请传播大使",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/team/index",
-			"style": {
-        "navigationBarTitleText": "我的团队",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/qrcode/index",
-			"style": {
-        "navigationBarTitleText": "我的二维码",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/merit-points/index",
-			"style": {
-        "navigationBarTitleText": "功德分管理",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/ambassador/cash-points/index",
-		"style": {
-        "navigationBarTitleText": "积分管理",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/ambassador/exchange-records/index",
-		"style": {
-        "navigationBarTitleText": "兑换记录",
-        "navigationStyle": "custom"
-      }
-    },
-	{
-		"path": "pages/ambassador/upgrade-guide/index",
-		"style": {
-        "navigationBarTitleText": "升级指南",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/activity-records/index",
-			"style": {
-        "navigationBarTitleText": "活动记录",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/contract-detail/index",
-			"style": {
-        "navigationBarTitleText": "协议详情",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/contract-sign/index",
-			"style": {
-        "navigationBarTitleText": "签署协议",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/ambassador/withdraw/index",
-			"style": {
-        "navigationBarTitleText": "申请提现",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "推荐人管理",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/academy/cases/index",
 			"style": {
-        "navigationBarTitleText": "学员案例",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "学员案例",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/academy/materials/index",
 			"style": {
-        "navigationBarTitleText": "朋友圈素材",
-        "navigationStyle": "custom"
-      }
-    },
+				"navigationBarTitleText": "朋友圈素材",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"subPackages": [
 		{
-			"path": "pages/common/announcement/index",
-			"style": {
-        "navigationBarTitleText": "平台公告",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/common/announcement-detail/index",
-      "style": {
-        "navigationBarTitleText": "公告详情",
-        "navigationStyle": "custom"
-      }
-    }
+			"root": "pages/course",
+			"pages": [
+				{
+					"path": "detail/index",
+					"style": {
+						"navigationBarTitleText": "课程详情",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "my-courses/index",
+					"style": {
+						"navigationBarTitleText": "我的课程",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "schedule/index",
+					"style": {
+						"navigationBarTitleText": "课程排期",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "appointment-confirm/index",
+					"style": {
+						"navigationBarTitleText": "预约确认",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/order",
+			"pages": [
+				{
+					"path": "confirm/index",
+					"style": {
+						"navigationBarTitleText": "确认订单",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "select-referee/index",
+					"style": {
+						"navigationBarTitleText": "选择推荐人",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "payment/index",
+					"style": {
+						"navigationBarTitleText": "确认支付",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pending/index",
+					"style": {
+						"navigationBarTitleText": "待支付订单",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "cancelled/index",
+					"style": {
+						"navigationBarTitleText": "已取消订单",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "refunded/index",
+					"style": {
+						"navigationBarTitleText": "退款详情",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "detail/index",
+					"style": {
+						"navigationBarTitleText": "订单详情",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/ambassador",
+			"pages": [
+				{
+					"path": "level/index",
+					"style": {
+						"navigationBarTitleText": "大使等级",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "apply/index",
+					"style": {
+						"navigationBarTitleText": "申请传播大使",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "team/index",
+					"style": {
+						"navigationBarTitleText": "我的团队",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "qrcode/index",
+					"style": {
+						"navigationBarTitleText": "我的二维码",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "merit-points/index",
+					"style": {
+						"navigationBarTitleText": "功德分管理",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "cash-points/index",
+					"style": {
+						"navigationBarTitleText": "积分管理",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "exchange-records/index",
+					"style": {
+						"navigationBarTitleText": "兑换记录",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "upgrade-guide/index",
+					"style": {
+						"navigationBarTitleText": "升级指南",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "activity-records/index",
+					"style": {
+						"navigationBarTitleText": "活动记录",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "contract-detail/index",
+					"style": {
+						"navigationBarTitleText": "协议详情",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "contract-sign/index",
+					"style": {
+						"navigationBarTitleText": "签署协议",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "withdraw/index",
+					"style": {
+						"navigationBarTitleText": "申请提现",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
+		{
+			"root": "pages/common",
+			"pages": [
+				{
+					"path": "announcement/index",
+					"style": {
+						"navigationBarTitleText": "平台公告",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "announcement-detail/index",
+					"style": {
+						"navigationBarTitleText": "公告详情",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		}
 	],
 	"globalStyle": {
     "navigationBarTextStyle": "black",

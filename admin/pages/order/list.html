@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>订单列表 - 天道文化后台</title>
   
@@ -295,10 +296,10 @@
   <!-- CloudBase SDK -->
   <script src="../../assets/libs/tcb-v2.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js"></script>
+  <script src="../../assets/js/config.js?v=20260226"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js"></script>
-  <script src="../../assets/js/sidebar-navigation.js"></script>
+  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -478,13 +479,8 @@
           
           if (confirmed) {
             try {
-              await AdminAPI.updateOrderStatus({
-                orderId: order.id,
-                status: 1,
-                paidAt: new Date().toISOString()
-              });
-              TDesign.MessagePlugin.success('支付确认成功');
-              fetchOrders();
+              // 后端暂无 updateOrderStatus 接口，支付确认请通过微信支付回调处理
+              TDesign.MessagePlugin.warning('手动确认支付功能暂未上线，请通过支付回调自动处理');
             } catch (error) {
               TDesign.MessagePlugin.error('支付确认失败: ' + error.message);
             }
@@ -502,10 +498,8 @@
           
           if (confirmed) {
             try {
-              await AdminAPI.updateOrderStatus({
-                orderId: order.id,
-                status: 2
-              });
+              // 使用 refund action 直接发起退款，需要退款原因
+              await AdminAPI.refund(order.order_no, order.final_amount, '管理员发起退款');
               TDesign.MessagePlugin.success('退款申请已提交');
               fetchOrders();
             } catch (error) {
@@ -525,12 +519,8 @@
           
           if (confirmed) {
             try {
-              await AdminAPI.updateOrderStatus({
-                orderId: order.id,
-                status: -1
-              });
-              TDesign.MessagePlugin.success('订单已取消');
-              fetchOrders();
+              // 后端暂无 cancelOrder/updateOrderStatus 接口，取消订单需通过退款流程处理
+              TDesign.MessagePlugin.warning('取消订单功能暂未上线，如需处理请直接联系技术团队');
             } catch (error) {
               TDesign.MessagePlugin.error('取消订单失败: ' + error.message);
             }

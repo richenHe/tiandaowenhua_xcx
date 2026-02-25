@@ -238,6 +238,11 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'withdrawAudit', { withdrawal_id, status, reject_reason });
   }
 
+  // 标记提现已转账（status 1→2）
+  static async markWithdrawTransferred(withdrawal_id, transfer_no = '', transfer_remark = '') {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', { withdrawal_id, transfer_no, transfer_remark });
+  }
+
   // 退款管理
   static async getRefundList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getRefundList', params);
@@ -550,6 +555,91 @@ class AdminAPI {
 
   static async handleFeedback(data) {
     return this.replyFeedback(data.feedbackId, data.replyContent || '已处理');
+  }
+
+  // ==================== 预约管理别名方法 ====================
+
+  /** 单次签到 — 别名，签到状态 = 2 */
+  static async checkInAppointment({ appointmentId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateAppointmentStatus', { id: appointmentId, status: 2 });
+  }
+
+  /** 取消预约 — 别名，取消状态 = 3 */
+  static async cancelAppointment({ appointmentId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateAppointmentStatus', { id: appointmentId, status: 3 });
+  }
+
+  /** 批量签到 — 兼容大写 CheckIn 的别名 */
+  static async batchCheckIn({ appointment_ids }) {
+    return this.batchCheckin(appointment_ids);
+  }
+
+  // ==================== 大使管理别名方法 ====================
+
+  /** 调整积分（实际 action: adjustPoints） */
+  static async adjustPoints(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adjustPoints', data);
+  }
+
+  /** 调整大使积分 — 别名，将 userId 映射为 user_id */
+  static async adjustAmbassadorPoints({ userId, point_type, amount, reason }) {
+    return this.adjustPoints({ user_id: userId, point_type, amount, reason });
+  }
+
+  /** 大使升级 — 别名，调用 updateAmbassadorLevel */
+  static async upgradeAmbassador({ userId, targetLevel }) {
+    return this.updateAmbassadorLevel(userId, targetLevel);
+  }
+
+  /** 删除活动别名 */
+  static async deleteAmbassadorActivity({ activityId }) {
+    return this.deleteActivity(activityId);
+  }
+
+  /** 创建活动别名 */
+  static async createAmbassadorActivity(data) {
+    return this.createActivity(data);
+  }
+
+  /** 更新活动别名 */
+  static async updateAmbassadorActivity(data) {
+    return this.updateActivity(data);
+  }
+
+  // ==================== 管理员管理别名方法 ====================
+
+  /** 创建管理员别名 */
+  static async createAdmin(data) {
+    return this.createAdminUser(data);
+  }
+
+  /** 更新管理员别名 */
+  static async updateAdmin(data) {
+    return this.updateAdminUser(data);
+  }
+
+  /** 删除管理员别名，将 { adminId } 映射为 id */
+  static async deleteAdmin({ adminId }) {
+    return this.deleteAdminUser(adminId);
+  }
+
+  /** 切换管理员状态 — 后端暂无此 action，通过 updateAdminUser 实现 */
+  static async toggleAdminStatus({ adminId }) {
+    throw new Error('切换管理员状态功能暂未开放，请在编辑管理员中修改状态字段');
+  }
+
+  // ==================== 通知管理别名方法 ====================
+
+  /** 删除通知配置 — 后端暂无此 action */
+  static async deleteNotificationConfig({ id }) {
+    throw new Error('删除通知配置功能暂未开放');
+  }
+
+  // ==================== 用户关系别名方法 ====================
+
+  /** 获取推荐关系树 — 后端暂无此 action */
+  static async getReferralTree(params = {}) {
+    throw new Error('推荐关系树功能暂未开放');
   }
 }
 

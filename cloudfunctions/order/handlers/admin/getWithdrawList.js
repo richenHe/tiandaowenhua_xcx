@@ -101,9 +101,32 @@ module.exports = async (event, context) => {
       };
     });
 
+    // 查询各状态统计数据
+    const [
+      { count: pendingCount },
+      { count: approvedCount },
+      { count: rejectedCount },
+      { data: pendingAmountData }
+    ] = await Promise.all([
+      db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 0),
+      db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 1),
+      db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 3),
+      db.from('withdrawals').select('amount').eq('status', 1)
+    ]);
+
+    const pendingAmount = (pendingAmountData || []).reduce((sum, row) => sum + (row.amount || 0), 0);
+
+    const statistics = {
+      pending: pendingCount || 0,
+      approved: approvedCount || 0,
+      rejected: rejectedCount || 0,
+      pendingAmount
+    };
+
     return response.success({
       ...result,
-      list
+      list,
+      statistics
     }, '获取成功');
 
   } catch (error) {
