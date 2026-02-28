@@ -1,7 +1,7 @@
 /**
  * 管理端接口：获取轮播图列表
  */
-const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -26,22 +26,10 @@ module.exports = async (event, context) => {
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
     const list = result.list || [];
 
-    // tiandao_culture.banners 用 image_url 存储图片
-    // image_url 可能是云存储 fileID（cloud://）或直接 HTTP URL，统一处理
-    for (const item of list) {
-      const rawUrl = item.image_url || '';
-      if (rawUrl && rawUrl.startsWith('cloud://')) {
-        try {
-          const res = await getTempFileURL(rawUrl);
-          item.cover_image_url = res.tempFileURL || rawUrl;
-        } catch (e) {
-          item.cover_image_url = rawUrl;
-        }
-      } else {
-        // 直接 HTTP URL，无需转换
-        item.cover_image_url = rawUrl;
-      }
-    }
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL
+    list.forEach(item => {
+      item.cover_image_url = cloudFileIDToURL(item.image_url || '');
+    });
 
     return response.success({ ...result, list }, '获取成功');
   } catch (error) {

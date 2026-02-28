@@ -29,7 +29,6 @@
 </template>
 
 <script setup lang="ts">
-import { login as signInAnonymously } from '@/utils/cloudbase';
 import { UserApi } from '@/api';
 
 const handleWechatLogin = async () => {
@@ -39,14 +38,11 @@ const handleWechatLogin = async () => {
 
   try {
     console.log('[登录] ========== 开始微信登录 ==========');
-    
-    // 1. 匿名登录获取 CloudBase 访问凭证（无需小程序认证）
-    console.log('[登录] 步骤1：CloudBase 匿名认证...');
-    await signInAnonymously();
-    console.log('[登录] ✅ CloudBase 认证成功');
 
-    // 2. 获取微信登录凭证 code（用于后端换取真实 openid）
-    console.log('[登录] 步骤2：获取微信登录凭证 code...');
+    // 1. 获取微信登录凭证 code（用于后端换取真实 openid）
+    // 注意：使用 wx.cloud.callFunction() 后，无需 signInWithOpenId()
+    // 微信运行时会自动将真实 openid 注入到云函数 context.OPENID
+    console.log('[登录] 步骤1：获取微信登录凭证 code...');
     const wxLoginResult = await new Promise<any>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
@@ -65,8 +61,8 @@ const handleWechatLogin = async () => {
       throw new Error('获取微信登录凭证失败');
     }
 
-    // 3. 调用后端登录接口，传入 code
-    console.log('[登录] 步骤3：调用后端登录接口，传入 code...');
+    // 2. 调用后端登录接口，传入 code
+    console.log('[登录] 步骤2：调用后端登录接口，传入 code...');
     const userInfo = await UserApi.login({ code: wxLoginResult.code });
 
     uni.hideLoading();
@@ -92,13 +88,8 @@ const handleWechatLogin = async () => {
   } catch (error: any) {
     uni.hideLoading();
 
-    let errorMessage = '登录失败，请重试';
-    if (error.message?.includes('环境')) {
-      errorMessage = '云开发环境配置错误';
-    }
-
     uni.showToast({
-      title: errorMessage,
+      title: '登录失败，请重试',
       icon: 'none',
       duration: 3000,
     });

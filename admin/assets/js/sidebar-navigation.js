@@ -49,6 +49,7 @@ function handleMenuChange(value) {
     'level-config':       'pages/system/level-config.html',
     'auto-test':          'auto-test.html',
     'method-check':       'method-check.html',
+    'button-test':        'button-test.html',
   };
 
   if (routes[value]) {
@@ -170,6 +171,7 @@ const SidebarMenu = {
           <t-menu-item value="level-config">等级配置</t-menu-item>
           <t-menu-item value="auto-test">🔍 接口健康检查</t-menu-item>
           <t-menu-item value="method-check">🔧 前端方法检查</t-menu-item>
+          <t-menu-item value="button-test">🧪 按钮自动化测试</t-menu-item>
         </t-submenu>
       </t-menu>
     </div>

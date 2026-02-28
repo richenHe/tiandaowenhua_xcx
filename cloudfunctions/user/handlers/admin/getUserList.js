@@ -2,7 +2,7 @@
  * 管理端接口：学员管理 - 列表（支持搜索/筛选）
  * Action: admin:getUserList
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -42,9 +42,10 @@ module.exports = async (event, context) => {
 
     console.log('[admin:getUserList] 查询成功，共', result.total, '条');
 
-    // 格式化数据，添加字段别名
+    // 🔥 格式化数据，转换头像 cloud:// fileID 为 CDN HTTPS URL
     const list = (result.list || []).map(user => ({
       ...user,
+      avatar: cloudFileIDToURL(user.avatar || ''),
       cash_points: user.cash_points_available,
       frozen_cash_points: user.cash_points_frozen
     }));

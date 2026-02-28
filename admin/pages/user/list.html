@@ -161,7 +161,7 @@
         </template>
         
         <template #cashPoints="{ row }">
-          ¥{{ ((row.cash_points_available || 0) / 100).toFixed(2) }}
+          {{ Math.floor(row.cash_points_available || 0) }}
         </template>
         
         <template #createdAt="{ row }">
@@ -188,7 +188,7 @@
         <t-descriptions v-if="currentUser" :column="2" bordered>
           <t-descriptions-item label="姓名">{{ currentUser.real_name || '-' }}</t-descriptions-item>
           <t-descriptions-item label="手机号">{{ currentUser.phone || '-' }}</t-descriptions-item>
-          <t-descriptions-item label="性别">{{ currentUser.gender || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="性别">{{ currentUser.gender === 1 ? '男' : currentUser.gender === 0 ? '女' : '-' }}</t-descriptions-item>
           <t-descriptions-item label="城市">{{ currentUser.city || '-' }}</t-descriptions-item>
           <t-descriptions-item label="大使等级">
             <t-tag v-if="currentUser.ambassador_level === 0">普通用户</t-tag>
@@ -197,7 +197,7 @@
             <t-tag v-else-if="currentUser.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
           </t-descriptions-item>
           <t-descriptions-item label="功德积分">{{ currentUser.merit_points || 0 }}</t-descriptions-item>
-          <t-descriptions-item label="现金积分">¥{{ ((currentUser.cash_points_available || 0) / 100).toFixed(2) }}</t-descriptions-item>
+          <t-descriptions-item label="现金积分">{{ Math.floor(currentUser.cash_points_available || 0) }}</t-descriptions-item>
           <t-descriptions-item label="推荐人">{{ currentUser.referee_name || '无' }}</t-descriptions-item>
           <t-descriptions-item label="注册时间" :span="2">{{ formatDateTime(currentUser.created_at) }}</t-descriptions-item>
         </t-descriptions>
@@ -266,10 +266,10 @@
   <!-- CloudBase SDK（本地）-->
   <script src="../../assets/libs/tcb.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
   <!-- API -->
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -291,13 +291,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -412,12 +406,20 @@
           loadData();
         };
         
-        // 查看详情
+        // 查看详情（getUserDetail 返回嵌套结构，展平到 currentUser）
         const viewDetail = async (row) => {
           detailVisible.value = true;
           detailLoading.value = true;
           try {
-            currentUser.value = await AdminAPI.getUserDetail(row.id);
+            const result = await AdminAPI.getUserDetail(row.id);
+            // 将嵌套的 user/referee 对象展平，方便模板直接使用
+            currentUser.value = {
+              ...(result.user || result),
+              referee_name: result.referee ? result.referee.real_name : (result.user ? null : result.referee_name),
+              cash_points_available: result.cashPointsStats
+                ? result.cashPointsStats.available
+                : ((result.user || result).cash_points_available || 0),
+            };
           } catch (error) {
             TDesign.MessagePlugin.error('加载详情失败: ' + error.message);
           } finally {

@@ -22,7 +22,7 @@
               <view class="course-details">
                 <view class="course-name">{{ courseInfo.name }}</view>
                 <view class="course-desc">{{ courseInfo.description }}</view>
-                <view class="course-price">¥{{ courseInfo.price }}</view>
+                <view class="course-price">¥{{ formatPrice(courseInfo.price) }}</view>
               </view>
             </view>
           </view>
@@ -70,16 +70,16 @@
           <view class="t-card__body">
             <view class="amount-row">
               <text class="amount-label">课程价格</text>
-              <text class="amount-value">¥{{ courseInfo.price }}</text>
+              <text class="amount-value">¥{{ formatPrice(courseInfo.price) }}</text>
             </view>
             <view class="amount-row">
               <text class="amount-label">优惠</text>
-              <text class="amount-value">-¥{{ discount }}</text>
+              <text class="amount-value">-¥{{ formatPrice(discount) }}</text>
             </view>
             <view class="t-divider t-divider--dashed"></view>
             <view class="amount-row amount-row--total">
               <text class="amount-label--total">实付金额</text>
-              <text class="amount-value--total">¥{{ totalAmount }}</text>
+              <text class="amount-value--total">¥{{ formatPrice(totalAmount) }}</text>
             </view>
           </view>
         </view>
@@ -91,7 +91,7 @@
       <view class="bottom-content">
         <view class="bottom-left">
           <view class="bottom-label">合计</view>
-          <text class="bottom-price">¥{{ totalAmount }}</text>
+          <text class="bottom-price">¥{{ formatPrice(totalAmount) }}</text>
         </view>
         <button class="t-button t-button--theme-light t-button--size-large" @click="handleConfirm">
           <text class="t-button__text">确认支付</text>
@@ -106,6 +106,7 @@
 import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi, CourseApi, OrderApi } from '@/api';
+import { formatPrice } from '@/utils';
 
 // 课程信息
 const courseInfo = ref({

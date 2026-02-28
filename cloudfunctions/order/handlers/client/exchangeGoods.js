@@ -70,11 +70,11 @@ module.exports = async (event, context) => {
 
     // 7. 执行兑换操作（CloudBase SDK 不支持 db.raw，使用 JS 计算值）
     try {
-      // 7.1 扣除功德分和积分（用 JS 计算后的值直接更新）
+      // 7.1 扣除功德分和积分（Math.round 确保存储整数）
       await update('users',
         {
-          merit_points: parseFloat(user.merit_points) - merit_points_used,
-          cash_points_available: parseFloat(user.cash_points_available) - cash_points_used
+          merit_points: Math.round(parseFloat(user.merit_points) - merit_points_used),
+          cash_points_available: Math.round(parseFloat(user.cash_points_available) - cash_points_used)
         },
         { id: user.id }
       );
@@ -118,7 +118,7 @@ module.exports = async (event, context) => {
           type: 2,                                              // 消费
           source: 6,                                            // 实际列名（非 source_type）：6=商城兑换
           amount: -merit_points_used,
-          balance_after: parseFloat(user.merit_points) - merit_points_used,
+          balance_after: Math.round(parseFloat(user.merit_points) - merit_points_used),
           exchange_no,                                          // 关联兑换单号（非 source_id）
           remark: `兑换商品：${goods.goods_name}`              // 实际列名（非 description）
         });
@@ -131,7 +131,7 @@ module.exports = async (event, context) => {
           _openid: OPENID || '',
           type: 2,                                              // 消费
           amount: -cash_points_used,
-          available_after: parseFloat(user.cash_points_available) - cash_points_used,  // 实际列名（非 balance_after）
+          available_after: Math.round(parseFloat(user.cash_points_available) - cash_points_used),
           remark: `兑换商品：${goods.goods_name}`              // 实际列名（非 description）
         });
       }

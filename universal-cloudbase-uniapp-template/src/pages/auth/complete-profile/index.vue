@@ -213,7 +213,7 @@ const formData = ref({
   region: '',
 });
 
-// 性别选项（与数据库 users.gender 一致：0女/1男）
+// 性别选项（与数据库 users.gender 一致：1=男 / 0=女）
 const genderOptions = [
   { label: '男', value: 1 },
   { label: '女', value: 0 },

@@ -1,14 +1,14 @@
 /**
  * User 云函数入口
  * 用户模块 - 17个action
+ *
+ * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  */
-const cloudbase = require('@cloudbase/node-sdk');
+const cloud = require('wx-server-sdk');
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
 const { response } = require('./common');
 const { checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
-
-// 初始化 CloudBase
-const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
 
 // 导入客户端处理器
 const clientHandlers = {
@@ -88,42 +88,21 @@ exports.main = async (event, context) => {
 
   const { action, test_openid } = requestData;
   
-  // 获取用户信息
-  let OPENID = test_openid; // 测试模式支持
-  
-  try {
-    // ✅ 使用 CloudBase Node SDK 获取当前调用者身份（CloudBase uid）
-    // 说明：前端使用 @cloudbase/js-sdk 调用，auth.getUserInfo() 返回 CloudBase 用户标识
-    // 这个标识用于数据库中 _openid 字段的用户识别
-    // 真实的微信 openid 在 login 接口通过 code2session 获取，保存在 openid 字段
-    if (!OPENID) {
-      const userInfo = auth.getUserInfo();
-      if (userInfo && userInfo.openId) {
-        OPENID = userInfo.openId;
-      } else if (userInfo && userInfo.uid) {
-        OPENID = userInfo.uid;
-      } else if (userInfo && userInfo.customUserId) {
-        OPENID = userInfo.customUserId;
-      }
-      
-      console.log(`[${action}] auth.getUserInfo 返回:`, {
-        openId_last6: userInfo?.openId?.slice(-6) || 'N/A',
-        uid_last6: userInfo?.uid?.slice(-6) || 'N/A',
-        customUserId: userInfo?.customUserId || 'N/A',
-        OPENID_last6: OPENID?.slice(-6) || 'undefined'
-      });
-    }
+  // 获取用户标识：wx.cloud.callFunction() 调用时，通过 wx-server-sdk 获取微信真实 openid
+  let OPENID = test_openid || cloud.getWXContext().OPENID;
 
-    console.log(`[${action}] 收到请求:`, { 
-      openid_last6: OPENID?.slice(-6) || 'undefined',
-      test_mode: !!test_openid
-    });
+  console.log(`[${action}] 收到请求:`, { 
+    openid_last6: OPENID?.slice(-6) || 'undefined',
+    test_mode: !!test_openid
+  });
+
+  try {
 
     let result;
 
     // 客户端接口（需用户登录）
     if (ROUTES.client.includes(action)) {
-      // login 接口特殊处理：不需要提前验证，但传递 OPENID（CloudBase uid）
+      // login 接口特殊处理：不需要提前验证，直接传递 OPENID
       if (action === 'login') {
         result = await clientHandlers[action](requestData, { OPENID });
       } else {

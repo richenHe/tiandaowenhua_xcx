@@ -3,7 +3,7 @@
  *
  * 使用 CloudBase Query Builder（不使用 mysql2，避免连接问题）
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { type, status, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -54,8 +54,10 @@ module.exports = async (event, context) => {
       }
     };
 
+    // 🔥 同时转换封面图 cloud:// fileID 为 CDN HTTPS URL
     const list = (result.list || []).map(course => ({
       ...course,
+      cover_image: cloudFileIDToURL(course.cover_image || ''),
       type_name: getTypeName(course.type)
     }));
 

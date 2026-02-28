@@ -39,7 +39,7 @@
             <view class="course-details">
               <view class="course-name">{{ orderInfo.courseName }}</view>
               <view class="course-price">
-                <text class="price">¥{{ orderInfo.price }}</text>
+                <text class="price">¥{{ formatPrice(orderInfo.price) }}</text>
               </view>
             </view>
           </view>
@@ -80,6 +80,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { OrderApi } from '@/api'
+import { formatPrice } from '@/utils'
 
 interface OrderInfo {
   orderNo: string

@@ -7,7 +7,11 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { pay_status, start_date, end_date, keyword, page = 1, page_size = 20, pageSize } = event;
+  // 兼容前端传 status 或 pay_status，以及 paymentMethod
+  const { pay_status: _pay_status, status: _status, start_date, end_date, startDate, endDate, keyword, page = 1, page_size = 20, pageSize } = event;
+  const pay_status = _pay_status != null ? _pay_status : _status;
+  const finalStartDate = start_date || startDate;
+  const finalEndDate = end_date || endDate;
 
   try {
     console.log(`[getOrderList] 管理员查询订单:`, { admin_id: admin.id, pay_status, keyword });
@@ -31,11 +35,11 @@ module.exports = async (event, context) => {
     }
 
     // 日期范围筛选
-    if (start_date) {
-      queryBuilder = queryBuilder.gte('created_at', start_date);
+    if (finalStartDate) {
+      queryBuilder = queryBuilder.gte('created_at', finalStartDate);
     }
-    if (end_date) {
-      queryBuilder = queryBuilder.lte('created_at', end_date);
+    if (finalEndDate) {
+      queryBuilder = queryBuilder.lte('created_at', finalEndDate);
     }
 
     // 关键词搜索

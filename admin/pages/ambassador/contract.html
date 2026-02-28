@@ -298,9 +298,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -322,13 +322,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -523,12 +517,6 @@
 
         // 终止
         const handleTerminate = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认终止',
-            body: `确认终止 ${row.user_name || row.ambassador_name} 的合约吗？此操作不可恢复。`,
-            theme: 'danger'
-          });
-          if (!confirmed) return;
           try {
             await AdminAPI.terminateContract({ signatureId: row.id });
             TDesign.MessagePlugin.success('合约已终止');

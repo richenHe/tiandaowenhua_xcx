@@ -10,7 +10,7 @@
  * - excludeCategory: 排除指定类型（可选，如 'banner' 用于公告管理排除轮播图）
  * - status: 状态筛选（可选）
  */
-const { db, response, executePaginatedQuery, getTempFileURLs } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -47,32 +47,11 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 🔥 转换云存储 fileID 为临时 URL
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用）
     const list = result.list || [];
-    if (list.length > 0) {
-      const fileIDs = list
-        .filter(a => a.cover_image)
-        .map(a => a.cover_image);
-
-      if (fileIDs.length > 0) {
-        try {
-          const tempURLs = await getTempFileURLs(fileIDs);
-          const urlMap = {};
-          tempURLs.forEach(item => {
-            urlMap[item.fileID] = item.tempFileURL;
-          });
-
-          // 替换 fileID 为临时 URL
-          list.forEach(a => {
-            if (a.cover_image && urlMap[a.cover_image]) {
-              a.cover_image = urlMap[a.cover_image];
-            }
-          });
-        } catch (error) {
-          console.warn('转换封面图片URL失败（不阻塞）:', error);
-        }
-      }
-    }
+    list.forEach(a => {
+      if (a.cover_image) a.cover_image = cloudFileIDToURL(a.cover_image);
+    });
 
     return response.success({
       ...result,

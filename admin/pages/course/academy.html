@@ -307,8 +307,8 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -330,13 +330,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -515,14 +509,6 @@
         };
         
         const deleteCourse = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: `确定要删除课程"${row.name}"吗？`,
-            theme: 'warning',
-          });
-          
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.manageAcademyContent({
               action: 'delete_course',
@@ -550,14 +536,6 @@
         };
         
         const deleteChapter = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: `确定要删除章节"${row.title}"吗？`,
-            theme: 'warning',
-          });
-          
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.manageAcademyContent({
               action: 'delete_chapter',
@@ -589,14 +567,6 @@
         };
         
         const deleteVideo = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: `确定要删除视频"${row.title}"吗？`,
-            theme: 'warning',
-          });
-          
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.manageAcademyContent({
               action: 'delete_video',
@@ -626,14 +596,6 @@
         };
         
         const deleteMaterial = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: `确定要删除资料"${row.title}"吗？`,
-            theme: 'warning',
-          });
-          
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.manageAcademyContent({
               action: 'delete_material',

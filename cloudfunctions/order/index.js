@@ -1,17 +1,14 @@
 /**
  * Order 云函数入口
  * 订单模块 - 14个action
+ *
+ * 认证方式：前端使用 wx.cloud.callFunction()，微信运行时自动注入真实 openid 到 context.OPENID
  */
-const cloudbase = require('@cloudbase/node-sdk');
 const cloud = require('wx-server-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 @cloudbase/node-sdk (用于认证)
-const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
-
-// 初始化 wx-server-sdk (用于微信支付)
+// 初始化 wx-server-sdk (用于微信支付等微信 API)
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 // 初始化 business-logic 层
@@ -19,7 +16,8 @@ business.init(cloud);
 
 // 导入处理器
 const publicHandlers = {
-  paymentCallback: require('./handlers/public/paymentCallback')
+  paymentCallback: require('./handlers/public/paymentCallback'),
+  testSimulatePayment: require('./handlers/public/testSimulatePayment') // ⚠️ 测试专用
 };
 
 const clientHandlers = {
@@ -101,38 +99,16 @@ exports.main = async (event, context) => {
   }
 
   const { action, test_openid } = requestData;
-  let OPENID = test_openid;
+
+  // 获取用户标识：wx.cloud.callFunction() 调用时，通过 wx-server-sdk 获取微信真实 openid
+  let OPENID = test_openid || cloud.getWXContext().OPENID;
+
+  console.log(`[${action}] 收到请求:`, {
+    openid: OPENID?.slice(-6) || 'undefined',
+    test_mode: !!test_openid
+  });
 
   try {
-    // ========== 使用 CloudBase uid 识别用户（双标识体系） ==========
-    // 注意：即使通过 wx.cloud.callFunction() 调用，我们也使用 CloudBase uid
-    // 真实的微信 openid 存储在数据库的 openid 字段中，用于微信支付等 API
-    if (!OPENID) {
-      const userInfo = auth.getUserInfo();  // 同步方法，直接返回结果
-      // ⚠️ 优先使用 uid（CloudBase uid），用于用户识别和权限验证
-      if (userInfo && userInfo.uid) {
-        OPENID = userInfo.uid;  // CloudBase uid
-      } else if (userInfo && userInfo.customUserId) {
-        OPENID = userInfo.customUserId;
-      } else if (userInfo && userInfo.openId) {
-        // 降级方案：如果没有 uid，使用 openId
-        // 注意：通过 wx.cloud.callFunction() 调用时，这里是真实的微信 openid
-        // 但我们的数据库 _openid 字段存储的是 CloudBase uid，所以优先用 uid
-        OPENID = userInfo.openId;
-      }
-      
-      console.log(`[${action}] getUserInfo 返回:`, {
-        openId: userInfo?.openId?.slice(-6) || 'none',
-        uid: userInfo?.uid?.slice(-6) || 'none',
-        customUserId: userInfo?.customUserId || 'none',
-        使用标识: OPENID?.slice(-6) || 'undefined'
-      });
-    }
-
-    console.log(`[${action}] 收到请求:`, {
-      openid: OPENID?.slice(-6) || 'undefined',
-      test_mode: !!test_openid
-    });
 
     let result;
 

@@ -35,9 +35,21 @@ export interface ApplyAmbassadorParams {
   /** 联系电话 */
   phone: string
   /** 微信号 */
-  wechat?: string
+  wechat_id?: string
+  /** 所在城市 */
+  city?: string
+  /** 职业 */
+  occupation?: string
   /** 申请理由 */
-  reason: string
+  apply_reason?: string
+  /** 对天道文化的理解 */
+  understanding?: string
+  /** 是否愿意帮助他人 */
+  willing_help?: number
+  /** 推广计划 */
+  promotion_plan?: string
+  /** 目标等级（camelCase）：1=准青鸾, 2=青鸾, 3=鸿鹄, 4=金凤 */
+  targetLevel?: number
 }
 
 /**
@@ -76,6 +88,24 @@ export interface UpgradeAmbassadorResponse {
 }
 
 /**
+ * 升级权益文案条目
+ */
+export interface UpgradeBenefitItem {
+  /** 权益标题 */
+  title: string
+  /** 权益说明（支持 HTML 富文本） */
+  desc: string
+}
+
+/**
+ * 申请列表文案条目（大使申请页动态问题）
+ */
+export interface ApplyQuestion {
+  /** 问题文本 */
+  question: string
+}
+
+/**
  * 升级指南信息
  */
 export interface UpgradeGuide {
@@ -90,6 +120,10 @@ export interface UpgradeGuide {
     level: number
     name: string
     benefits: string[]
+    /** 后台配置的升级权益文案（优先于 benefits 展示） */
+    upgrade_benefits: UpgradeBenefitItem[] | null
+    /** 后台配置的申请列表文案（大使申请页动态问题） */
+    apply_questions: ApplyQuestion[] | null
   }
   /** 升级选项 */
   upgrade_options: Array<{
@@ -109,6 +143,15 @@ export interface UpgradeGuide {
   }
   /** 升级要求 */
   requirements: Record<string, any>
+  /**
+   * 用户针对目标等级的申请状态
+   * null=未申请, 0=待审核, 1=待面试, 2=已通过, 3=已拒绝
+   */
+  application_status: number | null
+  /** 拒绝原因（application_status=3 时有值） */
+  application_reject_reason: string | null
+  /** 申请记录 ID */
+  application_id: number | null
 }
 
 /**
@@ -176,30 +219,39 @@ export interface GiftQuotaResponse {
 
 /**
  * 协议模板
+ * 协议内容已改为电子合同文件（PDF/Word），通过 contract_file_url 下载查看
  */
 export interface ContractTemplate {
   /** 模板ID */
   id: number
   /** 协议标题 */
   title: string
-  /** 协议内容 */
-  content: string
   /** 版本号 */
   version: string
+  /** 大使等级 */
+  level: number
+  /** 等级名称 */
+  level_name: string
+  /** 有效期（年） */
+  validity_years?: number
   /** 生效日期 */
-  effective_date: string
+  effective_date?: string | null
+  /** 电子合同文件 URL（PDF/Word，用于下载查看） */
+  contract_file_url: string | null
 }
 
 /**
  * 签署协议请求参数
  */
 export interface SignContractParams {
+  /** 协议模板ID（camelCase 兼容） */
+  templateId?: number
   /** 协议模板ID */
-  template_id: number
-  /** 电子签名 */
-  signature: string
-  /** 是否同意 */
-  agree: boolean
+  template_id?: number
+  /** 手写签名图片的 cloud:// fileID（取代手机号后四位确认） */
+  signatureFileId: string
+  /** 是否同意协议（必填 true） */
+  agreed: boolean
 }
 
 /**
@@ -231,21 +283,37 @@ export interface Contract {
   /** 签署时间 */
   signed_at: string
   /** 过期时间 */
-  expire_at: string
+  expire_at?: string
+  /** 合同开始日期 */
+  effective_date?: string
+  /** 合同结束日期 */
+  expiry_date?: string
+  /** 电子合同文件 URL（PDF/Word，用于下载查看） */
+  contract_file_url?: string | null
 }
 
 /**
  * 协议详情
+ * 协议内容已改为电子合同文件，通过 contract_file_url 下载查看
  */
-export interface ContractDetail extends Contract {
-  /** 协议内容 */
-  content: string
-  /** 签名 */
-  signature: string
-  /** 签署IP */
-  sign_ip: string
-  /** 签署设备 */
-  sign_device: string
+export interface ContractDetail {
+  /** 协议签署记录 */
+  signature: {
+    id: number
+    template_id: number
+    contract_name: string
+    ambassador_level: number
+    contract_version: string
+    contract_file_url: string | null
+    sign_time: string
+    contract_start: string
+    contract_end: string
+    status: number
+    status_text: string
+    sign_ip?: string
+    sign_device?: string
+    effective_time?: string
+  }
 }
 
 /**
@@ -427,12 +495,16 @@ export interface LevelConfig {
   level_name: string
   /** 等级图标 */
   level_icon?: string
-  /** 等级描述 */
+  /** 等级描述（支持 HTML 富文本，小程序等级体系页展示） */
   level_desc?: string
   /** 升级条件列表 */
   upgrade_conditions?: string[]
   /** 等级权益列表 */
   benefits?: string[]
+  /** 后台配置的升级权益文案（{title, desc} 数组，小程序升级指南页展示） */
+  upgrade_benefits?: UpgradeBenefitItem[] | null
+  /** 后台配置的申请列表文案（{question} 数组，大使申请页动态问题） */
+  apply_questions?: ApplyQuestion[] | null
   /** 推荐初探班功德分比例 */
   merit_rate_basic?: number
   /** 推荐密训班功德分比例 */
@@ -467,4 +539,71 @@ export interface LevelSystemResponse {
   current_level?: number
   /** 下一等级 */
   next_level?: LevelConfig | null
+}
+
+/**
+ * 活动岗位
+ */
+export interface ActivityPosition {
+  /** 岗位名称 */
+  name: string
+  /** 总名额 */
+  quota: number
+  /** 功德分奖励 */
+  merit_points: number
+  /** 已报名人数 */
+  registered_count: number
+  /** 剩余名额 */
+  remaining: number
+  /** 报名门槛等级（对应ambassador_level_configs.level），null表示无限制 */
+  required_level: number | null
+  /** 门槛等级名称（用于展示，如"青鸾大使"） */
+  required_level_name: string | null
+  /** 当前用户是否满足报名条件 */
+  can_apply: boolean
+}
+
+/**
+ * 可报名活动（新版）
+ */
+export interface AvailableActivity {
+  /** 活动ID */
+  id: number
+  /** 关联排期ID */
+  schedule_id: number
+  /** 排期名称 */
+  schedule_name: string
+  /** 排期日期 */
+  schedule_date: string
+  /** 排期地点 */
+  schedule_location: string | null
+  /** 活动岗位列表 */
+  positions: ActivityPosition[]
+  /** 活动状态 1=报名中 */
+  status: number
+  /** 当前用户的大使等级 */
+  user_level: number
+  /** 当前用户的报名信息（null表示未报名） */
+  my_registration: {
+    position_name: string
+    status: number
+  } | null
+}
+
+/**
+ * 获取可报名活动请求参数
+ */
+export interface GetAvailableActivitiesParams {
+  page?: number
+  pageSize?: number
+}
+
+/**
+ * 申请报名活动参数（camelCase）
+ */
+export interface ApplyForActivityParams {
+  /** 活动ID */
+  activityId: number
+  /** 报名岗位名称 */
+  positionName: string
 }

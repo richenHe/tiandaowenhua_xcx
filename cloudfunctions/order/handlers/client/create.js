@@ -69,6 +69,8 @@ module.exports = async (event, context) => {
     
     const order = await insert('orders', {
       user_id: user.id,
+      user_name: user.real_name || null,
+      user_phone: user.phone || null,
       order_no,
       order_type,
       order_name: orderData.order_name,
@@ -78,6 +80,8 @@ module.exports = async (event, context) => {
       final_amount: orderData.amount,
       referee_id: orderData.referee_id || null,
       referee_uid: orderData.referee_uid || null,
+      referee_name: orderData.referee_name || null,
+      referee_level: orderData.referee_level != null ? orderData.referee_level : null,
       pay_status: 0, // 待支付
       order_metadata: orderData.metadata ? JSON.stringify(orderData.metadata) : null,
       expire_at: expire_at

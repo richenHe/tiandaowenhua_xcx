@@ -1,14 +1,19 @@
 /**
  * Course 云函数入口
- * 课程模块 - 35个action
+ * 课程模块 - 35个action + 1个定时任务
+ *
+ * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
+ * 定时任务：每日 0 点自动更新过期排期状态（通过 cloudfunction.json timer trigger 触发）
  */
+const cloud = require('wx-server-sdk');
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
 const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase
+// 初始化 CloudBase（business-logic 使用）
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
 
 // 初始化 business-logic
 business.init(app);
@@ -35,6 +40,9 @@ const clientHandlers = {
   recordAcademyProgress: require('./handlers/client/recordAcademyProgress'),
   getAcademyProgress: require('./handlers/client/getAcademyProgress')
 };
+
+// 导入处理器 - 定时任务（由 cloudfunction.json timer trigger 触发）
+const autoUpdateScheduleStatus = require('./handlers/admin/autoUpdateScheduleStatus');
 
 // 导入处理器 - 管理端接口（20个）
 const adminHandlers = {
@@ -82,6 +90,12 @@ function wrapHttpResponse(data) {
 }
 
 exports.main = async (event, context) => {
+  // 检测是否是定时触发（timer trigger：event 含 Time 字段，且无 action）
+  if (event.Time && !event.action) {
+    console.log('[Course] 定时触发：自动更新过期排期状态', event.Time);
+    return autoUpdateScheduleStatus(event, context);
+  }
+
   // 检测是否是 HTTP 请求
   const isHttpRequest = 
     (context && context.SOURCE === 'wx_http') || 
@@ -110,20 +124,8 @@ exports.main = async (event, context) => {
 
   const { action, test_openid } = requestData;
   
-  // 获取用户信息
-  let OPENID = test_openid;
-  
-  // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
-  if (!OPENID) {
-    const userInfo = auth.getUserInfo();
-    if (userInfo && userInfo.openId) {
-      OPENID = userInfo.openId;
-    } else if (userInfo && userInfo.uid) {
-      OPENID = userInfo.uid;
-    } else if (userInfo && userInfo.customUserId) {
-      OPENID = userInfo.customUserId;
-    }
-  }
+  // 获取用户标识：wx.cloud.callFunction() 调用时，通过 wx-server-sdk 获取微信真实 openid
+  let OPENID = test_openid || cloud.getWXContext().OPENID;
 
   console.log(`[Course/${action}] 收到请求:`, { openid: OPENID?.slice(-6) || 'undefined' });
 

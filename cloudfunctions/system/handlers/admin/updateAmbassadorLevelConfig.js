@@ -3,60 +3,87 @@
  * Action: updateAmbassadorLevelConfig
  *
  * 参数：
- * - level: 等级（1-5）
+ * - level: 等级（0-5）
  * - level_name: 等级名称
+ * - level_desc: 等级描述文案（富文本 HTML，小程序等级体系页展示）
  * - upgrade_type: 升级方式（payment/contract）
- * - upgrade_conditions: 升级条件（JSON）
- * - benefits: 权益说明（JSON）
- * - description: 等级描述
+ * - upgrade_conditions: 升级条件（JSON 数组）
+ * - benefits: 权益说明（JSON 数组）
+ * - upgrade_benefits: 升级权益文案（JSON 数组，{title, desc}）
+ * - apply_questions: 申请列表文案（JSON 数组，{question}）
  */
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { level, level_name, upgrade_type, upgrade_conditions, benefits, description } = event;
+  const {
+    level, level_name, level_desc, upgrade_type,
+    upgrade_conditions, benefits, upgrade_benefits, apply_questions,
+    upgrade_payment_amount, frozen_points, unfreeze_per_referral,
+    merit_rate_basic, merit_rate_advanced, cash_rate_basic, cash_rate_advanced,
+    gift_quota_basic, gift_quota_advanced
+  } = event;
 
   try {
-    // 参数验证
-    if (!level) {
+    if (level == null || level === '') {
       return response.paramError('缺少必要参数: level');
     }
 
-    if (level < 1 || level > 5) {
-      return response.paramError('等级范围应为1-5');
+    if (level < 0 || level > 5) {
+      return response.paramError('等级范围应为0-5');
     }
 
     console.log(`[admin:updateAmbassadorLevelConfig] 管理员 ${admin.id} 更新等级 ${level} 配置`);
 
-    // 查询配置是否存在
     const config = await findOne('ambassador_level_configs', { level });
     if (!config) {
       return response.notFound('等级配置不存在');
     }
 
-    // 构建更新数据
-    const updateData = {
-      updated_at: new Date()
-    };
+    const updateData = { updated_at: new Date() };
 
-    if (level_name) updateData.level_name = level_name;
-    if (upgrade_type) updateData.upgrade_type = upgrade_type;
-    if (description) updateData.description = description;
+    if (level_name !== undefined) updateData.level_name = level_name;
+    if (upgrade_type !== undefined) updateData.upgrade_type = upgrade_type;
 
-    if (upgrade_conditions) {
+    // 等级描述文案（支持富文本 HTML）
+    if (level_desc !== undefined) updateData.level_desc = level_desc;
+
+    if (upgrade_conditions !== undefined) {
       updateData.upgrade_conditions = typeof upgrade_conditions === 'string'
         ? upgrade_conditions
         : JSON.stringify(upgrade_conditions);
     }
 
-    if (benefits) {
+    if (benefits !== undefined) {
       updateData.benefits = typeof benefits === 'string'
         ? benefits
         : JSON.stringify(benefits);
     }
 
-    // 更新配置
+    if (upgrade_benefits !== undefined) {
+      updateData.upgrade_benefits = typeof upgrade_benefits === 'string'
+        ? upgrade_benefits
+        : JSON.stringify(upgrade_benefits);
+    }
+
+    // 申请列表文案（JSON 数组，每项 {question: string}）
+    if (apply_questions !== undefined) {
+      updateData.apply_questions = typeof apply_questions === 'string'
+        ? apply_questions
+        : JSON.stringify(apply_questions);
+    }
+
+    if (upgrade_payment_amount !== undefined) updateData.upgrade_payment_amount = upgrade_payment_amount;
+    if (frozen_points !== undefined) updateData.frozen_points = frozen_points;
+    if (unfreeze_per_referral !== undefined) updateData.unfreeze_per_referral = unfreeze_per_referral;
+    if (merit_rate_basic !== undefined) updateData.merit_rate_basic = merit_rate_basic;
+    if (merit_rate_advanced !== undefined) updateData.merit_rate_advanced = merit_rate_advanced;
+    if (cash_rate_basic !== undefined) updateData.cash_rate_basic = cash_rate_basic;
+    if (cash_rate_advanced !== undefined) updateData.cash_rate_advanced = cash_rate_advanced;
+    if (gift_quota_basic !== undefined) updateData.gift_quota_basic = gift_quota_basic;
+    if (gift_quota_advanced !== undefined) updateData.gift_quota_advanced = gift_quota_advanced;
+
     await update('ambassador_level_configs', updateData, { level });
 
     return response.success({ level }, '更新成功');

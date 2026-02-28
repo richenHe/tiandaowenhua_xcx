@@ -80,10 +80,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi } from '@/api';
+import { useCountdownTimer } from '@/utils/timer';
 
 // 订单信息
 const orderInfo = ref({
@@ -97,7 +98,16 @@ const orderInfo = ref({
 
 // 倒计时（秒）
 const countdown = ref(0);
-let countdownTimer: number | null = null;
+
+// 使用统一的倒计时工具：到期后自动返回
+const { start: startCountdown, stop: stopCountdown } = useCountdownTimer(
+  () => countdown.value,
+  (v) => { countdown.value = v; },
+  () => {
+    // 订单已超时，静默返回（订单会在后台自动取消）
+    uni.navigateBack();
+  }
+);
 
 // 当前订单号（用于页面显示时重新加载）
 let currentOrderNo = '';
@@ -114,11 +124,8 @@ const formatCountdown = (seconds: number): string => {
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
   try {
-    // 清除旧的倒计时
-    if (countdownTimer !== null) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
-    }
+    // 停止旧的倒计时
+    stopCountdown();
 
     uni.showLoading({
       title: '加载中...',
@@ -195,21 +202,6 @@ const loadOrderDetail = async (orderNo: string) => {
       icon: 'none',
     });
   }
-};
-
-// 开始倒计时
-const startCountdown = () => {
-  countdownTimer = setInterval(() => {
-    countdown.value--;
-    
-    if (countdown.value <= 0) {
-      if (countdownTimer !== null) {
-        clearInterval(countdownTimer);
-      }
-      // 订单已超时，静默返回（订单会在后台自动取消）
-      uni.navigateBack();
-    }
-  }, 1000) as unknown as number;
 };
 
 // 处理取消订单
@@ -302,12 +294,7 @@ onShow(() => {
   }
 });
 
-onUnmounted(() => {
-  // 清除倒计时
-  if (countdownTimer !== null) {
-    clearInterval(countdownTimer);
-  }
-});
+// useCountdownTimer 内部已在 onUnmounted 自动清理，无需手动处理
 </script>
 
 <style lang="scss" scoped>

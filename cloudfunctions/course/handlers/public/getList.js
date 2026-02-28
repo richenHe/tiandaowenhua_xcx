@@ -3,7 +3,7 @@
  * 支持课程类型筛选和关键词搜索
  * 使用 Supabase 风格查询
  */
-const { db, findOne, response, executePaginatedQuery, getTempFileURL } = require('common');
+const { db, findOne, response, executePaginatedQuery, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { type, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -50,23 +50,11 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 添加已购标识并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((result.list || []).map(async course => {
-      let coverImageUrl = course.cover_image || '';
-      if (course.cover_image) {
-        try {
-          const tempResult = await getTempFileURL(course.cover_image);
-          coverImageUrl = tempResult.tempFileURL || course.cover_image;
-        } catch (error) {
-          console.warn('[getList] 转换临时URL失败:', course.cover_image, error.message);
-        }
-      }
-
-      return {
-        ...course,
-        cover_image: coverImageUrl,
-        is_purchased: userCourseIds.includes(course.id)
-      };
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL，添加已购标识
+    const list = (result.list || []).map(course => ({
+      ...course,
+      cover_image: cloudFileIDToURL(course.cover_image || ''),
+      is_purchased: userCourseIds.includes(course.id)
     }));
 
     console.log(`[getList] 查询成功，共 ${result.total} 条`);

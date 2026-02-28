@@ -52,7 +52,7 @@ export function calculateMixedPayment(
         meritPointsUsed: 0,
         cashPointsUsed: 0,
         totalCost,
-        errorMessage: `现金积分不足，还需${(cashPointsNeeded - cashPointsAvailable).toFixed(2)}积分`
+        errorMessage: `现金积分不足，还需${Math.round(cashPointsNeeded - cashPointsAvailable)}积分`
       }
     }
 
@@ -71,7 +71,7 @@ export function calculateMixedPayment(
     meritPointsUsed: 0,
     cashPointsUsed: 0,
     totalCost,
-    errorMessage: `功德分不足，还需${(totalCost - meritPoints).toFixed(2)}功德分`
+    errorMessage: `功德分不足，还需${Math.round(totalCost - meritPoints)}功德分`
   }
 }
 
@@ -88,11 +88,11 @@ export function formatPaymentPlan(plan: PaymentPlan): string {
   const parts: string[] = []
   
   if (plan.meritPointsUsed > 0) {
-    parts.push(`功德分：${plan.meritPointsUsed.toFixed(2)}`)
+    parts.push(`功德分：${Math.round(plan.meritPointsUsed)}`)
   }
   
   if (plan.cashPointsUsed > 0) {
-    parts.push(`现金积分：${plan.cashPointsUsed.toFixed(2)}（可提现）`)
+    parts.push(`现金积分：${Math.round(plan.cashPointsUsed)}（可提现）`)
   }
 
   return parts.join('\n')

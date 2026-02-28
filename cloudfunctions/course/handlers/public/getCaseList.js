@@ -1,7 +1,7 @@
 /**
  * 获取案例列表（公开接口）
  */
-const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { category, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -43,48 +43,14 @@ module.exports = async (event, context) => {
       return caseItem;
     });
 
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (processedList && processedList.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      processedList.forEach(caseItem => {
-        if (caseItem.student_avatar) fileIDs.push(caseItem.student_avatar);
-        if (caseItem.video_url) fileIDs.push(caseItem.video_url);
-        // images 是 JSON 数组，包含多个 fileID
-        if (Array.isArray(caseItem.images)) {
-          caseItem.images.forEach(imgFileID => {
-            if (imgFileID) fileIDs.push(imgFileID);
-          });
-        }
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用，避免认证问题）
+    processedList.forEach(caseItem => {
+      if (caseItem.student_avatar) caseItem.student_avatar = cloudFileIDToURL(caseItem.student_avatar);
+      if (caseItem.video_url) caseItem.video_url = cloudFileIDToURL(caseItem.video_url);
+      if (Array.isArray(caseItem.images)) {
+        caseItem.images = caseItem.images.map(imgFileID => cloudFileIDToURL(imgFileID));
       }
-
-      // 替换 processedList 中的 fileID 为临时 URL
-      processedList.forEach(caseItem => {
-        if (caseItem.student_avatar && urlMap[caseItem.student_avatar]) {
-          caseItem.student_avatar = urlMap[caseItem.student_avatar];
-        }
-        if (caseItem.video_url && urlMap[caseItem.video_url]) {
-          caseItem.video_url = urlMap[caseItem.video_url];
-        }
-        // 转换 images 数组中的 fileID
-        if (Array.isArray(caseItem.images)) {
-          caseItem.images = caseItem.images.map(imgFileID =>
-            urlMap[imgFileID] || imgFileID
-          );
-        }
-      });
-    }
+    });
 
     // 添加 cover_image：取 images 第一张，无图片时取 student_avatar 作为兜底
     processedList.forEach(caseItem => {

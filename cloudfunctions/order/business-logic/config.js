@@ -3,7 +3,7 @@
  * 从 ambassador_level_configs 表读取大使等级配置，带内存缓存（TTL 5分钟）
  */
 
-const { db } = require('common');
+const { query } = require('common');
 
 // ==================== 内存缓存 ====================
 
@@ -22,9 +22,10 @@ async function getAllLevelConfigs() {
     return _levelConfigCache;
   }
 
-  const configs = await db.query(
-    'SELECT * FROM ambassador_level_configs WHERE status = 1 ORDER BY level ASC'
-  );
+  const configs = await query('ambassador_level_configs', {
+    where: { status: 1 },
+    orderBy: { column: 'level', ascending: true }
+  });
 
   // 转为 { level: config } 的 Map 结构
   _levelConfigCache = {};

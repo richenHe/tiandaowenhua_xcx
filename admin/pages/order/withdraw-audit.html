@@ -148,12 +148,12 @@
       <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-label">待审核</div>
+          <div class="stat-label">待转账</div>
           <div class="stat-value">{{ statistics.pending || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已通过</div>
-          <div class="stat-value">{{ statistics.approved || 0 }}</div>
+          <div class="stat-label">已转账</div>
+          <div class="stat-value">{{ statistics.transferred || 0 }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">已驳回</div>
@@ -161,7 +161,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">待打款金额（元）</div>
-          <div class="stat-value">{{ (statistics.pendingAmount / 100).toFixed(2) || '0.00' }}</div>
+          <div class="stat-value">{{ Number(statistics.pendingAmount || 0).toFixed(2) }}</div>
         </div>
       </div>
 
@@ -202,14 +202,11 @@
             <t-button theme="default" @click="handleReset">
               <template #icon><t-icon name="refresh" /></template>重置
             </t-button>
-            <t-button theme="success" @click="handleBatchApprove" :disabled="selectedRowKeys.length === 0">
-              <template #icon><t-icon name="check-circle" /></template>批量通过
-            </t-button>
             <t-button theme="danger" @click="handleBatchReject" :disabled="selectedRowKeys.length === 0">
               <template #icon><t-icon name="close-circle" /></template>批量驳回
             </t-button>
             <t-button theme="warning" variant="outline" @click="handleExportTransferList"
-              :disabled="!tableData.find(item => item.status === 1)">
+              :disabled="!tableData.find(item => item.status === 0)">
               <template #icon><t-icon name="download" /></template>导出待转账列表
             </t-button>
           </t-space>
@@ -232,16 +229,15 @@
       >
         <!-- 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝） -->
         <template #status="{ row }">
-          <t-tag v-if="row.status === 0" theme="warning">待审核</t-tag>
-          <t-tag v-else-if="row.status === 1" theme="primary">审核通过待转账</t-tag>
+          <t-tag v-if="row.status === 0 || row.status === 1" theme="warning">待转账</t-tag>
           <t-tag v-else-if="row.status === 2" theme="success">已转账</t-tag>
-          <t-tag v-else-if="row.status === 3" theme="danger">已拒绝</t-tag>
+          <t-tag v-else-if="row.status === 3" theme="danger">已驳回</t-tag>
         </template>
 
         <template #amount="{ row }">
           <div>
-            <div style="color: #e37318; font-weight: 600;">¥{{ (row.amount / 100).toFixed(2) }}</div>
-            <div style="font-size: 12px; color: #999;">积分: {{ row.points }}</div>
+            <div style="color: #e37318; font-weight: 600;">¥{{ Number(row.amount).toFixed(2) }}</div>
+            <div style="font-size: 12px; color: #999;">积分: {{ row.amount }}</div>
           </div>
         </template>
 
@@ -256,16 +252,16 @@
               查看详情
             </t-button>
             <t-button 
-              v-if="row.status === 0"
-              theme="success" 
+              v-if="row.status === 0 || row.status === 1"
+              theme="warning" 
               size="small" 
               variant="text"
-              @click="handleApprove(row)"
+              @click="handleMarkTransferred(row)"
             >
-              通过
+              标记已转账
             </t-button>
             <t-button 
-              v-if="row.status === 0"
+              v-if="row.status === 0 || row.status === 1"
               theme="danger" 
               size="small" 
               variant="text"
@@ -274,13 +270,13 @@
               驳回
             </t-button>
             <t-button 
-              v-if="row.status === 1"
-              theme="warning" 
+              v-if="row.status === 2 && row.invoice_url"
+              theme="success" 
               size="small" 
               variant="text"
-              @click="handleMarkTransferred(row)"
+              @click="handleViewInvoice(row)"
             >
-              标记已转账
+              查看发票
             </t-button>
           </t-space>
         </template>
@@ -305,20 +301,20 @@
           </t-descriptions-item>
           <t-descriptions-item label="手机号">{{ currentRecord.user_phone }}</t-descriptions-item>
           <t-descriptions-item label="提现金额">
-            <span style="color: #e37318; font-weight: 600;">¥{{ (currentRecord.amount / 100).toFixed(2) }}</span>
+            <span style="color: #e37318; font-weight: 600;">¥{{ Number(currentRecord.amount).toFixed(2) }}</span>
           </t-descriptions-item>
-          <t-descriptions-item label="提现积分" :span="2">{{ currentRecord.points }} 积分</t-descriptions-item>
-          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
+          <t-descriptions-item label="提现积分" :span="2">{{ currentRecord.amount }} 积分</t-descriptions-item>
+          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.apply_time || currentRecord.created_at }}</t-descriptions-item>
           <t-descriptions-item label="收款信息" :span="2">
             <div class="bank-info">
-              <div><strong>姓名：</strong>{{ currentRecord.bank_account_name }}</div>
-              <div><strong>银行：</strong>{{ currentRecord.bank_name }}</div>
-              <div><strong>卡号：</strong>{{ currentRecord.bank_account_number }}</div>
+              <div><strong>收款人：</strong>{{ currentRecord.bank_account_name || '—' }}</div>
+              <div><strong>开户行：</strong>{{ currentRecord.bank_name || '—' }}</div>
+              <div><strong>卡　号：</strong>{{ currentRecord.bank_account_number || '—' }}</div>
             </div>
           </t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
             <t-tag v-if="currentRecord.status === 0" theme="warning">待审核</t-tag>
-            <t-tag v-else-if="currentRecord.status === 1" theme="primary">审核通过待转账</t-tag>
+            <t-tag v-else-if="currentRecord.status === 1" theme="warning">待转账</t-tag>
             <t-tag v-else-if="currentRecord.status === 2" theme="success">已转账</t-tag>
             <t-tag v-else-if="currentRecord.status === 3" theme="danger">已拒绝</t-tag>
           </t-descriptions-item>
@@ -330,6 +326,16 @@
           </t-descriptions-item>
           <t-descriptions-item v-if="currentRecord.transferred_at" label="打款时间" :span="2">
             {{ currentRecord.transferred_at }}
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.invoice_url" label="电子发票" :span="2">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img
+                :src="currentRecord.invoice_url"
+                style="max-width: 200px; max-height: 120px; border-radius: 4px; border: 1px solid #dcdcdc; cursor: pointer;"
+                @click="handleViewInvoice(currentRecord)"
+              />
+              <t-button size="small" theme="primary" variant="outline" @click="handleViewInvoice(currentRecord)">查看原图</t-button>
+            </div>
           </t-descriptions-item>
         </t-descriptions>
       </div>
@@ -350,6 +356,101 @@
         :autosize="{ minRows: 4, maxRows: 8 }"
       />
     </t-dialog>
+
+    <!-- 标记已转账对话框（含发票上传） -->
+    <t-dialog
+      v-model:visible="transferVisible"
+      header="标记已转账"
+      width="560px"
+      :confirm-btn="{ content: invoiceFileId ? '确认已转账' : '请先上传电子发票', disabled: !invoiceFileId || transferLoading }"
+      :cancel-btn="{ content: '取消' }"
+      @confirm="confirmTransfer"
+      @close="resetTransferDialog"
+    >
+      <div v-if="transferTarget" style="padding: 8px 0;">
+        <!-- 收款信息预览 -->
+        <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px;">收款信息</div>
+          <div style="font-size: 13px; color: #555; line-height: 2;">
+            <div><strong>申请编号：</strong>{{ transferTarget.withdraw_no }}</div>
+            <div><strong>收款人：</strong>{{ transferTarget.bank_account_name || '—' }}</div>
+            <div><strong>开户行：</strong>{{ transferTarget.bank_name || '—' }}</div>
+            <div><strong>银行卡号：</strong>{{ transferTarget.bank_account_number || '—' }}</div>
+            <div><strong>提现金额：</strong><span style="color: #e37318; font-weight: 600;">¥{{ Number(transferTarget.amount).toFixed(2) }}</span></div>
+          </div>
+        </div>
+
+        <!-- 发票上传区域 -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;">
+            上传电子发票 <span style="color: #e34d59; font-size: 12px;">*必填，无发票不可标记</span>
+          </div>
+          <div style="font-size: 12px; color: #999; margin-bottom: 12px;">
+            支持 JPG / PNG / PDF，文件不超过 10MB
+          </div>
+
+          <!-- 未上传时：点击上传区 -->
+          <div
+            v-if="!invoicePreviewUrl"
+            style="border: 2px dashed #dcdcdc; border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;"
+            :style="invoiceUploading ? 'opacity:0.6;pointer-events:none;' : ''"
+            @click="openInvoicePicker"
+            @mouseenter="$event.currentTarget.style.borderColor='#0052d9'"
+            @mouseleave="$event.currentTarget.style.borderColor='#dcdcdc'"
+          >
+            <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
+            <div style="color: #999; font-size: 13px;">{{ invoiceUploading ? '上传中...' : '点击上传电子发票' }}</div>
+          </div>
+
+          <!-- 已上传：显示预览 -->
+          <div v-else style="position: relative; display: inline-block;">
+            <img
+              v-if="invoicePreviewUrl && !invoicePreviewUrl.endsWith('.pdf')"
+              :src="invoicePreviewUrl"
+              style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #dcdcdc; display: block;"
+            />
+            <div
+              v-else
+              style="background: #f0f4ff; border: 1px solid #0052d9; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 12px;"
+            >
+              <span style="font-size: 32px;">📄</span>
+              <span style="font-size: 13px; color: #0052d9;">PDF 文件已上传</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <t-button size="small" theme="default" variant="outline" @click="openInvoicePicker" :disabled="invoiceUploading">重新上传</t-button>
+              <t-button size="small" theme="danger" variant="outline" @click="clearInvoice">删除</t-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 转账流水号（可选） -->
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;">转账流水号（可选）</div>
+          <t-input v-model="transferNo" placeholder="输入银行转账流水号（选填）" clearable />
+        </div>
+      </div>
+    </t-dialog>
+
+    <!-- 发票预览对话框 -->
+    <t-dialog
+      v-model:visible="invoiceViewVisible"
+      header="查看电子发票"
+      width="700px"
+      :footer="false"
+    >
+      <div style="text-align: center; padding: 16px 0;">
+        <img
+          v-if="invoiceViewUrl && !invoiceViewUrl.includes('.pdf')"
+          :src="invoiceViewUrl"
+          style="max-width: 100%; border-radius: 8px;"
+        />
+        <div v-else-if="invoiceViewUrl" style="padding: 32px;">
+          <p style="font-size: 15px; color: #333; margin-bottom: 16px;">📄 PDF 格式发票</p>
+          <t-button theme="primary" @click="() => window.open(invoiceViewUrl, '_blank')">在新窗口打开 PDF</t-button>
+        </div>
+        <div v-else style="color: #999;">暂无发票</div>
+      </div>
+    </t-dialog>
           </t-content>
       </t-layout>
     </t-layout>
@@ -357,9 +458,12 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260227"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -381,13 +485,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -433,6 +531,19 @@
         const rejectReason = ref('');
         const rejectTarget = ref(null);
 
+        // 标记已转账对话框状态
+        const transferVisible = ref(false);
+        const transferTarget = ref(null);
+        const transferNo = ref('');
+        const transferLoading = ref(false);
+        const invoiceFileId = ref('');
+        const invoicePreviewUrl = ref('');
+        const invoiceUploading = ref(false);
+
+        // 发票预览对话框
+        const invoiceViewVisible = ref(false);
+        const invoiceViewUrl = ref('');
+
         const statistics = ref({
           pending: 0,
           approved: 0,
@@ -446,13 +557,12 @@
           dateRange: []
         });
 
-        // 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝）
+        // 提现状态（0待转账/2已转账/3已驳回，不再使用 status=1 中间审核状态）
         const statusOptions = [
           { label: '全部', value: null },
-          { label: '待审核', value: 0 },
-          { label: '审核通过待转账', value: 1 },
+          { label: '待转账', value: 0 },
           { label: '已转账', value: 2 },
-          { label: '已拒绝', value: 3 }
+          { label: '已驳回', value: 3 }
         ];
 
         const pagination = ref({
@@ -528,52 +638,9 @@
           detailVisible.value = true;
         };
 
-        const handleApprove = async (row) => {
-          const userName = row.user_name || (row.user && row.user.real_name) || '该用户';
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认通过',
-            body: `确认通过 ${userName} 的提现申请吗？\n提现金额：¥${(row.amount / 100).toFixed(2)}`,
-            theme: 'success'
-          });
-
-          if (!confirmed) return;
-
-          try {
-            // 使用 withdrawAudit，status=1 表示审核通过
-            await AdminAPI.withdrawAudit(row.id, 1);
-            TDesign.MessagePlugin.success('审核通过');
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '操作失败');
-          }
-        };
-
         const handleReject = (row) => {
           rejectTarget.value = [row.id];
           rejectVisible.value = true;
-        };
-
-        const handleBatchApprove = async () => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '批量通过',
-            body: `确认通过选中的 ${selectedRowKeys.value.length} 条提现申请吗？`,
-            theme: 'success'
-          });
-
-          if (!confirmed) return;
-
-          try {
-            // 批量逐条调用 withdrawAudit，status=1 表示审核通过
-            const ids = selectedRowKeys.value.slice();
-            for (const wid of ids) {
-              await AdminAPI.withdrawAudit(wid, 1);
-            }
-            TDesign.MessagePlugin.success(`批量审核通过 ${ids.length} 条`);
-            selectedRowKeys.value = [];
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '操作失败');
-          }
         };
 
         const handleBatchReject = () => {
@@ -603,31 +670,121 @@
           }
         };
 
-        const handleMarkTransferred = async (row) => {
-          const userName = row.user_name || (row.user && row.user.real_name) || '该用户';
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '标记已转账',
-            body: `确认已向 ${userName} 转账 ¥${(row.amount / 100).toFixed(2)} 吗？`,
-            theme: 'warning'
+        // 打开"标记已转账"对话框
+        const handleMarkTransferred = (row) => {
+          transferTarget.value = row;
+          transferNo.value = '';
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+          transferVisible.value = true;
+        };
+
+        // 重置转账对话框
+        const resetTransferDialog = () => {
+          transferTarget.value = null;
+          transferNo.value = '';
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+          invoiceUploading.value = false;
+        };
+
+        // 打开发票文件选择器（支持 jpg/png/pdf）
+        const openInvoicePicker = () => {
+          if (invoiceUploading.value) return;
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/jpeg,image/png,image/jpg,application/pdf';
+          input.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+          document.body.appendChild(input);
+          input.addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (file) {
+              await doUploadInvoice(file);
+            }
+            document.body.removeChild(input);
           });
+          input.addEventListener('cancel', function () {
+            document.body.removeChild(input);
+          });
+          input.click();
+        };
 
-          if (!confirmed) return;
-
+        // 执行发票上传
+        const doUploadInvoice = async (file) => {
+          if (file.size > 10 * 1024 * 1024) {
+            TDesign.MessagePlugin.error('文件不能超过 10MB');
+            return;
+          }
           try {
-            await AdminAPI.markWithdrawTransferred(row.id);
-            TDesign.MessagePlugin.success('已标记为转账完成');
+            invoiceUploading.value = true;
+            TDesign.MessagePlugin.loading('上传中...', 0);
+            const wdId = transferTarget.value?.id || 'tmp';
+            const cloudPath = CloudStorageHelper.generateCloudPath('withdrawals/invoices', wdId, file.name);
+            const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('发票上传成功');
+            invoiceFileId.value = result.fileID;
+            // PDF 无法直接预览，用 fileID 作为占位
+            invoicePreviewUrl.value = result.tempFileURL || result.fileID;
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败：' + err.message);
+          } finally {
+            invoiceUploading.value = false;
+          }
+        };
+
+        // 清除已上传发票
+        const clearInvoice = () => {
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+        };
+
+        // 确认标记已转账
+        const confirmTransfer = async () => {
+          if (!invoiceFileId.value) {
+            TDesign.MessagePlugin.warning('请先上传电子发票');
+            return;
+          }
+          try {
+            transferLoading.value = true;
+            await AdminAPI.markWithdrawTransferred(
+              transferTarget.value.id,
+              invoiceFileId.value,
+              transferNo.value
+            );
+            TDesign.MessagePlugin.success('已标记为转账完成，电子发票已保存');
+            transferVisible.value = false;
+            resetTransferDialog();
             fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
+          } finally {
+            transferLoading.value = false;
           }
+        };
+
+        // 查看发票
+        const handleViewInvoice = async (row) => {
+          // 优先使用 invoice_url，若未缓存则通过 fileID 获取临时 URL
+          let url = row.invoice_url || '';
+          if (!url && row.invoice_file_id) {
+            url = await CloudStorageHelper.getSingleTempURL(row.invoice_file_id);
+          }
+          if (!url) {
+            TDesign.MessagePlugin.warning('暂无发票');
+            return;
+          }
+          invoiceViewUrl.value = url;
+          invoiceViewVisible.value = true;
         };
 
         const handleExportTransferList = async () => {
           try {
-            // 从当前已加载的列表数据中导出已审核通过（待打款）的记录
-            const approvedList = tableData.value.filter(r => r.status === 1);
+            // 导出待转账记录（status=0 和兼容旧 status=1）
+            const approvedList = tableData.value.filter(r => r.status === 0 || r.status === 1);
             if (approvedList.length === 0) {
-              TDesign.MessagePlugin.warning('当前没有待打款记录，请先筛选"审核通过待转账"状态');
+              TDesign.MessagePlugin.warning('当前没有待转账记录');
               return;
             }
             const csv = convertToCSV(approvedList);
@@ -648,7 +805,7 @@
             item.withdraw_no,
             item.user_name,
             item.user_phone,
-            (item.amount / 100).toFixed(2),
+            Number(item.amount).toFixed(2),
             item.bank_name,
             item.bank_account_number,
             item.created_at
@@ -664,7 +821,7 @@
         });
 
         return {
-          activeMenuKey: 'withdraw-audit',adminInfo,
+          activeMenuKey: 'withdraw-audit', adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -679,18 +836,32 @@
           statusOptions,
           pagination,
           columns,
+          // 转账对话框
+          transferVisible,
+          transferTarget,
+          transferNo,
+          transferLoading,
+          invoiceFileId,
+          invoicePreviewUrl,
+          invoiceUploading,
+          invoiceViewVisible,
+          invoiceViewUrl,
           handleSearch,
           handleReset,
           handleSelectChange,
           handlePageChange,
           handleViewDetail,
-          handleApprove,
           handleReject,
-          handleBatchApprove,
           handleBatchReject,
           confirmReject,
           handleMarkTransferred,
-          handleExportTransferList
+          resetTransferDialog,
+          openInvoicePicker,
+          clearInvoice,
+          confirmTransfer,
+          handleViewInvoice,
+          handleExportTransferList,
+          window
         };
       }
     });

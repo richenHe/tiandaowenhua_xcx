@@ -22,7 +22,7 @@
             <view class="t-card__body">
               <view class="course-title">{{ courseInfo.name || '课程名称' }}</view>
               <view class="course-meta">
-                <text class="course-price">¥{{ courseInfo.price }}</text>
+                <text class="course-price">¥{{ formatPrice(courseInfo.price) }}</text>
                 <view class="t-badge--standalone t-badge--theme-success">
                   已有{{ courseInfo.soldCount }}人购买
                 </view>
@@ -88,7 +88,7 @@
 
     <!-- 固定底部 -->
     <view class="fixed-bottom">
-      <text class="bottom-price">¥{{ courseInfo.price }}</text>
+      <text class="bottom-price">¥{{ formatPrice(courseInfo.price) }}</text>
       <button
         class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
         @click="handleBuy"
@@ -104,6 +104,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api';
+import { formatPrice } from '@/utils';
 
 // 当前选中的标签页
 const activeTabIndex = ref(0);

@@ -2,7 +2,7 @@
  * 客户端接口：兑换记录列表
  * Action: getExchangeRecords
  */
-const { db, response, executePaginatedQuery, storage } = require('common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -40,26 +40,12 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化记录列表并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((result.list || []).map(async record => {
-      let goodsImageUrl = record.goods_image || '';
-      if (record.goods_image) {
-        try {
-          const tempResult = await storage.getTempFileURL(record.goods_image);
-          if (tempResult.success && tempResult.tempFileURL) {
-            goodsImageUrl = tempResult.tempFileURL;
-          } else {
-            console.warn(`[getExchangeRecords] 转换临时URL失败，fileID: ${record.goods_image}, 错误: ${tempResult.message}`);
-          }
-        } catch (error) {
-          console.warn('[getExchangeRecords] 转换临时URL失败:', record.goods_image, error.message);
-        }
-      }
-
+    // 🔥 格式化记录列表，cloud:// fileID 直接转换为 CDN HTTPS URL
+    const list = (result.list || []).map(record => {
       return {
         exchange_no: record.exchange_no,
         goods_name: record.goods_name,
-        goods_image: goodsImageUrl,
+        goods_image: cloudFileIDToURL(record.goods_image || ''),
         quantity: record.quantity,
         merit_points_used: record.merit_points_used,
         cash_points_used: record.cash_points_used,
@@ -68,7 +54,7 @@ module.exports = async (event, context) => {
         status_name: getExchangeStatusName(record.status),
         created_at: record.created_at
       };
-    }));
+    });
 
     console.log(`[getExchangeRecords] 查询成功，共 ${result.total} 条`);
 

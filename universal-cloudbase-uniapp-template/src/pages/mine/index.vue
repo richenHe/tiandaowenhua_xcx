@@ -25,8 +25,8 @@
           </view>
           <!-- 积分显示 -->
           <view class="user-points">
-            <text class="points-item">💎 功德分: {{ userPoints.meritPoints }}</text>
-            <text class="points-item">💰 积分: {{ userPoints.cashPointsAvailable }}</text>
+            <text class="points-item">💎 功德分: {{ formatPoints(userPoints.meritPoints) }}</text>
+            <text class="points-item">💰 积分: {{ formatPoints(userPoints.cashPointsAvailable) }}</text>
           </view>
         </view>
         <text class="arrow-icon">›</text>
@@ -101,7 +101,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { UserApi, SystemApi } from '@/api';
-import StorageApi from '@/api/modules/storage';
+import { formatPoints } from '@/utils';
 
 // 获取成长等级显示（根据活动次数）
 // 规则：5绿叶=1花朵，5花朵=1果实，5果实=1大树
@@ -154,24 +154,14 @@ const loadUserProfile = async () => {
     uni.showLoading({ title: '加载中...' })
     const profile = await UserApi.getProfile();
 
-    // 获取头像和背景图片临时URL
-    let avatarUrl = '';
-    let backgroundImageUrl = '';
-    
-    if (profile.avatar) {
-      avatarUrl = await StorageApi.getSingleTempFileURL(profile.avatar);
-    }
-    
-    if (profile.background_image) {
-      backgroundImageUrl = await StorageApi.getSingleTempFileURL(profile.background_image);
-    }
+    // 云函数已在服务端完成 cloud:// → HTTPS 转换，直接使用返回的 URL
 
     // 更新用户信息
     userInfo.value = {
       name: profile.real_name || '未设置',
       phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '',
-      avatar: avatarUrl,
-      backgroundImage: backgroundImageUrl,
+      avatar: profile.avatar || '',
+      backgroundImage: profile.background_image || '',
       levelBadge: getLevelBadge(profile.ambassador_level),
       isAmbassador: profile.ambassador_level > 0,
       ambassadorLevel: getLevelName(profile.ambassador_level),
@@ -248,28 +238,28 @@ const loadStats = async () => {
   }
 };
 
-// 获取等级徽章
+// 获取等级徽章（与大使等级页保持一致）
 const getLevelBadge = (level: number): string => {
   const badges: Record<number, string> = {
     0: '🌿',
-    1: '🥉',
-    2: '🥈',
-    3: '🥇',
-    4: '👑'
+    1: '🥚',
+    2: '🐦',
+    3: '🦅',
+    4: '🦚'
   };
   return badges[level] || '🌿';
 };
 
-// 获取等级名称
+// 获取等级名称（与大使等级页保持一致）
 const getLevelName = (level: number): string => {
   const names: Record<number, string> = {
-    0: '',
-    1: '初级大使',
-    2: '中级大使',
-    3: '高级大使',
-    4: '特级大使'
+    0: '普通用户',
+    1: '准青鸾大使',
+    2: '青鸾大使',
+    3: '鸿鹄大使',
+    4: '金凤大使'
   };
-  return names[level] || '';
+  return names[level] || '普通用户';
 };
 
 // 页面加载时获取数据
@@ -299,7 +289,7 @@ const settingsMenu = computed(() => [
     type: 'ambassador',
     icon: '🎖️',
     label: '传播大使',
-    badge: userInfo.value.ambassadorLevel || '准青鸾大使',
+    badge: userInfo.value.ambassadorLevel,
     badgeTheme: 'warning'
   },
   {

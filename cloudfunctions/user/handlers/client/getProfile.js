@@ -2,7 +2,7 @@
  * 客户端接口：获取个人资料
  * Action: client:getProfile
  */
-const { response, db, storage } = require('common'); // 引入 storage
+const { response, db, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -33,8 +33,8 @@ module.exports = async (event, context) => {
       // 添加推荐人信息
       referee_name: refereeName,
       referee_level: refereeLevel,
-      // 转换性别为字符串
-      gender: user.gender === 1 ? '男' : user.gender === 2 ? '女' : '',
+      // 返回数字，与数据库规范一致（0=女/1=男）；兼容历史数据 gender=2（旧版误存的女性）
+      gender: user.gender === 1 ? 1 : (user.gender === 0 || user.gender === 2) ? 0 : null,
       // 解析出生八字 JSON
       birthday: user.birth_bazi ? (() => {
         try {
@@ -48,44 +48,19 @@ module.exports = async (event, context) => {
       })() : ''
     };
 
-    // 🔥 转换云存储 fileID 为临时 URL
-    if (profileData.avatar) {
-      try {
-        const result = await storage.getTempFileURL(profileData.avatar);
-        if (result.success && result.tempFileURL) {
-          profileData.avatar = result.tempFileURL;
-        } else {
-          console.warn(`[getProfile] 转换avatar临时URL失败，fileID: ${profileData.avatar}, 错误: ${result.message}`);
-        }
-      } catch (error) {
-        console.warn('[getProfile] 转换avatar临时URL失败:', profileData.avatar, error.message);
-      }
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用，避免认证问题）
+    // 同时保留原始 fileID 供前端更新时使用
+    if (profileData.avatar && profileData.avatar.startsWith('cloud://')) {
+      profileData.avatar_file_id = profileData.avatar;
+      profileData.avatar = cloudFileIDToURL(profileData.avatar);
     }
-    
-    if (profileData.background_image) {
-      try {
-        const result = await storage.getTempFileURL(profileData.background_image);
-        if (result.success && result.tempFileURL) {
-          profileData.background_image = result.tempFileURL;
-        } else {
-          console.warn(`[getProfile] 转换background_image临时URL失败，fileID: ${profileData.background_image}, 错误: ${result.message}`);
-        }
-      } catch (error) {
-        console.warn('[getProfile] 转换background_image临时URL失败:', profileData.background_image, error.message);
-      }
+    if (profileData.background_image && profileData.background_image.startsWith('cloud://')) {
+      profileData.background_image_file_id = profileData.background_image;
+      profileData.background_image = cloudFileIDToURL(profileData.background_image);
     }
-    
-    if (profileData.qrcode_url) {
-      try {
-        const result = await storage.getTempFileURL(profileData.qrcode_url);
-        if (result.success && result.tempFileURL) {
-          profileData.qrcode_url = result.tempFileURL;
-        } else {
-          console.warn(`[getProfile] 转换qrcode_url临时URL失败，fileID: ${profileData.qrcode_url}, 错误: ${result.message}`);
-        }
-      } catch (error) {
-        console.warn('[getProfile] 转换qrcode_url临时URL失败:', profileData.qrcode_url, error.message);
-      }
+    if (profileData.qrcode_url && profileData.qrcode_url.startsWith('cloud://')) {
+      profileData.qrcode_url_file_id = profileData.qrcode_url;
+      profileData.qrcode_url = cloudFileIDToURL(profileData.qrcode_url);
     }
 
     // user 已经由 checkClientAuth 查询并返回

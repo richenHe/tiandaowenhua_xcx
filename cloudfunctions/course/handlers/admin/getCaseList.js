@@ -1,7 +1,7 @@
 /**
  * 获取案例列表（管理端接口）
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { category, status, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -49,10 +49,19 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    return response.success({
-      ...result,
-      list: result.list || []
+    // 🔥 转换云存储字段 cloud:// fileID 为 CDN HTTPS URL
+    const list = (result.list || []).map(item => {
+      let images = [];
+      try { images = item.images ? JSON.parse(item.images) : []; } catch (e) {}
+      return {
+        ...item,
+        student_avatar: cloudFileIDToURL(item.student_avatar || ''),
+        video_url: cloudFileIDToURL(item.video_url || ''),
+        images: images.map(img => cloudFileIDToURL(img))
+      };
     });
+
+    return response.success({ ...result, list });
 
   } catch (error) {
     console.error('[Course/getCaseList] 查询失败:', error);

@@ -99,13 +99,14 @@
       <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
         <template #status="{ row }">
           <t-tag v-if="row.status === 1" theme="success">可预约</t-tag>
-          <t-tag v-else-if="row.status === 2" theme="warning">已满额</t-tag>
-          <t-tag v-else theme="default">已结束</t-tag>
+          <t-tag v-else-if="row.status === 2" theme="default">已结束</t-tag>
+          <t-tag v-else theme="warning">取消</t-tag>
         </template>
         <template #operation="{ row }">
           <t-space size="small">
             <t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
-            <t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button>
+            <t-button v-if="row.status !== 0" theme="warning" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
+            <t-button v-else theme="default" size="small" variant="text" disabled>已取消</t-button>
           </t-space>
         </template>
       </t-table>
@@ -118,13 +119,13 @@
           <t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程" />
         </t-form-item>
         <t-form-item label="上课日期" name="classDate">
-          <t-date-picker v-model="formData.classDate" clearable style="width: 100%;" />
+          <t-date-picker v-model="formData.classDate" clearable style="width: 100%;" placeholder="开课日期" />
         </t-form-item>
-        <t-form-item label="开始时间" name="startTime">
-          <t-time-picker v-model="formData.startTime" clearable style="width: 100%;" />
+        <t-form-item label="结课日期" name="classEndDate">
+          <t-date-picker v-model="formData.classEndDate" clearable style="width: 100%;" placeholder="结课日期（多天课程时填写）" />
         </t-form-item>
-        <t-form-item label="结束时间" name="endTime">
-          <t-time-picker v-model="formData.endTime" clearable style="width: 100%;" />
+        <t-form-item label="上课时段" name="classTime">
+          <t-input v-model="formData.classTime" placeholder="如 09:00-17:00" />
         </t-form-item>
         <t-form-item label="上课地点" name="classLocation">
           <t-input v-model="formData.classLocation" placeholder="请输入上课地点" />
@@ -144,9 +145,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -168,13 +169,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -220,15 +215,16 @@
         const courseOptions = ref([]);
         const statusOptions = [
           { label: '可预约', value: 1 },
-          { label: '已满额', value: 2 },
-          { label: '已结束', value: 0 }
+          { label: '已结束', value: 2 },
+          { label: '取消', value: 0 }
         ];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         const columns = [
           { colKey: 'id', title: 'ID', width: 80 },
           { colKey: 'course_name', title: '课程名称', width: 200 },
           { colKey: 'class_date', title: '上课日期', width: 120 },
-          { colKey: 'class_time', title: '上课时间', width: 120 },
+          { colKey: 'class_end_date', title: '结课日期', width: 120 },
+          { colKey: 'class_time', title: '上课时段', width: 120 },
           { colKey: 'class_location', title: '上课地点', ellipsis: true },
           { colKey: 'booked_quota', title: '已预约', width: 100 },
           { colKey: 'total_quota', title: '总名额', width: 100 },
@@ -239,8 +235,6 @@
         const rules = {
           courseId: [{ required: true, message: '请选择课程', type: 'error' }],
           classDate: [{ required: true, message: '请选择上课日期', type: 'error' }],
-          startTime: [{ required: true, message: '请选择开始时间', type: 'error' }],
-          endTime: [{ required: true, message: '请选择结束时间', type: 'error' }],
           classLocation: [{ required: true, message: '请输入上课地点', type: 'error' }],
           totalQuota: [{ required: true, message: '请输入总名额', type: 'error' }]
         };
@@ -271,18 +265,15 @@
         const handleSearch = () => { pagination.value.current = 1; fetchData(); };
         const handleReset = () => { filters.value = { courseId: null, dateRange: [], status: null }; handleSearch(); };
         const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
-        const handleAdd = () => { formMode.value = 'add'; formData.value = { totalQuota: 30 }; formVisible.value = true; };
+        const handleAdd = () => { formMode.value = 'add'; formData.value = { totalQuota: 30, classTime: '' }; formVisible.value = true; };
         const handleEdit = (row) => {
           formMode.value = 'edit';
-          // DB 返回 snake_case，映射为 camelCase 供表单使用
-          // class_time 格式如 "09:00-17:00"，拆分为 startTime/endTime
-          const timeParts = (row.class_time || '').split('-');
           formData.value = {
             id: row.id,
             courseId: row.course_id,
             classDate: row.class_date,
-            startTime: timeParts[0] || '',
-            endTime: timeParts[1] || '',
+            classEndDate: row.class_end_date || '',
+            classTime: row.class_time || '',
             classLocation: row.class_location,
             totalQuota: row.total_quota,
             remark: row.remark,
@@ -291,16 +282,22 @@
           };
           formVisible.value = true;
         };
-        const handleDelete = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({ header: '确认删除', body: '确认删除该排期吗？', theme: 'warning' });
-          if (!confirmed) return;
-          try {
-            await AdminAPI.deleteSchedule({ scheduleId: row.id });
-            TDesign.MessagePlugin.success('删除成功');
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '删除失败');
-          }
+        const handleCancel = (row) => {
+          TDesign.DialogPlugin.confirm({
+            header: '取消排期',
+            body: `确定要取消「${row.course_name || '该排期'}」（${row.class_date}）吗？取消后学员将无法预约。`,
+            confirmBtn: { content: '确定取消', theme: 'danger' },
+            cancelBtn: '我再想想',
+            onConfirm: async ({ e, trigger }) => {
+              try {
+                await AdminAPI.updateSchedule({ id: row.id, status: 0 });
+                TDesign.MessagePlugin.success('已取消');
+                fetchData();
+              } catch (error) {
+                TDesign.MessagePlugin.error(error.message || '操作失败');
+              }
+            }
+          });
         };
         const handleSubmit = async () => {
           try {
@@ -324,7 +321,7 @@
         return {
           activeMenuKey: 'schedule-list',adminInfo,
           handleLogout,
-          handleMenuChange, loading, tableData, formVisible, formMode, formData, filters, courseOptions, statusOptions, pagination, columns, rules, handleSearch, handleReset, handlePageChange, handleAdd, handleEdit, handleDelete, handleSubmit };
+          handleMenuChange, loading, tableData, formVisible, formMode, formData, filters, courseOptions, statusOptions, pagination, columns, rules, handleSearch, handleReset, handlePageChange, handleAdd, handleEdit, handleCancel, handleSubmit };
       }
     }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
   </script>

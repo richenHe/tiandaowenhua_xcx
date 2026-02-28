@@ -1,7 +1,7 @@
 /**
  * 获取资料列表（管理端接口）
  */
-const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { category, status, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -50,37 +50,12 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 🔥 转换云存储 fileID 为临时 URL（管理端也需要显示）
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用，避免认证问题）
     const list = result.list || [];
-    if (list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(item => {
-        if (item.image_url) fileIDs.push(item.image_url);
-        if (item.video_url) fileIDs.push(item.video_url);
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
-      }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(item => {
-        if (item.image_url && urlMap[item.image_url]) {
-          item.image_url = urlMap[item.image_url];
-        }
-        if (item.video_url && urlMap[item.video_url]) {
-          item.video_url = urlMap[item.video_url];
-        }
-      });
-    }
+    list.forEach(item => {
+      if (item.image_url) item.image_url = cloudFileIDToURL(item.image_url);
+      if (item.video_url) item.video_url = cloudFileIDToURL(item.video_url);
+    });
 
     return response.success({
       ...result,

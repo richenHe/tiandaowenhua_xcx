@@ -284,10 +284,10 @@
   <!-- CloudBase SDK（本地）-->
   <script src="../../assets/libs/tcb.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
   <!-- API -->
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -309,13 +309,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换

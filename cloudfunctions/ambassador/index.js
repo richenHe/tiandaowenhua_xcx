@@ -1,13 +1,17 @@
 /**
  * 大使模块云函数入口
+ *
+ * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  */
+const cloud = require('wx-server-sdk');
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
 const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase
+// 初始化 CloudBase（business-logic 使用）
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
 
 // ⚠️ 必须初始化 business-logic
 business.init(app);
@@ -27,7 +31,9 @@ const clientHandlers = {
   getContractDetail: require('./handlers/client/getContractDetail'),
   getActivityRecords: require('./handlers/client/getActivityRecords'),
   getActivityStats: require('./handlers/client/getActivityStats'),
-  getLevelSystem: require('./handlers/client/getLevelSystem')
+  getLevelSystem: require('./handlers/client/getLevelSystem'),
+  getAvailableActivities: require('./handlers/client/getAvailableActivities'),
+  applyForActivity: require('./handlers/client/applyForActivity')
 };
 
 const adminHandlers = {
@@ -53,7 +59,19 @@ const adminHandlers = {
   getSignatureList: require('./handlers/admin/getSignatureList'),
   getExpiringContracts: require('./handlers/admin/getExpiringContracts'),
   renewContract: require('./handlers/admin/renewContract'),
-  terminateContract: require('./handlers/admin/terminateContract')
+  terminateContract: require('./handlers/admin/terminateContract'),
+  getContractTemplateByLevel: require('./handlers/admin/getContractTemplateByLevel'),
+  createAmbassadorActivity: require('./handlers/admin/createAmbassadorActivity'),
+  getAmbassadorActivityList: require('./handlers/admin/getAmbassadorActivityList'),
+  getAmbassadorActivityDetail: require('./handlers/admin/getAmbassadorActivityDetail'),
+  getActivityRegistrants: require('./handlers/admin/getActivityRegistrants'),
+  distributeActivityMeritPoints: require('./handlers/admin/distributeActivityMeritPoints'),
+  deleteAmbassadorActivity: require('./handlers/admin/deleteAmbassadorActivity'),
+  // 岗位类型 CRUD
+  getPositionTypeList: require('./handlers/admin/getPositionTypeList'),
+  createPositionType: require('./handlers/admin/createPositionType'),
+  updatePositionType: require('./handlers/admin/updatePositionType'),
+  deletePositionType: require('./handlers/admin/deletePositionType')
 };
 
 // 路由配置
@@ -105,20 +123,8 @@ exports.main = async (event, context) => {
 
   const { action, test_openid } = requestData;
   
-  // 获取用户信息
-  let OPENID = test_openid;
-  
-  // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
-  if (!OPENID) {
-    const userInfo = auth.getUserInfo();
-    if (userInfo && userInfo.openId) {
-      OPENID = userInfo.openId;
-    } else if (userInfo && userInfo.uid) {
-      OPENID = userInfo.uid;
-    } else if (userInfo && userInfo.customUserId) {
-      OPENID = userInfo.customUserId;
-    }
-  }
+  // 获取用户标识：wx.cloud.callFunction() 调用时，通过 wx-server-sdk 获取微信真实 openid
+  let OPENID = test_openid || cloud.getWXContext().OPENID;
 
   console.log(`[${action}] 收到请求:`, { openid: OPENID?.slice(-6) || 'undefined' });
 

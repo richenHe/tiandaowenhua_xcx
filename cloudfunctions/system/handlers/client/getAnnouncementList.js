@@ -6,7 +6,7 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10，最大50）
  */
-const { db, response, executePaginatedQuery, storage } = require('common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { page = 1, page_size = 10, pageSize } = event;
@@ -29,28 +29,12 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 处理数据并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((result.list || []).map(async a => {
-      let coverImageUrl = a.cover_image || '';
-      if (a.cover_image) {
-        try {
-          const tempResult = await storage.getTempFileURL(a.cover_image);
-          if (tempResult.success && tempResult.tempFileURL) {
-            coverImageUrl = tempResult.tempFileURL;
-          } else {
-            console.warn(`[getAnnouncementList] 转换临时URL失败，fileID: ${a.cover_image}, 错误: ${tempResult.message}`);
-          }
-        } catch (error) {
-          console.warn('[getAnnouncementList] 转换临时URL失败:', a.cover_image, error.message);
-        }
-      }
-
-      return {
-        ...a,
-        cover_image: coverImageUrl,
-        category_text: getCategoryText(a.category),
-        target_type_text: getTargetTypeText(a.target_type)
-      };
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL
+    const list = (result.list || []).map(a => ({
+      ...a,
+      cover_image: cloudFileIDToURL(a.cover_image || ''),
+      category_text: getCategoryText(a.category),
+      target_type_text: getTargetTypeText(a.target_type)
     }));
 
     return response.success({

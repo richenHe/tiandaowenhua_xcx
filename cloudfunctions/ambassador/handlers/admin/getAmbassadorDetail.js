@@ -3,7 +3,7 @@
  * Action: getAmbassadorDetail
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
@@ -62,16 +62,53 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
+    // 查询合约信息（最新有效合约）
+    const { data: contract } = await db
+      .from('contract_signatures')
+      .select('id, contract_name, sign_time, contract_end, status')
+      .eq('user_id', user.id)
+      .eq('status', 1)
+      .order('sign_time', { ascending: false })
+      .limit(1)
+      .single()
+      .catch(() => ({ data: null }));
+
     console.log('[getAmbassadorDetail] 查询成功');
+    // 🔥 转换用户头像等云存储字段 cloud:// fileID 为 CDN HTTPS URL
+    if (user.avatar) user.avatar = cloudFileIDToURL(user.avatar);
+    if (user.background_image) user.background_image = cloudFileIDToURL(user.background_image);
+    if (user.qrcode_url) user.qrcode_url = cloudFileIDToURL(user.qrcode_url);
+
+    // 展平返回结构，直接将所有字段合并到顶层，方便前端直接访问
     return response.success({
-      user,
+      // 用户基础信息（展平）
+      ...user,
+      // 团队统计数据（映射到前端期望的字段名）
+      team_count: refereeCount || 0,
+      direct_referrals: refereeCount || 0,
+      order_count: totalOrders || 0,
+      total_sales: 0,
+      total_earnings: (user.cash_points_available || 0) + (user.cash_points_pending || 0),
+      // 积分信息（冗余确保前端访问）
+      cash_points_available: user.cash_points_available || 0,
+      cash_points_frozen: user.cash_points_frozen || 0,
+      merit_points: user.merit_points || 0,
+      // 合约信息
+      contract: contract ? {
+        type_name: contract.contract_name || '大使协议',
+        signed_at: contract.sign_time,
+        expires_at: contract.contract_end,
+        status: contract.status
+      } : null,
+      // 推荐人列表
+      referees: referees || [],
+      // 统计对象（保留向后兼容）
       statistics: {
         refereeCount: refereeCount || 0,
         totalOrders: totalOrders || 0,
         meritPointsCount: meritPointsCount || 0,
         cashPointsCount: cashPointsCount || 0
-      },
-      referees: referees || []
+      }
     }, '获取大使详情成功');
 
   } catch (error) {

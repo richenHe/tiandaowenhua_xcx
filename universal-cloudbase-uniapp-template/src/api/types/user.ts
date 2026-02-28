@@ -46,12 +46,18 @@ export interface UserProfile {
   referee_confirmed_at: string | null
   /** 创建时间 */
   created_at: string
-  /** 性别 */
-  gender?: string
+  /** 性别：0=女 / 1=男 / null=未设置 */
+  gender?: number | null
   /** 行业 */
   industry?: string
   /** 出生八字（格式：年-月-日-时） */
   birthday?: string
+  /** 收款人姓名（银行卡持有人，持久化保存） */
+  bank_account_name?: string | null
+  /** 开户行名称 */
+  bank_name?: string | null
+  /** 银行卡号 */
+  bank_account_number?: string | null
 }
 
 /**
@@ -90,8 +96,8 @@ export interface UpdateProfileParams {
   backgroundImage?: string
   /** 微信昵称 */
   nickname?: string
-  /** 性别 */
-  gender?: string
+  /** 性别：0=女 / 1=男（与数据库 users.gender 一致） */
+  gender?: number
   /** 行业 */
   industry?: string
   /** 出生八字（格式：年-月-日-时） */
@@ -205,6 +211,7 @@ export interface CashPointsInfo {
 
 /**
  * 积分明细记录
+ * type 枚举：1=积分冻结 / 2=积分解冻 / 3=提现申请 / 4=提现退回 / 5=提现已打款
  */
 export interface CashPointsRecord {
   id: number
@@ -212,33 +219,39 @@ export interface CashPointsRecord {
   change_amount: number
   /** 变动后余额 */
   balance_after: number
-  /** 变动类型 */
-  change_type: string
-  /** 关联ID */
-  related_id: number | null
+  /** 变动类型（数字）：1-5 */
+  change_type: number | string
+  /** 关联ID（订单号或提现单号） */
+  related_id: number | string | null
+  /** 提现单号（type=3/4/5 时有值） */
+  withdraw_no?: string | null
   /** 备注 */
   remark: string
+  /** 电子发票 URL（type=5 已打款时有值） */
+  invoice_url?: string | null
   /** 创建时间 */
   created_at: string
 }
 
 /**
- * 申请提现请求参数
+ * 申请提现请求参数（银行汇款）
  */
 export interface ApplyWithdrawParams {
   /** 提现金额 */
   amount: number
-  /** 提现方式 */
-  withdrawType: 'wechat' | 'alipay'
-  /** 账户信息 */
-  accountInfo: {
-    name: string
-    account: string
-  }
+  /** 收款人姓名（银行卡持有人） */
+  bankAccountName: string
+  /** 开户行名称 */
+  bankName: string
+  /** 银行卡号 */
+  bankAccountNumber: string
+  /** 是否保存收款信息到个人资料（默认 false） */
+  saveAccountInfo?: boolean
 }
 
 /**
  * 提现记录
+ * status 枚举：0=待审核 / 1=审核通过待转账 / 2=已转账 / 3=已拒绝
  */
 export interface WithdrawRecord {
   id: number
@@ -246,18 +259,32 @@ export interface WithdrawRecord {
   withdraw_no: string
   /** 提现金额 */
   amount: number
-  /** 提现方式 */
-  withdraw_type: string
-  /** 账户信息 */
-  account_info: string
+  /** 账户类型：3=银行汇款 */
+  account_type?: number
+  /** 收款人姓名 */
+  bank_account_name?: string
+  /** 开户行 */
+  bank_name?: string
+  /** 银行卡号 */
+  bank_account_number?: string
   /** 状态 */
   status: number
   /** 审核备注 */
   audit_remark: string | null
-  /** 创建时间 */
-  created_at: string
+  /** 驳回原因 */
+  reject_reason?: string | null
+  /** 申请时间 */
+  apply_time?: string
   /** 审核时间 */
-  audited_at: string | null
+  audit_time?: string | null
+  /** 转账时间 */
+  transfer_time?: string | null
+  /** 电子发票 CDN URL（status=2 且管理员已上传时有值） */
+  invoice_url: string | null
+  /** 创建时间（兼容旧字段，指向 apply_time） */
+  created_at?: string
+  /** 审核时间（旧字段兼容） */
+  audited_at?: string | null
 }
 
 /**

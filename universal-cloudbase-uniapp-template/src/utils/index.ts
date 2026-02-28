@@ -1,4 +1,30 @@
 /**
+ * 格式化积分/功德分为整数（无小数点）
+ * 统一处理 string/number/null/undefined 输入，始终返回整数字符串
+ * @param value 原始积分值
+ * @returns 整数字符串，无效值返回 '0'
+ */
+export function formatPoints(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '0';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  return String(Math.round(num));
+}
+
+/**
+ * 格式化价格/金额为整数（无小数点）
+ * 处理 MySQL DECIMAL 返回的字符串（如 "16888.00"）和数字类型
+ * @param value 原始价格值
+ * @returns 整数字符串，无效值返回 '0'
+ */
+export function formatPrice(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '0';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  return String(Math.round(num));
+}
+
+/**
  * 格式化日期
  * @param date 日期对象或时间戳
  * @param format 格式化字符串，默认 'YYYY-MM-DD HH:mm:ss'

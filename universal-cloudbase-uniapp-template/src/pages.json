@@ -282,6 +282,14 @@
 					}
 				},
 				{
+					"path": "signature-pad/index",
+					"style": {
+						"navigationBarTitleText": "手写签名",
+						"navigationStyle": "custom",
+						"disableScroll": true
+					}
+				},
+				{
 					"path": "withdraw/index",
 					"style": {
 						"navigationBarTitleText": "申请提现",

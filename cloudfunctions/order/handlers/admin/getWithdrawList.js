@@ -60,33 +60,31 @@ module.exports = async (event, context) => {
     // 获取所有审核管理员ID
     const adminIds = [...new Set((result.list || []).map(w => w.audit_admin_id).filter(id => id))];
 
-    // 查询审核管理员信息
+    // 查询审核管理员信息（正确表名为 admin_users）
     let adminMap = {};
     if (adminIds.length > 0) {
       const { data: admins } = await db
-        .from('admins')
+        .from('admin_users')
         .select('id, username, real_name')
         .in('id', adminIds);
 
       if (admins) {
-        admins.forEach(admin => {
-          adminMap[admin.id] = admin;
+        admins.forEach(a => {
+          adminMap[a.id] = a;
         });
       }
     }
 
-    // 处理数据
+    // 处理数据：展平 account_info、映射字段名
     const list = (result.list || []).map(withdrawal => {
       let accountInfo = null;
 
       // 安全解析 account_info 字段
       if (withdrawal.account_info) {
         try {
-          if (typeof withdrawal.account_info === 'string') {
-            accountInfo = JSON.parse(withdrawal.account_info);
-          } else {
-            accountInfo = withdrawal.account_info;
-          }
+          accountInfo = typeof withdrawal.account_info === 'string'
+            ? JSON.parse(withdrawal.account_info)
+            : withdrawal.account_info;
         } catch (e) {
           console.error('[getWithdrawList] 解析 account_info 失败:', e);
         }
@@ -94,7 +92,18 @@ module.exports = async (event, context) => {
 
       return {
         ...withdrawal,
+        // 用户手机号（从 JOIN 的 user 对象取）
+        user_phone: withdrawal.user?.phone || '',
+        // 银行卡信息（展平 account_info 到顶层，方便前端直接访问）
+        bank_name: accountInfo?.bank_name || accountInfo?.bankName || '',
+        bank_account_name: accountInfo?.account_name || accountInfo?.realName || accountInfo?.bank_account_name || '',
+        bank_account_number: accountInfo?.account_number || accountInfo?.cardNumber || accountInfo?.bank_account_number || '',
+        wechat_account: accountInfo?.wechat || accountInfo?.account || '',
+        alipay_account: accountInfo?.alipay || accountInfo?.account || '',
         account_info: accountInfo,
+        // 时间字段别名（前端用 approved_at 和 transferred_at）
+        approved_at: withdrawal.audit_time || null,
+        transferred_at: withdrawal.transfer_time || null,
         status_text: getStatusText(withdrawal.status),
         account_type_text: getAccountTypeText(withdrawal.account_type),
         audit_admin: withdrawal.audit_admin_id ? adminMap[withdrawal.audit_admin_id] : null

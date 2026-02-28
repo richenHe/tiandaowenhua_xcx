@@ -21,11 +21,6 @@ export const init = (config: any = {}) => {
   const appConfig = {
     env: config.env || ENV_ID,
     timeout: config.timeout || 15000,
-    appSign: 'your-app-sign',//凭证描述
-    appSecret: {
-        appAccessKeyId: 1,//凭证版本
-        appAccessKey: 'your-app-secret'//凭证
-    }
   };
 
   return cloudbase.init(appConfig);
@@ -93,30 +88,12 @@ export const signInWithPhoneAuth = async (phoneCode: string) => {
 };
 
 /**
- * 【新增】微信小程序 OpenID 静默登录
- * 注意：此方法仅在微信小程序环境下有效
+ * 微信小程序 OpenID 静默登录（已废弃）
+ * @deprecated 已切换为 wx.cloud.callFunction() 方式，无需此认证步骤
+ * 微信运行时会自动将真实 openid 注入到云函数 context.OPENID，绕过 CloudBase Auth 体系
  */
 export const signInWithOpenId = async () => {
-  if (!checkEnvironment()) {
-    throw new Error('环境ID未配置');
-  }
-
-  // 检查是否在微信小程序环境
-  // #ifdef MP-WEIXIN
-  try {
-    const loginState = await auth.signInWithOpenId();
-    return loginState;
-  } catch (error: any) {
-    if (error.code === 'INVALID_PARAM' || error.message?.includes('小程序')) {
-      throw new Error('请先在云开发控制台【环境配置】->【小程序认证】中完成小程序认证配置');
-    }
-    throw error;
-  }
-  // #endif
-  
-  // #ifndef MP-WEIXIN
-  throw new Error('微信 OpenID 登录仅支持微信小程序环境');
-  // #endif
+  console.warn('[signInWithOpenId] 已废弃：请使用 wx.cloud.callFunction() 替代 app.callFunction()');
 };
 
 /**

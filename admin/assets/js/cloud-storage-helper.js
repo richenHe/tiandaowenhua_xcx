@@ -48,37 +48,38 @@ async function waitForAuth() {
  * @returns {Promise<{fileID: string, tempFileURL: string}>}
  */
 async function uploadSingleFile(file, cloudPath) {
+  // 🔥 等待认证完成
+  await waitForAuth();
+
+  // 上传文件（单独 try-catch，失败直接抛出）
+  let fileID;
   try {
     console.log('📤 开始上传文件:', cloudPath);
-    
-    // 🔥 等待认证完成
-    await waitForAuth();
-    
-    // 上传文件到云存储
     const uploadResult = await window.CloudStorage.uploadFile({
       cloudPath: cloudPath,
       filePath: file
     });
-    
-    const fileID = uploadResult.fileID;
+    fileID = uploadResult.fileID;
     console.log('✅ 文件上传成功，fileID:', fileID);
-    
-    // 获取临时 URL（用于显示）
-    const tempURLResult = await window.CloudStorage.getTempFileURL({
-      fileList: [fileID]
-    });
-    
-    const tempFileURL = tempURLResult.fileList[0].tempFileURL;
-    console.log('✅ 获取临时URL成功:', tempFileURL);
-    
-    return {
-      fileID: fileID,
-      tempFileURL: tempFileURL
-    };
   } catch (error) {
     console.error('❌ 上传文件失败:', error);
     throw new Error('上传失败：' + (error.message || '未知错误'));
   }
+
+  // 获取临时 URL（单独 try-catch，失败不影响上传结果，返回空字符串）
+  let tempFileURL = '';
+  try {
+    const tempURLResult = await window.CloudStorage.getTempFileURL({
+      fileList: [fileID]
+    });
+    tempFileURL = tempURLResult.fileList[0].tempFileURL || '';
+    console.log('✅ 获取临时URL成功:', tempFileURL);
+  } catch (error) {
+    // getTempFileURL 在部分场景下可能因鉴权失败，不阻塞上传流程
+    console.warn('⚠️ 获取临时URL失败（不影响上传），fileID:', fileID, error.message || error);
+  }
+
+  return { fileID, tempFileURL };
 }
 
 /**
@@ -145,20 +146,37 @@ async function getBatchTempURLs(fileIDs) {
     console.warn('⚠️ fileIDs 为空，返回空数组');
     return [];
   }
-  
+
+  // 已经是 HTTP/HTTPS URL 的直接返回，只对 cloud:// 调 SDK
+  const needConvert = fileIDs.filter(id => id && !id.startsWith('http://') && !id.startsWith('https://'));
+  if (needConvert.length === 0) {
+    // 全部已是可直接使用的 URL，按原顺序返回
+    return fileIDs;
+  }
+
   try {
-    console.log('📥 批量获取临时URL，数量:', fileIDs.length);
+    console.log('📥 批量获取临时URL，数量:', needConvert.length);
     
     const result = await window.CloudStorage.getTempFileURL({
-      fileList: fileIDs
+      fileList: needConvert
     });
-    
-    const tempURLs = result.fileList.map(item => item.tempFileURL);
+
+    // 建立 fileID → tempFileURL 映射
+    const urlMap = {};
+    result.fileList.forEach(item => {
+      if (item.tempFileURL) urlMap[item.fileID] = item.tempFileURL;
+    });
+
+    // 按原 fileIDs 顺序返回（已是 HTTP URL 的原样保留）
+    const tempURLs = fileIDs.map(id => {
+      if (id && (id.startsWith('http://') || id.startsWith('https://'))) return id;
+      return urlMap[id] || id;
+    });
     console.log('✅ 批量获取临时URL成功:', tempURLs.length);
     return tempURLs;
   } catch (error) {
     console.error('❌ 批量获取临时URL失败:', error);
-    return fileIDs;  // 失败时返回原 fileIDs
+    return fileIDs;
   }
 }
 

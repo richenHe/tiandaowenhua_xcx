@@ -103,7 +103,7 @@
                   <text>已购买</text>
                 </view>
               </view>
-              <text class="course-price">¥{{ course.price }}</text>
+              <text class="course-price">¥{{ formatPrice(course.price) }}</text>
               <button class="t-button t-button--theme-warning t-button--variant-base t-button--block">
                 <text class="t-button__text">查看详情</text>
               </button>
@@ -135,6 +135,7 @@ import { onShow } from '@dcloudio/uni-app';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import Calendar from '@/components/Calendar.vue';
 import { CourseApi, SystemApi } from '@/api';
+import { formatPrice } from '@/utils';
 
 // 轮播图当前索引
 const currentBannerIndex = ref(0);

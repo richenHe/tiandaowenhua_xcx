@@ -315,9 +315,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -339,13 +339,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -480,14 +474,6 @@
         };
 
         const handleApprove = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认通过',
-            body: `确认通过订单 ${row.order_no} 的退款申请吗？`,
-            theme: 'success'
-          });
-
-          if (!confirmed) return;
-
           try {
             // 使用 refund action，需要 order_no
             await AdminAPI.refund(row.order_no, row.amount, row.refund_reason || '管理员审核通过退款');
@@ -504,14 +490,6 @@
         };
 
         const handleBatchApprove = async () => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '批量通过',
-            body: `确认通过选中的 ${selectedRowKeys.value.length} 条退款申请吗？`,
-            theme: 'success'
-          });
-
-          if (!confirmed) return;
-
           try {
             // 批量退款：根据选中 ID 找到对应 order_no 逐条处理
             const ids = new Set(selectedRowKeys.value);

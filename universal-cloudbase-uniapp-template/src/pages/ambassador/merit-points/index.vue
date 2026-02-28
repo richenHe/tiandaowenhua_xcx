@@ -250,10 +250,10 @@ const goToExchangeRecords = () => {
   })
 }
 
-// 格式化金额
+// 格式化积分/功德分为整数
 const formatAmount = (amount: number | string) => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  return isNaN(num) ? '0.0' : num.toFixed(1)
+  return isNaN(num) ? '0' : String(Math.round(num))
 }
 
 // 获取记录图标和渐变色

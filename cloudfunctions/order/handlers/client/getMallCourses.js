@@ -6,7 +6,7 @@
  * @param {number} page_size - 每页数量（默认10）
  */
 
-const { db, response, getTempFileURL, executePaginatedQuery } = require('common');
+const { db, response, cloudFileIDToURL, executePaginatedQuery } = require('common');
 
 module.exports = async (event, context) => {
   const { type, page = 1, page_size = 10, pageSize } = event;
@@ -32,24 +32,14 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化返回数据并转换云存储 fileID 为临时 URL
-    const list = await Promise.all((result.list || []).map(async item => {
-      let coverImageUrl = item.cover_image || '';
-      if (item.cover_image) {
-        try {
-          const tempResult = await getTempFileURL(item.cover_image);
-          coverImageUrl = tempResult.tempFileURL || item.cover_image;
-        } catch (error) {
-          console.warn('[getMallCourses] 转换临时URL失败:', item.cover_image, error.message);
-        }
-      }
-
+    // 🔥 格式化返回数据，cloud:// fileID 直接转换为 CDN HTTPS URL
+    const list = (result.list || []).map(item => {
       return {
         id: item.id,
         name: item.name,
         nickname: item.nickname || '',
         type: item.type,
-        coverImage: coverImageUrl,
+        coverImage: cloudFileIDToURL(item.cover_image || ''),
         description: item.description || '',
         teacher: item.teacher || '',
         duration: item.duration || '',
@@ -60,7 +50,7 @@ module.exports = async (event, context) => {
         isUnlimitedStock: item.stock === -1,
         canBuy: item.stock === -1 || item.stock > 0
       };
-    }));
+    });
 
     return response.success({
       ...result,

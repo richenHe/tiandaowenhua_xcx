@@ -29,17 +29,22 @@ module.exports = async (event, context) => {
     // 将原合约状态置为已续签(3)
     await db.from('contract_signatures').update({ status: 3 }).eq('id', signatureId);
 
-    // 创建新的续签合约
+    // 创建新的续签合约（继承原合约的电子合同文件快照）
     const now = new Date().toISOString();
+    const dateOnly = (s) => (s && typeof s === 'string' ? s.slice(0, 10) : null);
     const { data: newSig, error: insertErr } = await db.from('contract_signatures').insert({
       user_id: sig.user_id,
       contract_template_id: sig.contract_template_id,
       ambassador_level: sig.ambassador_level,
+      contract_name: sig.contract_name,
       contract_version: sig.contract_version,
+      contract_file_id: sig.contract_file_id || null,
       sign_time: now,
-      contract_start: sig.contract_end || now,
-      contract_end: contractEnd,
+      contract_start: dateOnly(sig.contract_end) || now.slice(0, 10),
+      contract_end: dateOnly(contractEnd) || contractEnd,
       status: 1,
+      sign_type: 2,
+      admin_id: admin?.id || null,
       _openid: sig._openid || ''
     }).select().single();
 

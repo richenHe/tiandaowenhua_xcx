@@ -3,7 +3,7 @@
  * @description 用于首页展示轮播图，从独立的 banners 表查询
  */
 
-const { db, response, getTempFileURL } = require('common');
+const { db, response, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   try {
@@ -20,17 +20,17 @@ module.exports = async (event, context) => {
 
     const items = banners || [];
 
-    // image_url 是直接 HTTP URL，无需云存储转换
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用）
     const list = items.map(item => {
-      // 规范化 link_url，确保以 / 开头
       const rawLink = item.link_url || '';
       const link = rawLink && !rawLink.startsWith('/') ? '/' + rawLink : rawLink;
+      const coverImage = cloudFileIDToURL(item.image_url || '');
 
       return {
         id: item.id,
         title: item.title || '',
         subtitle: item.subtitle || '',
-        cover_image: item.image_url || '',
+        cover_image: coverImage,
         link,
         sort_order: item.sort_order || 0
       };

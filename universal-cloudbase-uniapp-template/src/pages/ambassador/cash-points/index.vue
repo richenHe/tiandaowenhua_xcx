@@ -84,20 +84,30 @@
             <view class="record-header">
               <view class="record-info">
                 <view class="record-title">{{ record.remark || '积分变动' }}</view>
-                <view class="record-desc" v-if="record.related_id">关联ID: {{ record.related_id }}</view>
+                <view class="record-desc" v-if="record.related_id">关联编号: {{ record.related_id }}</view>
               </view>
               <view class="record-right">
-                <view class="record-amount" :class="record.change_amount > 0 ? 'success' : 'error'">
-                  {{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}
+                <view
+                  class="record-amount"
+                  :class="getAmountClass(record.change_type)"
+                >
+                  <template v-if="record.change_type === 4">已打款</template>
+                  <template v-else>{{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}</template>
                 </view>
-                <view class="record-status" :class="record.change_amount > 0 ? 'available' : 'frozen'">
-                  {{ record.change_amount > 0 ? '可提现' : '已提现' }}
+                <view class="record-status" :class="getStatusClass(record.change_type)">
+                  {{ getStatusText(record.change_type) }}
                 </view>
               </view>
             </view>
             <view class="record-footer">
               <text>余额: {{ formatAmount(record.balance_after) }}</text>
               <text>{{ record.created_at }}</text>
+            </view>
+            <!-- type=4（提现成功）记录：显示查看电子发票按钮 -->
+            <view v-if="record.change_type === 4 && record.invoice_url" class="invoice-row">
+              <view class="invoice-btn" @tap="viewInvoice(record.invoice_url!)">
+                📄 查看电子发票
+              </view>
             </view>
           </view>
         </view>
@@ -137,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
@@ -164,8 +174,22 @@ const cashPointsInfo = ref<CashPointsInfo>({
   total_spent: 0
 })
 
-// 积分明细列表
-const recordsList = ref<CashPointsRecord[]>([])
+// 所有记录（原始，不过滤）
+const allRecords = ref<CashPointsRecord[]>([])
+// 过滤后展示的记录
+const recordsList = computed(() => {
+  switch (activeTab.value) {
+    case 'earn':
+      // 获得：type 2（可提现积分，含解冻和直接发放两种渠道）
+      return allRecords.value.filter(r => r.change_type === 2)
+    case 'withdraw':
+      // 提现：type 4（已打款成功）
+      return allRecords.value.filter(r => r.change_type === 4)
+    default:
+      // 全部：所有记录（type 1/2/3/4/5/6）
+      return allRecords.value
+  }
+})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -191,7 +215,7 @@ const loadRecords = async (reset = false) => {
 
   if (reset) {
     page.value = 1
-    recordsList.value = []
+    allRecords.value = []
     finished.value = false
   }
 
@@ -200,14 +224,14 @@ const loadRecords = async (reset = false) => {
     loading.value = true
     const result = await UserApi.getCashPointsHistory({
       page: page.value,
-      pageSize: pageSize.value
+      page_size: pageSize.value
     })
 
-    recordsList.value.push(...result.list)
+    allRecords.value.push(...result.list)
     total.value = result.total
     page.value++
 
-    if (recordsList.value.length >= result.total) {
+    if (allRecords.value.length >= result.total) {
       finished.value = true
     }
     uni.hideLoading()
@@ -224,10 +248,7 @@ const loadMore = () => {
   loadRecords()
 }
 
-// 监听Tab切换，重新加载数据
-watch(activeTab, () => {
-  loadRecords(true)
-})
+// Tab 切换仅切换过滤视图，无需重新请求（computed 自动响应）
 
 onMounted(() => {
   // 计算页面头部高度
@@ -256,7 +277,6 @@ const handleScroll = (e: any) => {
 const tabs = ref([
   { label: '全部', value: 'all' },
   { label: '获得', value: 'earn' },
-  { label: '解冻', value: 'unfreeze' },
   { label: '提现', value: 'withdraw' }
 ])
 
@@ -272,22 +292,83 @@ const goToWithdraw = () => {
   })
 }
 
-// 格式化金额
+// 格式化积分为整数
 const formatAmount = (amount: number | string) => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  return isNaN(num) ? '0.0' : num.toFixed(1)
+  return isNaN(num) ? '0' : String(Math.round(num))
 }
 
-// 获取记录图标和渐变色
-const getRecordStyle = (changeType: string) => {
+// 获取记录图标和渐变色（按 type 枚举：1=冻结/2=解冻/3=提现申请/4=退回/5=已打款）
+const getRecordStyle = (changeType: number | string) => {
+  const type = typeof changeType === 'string' ? changeType : String(changeType)
   const styleMap: Record<string, { icon: string; gradient: string }> = {
+    '1': { icon: '🎖️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+    '2': { icon: '🔓', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+    '3': { icon: '💸', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    '4': { icon: '✅', gradient: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' }, // 提现成功
+    '5': { icon: '↩️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' }, // 提现失败退回
+    // 旧的字符串 key 兼容
     'upgrade': { icon: '🎖️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
     'unfreeze': { icon: '🔓', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
     'referral_advanced': { icon: '🎓', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
     'referral_course': { icon: '💎', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
     'withdraw': { icon: '💸', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
   }
-  return styleMap[changeType] || { icon: '💰', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }
+  return styleMap[type] || { icon: '💰', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }
+}
+
+// 按 type 返回金额颜色 class
+const getAmountClass = (changeType: number | string) => {
+  const t = Number(changeType)
+  if (t === 4) return 'transfer'   // 已打款 - 蓝色
+  if (t === 1) return 'warning'    // 获得冻结 - 橙色（冻结，不可立即用）
+  if (t === 5) return 'warning'    // 提现失败退回 - 橙色
+  if (t === 2) return 'success'    // 解冻 - 绿色
+  if (t === 3) return 'error'      // 提现申请 - 红色
+  return 'success'
+}
+
+// 按 type 返回状态文字
+const getStatusText = (changeType: number | string) => {
+  const map: Record<number, string> = {
+    1: '冻结积分',
+    2: '可提现',
+    3: '提现申请',
+    4: '银行汇款',
+    5: '已退回',
+  }
+  return map[Number(changeType)] || '积分变动'
+}
+
+// 按 type 返回状态 class
+const getStatusClass = (changeType: number | string) => {
+  const t = Number(changeType)
+  if (t === 2 || t === 4) return 'available'  // 绿色（解冻/已打款）
+  if (t === 5) return 'warning'               // 橙色（退回，与金额色保持一致）
+  return 'frozen'                             // 灰色（冻结/提现申请）
+}
+
+// 查看电子发票
+const viewInvoice = (url: string) => {
+  if (url.toLowerCase().includes('.pdf')) {
+    uni.showModal({
+      title: '查看电子发票',
+      content: '即将打开 PDF 发票',
+      confirmText: '打开',
+      success: (res) => {
+        if (res.confirm) {
+          // #ifdef MP-WEIXIN
+          uni.navigateTo({ url: `/pages/webview/index?url=${encodeURIComponent(url)}` })
+          // #endif
+          // #ifdef H5
+          window.open(url, '_blank')
+          // #endif
+        }
+      }
+    })
+  } else {
+    uni.previewImage({ urls: [url], current: url })
+  }
 }
 </script>
 
@@ -477,18 +558,11 @@ const getRecordStyle = (changeType: string) => {
   font-size: 36rpx;
   font-weight: 600;
   margin-bottom: 8rpx;
-  
-  &.success {
-    color: #00A870;
-  }
-  
-  &.warning {
-    color: #E37318;
-  }
-  
-  &.error {
-    color: #E34D59;
-  }
+
+  &.success   { color: #00A870; }
+  &.warning   { color: #E37318; }
+  &.error     { color: #E34D59; }
+  &.transfer  { color: #0052D9; font-size: 28rpx; }
 }
 
 .record-status {
@@ -500,6 +574,10 @@ const getRecordStyle = (changeType: string) => {
   
   &.available {
     color: #00A870;
+  }
+
+  &.warning {
+    color: #E37318;
   }
 }
 
@@ -520,6 +598,23 @@ const getRecordStyle = (changeType: string) => {
   justify-content: space-between;
   font-size: 22rpx;
   color: #999;
+}
+
+.invoice-row {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F5F5F5;
+}
+
+.invoice-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: #0052D9;
+  background: #E6F4FF;
+  border-radius: 8rpx;
+  padding: 10rpx 24rpx;
+  gap: 8rpx;
 }
 
 .record-tip {

@@ -2,7 +2,7 @@
  * 获取商学院介绍详情（公开接口）
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
@@ -30,6 +30,9 @@ module.exports = async (event, context) => {
     if (!detail) {
       return response.notFound('商学院介绍不存在或已下架');
     }
+
+    // 🔥 转换封面图 cloud:// fileID 为 CDN HTTPS URL
+    detail.cover_image = cloudFileIDToURL(detail.cover_image || '');
 
     return response.success(detail);
 

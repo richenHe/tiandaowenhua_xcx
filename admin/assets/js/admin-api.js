@@ -153,7 +153,8 @@ class AdminAPI {
   }
 
   static async replyFeedback(feedback_id, reply_content) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'replyFeedback', { feedback_id, reply_content });
+    // 云函数 replyFeedback 期望 { id, reply }
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'replyFeedback', { id: feedback_id, reply: reply_content || '已处理' });
   }
 
   // 通知管理
@@ -213,7 +214,8 @@ class AdminAPI {
   }
 
   static async updateUserReferee(userId, newRefereeId, reason) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'updateUserReferee', { userId, newRefereeId, reason });
+    // 云函数期望 remark，前端传的是 reason，做映射
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'updateUserReferee', { userId, newRefereeId, remark: reason });
   }
 
   static async getRefereeChangeLogs(userId, params = {}) {
@@ -238,14 +240,22 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'withdrawAudit', { withdrawal_id, status, reject_reason });
   }
 
-  // 标记提现已转账（status 1→2）
-  static async markWithdrawTransferred(withdrawal_id, transfer_no = '', transfer_remark = '') {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', { withdrawal_id, transfer_no, transfer_remark });
+  // 标记提现已转账（status 1→2，必须提供电子发票 fileID）
+  static async markWithdrawTransferred(withdrawal_id, invoice_file_id, transfer_no = '', transfer_remark = '') {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', { withdrawal_id, invoice_file_id, transfer_no, transfer_remark });
   }
 
   // 退款管理
   static async getRefundList(params = {}) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getRefundList', params);
+    // 将前端 status 映射为云函数期望的 refund_status，解析 dateRange 数组
+    const { status, dateRange, ...rest } = params;
+    const transformed = { ...rest };
+    if (status != null && status !== '') transformed.refund_status = status;
+    if (Array.isArray(dateRange) && dateRange.length === 2) {
+      transformed.start_date = dateRange[0];
+      transformed.end_date = dateRange[1];
+    }
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getRefundList', transformed);
   }
 
   static async approveRefund(data) {
@@ -269,8 +279,9 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'rejectWithdraw', data);
   }
 
-  static async markWithdrawTransferred(data) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', data);
+  // 标记提现已转账（status 1→2，invoice_file_id 为必填）
+  static async markWithdrawTransferred(withdrawal_id, invoice_file_id, transfer_no = '', transfer_remark = '') {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markWithdrawTransferred', { withdrawal_id, invoice_file_id, transfer_no, transfer_remark });
   }
 
   static async exportWithdrawTransferList() {
@@ -305,7 +316,15 @@ class AdminAPI {
 
   // 排期管理
   static async getClassRecordList(params = {}) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getClassRecordList', params);
+    // 将前端 camelCase 参数转换为云函数期望的 snake_case
+    const { courseId, dateRange, ...rest } = params;
+    const transformed = { ...rest };
+    if (courseId) transformed.course_id = courseId;
+    if (dateRange && dateRange.length === 2) {
+      transformed.start_date = dateRange[0];
+      transformed.end_date = dateRange[1];
+    }
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getClassRecordList', transformed);
   }
 
   static async createClassRecord(data) {
@@ -322,7 +341,12 @@ class AdminAPI {
 
   // 预约管理
   static async getAppointmentList(params = {}) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getAppointmentList', params);
+    // 将前端 camelCase 参数转换为云函数期望的 snake_case
+    const { courseId, classRecordId, ...rest } = params;
+    const transformed = { ...rest };
+    if (courseId) transformed.course_id = courseId;
+    if (classRecordId) transformed.class_record_id = classRecordId;
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getAppointmentList', transformed);
   }
 
   static async updateAppointmentStatus(appointment_id, status) {
@@ -413,7 +437,8 @@ class AdminAPI {
   }
 
   static async getAmbassadorDetail(ambassador_id) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getAmbassadorDetail', { ambassador_id });
+    // 云函数 getAmbassadorDetail 期望 { user_id }
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getAmbassadorDetail', { user_id: ambassador_id });
   }
 
   static async updateAmbassadorLevel(userId, level) {
@@ -429,7 +454,7 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'auditApplication', { application_id, approved, reject_reason });
   }
 
-  // 活动管理
+  // 活动管理（旧版，兼容保留）
   static async getActivityList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getActivityList', params);
   }
@@ -446,9 +471,65 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'deleteActivity', { id });
   }
 
+  // 新版活动管理（基于排期 + 岗位报名）
+  /** 获取活动列表（新版） */
+  static async getAmbassadorActivities(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getAmbassadorActivityList', params);
+  }
+
+  /** 创建活动（新版）：{ scheduleId, positions } */
+  static async createAmbassadorActivity(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'createAmbassadorActivity', data);
+  }
+
+  /** 获取活动详情（岗位 + 名额） */
+  static async getAmbassadorActivityDetail({ activityId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getAmbassadorActivityDetail', { activityId });
+  }
+
+  /** 获取报名人员列表（分页） */
+  static async getActivityRegistrants(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getActivityRegistrants', params);
+  }
+
+  /** 发放活动功德分 */
+  static async distributeActivityMeritPoints({ activityId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'distributeActivityMeritPoints', { activityId });
+  }
+
+  /** 删除活动（新版，操作 ambassador_activities 表） */
+  static async deleteAmbassadorActivity({ activityId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'deleteAmbassadorActivity', { activityId });
+  }
+
+  // 岗位类型管理
+  /** 获取岗位类型列表 */
+  static async getPositionTypeList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getPositionTypeList', params);
+  }
+
+  /** 创建岗位类型 */
+  static async createPositionType(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'createPositionType', data);
+  }
+
+  /** 更新岗位类型 */
+  static async updatePositionType(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updatePositionType', data);
+  }
+
+  /** 删除岗位类型 */
+  static async deletePositionType({ id }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'deletePositionType', { id });
+  }
+
   // 合约管理
   static async getContractTemplateList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getContractTemplateList', params);
+  }
+
+  static async getContractTemplateByLevel(level) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getContractTemplateByLevel', { level });
   }
 
   static async createContractTemplate(data) {
@@ -480,8 +561,23 @@ class AdminAPI {
     return this.getApplicationList(params);
   }
 
+  /** 通过大使申请（别名） */
+  static async approveAmbassadorApplication({ applicationId }) {
+    return this.auditApplication(applicationId, true, '');
+  }
+
+  /** 驳回大使申请（别名） */
+  static async rejectAmbassadorApplication({ applicationId, rejectReason = '' }) {
+    return this.auditApplication(applicationId, false, rejectReason);
+  }
+
   static async getAmbassadorActivityList(params = {}) {
     return this.getActivityList(params);
+  }
+
+  /** 更新活动（兼容旧版） */
+  static async updateAmbassadorActivity(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updateActivity', data);
   }
 
   static async getContractList(params = {}) {
@@ -591,22 +687,17 @@ class AdminAPI {
     return this.updateAmbassadorLevel(userId, targetLevel);
   }
 
-  /** 删除活动别名 */
-  static async deleteAmbassadorActivity({ activityId }) {
-    return this.deleteActivity(activityId);
-  }
-
-  /** 创建活动别名 */
-  static async createAmbassadorActivity(data) {
-    return this.createActivity(data);
-  }
-
-  /** 更新活动别名 */
-  static async updateAmbassadorActivity(data) {
+  /** 更新活动别名（兼容旧调用方） */
+  static async updateAmbassadorActivityAlias(data) {
     return this.updateActivity(data);
   }
 
   // ==================== 管理员管理别名方法 ====================
+
+  /** 创建管理员别名 */
+  static async createAdmin(data) {
+    return this.createAdminUser(data);
+  }
 
   /** 创建管理员别名 */
   static async createAdmin(data) {
@@ -623,9 +714,11 @@ class AdminAPI {
     return this.deleteAdminUser(adminId);
   }
 
-  /** 切换管理员状态 — 后端暂无此 action，通过 updateAdminUser 实现 */
+  /** 切换管理员状态 — 通过 updateAdminUser 实现状态反转 */
   static async toggleAdminStatus({ adminId }) {
-    throw new Error('切换管理员状态功能暂未开放，请在编辑管理员中修改状态字段');
+    // 先查当前状态，再取反
+    const list = await this.getAdminUserList({ page: 1, page_size: 1 });
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'updateAdminUser', { id: adminId, toggle_status: true });
   }
 
   // ==================== 通知管理别名方法 ====================

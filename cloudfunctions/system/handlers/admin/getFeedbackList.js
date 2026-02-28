@@ -8,7 +8,7 @@
  * - status: 状态筛选（可选）
  * - type: 类型筛选（可选）
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -71,9 +71,12 @@ module.exports = async (event, context) => {
         }
       }
 
+      // 🔥 将 images 数组中的 cloud:// fileID 转换为 CDN HTTPS URL
+      const convertedImages = images.map(img => cloudFileIDToURL(img));
+
       return {
         ...f,
-        images,
+        images: convertedImages,
         type_text: getTypeText(f.feedback_type),
         status_text: getStatusText(f.status)
       };

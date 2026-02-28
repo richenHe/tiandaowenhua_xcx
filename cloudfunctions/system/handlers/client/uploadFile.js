@@ -2,7 +2,7 @@
  * 上传文件到云存储
  * 接收 base64 编码的文件内容，上传到云存储并返回 fileID
  */
-const { response, db } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -33,9 +33,10 @@ module.exports = async (event, context) => {
       userID: user.id
     });
 
+    // 直接转换为 CDN HTTPS URL，避免前端调用 getTempFileURL 时的认证问题
     return response.success({
       fileID: result.fileID,
-      tempFileURL: result.fileID
+      tempFileURL: cloudFileIDToURL(result.fileID)
     }, '上传成功');
   } catch (error) {
     console.error('[uploadFile] 上传失败:', error);

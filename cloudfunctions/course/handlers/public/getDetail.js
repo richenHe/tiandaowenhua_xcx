@@ -2,7 +2,7 @@
  * 获取课程详情（公开接口）
  * 包括购买状态和上课次数
  */
-const { db, findOne, response, validateRequired, getTempFileURL } = require('common');
+const { db, findOne, response, validateRequired, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -75,14 +75,9 @@ module.exports = async (event, context) => {
       course.class_count = 0;
     }
 
-    // 🔥 转换云存储 fileID 为临时 URL
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL
     if (course.cover_image) {
-      try {
-        const result = await getTempFileURL(course.cover_image);
-        course.cover_image = result.tempFileURL || course.cover_image;
-      } catch (error) {
-        console.warn('[getDetail] 转换临时URL失败:', course.cover_image, error.message);
-      }
+      course.cover_image = cloudFileIDToURL(course.cover_image);
     }
 
     return response.success(course);

@@ -2,7 +2,7 @@
  * 获取商学院介绍列表（公开接口）
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   try {
@@ -18,8 +18,14 @@ module.exports = async (event, context) => {
       throw error;
     }
 
+    // 🔥 转换封面图 cloud:// fileID 为 CDN HTTPS URL
+    const processedList = (list || []).map(item => ({
+      ...item,
+      cover_image: cloudFileIDToURL(item.cover_image || '')
+    }));
+
     return response.success({
-      list: list || []
+      list: processedList
     });
 
   } catch (error) {

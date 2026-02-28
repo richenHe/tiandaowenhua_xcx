@@ -11,29 +11,44 @@ module.exports = async (event, context) => {
   try {
     console.log('[getCashPoints] 获取积分余额:', user.id);
 
-    // 查询积分统计（总获得/总消耗）
-    const { data: stats } = await db
+    // CloudBase Query Builder 不支持 SUM() 聚合，改为取全量记录后 JS 求和
+    // 累计获得 = type 2（可提现积分，含解冻和直接发放两种渠道）
+    const { data: earnedRecords } = await db
       .from('cash_points_records')
-      .select(`
-        SUM(CASE WHEN change_amount > 0 THEN change_amount ELSE 0 END) as total_earned,
-        SUM(CASE WHEN change_amount < 0 THEN ABS(change_amount) ELSE 0 END) as total_spent
-      `)
-      .eq('user_id', user.id);
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('type', 2);
 
-    // 查询待审核提现金额
-    const { data: withdrawals } = await db
+    // 累计提现 = withdrawals status=2（已转账完成）
+    const { data: completedWithdrawals } = await db
       .from('withdrawals')
-      .select('SUM(amount) as withdrawing_amount')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('status', 2);
+
+    // 提现中 = withdrawals status=0（待审核）+ status=1（审核通过待转账）
+    const { data: pendingWithdrawals0 } = await db
+      .from('withdrawals')
+      .select('amount')
       .eq('user_id', user.id)
       .eq('status', 0);
 
+    const { data: pendingWithdrawals1 } = await db
+      .from('withdrawals')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('status', 1);
+
+    const sumAmount = (list) =>
+      (list || []).reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+
     const result = {
-      available: user.cash_points_available || 0,      // 可用积分
-      frozen: user.cash_points_frozen || 0,            // 冻结积分
-      pending: user.cash_points_pending || 0,          // 待结算积分
-      withdrawing: withdrawals?.[0]?.withdrawing_amount || 0,  // 提现中金额
-      total_earned: stats?.[0]?.total_earned || 0,     // 总获得
-      total_spent: stats?.[0]?.total_spent || 0        // 总消耗
+      available: parseFloat(user.cash_points_available || 0),
+      frozen: parseFloat(user.cash_points_frozen || 0),
+      pending: parseFloat(user.cash_points_pending || 0),
+      withdrawing: sumAmount(pendingWithdrawals0) + sumAmount(pendingWithdrawals1),
+      total_earned: sumAmount(earnedRecords),
+      total_spent: sumAmount(completedWithdrawals),
     };
 
     console.log('[getCashPoints] 查询成功');

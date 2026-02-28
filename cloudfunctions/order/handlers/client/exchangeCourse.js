@@ -91,11 +91,11 @@ module.exports = async (event, context) => {
     try {
       const nowStr = utils.formatDateTime(new Date());
 
-      // 7.1 扣除功德分/积分余额
+      // 7.1 扣除功德分/积分余额（Math.round 确保存储整数）
       await update('users',
         {
-          merit_points: parseFloat(user.merit_points) - merit_points_used,
-          cash_points_available: parseFloat(user.cash_points_available) - cash_points_used
+          merit_points: Math.round(parseFloat(user.merit_points) - merit_points_used),
+          cash_points_available: Math.round(parseFloat(user.cash_points_available) - cash_points_used)
         },
         { id: user.id }
       );
@@ -166,7 +166,7 @@ module.exports = async (event, context) => {
           type: 2,                // 支出
           source: 6,              // 商城兑换
           amount: -merit_points_used,
-          balance_after: parseFloat(user.merit_points) - merit_points_used,
+          balance_after: Math.round(parseFloat(user.merit_points) - merit_points_used),
           remark: `兑换课程：${course.name}`
         });
       }
@@ -178,7 +178,7 @@ module.exports = async (event, context) => {
           _openid: OPENID || '',
           type: 2,                // 消费
           amount: -cash_points_used,
-          available_after: parseFloat(user.cash_points_available) - cash_points_used,
+          available_after: Math.round(parseFloat(user.cash_points_available) - cash_points_used),
           remark: `兑换课程：${course.name}`
         });
       }

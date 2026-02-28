@@ -6,10 +6,63 @@ const { response } = require('../../common');
 const { validateRequired, formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const { class_record_id, user_ids } = event;
+  const { class_record_id, user_ids, appointment_ids } = event;
 
   try {
-    // 参数验证
+    let appointmentsQuery;
+
+    // 支持两种调用方式：
+    // 方式1（推荐）：直接传 appointment_ids 预约ID数组
+    // 方式2（旧版）：传 class_record_id + user_ids
+    if (appointment_ids && Array.isArray(appointment_ids) && appointment_ids.length > 0) {
+      const { data: appointments, error: queryError } = await db
+        .from('appointments')
+        .select('id, user_id, course_id')
+        .in('id', appointment_ids)
+        .in('status', [0, 1]);
+
+      if (queryError) throw queryError;
+
+      if (!appointments || appointments.length === 0) {
+        return response.error('没有找到待签到的预约记录');
+      }
+
+      const now = formatDateTime(new Date());
+      const appointmentIdList = appointments.map(a => a.id);
+
+      const { error: updateError } = await db
+        .from('appointments')
+        .update({ status: 2, checkin_time: now })
+        .in('id', appointmentIdList);
+
+      if (updateError) throw updateError;
+
+      // 更新用户课程上课次数
+      for (const appointment of appointments) {
+        const { data: userCourse } = await db
+          .from('user_courses')
+          .select('attend_count')
+          .eq('user_id', appointment.user_id)
+          .eq('course_id', appointment.course_id)
+          .single();
+
+        if (userCourse) {
+          await db
+            .from('user_courses')
+            .update({ attend_count: (userCourse.attend_count || 0) + 1 })
+            .eq('user_id', appointment.user_id)
+            .eq('course_id', appointment.course_id);
+        }
+      }
+
+      return response.success({
+        message: '批量签到成功',
+        success_count: appointments.length,
+        failed_count: 0
+      });
+    }
+
+    // 旧版方式：通过 class_record_id + user_ids
     const validation = validateRequired({ class_record_id, user_ids }, ['class_record_id', 'user_ids']);
     if (!validation.valid) {
       return response.paramError(validation.message);

@@ -206,7 +206,7 @@ import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
-import StorageApi, { StoragePathHelper } from '@/api/modules/storage'
+import StorageApi, { StoragePathHelper, cloudFileIDToURL } from '@/api/modules/storage'
 
 // 表单数据
 const formData = ref({
@@ -234,7 +234,7 @@ const refereeInfo = ref({
   status: ''
 })
 
-// 性别选项（与数据库 users.gender 一致：0女/1男）
+// 性别选项（与数据库 users.gender 一致：1=男 / 0=女）
 const genderOptions = [
   { label: '男', value: 1 },
   { label: '女', value: 0 },
@@ -328,24 +328,26 @@ const loadProfile = async () => {
     formData.value.phone = profile.phone || ''
     formData.value.region = profile.city || ''
 
-    // 加载头像
+    // 加载头像（云函数已在服务端完成 cloud:// → HTTPS 转换，直接使用）
     if (profile.avatar) {
-      formData.value.avatarFileID = profile.avatar
-      formData.value.avatar = await StorageApi.getSingleTempFileURL(profile.avatar)
+      // avatar_file_id 是原始 cloud:// fileID（用于保存），avatar 是已转换的 HTTPS URL（用于显示）
+      formData.value.avatarFileID = profile.avatar_file_id || profile.avatar
+      formData.value.avatar = profile.avatar
     }
 
-    // 加载背景图片
+    // 加载背景图片（云函数已在服务端完成 cloud:// → HTTPS 转换，直接使用）
     if (profile.background_image) {
-      formData.value.backgroundImageFileID = profile.background_image
-      formData.value.backgroundImage = await StorageApi.getSingleTempFileURL(profile.background_image)
+      formData.value.backgroundImageFileID = profile.background_image_file_id || profile.background_image
+      formData.value.backgroundImage = profile.background_image
     }
     
-    // 解析性别（数据库 0=女/1=男，兼容字符串'男'/'女'）
-    if (profile.gender === 1 || profile.gender === '男') {
-      formData.value.gender = 1
-    } else if (profile.gender === 0 || profile.gender === '女') {
-      formData.value.gender = 0
+    // 性别（数据库 0=女/1=男，getProfile 统一返回数字或 null）
+    if (profile.gender === 1) {
+      formData.value.gender = 1  // 男
+    } else if (profile.gender === 0) {
+      formData.value.gender = 0  // 女
     }
+    // gender 为 null/undefined（未设置）时，保留表单默认值 1（男）
 
     // 解析出生八字
     if (profile.birthday) {
@@ -439,9 +441,9 @@ const onChooseAvatar = async (e: any) => {
       cloudPath
     )
 
-    // 保存 fileID 和临时 URL
+    // 保存 fileID，直接转换为 CDN HTTPS URL 用于显示（避免客户端 getTempFileURL 认证问题）
     formData.value.avatarFileID = result.fileID
-    formData.value.avatar = await StorageApi.getSingleTempFileURL(result.fileID)
+    formData.value.avatar = cloudFileIDToURL(result.fileID)
 
     uni.hideLoading()
     uni.showToast({ title: '上传成功', icon: 'success' })
@@ -475,9 +477,9 @@ const chooseBackgroundImage = () => {
           cloudPath
         )
 
-        // 保存 fileID 和临时 URL
+        // 保存 fileID，直接转换为 CDN HTTPS URL 用于显示
         formData.value.backgroundImageFileID = result.fileID
-        formData.value.backgroundImage = await StorageApi.getSingleTempFileURL(result.fileID)
+        formData.value.backgroundImage = cloudFileIDToURL(result.fileID)
 
         uni.hideLoading()
         uni.showToast({ title: '上传成功', icon: 'success' })

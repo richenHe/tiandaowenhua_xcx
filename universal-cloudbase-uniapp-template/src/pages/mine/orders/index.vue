@@ -36,7 +36,7 @@
                   <view class="order-title">{{ order.title }}</view>
                   <view class="order-time">{{ order.time }}</view>
                   <view class="order-footer">
-                    <text class="order-price">¥{{ order.price }}</text>
+                    <text class="order-price">¥{{ formatPrice(order.price) }}</text>
                     <view class="t-badge" :class="`t-badge--${order.statusType}`">
                       {{ order.status }}
                     </view>
@@ -67,6 +67,7 @@ import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
+import { formatPrice } from '@/utils'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)

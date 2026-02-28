@@ -2,7 +2,7 @@
  * 管理端接口：获取活动列表
  * Action: getActivityList
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
@@ -33,22 +33,32 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化返回数据
-    const list = (result.list || []).map(activity => ({
-      id: activity.id,
-      user_id: activity.user_id,
-      activity_name: activity.activity_name || '',
-      activity_type: activity.activity_type,
-      description: activity.activity_desc || '',
-      start_time: activity.start_time,
-      end_time: activity.end_time,
-      duration: activity.duration || '',
-      location: activity.location || '',
-      participant_count: activity.participant_count || 0,
-      merit_points: activity.merit_points || 0,
-      status: activity.status,
-      created_at: activity.created_at
-    }));
+    // 🔥 格式化返回数据，images 数组中 cloud:// fileID 转为 CDN HTTPS URL
+    // 字段名与前端 activity.html 对齐：name/start_date/end_date
+    const list = (result.list || []).map(activity => {
+      let images = [];
+      try { images = activity.images ? JSON.parse(activity.images) : []; } catch (e) {}
+      return {
+        id: activity.id,
+        user_id: activity.user_id,
+        name: activity.activity_name || '',           // 前端表格列 colKey: 'name'
+        activity_name: activity.activity_name || '',  // 保留原始字段
+        activity_type: activity.activity_type,
+        description: activity.activity_desc || '',
+        start_date: activity.start_time || '',        // 前端表格列 colKey: 'start_date'
+        end_date: activity.end_time || '',            // 前端表格列 colKey: 'end_date'
+        start_time: activity.start_time,              // 保留原始字段（编辑时用）
+        end_time: activity.end_time,
+        dateRange: [activity.start_time || '', activity.end_time || ''],  // 编辑时填充日期范围选择器
+        duration: activity.duration || '',
+        location: activity.location || '',
+        participant_count: activity.participant_count || 0,
+        merit_points: activity.merit_points || 0,
+        images: images.map(img => cloudFileIDToURL(img)),
+        status: activity.status,
+        created_at: activity.created_at
+      };
+    });
 
     return response.success({
       ...result,

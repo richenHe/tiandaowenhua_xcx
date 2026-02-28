@@ -24,12 +24,33 @@ module.exports = async (event, context) => {
       return response.error('获取等级配置失败', error);
     }
 
-    // 处理等级数据 - 添加升级条件和权益说明
+    /**
+     * 安全解析 JSON 字段
+     */
+    function safeParseJson(value) {
+      if (value == null) return null;
+      if (typeof value === 'string') {
+        try { return JSON.parse(value); } catch (e) { return null; }
+      }
+      return value;
+    }
+
+    // 处理等级数据 - 优先使用 DB 字段，兜底硬编码
     const processedLevels = (levels || []).map(level => {
       const upgradeConditions = [];
       const benefits = [];
-      const levelIcon = getLevelIcon(level.level);
-      const levelDesc = getLevelDesc(level.level);
+      const levelIcon = level.level_icon || getLevelIcon(level.level);
+
+      // 等级描述：优先使用 DB level_desc，为空时兜底硬编码
+      const levelDesc = (level.level_desc && level.level_desc.trim())
+        ? level.level_desc
+        : getLevelDesc(level.level);
+
+      // 申请列表文案（JSON 数组，每项 {question: string}）
+      const applyQuestions = safeParseJson(level.apply_questions) || [];
+
+      // 升级权益文案（JSON 数组，每项 {title, desc}）
+      const upgradeBenefits = safeParseJson(level.upgrade_benefits) || null;
 
       // 根据等级添加升级条件
       if (level.level === 1) { // 准青鸾
@@ -88,7 +109,9 @@ module.exports = async (event, context) => {
         level_icon: levelIcon,
         level_desc: levelDesc,
         upgrade_conditions: upgradeConditions,
-        benefits: benefits
+        benefits: benefits,
+        upgrade_benefits: upgradeBenefits,
+        apply_questions: applyQuestions,
       };
     });
 

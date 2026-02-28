@@ -242,12 +242,12 @@
   
   <!-- 🔥 引入云存储相关脚本（使用本地 SDK） -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -377,13 +377,6 @@
         };
 
         const handleDelete = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: '确认删除该公告吗？此操作不可恢复。'
-          });
-          
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.deleteAnnouncement(row.id);
             

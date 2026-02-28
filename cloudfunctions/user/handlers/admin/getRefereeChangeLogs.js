@@ -25,32 +25,40 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化日志数据
+    // 格式化日志数据，字段名与前端 referee-logs.html 对齐（snake_case）
     const changeTypeMap = {
+      1: '系统自动',
+      2: '管理员修改',
+      3: '异常变更',
       'user_update': '用户自主修改',
       'admin_update': '管理员修改',
       'admin_clear': '管理员清除'
     };
 
     const list = (result.list || []).map(log => {
-      let operatorInfo = '';
-      if (log.operator_type === 'user') {
-        operatorInfo = `用户 ${log.user_id}`;
-      } else if (log.operator_type === 'admin') {
-        operatorInfo = `管理员 ${log.operator_id}`;
+      // 操作人名称
+      let operatorName = '系统';
+      if (log.operator_type === 'admin' && log.admin_id) {
+        operatorName = `管理员(${log.admin_id})`;
+      } else if (log.operator_type === 'user') {
+        operatorName = '用户';
       }
 
       return {
         id: log.id,
-        userId: log.user_id,
-        oldRefereeId: log.old_referee_id,
-        newRefereeId: log.new_referee_id,
-        changeType: log.change_type,
-        changeTypeText: changeTypeMap[log.change_type] || log.change_type,
-        operatorType: log.operator_type,
-        operatorInfo,
-        remark: log.remark,
-        createdAt: log.created_at
+        // 前端使用 snake_case
+        user_id: log.user_id,
+        user_name: log.user_name || '',           // 变更的用户名
+        old_referee_id: log.old_referee_id,
+        old_referee_name: log.old_referee_name || '',   // 原推荐人名
+        new_referee_id: log.new_referee_id,
+        new_referee_name: log.new_referee_name || '',   // 新推荐人名
+        change_type: log.change_type,
+        change_type_text: changeTypeMap[log.change_type] || String(log.change_type),
+        operator_name: operatorName,
+        reason: log.remark || '',      // 前端 reason 列对应数据库 remark
+        remark: log.remark || '',
+        created_at: log.created_at
       };
     });
 

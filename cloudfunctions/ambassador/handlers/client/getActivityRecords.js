@@ -3,7 +3,7 @@
  * Action: client:getActivityRecords
  * @description 获取用户的活动记录列表，支持分页和类型筛选
  */
-const { db, response, executePaginatedQuery, getTempFileURL } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -49,55 +49,21 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 🔥 转换云存储 fileID 为临时 URL
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用）
     const list = result.list || [];
-    if (list.length > 0) {
-      // 收集所有需要转换的 fileID
-      const fileIDs = [];
-      list.forEach(record => {
-        // images 是 JSON 数组，包含多个 fileID
-        if (record.images) {
-          try {
-            const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
-            if (Array.isArray(imagesArray)) {
-              imagesArray.forEach(imgFileID => {
-                if (imgFileID) fileIDs.push(imgFileID);
-              });
-            }
-          } catch (e) {
-            console.error('[getActivityRecords] JSON解析失败:', e);
+    list.forEach(record => {
+      if (record.images) {
+        try {
+          const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
+          if (Array.isArray(imagesArray)) {
+            record.images = imagesArray.map(imgFileID => cloudFileIDToURL(imgFileID));
           }
+        } catch (e) {
+          console.error('[getActivityRecords] JSON解析失败:', e);
+          record.images = [];
         }
-      });
-
-      // 批量获取临时 URL
-      let urlMap = {};
-      if (fileIDs.length > 0) {
-        const tempURLs = await getTempFileURL(fileIDs);
-        tempURLs.forEach((urlObj, index) => {
-          if (urlObj && urlObj.tempFileURL) {
-            urlMap[fileIDs[index]] = urlObj.tempFileURL;
-          }
-        });
       }
-
-      // 替换 list 中的 fileID 为临时 URL
-      list.forEach(record => {
-        if (record.images) {
-          try {
-            const imagesArray = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
-            if (Array.isArray(imagesArray)) {
-              record.images = imagesArray.map(imgFileID =>
-                urlMap[imgFileID] || imgFileID
-              );
-            }
-          } catch (e) {
-            console.error('[getActivityRecords] JSON转换失败:', e);
-            record.images = [];
-          }
-        }
-      });
-    }
+    });
 
     // 查询统计信息（所有有效记录）
     const { data: allRecords, error: statsError } = await db

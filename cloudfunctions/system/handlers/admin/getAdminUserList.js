@@ -35,12 +35,18 @@ module.exports = async (event, context) => {
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
     // 处理数据（permissions 是 JSON 类型，无需解析）
+    // keyword 搜索过滤（DB 查询未加 LIKE，在内存中过滤）
+    const keyword = event.keyword || '';
     const processedList = (result.list || []).map(a => ({
       ...a,
       permissions: a.permissions || [],
       role_text: getRoleText(a.role),
-      status_text: a.status === 1 ? '启用' : '禁用'
-    }));
+      status_text: a.status === 1 ? '启用' : '禁用',
+      last_login_at: a.last_login_time || null    // 前端使用 last_login_at
+    })).filter(a => {
+      if (!keyword) return true;
+      return (a.username || '').includes(keyword) || (a.real_name || '').includes(keyword);
+    });
 
     return response.success({
       ...result,

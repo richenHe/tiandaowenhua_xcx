@@ -15,7 +15,7 @@
         <view class="t-card order-info">
           <view class="info-row">
             <text class="label">退款金额</text>
-            <text class="value refund-amount">¥{{ orderInfo.price }}</text>
+            <text class="value refund-amount">¥{{ formatPrice(orderInfo.price) }}</text>
           </view>
           <view class="info-row">
             <text class="label">退款方式</text>
@@ -48,7 +48,7 @@
             <view class="course-details">
               <view class="course-name">{{ orderInfo.courseName }}</view>
               <view class="course-price">
-                <text class="price">¥{{ orderInfo.price }}</text>
+                <text class="price">¥{{ formatPrice(orderInfo.price) }}</text>
               </view>
             </view>
           </view>
@@ -89,6 +89,7 @@ import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { OrderApi } from '@/api'
+import { formatPrice } from '@/utils'
 
 interface OrderInfo {
   orderNo: string

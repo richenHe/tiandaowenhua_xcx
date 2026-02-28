@@ -1,14 +1,18 @@
 /**
  * System 云函数入口
  * 系统管理模块：管理员登录、系统配置、统计、反馈、通知、公告
+ *
+ * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  */
+const cloud = require('wx-server-sdk');
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
 const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase
+// 初始化 CloudBase（business-logic 使用）
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
-const auth = app.auth();
 
 // 初始化 business-logic (传入 app 而不是 cloud)
 business.init(app);
@@ -136,21 +140,8 @@ exports.main = async (event, context) => {
   const { action, test_openid } = requestData;
   console.log('[STEP 5] action:', action, 'test_openid:', test_openid);
   
-  // 获取用户信息
-  let OPENID = test_openid; // 测试模式支持
-  
-  // 使用 CloudBase Node SDK 的标准方式获取当前调用者身份
-  if (!OPENID) {
-    const userInfo = auth.getUserInfo();  // 同步方法，直接返回结果
-    if (userInfo && userInfo.openId) {
-      OPENID = userInfo.openId;
-    } else if (userInfo && userInfo.uid) {
-      OPENID = userInfo.uid;
-    } else if (userInfo && userInfo.customUserId) {
-      OPENID = userInfo.customUserId;
-    }
-  }
-
+  // 获取用户标识：wx.cloud.callFunction() 调用时，通过 wx-server-sdk 获取微信真实 openid
+  let OPENID = test_openid || cloud.getWXContext().OPENID;
 
   try {
     console.log('[STEP 6] 进入 try 块');

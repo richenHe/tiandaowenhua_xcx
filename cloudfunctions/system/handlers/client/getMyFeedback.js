@@ -6,7 +6,7 @@
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认10）
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -40,13 +40,19 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 处理图片字段
-    const list = (result.list || []).map(f => ({
-      ...f,
-      images: f.images ? JSON.parse(f.images) : [],
-      type_text: getTypeText(f.type),
-      status_text: getStatusText(f.status)
-    }));
+    // 🔥 处理图片字段，cloud:// fileID 转为 CDN HTTPS URL
+    const list = (result.list || []).map(f => {
+      let images = [];
+      try { images = f.images ? JSON.parse(f.images) : []; } catch (e) {}
+      return {
+        ...f,
+        images: images.map(img => cloudFileIDToURL(img)),
+        // 若关联课程有封面图也一并转换
+        course: f.course ? { ...f.course, cover_image: cloudFileIDToURL(f.course.cover_image || '') } : f.course,
+        type_text: getTypeText(f.type),
+        status_text: getStatusText(f.status)
+      };
+    });
 
     return response.success({
       ...result,

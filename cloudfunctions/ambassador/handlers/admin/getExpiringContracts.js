@@ -33,24 +33,30 @@ module.exports = async (event, context) => {
 
     if (error) throw error;
 
-    // 格式化返回数据
+    // 格式化返回数据，字段名与前端 contract.html 对齐
     const list = (signatures || []).map(sig => {
       const expiryDate = new Date(sig.contract_end);
       const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+      const contractName = sig.template?.contract_name || sig.contract_name || '';
 
       return {
         id: sig.id,
         user_id: sig.user_id,
-        user_name: sig.user?.real_name,
-        phone: sig.user?.phone,
-        avatar: sig.user?.avatar,
+        user_name: sig.user?.real_name || '',
+        ambassador_name: sig.user?.real_name || '',      // 前端使用 ambassador_name
+        phone: sig.user?.phone || '',
+        avatar: sig.user?.avatar || '',
         ambassador_level: sig.ambassador_level,
         template_id: sig.contract_template_id,
-        contract_name: sig.template?.contract_name || sig.contract_name,
+        contract_name: contractName,
+        contract_type_name: contractName,                // 前端使用 contract_type_name
         contract_version: sig.contract_version,
         sign_time: sig.sign_time,
+        signed_at: sig.sign_time,                        // 前端使用 signed_at
         contract_end: sig.contract_end,
+        expires_at: sig.contract_end,                    // 前端使用 expires_at
         days_remaining: daysRemaining,
+        days_left: daysRemaining,                        // 前端使用 days_left
         urgency: daysRemaining <= 7 ? 'high' : daysRemaining <= 15 ? 'medium' : 'low'
       };
     });

@@ -23,7 +23,10 @@ import type {
   GetActivityRecordsParams,
   GetActivityRecordsResponse,
   ActivityStats,
-  LevelSystemResponse
+  LevelSystemResponse,
+  AvailableActivity,
+  GetAvailableActivitiesParams,
+  ApplyForActivityParams
 } from '../types/ambassador'
 
 /**
@@ -217,6 +220,30 @@ export class AmbassadorApi {
       showLoading: false
     })
   }
+
+  /**
+   * 15. 获取可报名活动列表（新版）
+   */
+  static async getAvailableActivities(params?: GetAvailableActivitiesParams): Promise<{ list: AvailableActivity[]; total: number }> {
+    return callCloudFunction<{ list: AvailableActivity[]; total: number }>({
+      name: 'ambassador',
+      action: 'getAvailableActivities',
+      data: params,
+      showLoading: false
+    })
+  }
+
+  /**
+   * 16. 申请报名活动岗位
+   */
+  static async applyForActivity(params: ApplyForActivityParams): Promise<{ activity_id: number; position_name: string; merit_points: number }> {
+    return callCloudFunction<{ activity_id: number; position_name: string; merit_points: number }>({
+      name: 'ambassador',
+      action: 'applyForActivity',
+      data: params,
+      loadingText: '报名中...'
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -234,7 +261,9 @@ export const {
   getContractDetail,
   getActivityRecords,
   getActivityStats,
-  getLevelSystem
+  getLevelSystem,
+  getAvailableActivities,
+  applyForActivity
 } = AmbassadorApi
 
 // 默认导出

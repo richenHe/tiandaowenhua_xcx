@@ -51,6 +51,24 @@ interface TempFileURLResult {
 }
 
 /**
+ * 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用，避免 credentials not found 错误）
+ * 格式：cloud://{env-id}.{bucket}/{path} → https://{bucket}.tcb.qcloud.la/{path}
+ * @param fileID cloud:// 格式的文件ID，或已是 HTTPS URL 直接返回
+ */
+export function cloudFileIDToURL(fileID: string): string {
+  if (!fileID) return ''
+  if (fileID.startsWith('http://') || fileID.startsWith('https://')) return fileID
+  if (!fileID.startsWith('cloud://')) return fileID
+  const withoutScheme = fileID.slice(8)
+  const dotIdx = withoutScheme.indexOf('.')
+  const slashIdx = withoutScheme.indexOf('/')
+  if (dotIdx === -1 || slashIdx === -1 || dotIdx >= slashIdx) return fileID
+  const bucket = withoutScheme.slice(dotIdx + 1, slashIdx)
+  const filePath = withoutScheme.slice(slashIdx + 1)
+  return `https://${bucket}.tcb.qcloud.la/${filePath}`
+}
+
+/**
  * 云存储 API 类
  */
 export class StorageApi {
@@ -95,46 +113,96 @@ export class StorageApi {
 
   /**
    * 获取临时下载链接
+   * MP-WEIXIN 使用 wx.cloud.getTempFileURL()（原生微信云，无需 CloudBase Auth）
+   * 其他平台使用 app.getTempFileURL()
    * @param options 获取选项
    * @returns 临时链接列表
    */
   static async getTempFileURL(options: GetTempFileURLOptions): Promise<TempFileURLResult[]> {
+    // #ifdef MP-WEIXIN
+    return new Promise((resolve, reject) => {
+      (wx as any).cloud.getTempFileURL({
+        fileList: options.fileList,
+        success: (res: any) => {
+          const results = res.fileList.map((item: any) => ({
+            fileID: item.fileID,
+            tempFileURL: item.tempFileURL || item.download_url || cloudFileIDToURL(item.fileID),
+            maxAge: options.maxAge || 3600
+          }))
+          resolve(results)
+        },
+        fail: (err: any) => {
+          console.warn('wx.cloud.getTempFileURL 失败:', err)
+          // 回退：直接构造 CDN URL
+          const results = options.fileList.map(fileID => ({
+            fileID,
+            tempFileURL: cloudFileIDToURL(fileID),
+            maxAge: options.maxAge || 3600
+          }))
+          resolve(results)
+        }
+      })
+    })
+    // #endif
+
+    // #ifndef MP-WEIXIN
     return new Promise((resolve, reject) => {
       app.getTempFileURL({
         fileList: options.fileList
       }).then((res: any) => {
         const results = res.fileList.map((item: any) => ({
           fileID: item.fileID,
-          tempFileURL: item.tempFileURL || item.download_url,
+          tempFileURL: item.tempFileURL || item.download_url || cloudFileIDToURL(item.fileID),
           maxAge: options.maxAge || 3600
         }))
         resolve(results)
       }).catch((err: any) => {
-        console.error('获取临时下载链接失败:', err)
-        reject(err)
+        console.warn('获取临时下载链接失败，回退为直接构造 CDN URL:', err)
+        // 回退：直接构造 CDN URL
+        const results = options.fileList.map(fileID => ({
+          fileID,
+          tempFileURL: cloudFileIDToURL(fileID),
+          maxAge: options.maxAge || 3600
+        }))
+        resolve(results)
       })
     })
+    // #endif
   }
 
   /**
    * 删除文件
+   * MP-WEIXIN 使用 wx.cloud.deleteFile()（原生微信云）
+   * 其他平台使用 app.deleteFile()
    * @param fileList 文件 ID 列表
    * @returns 删除结果
    */
   static async deleteFile(fileList: string[]): Promise<{ success: boolean; fileList: any[] }> {
-    return new Promise((resolve, reject) => {
+    // #ifdef MP-WEIXIN
+    return new Promise((resolve) => {
+      (wx as any).cloud.deleteFile({
+        fileList,
+        success: (res: any) => resolve({ success: true, fileList: res.fileList }),
+        fail: (err: any) => {
+          console.warn('wx.cloud.deleteFile 失败（不影响主流程）:', err)
+          resolve({ success: false, fileList: [] })
+        }
+      })
+    })
+    // #endif
+
+    // #ifndef MP-WEIXIN
+    return new Promise((resolve) => {
       app.deleteFile({
         fileList
       }).then((res: any) => {
-        resolve({
-          success: true,
-          fileList: res.fileList
-        })
+        resolve({ success: true, fileList: res.fileList })
       }).catch((err: any) => {
-        console.error('删除文件失败:', err)
-        reject(err)
+        console.warn('删除文件失败（不影响主流程）:', err)
+        resolve({ success: false, fileList: [] })
       })
     })
+    // #endif
   }
 
   /**
@@ -187,22 +255,9 @@ export class StorageApi {
    * @returns 临时下载 URL
    */
   static async getSingleTempFileURL(fileID: string, maxAge = 3600): Promise<string> {
-    if (!fileID) {
-      return ''
-    }
-    
-    // 如果已经是 HTTP/HTTPS URL，直接返回
-    if (fileID.startsWith('http://') || fileID.startsWith('https://')) {
-      return fileID
-    }
-    
-    try {
-      const results = await this.getTempFileURL({ fileList: [fileID], maxAge })
-      return results[0]?.tempFileURL || ''
-    } catch (error) {
-      console.error('获取临时下载链接失败:', error)
-      return ''
-    }
+    if (!fileID) return ''
+    // 已是 HTTPS URL 或 cloud:// 直接构造 CDN URL，不调用 API（避免认证问题）
+    return cloudFileIDToURL(fileID)
   }
 
   /**

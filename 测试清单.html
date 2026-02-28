@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天道文化小程序 · 测试清单</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #333; }
+  .header { background: linear-gradient(135deg, #1a56a0, #2d7dd2); color: #fff; padding: 28px 32px; }
+  .header h1 { font-size: 24px; margin-bottom: 8px; }
+  .header p { font-size: 14px; opacity: 0.85; }
+  .legend { display: flex; gap: 20px; padding: 16px 32px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-phone { background: #2d7dd2; }
+  .dot-pc { background: #27ae60; }
+  .dot-joint { background: #e67e22; }
+  .dot-warn { background: #e74c3c; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+  .section { background: #fff; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .section-header { padding: 16px 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .section-header h2 { font-size: 16px; flex: 1; }
+  .section-header .tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .tag-phone { background: #e8f3ff; color: #2d7dd2; }
+  .tag-pc { background: #e9f7ef; color: #27ae60; }
+  .tag-joint { background: #fef3e8; color: #e67e22; }
+  .items { padding: 0 20px 16px; }
+  .group { margin-bottom: 16px; }
+  .group-title { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 8px; padding-left: 2px; border-left: 3px solid #2d7dd2; padding-left: 8px; }
+  .item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .item:last-child { border-bottom: none; }
+  .item input[type="checkbox"] { width: 17px; height: 17px; margin-top: 1px; cursor: pointer; flex-shrink: 0; accent-color: #2d7dd2; }
+  .item-text { flex: 1; }
+  .item-text strong { font-size: 14px; display: block; line-height: 1.5; }
+  .item-text .hint { font-size: 12px; color: #999; margin-top: 3px; line-height: 1.5; }
+  .item-text .expect { font-size: 12px; color: #27ae60; margin-top: 3px; }
+  .item-text .warn { font-size: 12px; color: #e74c3c; margin-top: 3px; }
+  .step-num { background: #2d7dd2; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-num.green { background: #27ae60; }
+  .step-num.orange { background: #e67e22; }
+  .progress-bar { background: #e8f3ff; padding: 12px 20px; font-size: 13px; color: #2d7dd2; border-top: 1px solid #d0e8ff; }
+  .warn-box { background: #fff8f0; border-left: 4px solid #e67e22; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #c0652a; margin-bottom: 12px; line-height: 1.6; }
+  .info-box { background: #e8f3ff; border-left: 4px solid #2d7dd2; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1a56a0; margin-bottom: 12px; line-height: 1.6; }
+  @media print { body { background: #fff; } .section { box-shadow: none; border: 1px solid #ddd; } }
+  .collapse-icon { font-size: 12px; color: #999; }
+  .summary { display: flex; gap: 12px; padding: 12px 32px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+  .summary-item { text-align: center; }
+  .summary-item .num { font-size: 22px; font-weight: 700; color: #2d7dd2; }
+  .summary-item .label { font-size: 12px; color: #999; }
+  .divider { width: 1px; background: #e0e0e0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 天道文化小程序 · 功能测试清单</h1>
+  <p>适用人员：测试员（手机 + 电脑各一台）&nbsp;|&nbsp;覆盖所有核心需求，按顺序逐项勾选</p>
+</div>
+
+<div class="legend">
+  <span class="badge"><span class="dot dot-phone"></span>手机端（小程序）</span>
+  <span class="badge"><span class="dot dot-pc"></span>电脑端（后台管理）</span>
+  <span class="badge"><span class="dot dot-joint"></span>联调（手机+电脑配合）</span>
+  <span class="badge"><span class="dot dot-warn"></span>重点测试项</span>
+</div>
+
+<div class="container">
+
+<!-- ===== 一、登录注册 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">1</span>
+    <h2>登录与资料完善</h2>
+    <span class="tag tag-phone">📱 手机</span>
+  </div>
+  <div class="items">
+
+    <div class="warn-box">⚠️ 准备工作：需要一个"全新"微信账号（从未登录过该小程序），以便测试首次登录流程。</div>
+
+    <div class="group">
+      <div class="group-title">A. 首次登录</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>打开小程序，看到登录页面</strong>
+          <div class="expect">✅ 期望：有"微信授权登录"按钮</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击"微信授权登录"</strong>
+          <div class="expect">✅ 期望：登录成功后，自动弹出"完善个人资料"页面（强制出现，不能跳过直接进首页）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【测试A】填写资料：只填"真实姓名"和"手机号"，其他不填，点"提交"</strong>
+          <div class="expect">✅ 期望：提交成功，进入小程序首页，可以正常使用所有功能</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【测试B】填写资料：姓名和手机号都不填，直接点"提交"</strong>
+          <div class="warn">❌ 期望：提示"请填写真实姓名"和"请填写手机号"，不允许提交</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【测试C】点击"暂不填写，先预览"按钮</strong>
+          <div class="expect">✅ 期望：进入首页，但处于"预览模式"，右下角有"完善资料"悬浮按钮</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 预览模式功能限制</div>
+      <div class="info-box">💡 进入预览模式后，以下操作逐一测试。预览模式下只能"看"，不能"做"。</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>可以浏览课程列表、看课程详情</strong>
+          <div class="expect">✅ 期望：能正常看</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>可以查看通知公告、商学院介绍</strong>
+          <div class="expect">✅ 期望：能正常看</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击课程的"立即购买"按钮</strong>
+          <div class="warn">❌ 期望：弹出提示"请先完善个人资料"，不能购买，提示引导去完善资料</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>尝试进入"我的"相关功能（预约、大使申请等）</strong>
+          <div class="warn">❌ 期望：提示需要先完善资料</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击右下角"完善资料"悬浮按钮，填写后提交</strong>
+          <div class="expect">✅ 期望：完善后退出预览模式，可以正常使用全部功能</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 再次登录（非首次）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>退出小程序，重新打开，点击登录</strong>
+          <div class="expect">✅ 期望：直接进入首页，不再弹资料填写页面</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 二、首页功能 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">2</span>
+    <h2>首页功能</h2>
+    <span class="tag tag-phone">📱 手机</span>
+  </div>
+  <div class="items">
+    <div class="group">
+      <div class="group-title">A. 通知公告</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>首页能看到公告列表，显示标题、时间、类型（重要/普通）</strong>
+          <div class="expect">✅ 期望：重要公告显示在最前面（置顶）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击一条公告，进入详情页</strong>
+          <div class="expect">✅ 期望：能看到完整内容，包括图片（如有）</div>
+        </div>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-title">B. 课程列表</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>首页能看到课程列表，显示封面图、名称、价格、标签（初探班/密训班等）</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击一门课程，进入课程详情页</strong>
+          <div class="expect">✅ 期望：看到课程介绍、讲师、价格、购买按钮、分享按钮</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>已购买的课程上显示"已购买"标识</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 三、购买课程 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">3</span>
+    <h2>购买课程 & 支付流程</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+    <div class="warn-box">⚠️ 此环节需要配合后台一起测试。购买成功后，后台订单管理里应能看到新订单。</div>
+
+    <div class="group">
+      <div class="group-title">A. 购买初探班（价格 1688 元）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>打开初探班课程，点击"立即购买"</strong>
+          <div class="expect">✅ 期望：进入确认订单页面，显示：课程名称、价格、当前推荐人信息</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>确认订单页面，推荐人信息显示正确（来自个人资料中设置的推荐人）</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击"修改推荐人"，弹出大使列表，选择一个大使</strong>
+          <div class="expect">✅ 期望：列表里只显示"准青鸾及以上等级"的大使</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>完成支付</strong>
+          <div class="expect">✅ 期望：显示"支付成功"，课程出现在"我的课程"里</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【联调】后台管理员登录，进入"订单管理"，找到刚才的订单</strong>
+          <div class="expect">✅ 期望：能看到订单详情，状态为"已支付"，推荐人信息正确</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 购买密训班（价格 38888 元）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>直接点击密训班的"立即购买"（不需要先买初探班）</strong>
+          <div class="expect">✅ 期望：能直接创建订单，不报"需先购买初探班"的错</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>购买密训班时，选择一个"准青鸾大使"作为推荐人，尝试下单</strong>
+          <div class="warn">❌ 期望：报错提示"您的推荐人暂时只能推荐初探班课程，请选择青鸾及以上等级的推荐人"，无法下单</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>更换为"青鸾及以上"的大使作为推荐人，完成支付</strong>
+          <div class="expect">✅ 期望：支付成功</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>支付成功后，去"我的课程"查看</strong>
+          <div class="expect">✅ 期望："我的课程"里同时出现 <strong>密训班</strong> 和 <strong>初探班</strong> 两门课（密训班套餐自动包含初探班）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 支付失败/取消场景</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>创建订单后，在微信支付弹窗里点"取消"</strong>
+          <div class="expect">✅ 期望：回到订单页面，订单状态为"待支付"，可以再次发起支付</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 四、推荐人机制 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">4</span>
+    <h2>推荐人机制（重点测试！）</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+    <div class="warn-box">🚨 这是最复杂的核心功能，必须全部测试。需要准备多个测试账号配合。</div>
+
+    <div class="group">
+      <div class="group-title">A. 通过二维码注册时自动记录推荐人</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>大使A生成自己的推荐二维码（手机端→传播大使→推荐二维码→保存），分享给新用户B</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户B扫大使A的二维码，打开并登录小程序</strong>
+          <div class="expect">✅ 期望：B在"个人信息→我的传播大使"里看到推荐人是A</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 在个人资料页修改推荐人</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"我的→个人信息"，找到"我的传播大使"字段，点击修改</strong>
+          <div class="expect">✅ 期望：弹出传播大使列表（只显示准青鸾及以上等级），可以选择新推荐人</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>成功修改推荐人后，7天内再次尝试修改</strong>
+          <div class="warn">❌ 期望：提示"7天内只能修改一次推荐人"，不允许修改</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>尝试选择"自己"作为推荐人</strong>
+          <div class="warn">❌ 期望：提示"不能选择自己为推荐人"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 首次购买后推荐人被锁定</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>用户C完成人生中第一次购课并支付成功</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>支付成功后，回到"个人信息→我的传播大使"查看</strong>
+          <div class="expect">✅ 期望：推荐人旁边显示"已确认"标识，修改按钮消失或变灰（不能再修改了）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>再次购课，确认订单页的推荐人</strong>
+          <div class="expect">✅ 期望：推荐人已自动固定，不能修改</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 在订单确认页修改推荐人</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>首次购课（尚未支付）时，在确认订单页修改推荐人，然后完成支付</strong>
+          <div class="expect">✅ 期望：奖励应发给订单里最后选的那个推荐人，而不是个人资料里的推荐人</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【联调】后台管理员查看这笔订单详情，确认推荐人信息</strong>
+          <div class="expect">✅ 期望：订单推荐人 = 订单页面最后选的那位大使</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">E. 后台查看推荐人变更记录</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【电脑后台】进入"学员管理"，找到测试用户，点进详情</strong>
+          <div class="expect">✅ 期望：能看到该用户的"推荐人变更历史"，每次修改记录（时间、原推荐人、新推荐人、修改来源）都有记录</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 五、我的课程 & 预约 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">5</span>
+    <h2>我的课程 & 预约报名</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+
+    <div class="group">
+      <div class="group-title">A. 我的课程</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"我的→我的课程"，能看到已购买的课程列表</strong>
+          <div class="expect">✅ 期望：显示课程名、购买时间、上课次数</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 预约报名首次上课</div>
+      <div class="info-box">💡 前提：后台管理员已在"上课记录管理"里创建了一期课程安排（含日期、地点）。</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"课程计划"，看到即将开课的安排</strong>
+          <div class="expect">✅ 期望：显示课程名、开课时间、地点、剩余名额</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>对已购买的课程点击"预约"</strong>
+          <div class="expect">✅ 期望：预约成功，出现在"我的→预约课程"列表里</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>对未购买的课程点击"预约"</strong>
+          <div class="warn">❌ 期望：提示"需先购买课程"，不能预约</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 预约复训（第二次上课需付复训费）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>已上过一次课的学员，再次预约同一课程</strong>
+          <div class="expect">✅ 期望：提示需要支付复训费，支付后预约成功</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>在开课前3天内（截止日期到了），尝试取消复训预约</strong>
+          <div class="warn">❌ 期望：提示"已过取消截止时间，不能取消，不退款"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>在开课前3天之前，取消复训预约</strong>
+          <div class="expect">✅ 期望：取消成功，自动退款</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 我的预约列表</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"我的→预约课程"，能看到所有预约记录</strong>
+          <div class="expect">✅ 期望：显示课程名、预约时间、上课地点、签到码</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 六、商学院 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">6</span>
+    <h2>商学院模块</h2>
+    <span class="tag tag-phone">📱 手机</span>
+  </div>
+  <div class="items">
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>进入"商学院→商学院介绍"，能看到简介、核心理念等内容</strong>
+      </div>
+    </div>
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>进入"朋友圈素材"，看到各类素材（海报、文案等）</strong>
+        <div class="expect">✅ 期望：点击素材能"一键保存到相册"，文案能"一键复制"</div>
+      </div>
+    </div>
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>进入"学员案例"，能看到案例列表，点击查看详情</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 七、我的模块 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">7</span>
+    <h2>"我的"模块</h2>
+    <span class="tag tag-phone">📱 手机</span>
+  </div>
+  <div class="items">
+
+    <div class="group">
+      <div class="group-title">A. 购买记录</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"我的→购买记录"，能看到所有历史订单</strong>
+          <div class="expect">✅ 期望：显示订单号、课程名、金额、状态（待支付/已支付等）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击一条订单，进入订单详情</strong>
+          <div class="expect">✅ 期望：能看到详细信息，包括推荐人信息</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 个人信息编辑</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"我的→个人信息"，修改头像、昵称、性别等信息，保存</strong>
+          <div class="expect">✅ 期望：保存成功，下次打开还是修改后的信息</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 意见反馈</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"意见反馈"，不选课程，直接填写内容（通用反馈），提交</strong>
+          <div class="expect">✅ 期望：提交成功，反馈类型可选：功能建议/问题反馈/投诉</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>选择一门已购课程，再填写反馈内容，提交</strong>
+          <div class="expect">✅ 期望：反馈类型变为：课程内容/课程服务/讲师/场地</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>上传最多3张图片附件</strong>
+          <div class="warn">❌ 期望：上传第4张时提示"最多上传3张"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【联调】后台管理员进入"反馈管理"，查看刚提交的反馈，并回复</strong>
+          <div class="expect">✅ 期望：用户在"我的反馈"里能看到管理员的回复</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 八、传播大使 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">8</span>
+    <h2>传播大使系统</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+    <div class="warn-box">⚠️ 此模块测试复杂，需要准备多个账号（普通学员、准青鸾大使、青鸾大使各一个）配合测试。</div>
+
+    <div class="group">
+      <div class="group-title">A. 申请成为准青鸾大使</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>已购买密训班的用户，进入"传播大使"模块，看到"申请成为大使"按钮</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>未购买密训班的用户，进入"传播大使"模块</strong>
+          <div class="warn">❌ 期望：不显示申请按钮，或提示"请先购买密训班"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>已购买密训班的用户，点击申请，填写：真实姓名、手机号、微信号、城市、职业、申请原因等，提交</strong>
+          <div class="expect">✅ 期望：提交成功，页面显示"申请审核中，请耐心等待"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 后台审核大使申请</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】进入"大使管理→申请审核"，找到刚提交的申请，查看详情</strong>
+          <div class="expect">✅ 期望：能看到申请信息，系统自动标注"已购买密训班"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】点击"通过初审"，然后"安排面试"（填写面试时间、地点）</strong>
+          <div class="expect">✅ 期望：申请状态变为"待面试"，用户收到面试通知</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】点击"面试通过"，填写面试评价</strong>
+          <div class="expect">✅ 期望：用户自动升级为"准青鸾大使"，小程序里显示准青鸾徽章</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】测试"拒绝申请"，填写拒绝原因</strong>
+          <div class="expect">✅ 期望：用户收到拒绝通知，保持普通学员身份</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 准青鸾大使的权益和限制</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>准青鸾大使进入"传播大使→推荐二维码"</strong>
+          <div class="expect">✅ 期望：可以生成二维码，但页面显示提示"您目前只能推荐初探班学员"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户扫准青鸾大使的码注册，然后购买密训班</strong>
+          <div class="warn">❌ 期望：系统提示推荐人只能推荐初探班，不能用准青鸾作为密训班推荐人</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 准青鸾自动升级为青鸾大使</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>通过准青鸾大使的推荐码，新用户完成注册并购买初探班（支付成功）</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>准青鸾大使的小程序里应收到升级通知，提示签署协议</strong>
+          <div class="expect">✅ 期望：弹出《传播大使合作协议》，需要阅读并勾选同意，输入手机号后四位确认签署</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>签署协议后，大使等级自动升级为"青鸾大使"</strong>
+          <div class="expect">✅ 期望：显示青鸾徽章，积分里出现"冻结积分 1688"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">E. 功德分 & 积分查看</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>青鸾大使第1次推荐初探班后，查看积分</strong>
+          <div class="expect">✅ 期望：冻结积分从 1688 变为 0，可提现积分变为 1688（积分解冻了）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>青鸾大使第2次推荐初探班后，查看功德分</strong>
+          <div class="expect">✅ 期望：功德分增加（1688 × 30% = 506.4），不再解冻积分</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"传播大使→功德分"，能看到功德分明细（每条记录的来源、时间、数量）</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"传播大使→积分"，能看到冻结积分、可提现积分、积分明细</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">F. 积分提现申请</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>有可提现积分时，点击"申请提现"，填写提现金额和收款账户信息，提交</strong>
+          <div class="expect">✅ 期望：提交成功，状态为"待审核"</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台联调】管理员进入"大使管理→积分提现审核"，找到申请，点击"通过"</strong>
+          <div class="expect">✅ 期望：用户积分更新，收到到账通知</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】管理员测试"拒绝提现"，填写拒绝原因</strong>
+          <div class="expect">✅ 期望：用户收到拒绝通知，积分不变</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">G. 我的协议（青鸾及以上可查看）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>青鸾大使进入"我的→我的协议"，能看到签署的《传播大使合作协议》</strong>
+          <div class="expect">✅ 期望：显示协议名称、签署时间、合同期限（有效/已到期）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击查看协议详情</strong>
+          <div class="expect">✅ 期望：能看到完整协议内容、签署时间、签署设备信息，以及"下载PDF"按钮</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>普通学员/准青鸾大使进入"我的协议"</strong>
+          <div class="warn">❌ 期望：入口不显示，或提示"无协议记录"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">H. 推荐列表（我推荐的人）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"传播大使→直接推荐信息"，能看到自己推荐的学员列表</strong>
+          <div class="expect">✅ 期望：显示头像、昵称、购买课程、是否成为大使</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 九、后台管理（电脑） ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">9</span>
+    <h2>后台管理系统 - 基础功能</h2>
+    <span class="tag tag-pc">💻 电脑后台</span>
+  </div>
+  <div class="items">
+
+    <div class="group">
+      <div class="group-title">A. 登录</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>打开后台网址，输入用户名和密码，登录成功</strong>
+          <div class="expect">✅ 期望：进入后台首页</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>输入错误密码，尝试登录</strong>
+          <div class="warn">❌ 期望：提示"账号或密码错误"，不能登录</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 课程管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"课程管理"，看到课程列表（ID、名称、类型、价格、状态）</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击"新增课程"，填写：名称、分类（初探班）、封面图、价格（1688）、复训价格、是否允许复训，保存</strong>
+          <div class="expect">✅ 期望：保存成功，课程出现在列表里，小程序端也能看到</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新增密训班课程，在"包含课程"里选上初探班</strong>
+          <div class="expect">✅ 期望：购买密训班后，学员自动拥有初探班</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>对某课程执行"下架"操作</strong>
+          <div class="expect">✅ 期望：小程序课程列表里该课程消失（或显示"已下架"）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>编辑课程，修改价格，保存后小程序端刷新查看</strong>
+          <div class="expect">✅ 期望：价格已同步更新</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 学员管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"学员管理"，能看到所有注册用户列表</strong>
+          <div class="expect">✅ 期望：显示头像、昵称、手机号、注册时间、大使等级、累计消费</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击某学员"查看详情"</strong>
+          <div class="expect">✅ 期望：看到该学员的基本信息、购买记录、上课记录、推荐人信息（含是否已确认）、功德分明细、积分明细</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>搜索功能：输入手机号搜索某位学员</strong>
+          <div class="expect">✅ 期望：找到对应学员</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>在学员详情页，查看"推荐人变更历史"</strong>
+          <div class="expect">✅ 期望：每次推荐人变更都有记录（时间、原推荐人、新推荐人、变更来源）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 上课记录管理（签到）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"上课记录管理"，点击"创建上课记录"</strong>
+          <div class="expect">✅ 期望：填写：课程名称、上课日期、时间、地点、讲师，保存成功</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入刚创建的上课记录，点击"手动签到"，搜索并选择一位学员</strong>
+          <div class="expect">✅ 期望：签到成功，该学员的上课次数+1，"是否首次上课"字段正确</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>对同一学员在同一节课再次签到</strong>
+          <div class="expect">✅ 期望：第二次标记为"复训"，上课次数继续+1</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>签到后查看学员详情，确认"上课次数"已更新</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击"导出签到表"</strong>
+          <div class="expect">✅ 期望：下载到 Excel 文件，内容完整</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">E. 订单管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"订单管理"，查看订单列表</strong>
+          <div class="expect">✅ 期望：显示订单号、学员、课程、金额、支付状态、推荐人</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击"查看详情"，查看某订单完整信息</strong>
+          <div class="expect">✅ 期望：显示推荐人确认时间、奖励发放状态</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>对已支付订单，尝试操作"退款"</strong>
+          <div class="expect">✅ 期望：填写退款原因，确认后退款处理，奖励自动回退（功德分/积分）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>按"课程类型"筛选订单（如只看初探班订单）</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 十、后台大使管理 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">10</span>
+    <h2>后台 - 大使管理</h2>
+    <span class="tag tag-pc">💻 电脑后台</span>
+  </div>
+  <div class="items">
+
+    <div class="group">
+      <div class="group-title">A. 大使列表</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"大使管理→大使列表"，看到所有大使</strong>
+          <div class="expect">✅ 期望：显示等级（准青鸾/青鸾/鸿鹄/金凤）、功德分余额、积分余额、推荐人数</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>准青鸾大使有特殊标识，显示"推荐进度：已推荐X人，再推荐1个初探班即可升级"</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 大使详情</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击某大使进入详情，查看：基本信息、功德分、积分、推荐订单奖励记录</strong>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>查看"奖励核算"部分，确认每笔订单带来的奖励类型（功德分 or 积分）和数量正确</strong>
+          <div class="expect">✅ 期望：青鸾大使只显示功德分；鸿鹄及以上只显示积分</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>后台手动调整某大使的功德分（+50分），并查看记录</strong>
+          <div class="expect">✅ 期望：大使小程序端功德分同步更新</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 添加活动记录（辅导员/义工功德分）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>在大使详情页，点击"添加活动记录"，选择活动类型（辅导员），填写活动信息和奖励功德分，提交</strong>
+          <div class="expect">✅ 期望：大使功德分增加，活动记录出现在列表里</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 鸿鹄大使升级（手动）</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】手动将一位青鸾大使升级为鸿鹄，设置合同期，分配冻结积分 16880</strong>
+          <div class="expect">✅ 期望：该大使小程序端显示鸿鹄徽章，积分页显示冻结积分 16880</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 十一、消息提醒 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">11</span>
+    <h2>消息提醒</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>【后台】在课程编辑页，开启"消息提醒"，设置"提前3天，每天10:00发送"</strong>
+      </div>
+    </div>
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>【后台】创建一条上课记录，保存后查看"消息提醒管理"，能看到系统自动生成了发送计划</strong>
+        <div class="expect">✅ 期望：发送计划里显示将在上课前3天发送</div>
+      </div>
+    </div>
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>【后台】手动触发一次消息发送（点"立即发送"），查看发送记录</strong>
+        <div class="expect">✅ 期望：消息发送成功数量 > 0，失败数量可查看原因</div>
+      </div>
+    </div>
+    <div class="item">
+      <input type="checkbox">
+      <div class="item-text">
+        <strong>【手机】已预约该课程的学员，检查小程序是否收到提醒消息</strong>
+        <div class="expect">✅ 期望：收到提醒，内容包含课程名称、上课时间、地点</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 十二、系统管理 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">12</span>
+    <h2>后台 - 系统管理</h2>
+    <span class="tag tag-pc">💻 电脑后台</span>
+  </div>
+  <div class="items">
+
+    <div class="group">
+      <div class="group-title">A. 通知公告管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>发布一条"重要"类型公告，设置置顶</strong>
+          <div class="expect">✅ 期望：小程序首页能看到，且排在最前面</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>删除一条公告</strong>
+          <div class="expect">✅ 期望：小程序端对应公告消失</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">B. 协议模板管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"系统管理→协议模板"，查看《传播大使合作协议》模板</strong>
+          <div class="expect">✅ 期望：能看到完整协议内容，版本号</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>编辑协议内容，保存</strong>
+          <div class="expect">✅ 期望：版本号自动升级（如从 v1.0 → v1.1）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">C. 协议签署记录</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"协议签署管理"，查看所有大使的签署记录</strong>
+          <div class="expect">✅ 期望：显示签署人、协议名称、签署时间、签署IP、协议状态</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>查看即将到期的协议提醒列表（合同30天内到期）</strong>
+          <div class="expect">✅ 期望：列表里显示距离到期天数</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">D. 推荐人变更审计</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"系统管理→推荐人变更审计"，查看所有变更记录</strong>
+          <div class="expect">✅ 期望：每条记录显示：变更时间、用户、原推荐人、新推荐人、变更来源（注册/用户修改/订单修改）</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>按"变更类型"筛选（如只看"用户主动修改"）</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">E. 后台账号管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"系统管理→后台用户管理"，新增一个管理员账号</strong>
+          <div class="expect">✅ 期望：新账号可以登录后台</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">F. 反馈管理</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>进入"反馈管理"，看到学员提交的反馈列表</strong>
+          <div class="expect">✅ 期望：显示用户、反馈课程、反馈类型、内容（前50字）、状态</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>点击一条反馈，进入详情，填写回复内容，标记为"已处理"</strong>
+          <div class="expect">✅ 期望：用户在小程序"我的反馈"里看到回复内容</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 十三、奖励计算联调专项 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">13</span>
+    <h2>奖励计算联调专项（核心逻辑验证）</h2>
+    <span class="tag tag-joint">🔗 联调</span>
+  </div>
+  <div class="items">
+    <div class="warn-box">🚨 这是最核心的业务逻辑，每条必须严格验证！需要一套测试账号组合（青鸾大使 + 普通学员配合）。</div>
+
+    <div class="group">
+      <div class="group-title">场景1：青鸾大使推荐奖励（功德分 vs 积分）</div>
+      <div class="info-box">💡 青鸾大使A，已成为青鸾时有 1688 冻结积分，可提现积分 0</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户B通过大使A的推荐码注册，购买初探班（首次购买），支付成功</strong>
+          <div class="expect">✅ 期望：A的冻结积分 -1688（变为0），可提现积分 +1688（变为1688）；不获得功德分</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户C通过大使A的推荐码注册，购买初探班，支付成功（此时A已无冻结积分）</strong>
+          <div class="expect">✅ 期望：A的功德分 +506.4（1688 × 30%）；积分不变</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户D通过大使A的推荐码，购买密训班，支付成功</strong>
+          <div class="expect">✅ 期望：A的功德分 +7777.6（38888 × 20%）；积分不变</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">场景2：鸿鹄大使推荐奖励（只发积分）</div>
+      <div class="info-box">💡 鸿鹄大使E，升级时有 16880 冻结积分，可提现积分 0</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户F通过大使E推荐，购买初探班，支付成功</strong>
+          <div class="expect">✅ 期望：E的冻结积分 -1688（变为15192），可提现积分 +1688；不获得功德分</div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>新用户G通过大使E推荐，购买密训班，支付成功</strong>
+          <div class="expect">✅ 期望：E的可提现积分 +7777.6（38888 × 20%）；冻结积分不变；不获得功德分</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">场景3：密训班套餐奖励不重复计算</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>大使推荐学员购买密训班（38888元），支付成功后查看奖励</strong>
+          <div class="expect">✅ 期望：奖励按 38888 元计算，不再额外计算密训班里包含的初探班（不重复）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">场景4：准青鸾大使推荐无奖励</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>准青鸾大使推荐学员购买初探班，支付成功后查看准青鸾的功德分和积分</strong>
+          <div class="expect">✅ 期望：准青鸾不获得任何奖励（功德分和积分均不变），但准青鸾自动升级为青鸾大使</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">场景5：辅导员/义工功德分额外获得</div>
+      <div class="item">
+        <input type="checkbox">
+        <div class="item-text">
+          <strong>【后台】给鸿鹄大使（本身推荐只发积分）添加一条辅导员活动记录，奖励100功德分</strong>
+          <div class="expect">✅ 期望：鸿鹄大使的功德分 +100（辅导员/义工是额外获得途径，所有大使都能获得）</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 尾部 ===== -->
+<div style="background:#fff; border-radius:10px; padding:20px; margin-bottom:20px; text-align:center; color:#999; font-size:13px;">
+  <div style="font-size:16px; font-weight:600; color:#333; margin-bottom:8px;">测试完成后，请将所有选项勾选确认</div>
+  <div>如有问题请截图标注，联系开发人员处理</div>
+  <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-radius:8px; text-align:left; line-height:2;">
+    📌 <strong>测试小技巧</strong><br>
+    1. 按模块顺序测试，前面的测试会为后面创造数据（比如先测登录，再测购买）<br>
+    2. 每个"❌ 期望"是测试边界情况，要主动尝试"错误操作"来验证系统的拦截<br>
+    3. 联调测试需要手机和电脑同时操作，先在手机做操作，再去电脑后台查看结果<br>
+    4. 奖励计算场景（第13章）需要记录测试前后的数值截图，方便核对
+  </div>
+</div>
+
+</div><!-- end container -->
+</body>
+</html>

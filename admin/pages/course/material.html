@@ -111,11 +111,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -247,28 +247,13 @@
             sortOrder: row.sort_order,
             status: row.status
           };
+          // getMaterialList 云函数已在服务端转换 URL，直接使用即可
+          formData.value.imageUrlDisplay = row.image_url || '';
+          formData.value.videoUrlDisplay = row.video_url || '';
           formVisible.value = true;
-          // 异步获取临时 URL 用于预览
-          try {
-            const fileIDs = [];
-            if (row.image_url) fileIDs.push(row.image_url);
-            if (row.video_url) fileIDs.push(row.video_url);
-            if (fileIDs.length > 0) {
-              const urls = await CloudStorageHelper.getBatchTempURLs(fileIDs);
-              if (row.image_url && urls[row.image_url]) formData.value.imageUrlDisplay = urls[row.image_url];
-              if (row.video_url && urls[row.video_url]) formData.value.videoUrlDisplay = urls[row.video_url];
-            }
-          } catch (e) { console.error('获取预览URL失败', e); }
         };
         
         const handleDelete = async (row) => {
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认删除',
-            body: '确认删除该素材吗？',
-            theme: 'warning'
-          });
-          if (!confirmed) return;
-          
           try {
             await AdminAPI.deleteMaterial({ materialId: row.id });
             TDesign.MessagePlugin.success('删除成功');

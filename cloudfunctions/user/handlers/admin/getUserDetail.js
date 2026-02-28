@@ -14,7 +14,7 @@
  * 当前版本：仅修改字段名，标注TODO
  */
 const { findOne, query, count, db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -80,6 +80,11 @@ module.exports = async (event, context) => {
       approvedAmount: 0,
       pendingAmount: 0
     };
+
+    // 🔥 转换用户云存储字段 cloud:// fileID 为 CDN HTTPS URL
+    if (user.avatar) user.avatar = cloudFileIDToURL(user.avatar);
+    if (user.background_image) user.background_image = cloudFileIDToURL(user.background_image);
+    if (user.qrcode_url) user.qrcode_url = cloudFileIDToURL(user.qrcode_url);
 
     console.log('[admin:getUserDetail] 查询成功（部分功能需要后续实现）');
     return response.success({

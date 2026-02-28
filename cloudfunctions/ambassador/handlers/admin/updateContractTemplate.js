@@ -1,13 +1,14 @@
 /**
  * 管理端接口：更新协议模板
  * Action: updateContractTemplate
+ * 支持更新协议名称和电子合同文件（PDF/Word 云存储 fileID）
  */
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { template_id, title, content, effective_date, expiry_date, status } = event;
+  const { template_id, title, content, contract_name, contractFileId, effective_date, expiry_date, status } = event;
 
   try {
     console.log(`[updateContractTemplate] 更新协议模板:`, template_id);
@@ -26,7 +27,10 @@ module.exports = async (event, context) => {
     // 构建更新数据
     const updateData = {};
     if (title !== undefined) updateData.title = title;
+    if (contract_name !== undefined) updateData.contract_name = contract_name;
     if (content !== undefined) updateData.content = content;
+    // 电子合同文件ID（cloud:// 格式）
+    if (contractFileId !== undefined) updateData.contract_file_id = contractFileId;
     if (effective_date !== undefined) updateData.effective_date = effective_date;
     if (expiry_date !== undefined) updateData.expiry_date = expiry_date;
     if (status !== undefined) updateData.status = status;

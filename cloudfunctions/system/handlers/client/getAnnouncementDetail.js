@@ -2,7 +2,7 @@
  * 客户端接口：获取公告详情
  * Action: client:getAnnouncementDetail
  */
-const { db, response, storage } = require('common'); // 引入 storage
+const { db, response, cloudFileIDToURL } = require('common');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -25,18 +25,9 @@ module.exports = async (event, context) => {
     if (error) throw error;
     if (!data) return response.error('公告不存在或已下架');
 
-    // 🔥 转换云存储 fileID 为临时 URL
+    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL
     if (data.cover_image) {
-      try {
-        const result = await storage.getTempFileURL(data.cover_image);
-        if (result.success && result.tempFileURL) {
-          data.cover_image = result.tempFileURL;
-        } else {
-          console.warn(`[getAnnouncementDetail] 转换临时URL失败，fileID: ${data.cover_image}, 错误: ${result.message}`);
-        }
-      } catch (error) {
-        console.warn('[getAnnouncementDetail] 转换临时URL失败:', data.cover_image, error.message);
-      }
+      data.cover_image = cloudFileIDToURL(data.cover_image);
     }
 
     return response.success(data, '获取成功');

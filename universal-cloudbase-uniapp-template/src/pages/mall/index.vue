@@ -16,11 +16,11 @@
         <view class="points-section">
           <view class="points-info">
             <text class="points-label">💎 功德分</text>
-            <text class="points-value">{{ userMeritPoints }}</text>
+            <text class="points-value">{{ formatPoints(userMeritPoints) }}</text>
           </view>
           <view class="points-info">
             <text class="points-label">💰 积分</text>
-            <text class="points-value">{{ userCashPoints }}</text>
+            <text class="points-value">{{ formatPoints(userCashPoints) }}</text>
           </view>
         </view>
         <view @click="goToPointsDetail">
@@ -184,6 +184,7 @@ import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi, UserApi, SystemApi } from '@/api';
+import { formatPoints } from '@/utils';
 
 // 用户功德分和积分
 const userMeritPoints = ref(0);

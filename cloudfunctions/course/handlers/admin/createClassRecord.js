@@ -4,13 +4,13 @@
  * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
  *
  * DB 表：class_records
- * 关键字段：class_time（合并存储开始+结束时间，格式：HH:mm-HH:mm）、class_location、total_quota、remark
+ * 关键字段：class_date（开课日期）、class_end_date（结课日期）、class_time（上课时段）、class_location、total_quota
  *
  * @param {Object} event
  * @param {number} event.courseId      - 课程 ID（必填）
- * @param {string} event.classDate     - 上课日期（如 "2026-03-01"）（必填）
- * @param {string} event.startTime     - 开始时间（如 "09:00:00"）（必填）
- * @param {string} event.endTime       - 结束时间（如 "17:00:00"）（必填）
+ * @param {string} event.classDate     - 开课日期（如 "2026-03-01"）（必填）
+ * @param {string} event.classEndDate  - 结课日期（如 "2026-03-05"），可选，单天课程时留空
+ * @param {string} event.classTime     - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
  * @param {string} event.classLocation - 上课地点，对应 DB 字段 class_location
  * @param {string} event.teacher       - 讲师
  * @param {number} event.totalQuota    - 总名额，对应 DB 字段 total_quota（默认 30）
@@ -21,34 +21,33 @@ const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  // 接收 camelCase 参数，同时兼容 snake_case（防止旧客户端传参）
   const courseId = event.courseId || event.course_id;
   const classDate = event.classDate || event.class_date;
-  const startTime = event.startTime || event.start_time;
-  const endTime = event.endTime || event.end_time;
+  const classEndDate = event.classEndDate || event.class_end_date || null;
+  const classTime = event.classTime || event.class_time || null;
   const classLocation = event.classLocation || event.class_location;
   const teacher = event.teacher;
   const totalQuota = event.totalQuota || event.total_quota;
   const remark = event.remark;
 
   try {
-    // 参数验证（camelCase key）
     const validation = validateRequired(
-      { courseId, classDate, startTime, endTime },
-      ['courseId', 'classDate', 'startTime', 'endTime']
+      { courseId, classDate },
+      ['courseId', 'classDate']
     );
     if (!validation.valid) {
       return response.paramError(validation.message);
     }
 
-    // 合并 startTime + endTime → class_time（DB 实际字段）
-    const classTime = `${startTime}-${endTime}`;
+    if (classEndDate && classEndDate < classDate) {
+      return response.paramError('结课日期不能早于上课时间');
+    }
 
-    // camelCase → snake_case，写入 DB
     const [result] = await insert('class_records', {
       course_id: courseId,
       class_date: classDate,
-      class_time: classTime,
+      class_end_date: classEndDate || null,
+      class_time: classTime || null,
       class_location: classLocation || null,
       teacher: teacher || null,
       total_quota: totalQuota || 30,

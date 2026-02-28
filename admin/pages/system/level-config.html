@@ -1,77 +1,951 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
   <link rel="icon" href="data:,"><title>等级配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1200px;margin:0 auto;background:white;border-radius:8px;padding:24px}
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
+    .t-layout { height: 100vh; }
+    .t-layout__header { display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc; }
+    .t-layout__sider { background:#fff;border-right:1px solid #dcdcdc;width:240px !important;flex-shrink:0; }
+    .t-layout__content { padding:24px;overflow-y:auto;background:#f5f5f5; }
+
+    /* 详情入口按钮网格 */
+    .detail-panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 8px 0;
     }
-    
-    .t-layout__header {
+    .detail-panel-btn {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 20px 18px;
+      background: #f9f9f9;
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: left;
+    }
+    .detail-panel-btn:hover { background:#eef3ff;border-color:#0052d9; }
+    .detail-panel-btn .panel-icon { font-size: 24px; }
+    .detail-panel-btn .panel-title { font-size: 15px;font-weight:600;color:#333; }
+    .detail-panel-btn .panel-desc { font-size: 12px;color:#999; }
+
+    /* 子弹窗内容区 */
+    .sub-dialog-body { padding: 4px 0; }
+    /* 协议内容弹窗：确保可滚动，上传区域可见 */
+    .sub-dialog-body.contract-dialog-body { max-height: 65vh; overflow-y: auto; padding: 4px 8px 4px 0; }
+    .sub-section-label {
+      font-size: 13px; font-weight:600; color:#555;
+      margin-bottom: 6px; margin-top: 12px;
+    }
+    .sub-section-label:first-child { margin-top: 0; }
+
+    /* 富文本编辑器 */
+    .rich-editor-wrap {
+      border: 1px solid #dcdcdc;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .rich-toolbar {
+      display: flex;
       align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
+      gap: 2px;
+      padding: 6px 8px;
       background: #f5f5f5;
+      border-bottom: 1px solid #dcdcdc;
+      flex-wrap: wrap;
+    }
+    .rich-toolbar .tb-btn {
+      min-width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      padding: 0 6px;
+      transition: background 0.15s;
+    }
+    .rich-toolbar .tb-btn:hover { background: #e0e0e0; }
+    .rich-toolbar .tb-sep { width: 1px; height: 20px; background: #dcdcdc; margin: 0 4px; }
+    .rich-toolbar select.tb-select {
+      height: 28px;
+      border: 1px solid #dcdcdc;
+      border-radius: 4px;
+      background: white;
+      font-size: 12px;
+      padding: 0 6px;
+      cursor: pointer;
+      color: #333;
+    }
+    .rich-content {
+      min-height: 120px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 12px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #333;
+      background: #fff;
+    }
+    .rich-content[data-placeholder]:empty::before {
+      content: attr(data-placeholder);
+      color: #bbb;
     }
 
+    /* 权益/申请列表编辑器 */
+    .list-editor-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border: 1px solid #e8e8e8;
+    }
+    .list-item-index {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #0052d9; color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;flex-shrink:0;margin-top:4px;
+    }
+    .list-item-fields { flex:1;display:flex;flex-direction:column;gap:6px; }
+    .field-row { display:flex;flex-direction:column;gap:3px; }
+    .field-label { font-size:12px;color:#666;font-weight:500; }
   </style></head><body>
   <div id="app">
     <t-layout style="height: 100vh;">
       <!-- 顶部导航 -->
-      <t-header height="64px" style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 24px;
-        background: #fff;
-        border-bottom: 1px solid #dcdcdc;
-      ">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+
+      <t-header height="64px" style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:18px;font-weight:600;color:#333;">🎨 天道文化后台管理</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display:flex;align-items:center;gap:16px;">
           <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
           <t-button size="small" @click="handleLogout">退出</t-button>
         </div>
       </t-header>
-      
+
       <t-layout>
-        <!-- 侧边菜单 -->
         <sidebar-menu active-key="level-config"></sidebar-menu>
-        
-        <!-- 主内容区 -->
-        <t-content class="page-content"><div class="c"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h1 style="font-size:20px;font-weight:600;margin:0;">等级配置</h1><t-button theme="primary" @click="handleAdd">+ 新增等级</t-button></div><t-table :data="d" :columns="cols" :loading="lg" bordered><template #op="{row}"><t-space><t-button size="small" variant="text" @click="edit(row)">编辑</t-button><t-button size="small" variant="text" theme="danger" @click="handleDel(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="addV" header="新增等级配置" width="500px" @confirm="saveAdd"><t-form v-if="addF" :data="addF" label-width="120px"><t-form-item label="等级值"><t-input-number v-model="addF.level" :min="1" style="width:100%;"/></t-form-item><t-form-item label="等级名称"><t-input v-model="addF.levelName" placeholder="如：天道宗师"/></t-form-item><t-form-item label="升级方式"><t-select v-model="addF.upgradeType" style="width:100%;"><t-option value="payment" label="付费升级"/><t-option value="contract" label="签约升级"/></t-select></t-form-item><t-form-item label="等级描述"><t-textarea v-model="addF.description" placeholder="等级描述"/></t-form-item></t-form></t-dialog><t-dialog v-model:visible="v" header="编辑等级配置" width="700px" @confirm="save"><t-form v-if="f" :data="f" label-width="150px"><t-form-item label="等级名称"><t-input v-model="f.level_name" disabled/></t-form-item><t-form-item label="等级描述"><t-input v-model="f.level_desc"/></t-form-item><t-form-item label="升级费用"><t-input-number v-model="f.upgrade_payment_amount" :min="0"/></t-form-item><t-form-item label="冻结积分"><t-input-number v-model="f.frozen_points" :min="0"/></t-form-item><t-form-item label="单次解冻积分"><t-input-number v-model="f.unfreeze_per_referral" :min="0"/></t-form-item><t-form-item label="基础功德率"><t-input-number v-model="f.merit_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item><t-form-item label="高级功德率"><t-input-number v-model="f.merit_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item><t-form-item label="基础现金率"><t-input-number v-model="f.cash_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item><t-form-item label="高级现金率"><t-input-number v-model="f.cash_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item><t-form-item label="基础赠课配额"><t-input-number v-model="f.gift_quota_basic" :min="0"/></t-form-item><t-form-item label="高级赠课配额"><t-input-number v-model="f.gift_quota_advanced" :min="0"/></t-form-item></t-form></t-dialog>        </t-content>
+
+        <t-content class="page-content">
+          <div class="c">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+              <h1 style="font-size:20px;font-weight:600;margin:0;">等级配置</h1>
+              <t-button theme="primary" @click="handleAdd">+ 新增等级</t-button>
+            </div>
+
+            <t-table :data="d" :columns="cols" :loading="lg" bordered>
+              <template #op="{row}">
+                <t-space>
+                  <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">详情</t-button>
+                  <t-button size="small" variant="text" @click="edit(row)">编辑</t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="handleDel(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+
+          <!-- 新增等级对话框 -->
+          <t-dialog v-model:visible="addV" header="新增等级配置" width="500px" @confirm="saveAdd">
+            <t-form v-if="addF" :data="addF" label-width="120px">
+              <t-form-item label="等级值"><t-input-number v-model="addF.level" :min="1" style="width:100%;"/></t-form-item>
+              <t-form-item label="等级名称"><t-input v-model="addF.levelName" placeholder="如：天道宗师"/></t-form-item>
+              <t-form-item label="升级方式">
+                <t-select v-model="addF.upgradeType" style="width:100%;">
+                  <t-option value="payment" label="付费升级"/>
+                  <t-option value="contract" label="签约升级"/>
+                </t-select>
+              </t-form-item>
+              <t-form-item label="等级描述"><t-textarea v-model="addF.description" placeholder="等级描述"/></t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- 编辑等级对话框 -->
+          <t-dialog v-model:visible="v" header="编辑等级配置" width="700px" @confirm="save">
+            <t-form v-if="f" :data="f" label-width="150px">
+              <t-form-item label="等级名称"><t-input v-model="f.level_name" disabled/></t-form-item>
+              <t-form-item label="升级费用"><t-input-number v-model="f.upgrade_payment_amount" :min="0"/></t-form-item>
+              <t-form-item label="冻结积分"><t-input-number v-model="f.frozen_points" :min="0"/></t-form-item>
+              <t-form-item label="单次解冻积分"><t-input-number v-model="f.unfreeze_per_referral" :min="0"/></t-form-item>
+              <t-form-item label="初探班功德率"><t-input-number v-model="f.merit_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item>
+              <t-form-item label="密训班功德率"><t-input-number v-model="f.merit_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item>
+              <t-form-item label="初探班现金率"><t-input-number v-model="f.cash_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item>
+              <t-form-item label="密训班现金率"><t-input-number v-model="f.cash_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item>
+              <t-form-item label="初探班赠课配额"><t-input-number v-model="f.gift_quota_basic" :min="0"/></t-form-item>
+              <t-form-item label="密训班赠课配额"><t-input-number v-model="f.gift_quota_advanced" :min="0"/></t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- ══════════════════════════════════════
+               详情主弹窗：4个板块入口按钮
+          ══════════════════════════════════════ -->
+          <t-dialog
+            v-model:visible="detailV"
+            :header="`${detailRow?.level_name || ''} — 详情配置`"
+            width="560px"
+            :footer="false"
+          >
+            <div v-if="detailRow" class="detail-panel-grid">
+              <!-- 板块1：协议内容 -->
+              <div class="detail-panel-btn" @click="openSubContract">
+                <span class="panel-icon">📜</span>
+                <span class="panel-title">协议内容</span>
+                <span class="panel-desc">编辑该等级签署的协议标题与正文</span>
+              </div>
+              <!-- 板块2：升级权益文案 -->
+              <div class="detail-panel-btn" @click="openSubBenefits">
+                <span class="panel-icon">🎁</span>
+                <span class="panel-title">升级权益文案</span>
+                <span class="panel-desc">小程序升级指南页展示的权益列表</span>
+              </div>
+              <!-- 板块3：申请列表文案 -->
+              <div class="detail-panel-btn" @click="openSubQuestions">
+                <span class="panel-icon">📝</span>
+                <span class="panel-title">申请列表文案</span>
+                <span class="panel-desc">大使申请页的填写问题列表</span>
+              </div>
+              <!-- 板块4：等级描述文案 -->
+              <div class="detail-panel-btn" @click="openSubDesc">
+                <span class="panel-icon">📋</span>
+                <span class="panel-title">等级描述文案</span>
+                <span class="panel-desc">小程序等级体系页每个等级的描述</span>
+              </div>
+            </div>
+          </t-dialog>
+
+          <!-- ══════════════════════════════════════
+               子弹窗1：协议内容（电子合同文件上传）
+          ══════════════════════════════════════ -->
+          <t-dialog
+            v-model:visible="subContractV"
+            :header="`${detailRow?.level_name || ''} — 协议内容`"
+            width="600px"
+            :footer="false"
+            @close="subContractV=false"
+          >
+            <div v-if="detailRow">
+              <div v-if="contractLoading" style="text-align:center;padding:32px;color:#999;">加载中…</div>
+              <template v-else>
+                <!-- 可滚动内容区 -->
+                <div class="sub-dialog-body contract-dialog-body">
+                  <!-- 上传区域 — input 放在 dialog 内部，与 material.html 完全一致 -->
+                  <div class="sub-section-label">电子合同文件（PDF / Word）</div>
+                  <p style="color:#999;font-size:12px;margin:0 0 12px;">上传 PDF 或 Word 格式的电子合同，大使可在小程序中下载查看。</p>
+
+                  <!-- file input 放在紧邻上传区域处，确保 Vue ref 正确绑定 -->
+                  <input type="file" ref="contractFileInput" accept=".pdf,.doc,.docx" style="display:none;" @change="handleContractFileChange"/>
+
+                  <div class="contract-upload-zone"
+                       style="border:2px dashed #0052d9;border-radius:12px;padding:24px;margin-bottom:16px;background:#f0f9ff;text-align:center;cursor:pointer;"
+                       @click="triggerContractFileInput">
+                    <div v-if="contractUploading" style="color:#0052d9;">
+                      <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+                      <div style="font-size:14px;font-weight:600;">正在上传，请稍候…</div>
+                    </div>
+                    <div v-else>
+                      <div style="font-size:36px;margin-bottom:8px;">📤</div>
+                      <div style="font-size:14px;font-weight:600;color:#0052d9;margin-bottom:4px;">
+                        {{ contractForm.contract_file_id ? '重新选择文件' : '点击选择 PDF 或 Word 文件' }}
+                      </div>
+                      <div style="font-size:12px;color:#666;">支持 .pdf / .doc / .docx 格式</div>
+                    </div>
+                  </div>
+
+                  <!-- 已上传文件展示 -->
+                  <div v-if="contractForm.contract_file_id" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:10px;">
+                    <span style="font-size:20px;">📄</span>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ contractForm.contract_file_name || '已上传电子合同' }}</div>
+                      <div style="font-size:12px;color:#999;margin-top:2px;">点击上方区域可重新上传</div>
+                    </div>
+                    <t-button size="small" theme="default" @click="previewContractFile">预览</t-button>
+                  </div>
+
+                  <div class="sub-section-label" style="margin-top:16px;">协议名称</div>
+                  <t-input v-model="contractForm.contract_name" placeholder="请输入协议名称，如：青鸾大使协议"/>
+                </div>
+
+                <!-- 操作按钮固定在滚动区域外，始终可见 -->
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;display:flex;gap:10px;justify-content:flex-end;">
+                  <t-button theme="default" @click="subContractV=false">取消</t-button>
+                  <t-button theme="primary" :loading="contractSaving" @click="saveContract">保存协议</t-button>
+                </div>
+              </template>
+            </div>
+          </t-dialog>
+
+          <!-- ══════════════════════════════════════
+               子弹窗2：升级权益文案
+          ══════════════════════════════════════ -->
+          <t-dialog
+            v-model:visible="subBenefitsV"
+            :header="`${detailRow?.level_name || ''} — 升级权益文案`"
+            width="720px"
+            :footer="false"
+            @close="subBenefitsV=false"
+          >
+            <div class="sub-dialog-body" v-if="detailRow" style="max-height:65vh;overflow-y:auto;padding-right:4px;">
+              <div v-for="(item, index) in detailBenefits" :key="index" class="list-editor-item">
+                <div class="list-item-index">{{ index + 1 }}</div>
+                <div class="list-item-fields">
+                  <div class="field-row">
+                    <span class="field-label">标题</span>
+                    <t-input v-model="item.title" placeholder="权益标题，如：获得16880冻结积分" size="small"/>
+                  </div>
+                  <div class="field-row">
+                    <span class="field-label">内容</span>
+                    <div class="rich-editor-wrap">
+                      <div class="rich-toolbar">
+                        <button class="tb-btn" title="加粗" @mousedown.prevent="execCmdOn($event, index, 'bold', 'benefits')"><b>B</b></button>
+                        <button class="tb-btn" title="斜体" @mousedown.prevent="execCmdOn($event, index, 'italic', 'benefits')"><i>I</i></button>
+                        <button class="tb-btn" title="下划线" @mousedown.prevent="execCmdOn($event, index, 'underline', 'benefits')"><u>U</u></button>
+                        <button class="tb-btn" title="删除线" @mousedown.prevent="execCmdOn($event, index, 'strikeThrough', 'benefits')"><s>S</s></button>
+                        <span class="tb-sep"></span>
+                        <span class="tb-btn" title="文字颜色" style="position:relative;overflow:hidden;cursor:pointer;">
+                          A<input type="color" style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;cursor:pointer;" @input="e=>execCmdColor(e.target.value, index, 'benefits')"/>
+                        </span>
+                      </div>
+                      <div
+                        :id="`editor-benefit-${index}`"
+                        class="rich-content"
+                        contenteditable="true"
+                        data-placeholder="权益说明，如：推荐初探班解冻1688积分…"
+                        @input="item.desc = $event.target.innerHTML"
+                        v-html="item.desc"
+                        style="min-height:60px;"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <t-button size="small" variant="text" theme="danger" @click="removeBenefit(index)" style="flex-shrink:0;margin-top:4px;">删除</t-button>
+              </div>
+
+              <t-button v-if="detailBenefits.length < 8" theme="default" size="small" @click="addBenefit" style="margin-top:4px;">+ 新增权益</t-button>
+
+              <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+                <t-button theme="default" @click="subBenefitsV=false">取消</t-button>
+                <t-button theme="primary" :loading="benefitsSaving" @click="saveBenefits">保存权益文案</t-button>
+              </div>
+            </div>
+          </t-dialog>
+
+          <!-- ══════════════════════════════════════
+               子弹窗3：申请列表文案
+          ══════════════════════════════════════ -->
+          <t-dialog
+            v-model:visible="subQuestionsV"
+            :header="`${detailRow?.level_name || ''} — 申请列表文案`"
+            width="620px"
+            :footer="false"
+            @close="subQuestionsV=false"
+          >
+            <div class="sub-dialog-body" v-if="detailRow" style="max-height:65vh;overflow-y:auto;padding-right:4px;">
+              <p style="color:#999;font-size:13px;margin-top:0;margin-bottom:12px;">
+                配置小程序申请大使时的问题列表，用户将依次填写回答。
+              </p>
+              <div v-for="(item, index) in detailQuestions" :key="index" class="list-editor-item">
+                <div class="list-item-index">{{ index + 1 }}</div>
+                <div class="list-item-fields">
+                  <div class="field-row">
+                    <span class="field-label">问题</span>
+                    <t-input v-model="item.question" placeholder="如：您为何想成为天道文化传播大使？" size="small"/>
+                  </div>
+                </div>
+                <t-button size="small" variant="text" theme="danger" @click="removeQuestion(index)" style="flex-shrink:0;margin-top:4px;">删除</t-button>
+              </div>
+
+              <t-button v-if="detailQuestions.length < 10" theme="default" size="small" @click="addQuestion" style="margin-top:4px;">+ 新增问题</t-button>
+
+              <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+                <t-button theme="default" @click="subQuestionsV=false">取消</t-button>
+                <t-button theme="primary" :loading="questionsSaving" @click="saveQuestions">保存申请文案</t-button>
+              </div>
+            </div>
+          </t-dialog>
+
+          <!-- ══════════════════════════════════════
+               子弹窗4：等级描述文案
+          ══════════════════════════════════════ -->
+          <t-dialog
+            v-model:visible="subDescV"
+            :header="`${detailRow?.level_name || ''} — 等级描述文案`"
+            width="680px"
+            :footer="false"
+            @close="subDescV=false"
+          >
+            <div class="sub-dialog-body" v-if="detailRow">
+              <p style="color:#999;font-size:13px;margin-top:0;margin-bottom:12px;">
+                显示在小程序「大使等级」页的等级体系卡片中，用于描述该等级的定位与特点。
+              </p>
+              <div class="rich-editor-wrap">
+                <div class="rich-toolbar">
+                  <button class="tb-btn" title="加粗" @mousedown.prevent="execCmdDesc('bold')"><b>B</b></button>
+                  <button class="tb-btn" title="斜体" @mousedown.prevent="execCmdDesc('italic')"><i>I</i></button>
+                  <button class="tb-btn" title="下划线" @mousedown.prevent="execCmdDesc('underline')"><u>U</u></button>
+                  <button class="tb-btn" title="删除线" @mousedown.prevent="execCmdDesc('strikeThrough')"><s>S</s></button>
+                  <span class="tb-sep"></span>
+                  <button class="tb-btn" title="有序列表" @mousedown.prevent="execCmdDesc('insertOrderedList')">1.</button>
+                  <button class="tb-btn" title="无序列表" @mousedown.prevent="execCmdDesc('insertUnorderedList')">•</button>
+                  <span class="tb-sep"></span>
+                  <button class="tb-btn" title="插入链接" @mousedown.prevent="insertLinkDesc()">🔗</button>
+                  <span class="tb-btn" title="文字颜色" style="position:relative;overflow:hidden;cursor:pointer;">
+                    A<input type="color" style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;cursor:pointer;" @input="onDescColor"/>
+                  </span>
+                  <span class="tb-sep"></span>
+                  <button class="tb-btn" title="清除格式" @mousedown.prevent="execCmdDesc('removeFormat')">✕</button>
+                </div>
+                <div
+                  id="editor-desc"
+                  class="rich-content"
+                  contenteditable="true"
+                  data-placeholder="请输入该等级描述，如：新手大使，开启传播之旅"
+                  @input="descHtml = $event.target.innerHTML"
+                  v-html="descHtml"
+                  style="min-height:120px;"
+                ></div>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+                <t-button theme="default" @click="subDescV=false">取消</t-button>
+                <t-button theme="primary" :loading="descSaving" @click="saveDesc">保存等级描述</t-button>
+              </div>
+            </div>
+          </t-dialog>
+
+        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js?v=20260226"></script><script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
-      setup() {
-        // 引入侧边栏导航功能
-        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
-        const lg=ref(false);const d=ref([]);const v=ref(false);const f=ref(null);const addV=ref(false);const addF=ref({level:6,levelName:'',upgradeType:'payment',description:''});const cols=[{colKey:'level',title:'等级',width:80},{colKey:'level_name',title:'等级名称',width:150},{colKey:'level_desc',title:'等级描述',width:200},{colKey:'upgrade_payment_amount',title:'升级费用',width:100},{colKey:'frozen_points',title:'冻结积分',width:100},{colKey:'unfreeze_per_referral',title:'单次解冻',width:100},{colKey:'merit_rate_basic',title:'基础功德率',width:100},{colKey:'cash_rate_basic',title:'基础现金率',width:100},{colKey:'op',title:'操作',width:150,cell:'op'}];const ld=async()=>{lg.value=true;try{d.value=await AdminAPI.getLevelConfig();}catch(e){TDesign.MessagePlugin.error(e.message);}finally{lg.value=false;}};const edit=row=>{f.value={...row};v.value=true;};const save=async()=>{try{await AdminAPI.updateLevelConfig(f.value);TDesign.MessagePlugin.success('保存成功');v.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};const handleAdd=()=>{addF.value={level:Math.max(...(d.value.map(r=>r.level)||[0]))+1,levelName:'',upgradeType:'payment',description:''};addV.value=true;};const saveAdd=async()=>{if(!addF.value.levelName){TDesign.MessagePlugin.warning('请输入等级名称');return;}try{await AdminAPI.createAmbassadorLevelConfig(addF.value);TDesign.MessagePlugin.success('新增成功');addV.value=false;ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};const handleDel=async row=>{const ok=await TDesign.DialogPlugin.confirm({header:'确认删除',body:`确认删除等级「${row.level_name}」吗？`,theme:'danger'});if(!ok)return;try{await AdminAPI.deleteAmbassadorLevelConfig(row.level);TDesign.MessagePlugin.success('删除成功');ld();}catch(e){TDesign.MessagePlugin.error(e.message);}};onMounted(ld);return {
-          activeMenuKey: 'level-config',// 侧边栏导航
-          adminInfo,
-          handleMenuChange,
-          handleLogout,
-          lg,d,v,f,addV,addF,cols,edit,save,handleAdd,saveAdd,handleDel
-        };}}).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');</script></body></html>
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js?v=20260228"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260228"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/admin-api.js?v=20260228"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260228"></script>
+  <script>
+  const { createApp, ref, onMounted, nextTick } = Vue;
+  createApp({
+    setup() {
+      const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
 
+      // ── 列表 ──
+      const lg = ref(false);
+      const d = ref([]);
+      const v = ref(false);
+      const f = ref(null);
+      const addV = ref(false);
+      const addF = ref({ level: 6, levelName: '', upgradeType: 'payment', description: '' });
 
+      const cols = [
+        { colKey: 'level', title: '等级', width: 80 },
+        { colKey: 'level_name', title: '等级名称', width: 150 },
+        { colKey: 'level_desc', title: '等级描述', width: 200,
+          cell: (h, { row }) => {
+            // 去除 HTML 标签后展示纯文本
+            const div = document.createElement('div');
+            div.innerHTML = row.level_desc || '';
+            return h('span', { style: 'max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;' }, div.textContent || '');
+          }
+        },
+        { colKey: 'upgrade_payment_amount', title: '升级费用', width: 100 },
+        { colKey: 'frozen_points', title: '冻结积分', width: 100 },
+        { colKey: 'unfreeze_per_referral', title: '单次解冻', width: 100 },
+        { colKey: 'merit_rate_basic', title: '初探功德率', width: 100 },
+        { colKey: 'cash_rate_basic', title: '初探现金率', width: 100 },
+        { colKey: 'op', title: '操作', width: 180, cell: 'op' }
+      ];
 
+      const ld = async () => {
+        lg.value = true;
+        try {
+          d.value = await AdminAPI.getLevelConfig();
+        } catch (e) {
+          TDesign.MessagePlugin.error(e.message);
+        } finally {
+          lg.value = false;
+        }
+      };
 
+      const edit = row => { f.value = { ...row }; v.value = true; };
 
+      const save = async () => {
+        try {
+          await AdminAPI.updateLevelConfig(f.value);
+          TDesign.MessagePlugin.success('保存成功');
+          v.value = false;
+          ld();
+        } catch (e) {
+          TDesign.MessagePlugin.error(e.message);
+        }
+      };
+
+      const handleAdd = () => {
+        addF.value = {
+          level: Math.max(...(d.value.map(r => r.level) || [0])) + 1,
+          levelName: '', upgradeType: 'payment', description: ''
+        };
+        addV.value = true;
+      };
+
+      const saveAdd = async () => {
+        if (!addF.value.levelName) { TDesign.MessagePlugin.warning('请输入等级名称'); return; }
+        try {
+          await AdminAPI.createAmbassadorLevelConfig(addF.value);
+          TDesign.MessagePlugin.success('新增成功');
+          addV.value = false;
+          ld();
+        } catch (e) {
+          TDesign.MessagePlugin.error(e.message);
+        }
+      };
+
+      const handleDel = async row => {
+        try {
+          await AdminAPI.deleteAmbassadorLevelConfig(row.level);
+          TDesign.MessagePlugin.success('删除成功');
+          ld();
+        } catch (e) {
+          TDesign.MessagePlugin.error(e.message);
+        }
+      };
+
+      // ═══════════════════════════════════════════
+      //  详情主弹窗
+      // ═══════════════════════════════════════════
+      const detailV = ref(false);
+      const detailRow = ref(null);
+
+      const openDetail = row => {
+        detailRow.value = row;
+        detailV.value = true;
+      };
+
+      // ═══════════════════════════════════════════
+      //  子弹窗1：协议内容（电子合同文件上传）
+      // ═══════════════════════════════════════════
+      const subContractV = ref(false);
+      const contractLoading = ref(false);
+      const contractSaving = ref(false);
+      const contractUploading = ref(false);
+      const contractForm = ref({
+        contract_name: '',
+        contract_file_id: null,
+        contract_file_url: null,
+        contract_file_name: null,
+        template_id: null,
+        isNew: false
+      });
+
+      // 打开协议内容子弹窗，加载当前等级的电子合同文件信息
+      const openSubContract = async () => {
+        detailV.value = false;
+        subContractV.value = true;
+        contractLoading.value = true;
+        try {
+          const res = await AdminAPI.getContractTemplateByLevel(detailRow.value.level);
+          if (res.template) {
+            contractForm.value = {
+              contract_name: res.template.contract_name || '',
+              contract_file_id: res.template.contract_file_id || null,
+              contract_file_url: res.template.contract_file_url || null,
+              contract_file_name: res.template.contract_file_id
+                ? res.template.contract_file_id.split('/').pop()
+                : null,
+              template_id: res.template.id,
+              isNew: false
+            };
+          } else {
+            contractForm.value = {
+              contract_name: `${detailRow.value.level_name}协议`,
+              contract_file_id: null,
+              contract_file_url: null,
+              contract_file_name: null,
+              template_id: null,
+              isNew: true
+            };
+          }
+        } catch (e) {
+          TDesign.MessagePlugin.error('加载协议失败: ' + e.message);
+        } finally {
+          contractLoading.value = false;
+        }
+      };
+
+      // file input 的 Vue ref（对应模板中 ref="contractFileInput"）
+      // 与 material.html 的 videoFileInput 完全一致
+      const contractFileInput = ref(null);
+
+      // 与 material.html 的 triggerVideoUpload 完全一致
+      const triggerContractFileInput = () => contractFileInput.value && contractFileInput.value.click();
+
+      // 选文件后立即上传，与 material.html 的 handleVideoChange 完全一致
+      const handleContractFileChange = async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['pdf', 'doc', 'docx'].includes(ext)) {
+          TDesign.MessagePlugin.warning('仅支持 PDF / Word 格式文件');
+          return;
+        }
+        contractUploading.value = true;
+        TDesign.MessagePlugin.loading('电子合同上传中，请稍候…', 0);
+        try {
+          const level = detailRow.value ? detailRow.value.level : 'unknown';
+          const cloudPath = `contracts/${level}/${Date.now()}.${ext}`;
+          const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+          contractForm.value.contract_file_id = result.fileID;
+          contractForm.value.contract_file_name = file.name;
+          contractForm.value.contract_file_url = result.tempFileURL || result.fileID;
+          TDesign.MessagePlugin.closeAll();
+          TDesign.MessagePlugin.success('文件上传成功');
+        } catch (err) {
+          TDesign.MessagePlugin.closeAll();
+          TDesign.MessagePlugin.error('文件上传失败：' + (err.message || '未知错误'));
+        } finally {
+          contractUploading.value = false;
+        }
+      };
+
+      const onContractFileChange = () => {};
+
+      // 预览当前已上传的电子合同
+      const previewContractFile = () => {
+        if (contractForm.value.contract_file_url) {
+          window.open(contractForm.value.contract_file_url, '_blank');
+        }
+      };
+
+      // 上传文件并保存协议模板
+      const saveContract = async () => {
+        if (!contractForm.value.contract_name) {
+          TDesign.MessagePlugin.warning('请输入协议名称');
+          return;
+        }
+        // 新建协议时必须已上传文件（文件在选择时即立即上传）
+        if (contractForm.value.isNew && !contractForm.value.contract_file_id) {
+          TDesign.MessagePlugin.warning('请先选择并上传电子合同文件（PDF 或 Word）');
+          return;
+        }
+
+        contractSaving.value = true;
+        try {
+          const fileId = contractForm.value.contract_file_id;
+
+          if (contractForm.value.isNew) {
+            await AdminAPI.createContractTemplate({
+              contract_name: contractForm.value.contract_name,
+              ambassadorLevel: detailRow.value.level,
+              contractType: 'ambassador',
+              contractFileId: fileId
+            });
+            contractForm.value.isNew = false;
+          } else {
+            await AdminAPI.updateContractTemplate({
+              template_id: contractForm.value.template_id,
+              contract_name: contractForm.value.contract_name,
+              contractFileId: fileId
+            });
+          }
+          TDesign.MessagePlugin.success('协议保存成功');
+          subContractV.value = false;
+        } catch (e) {
+          contractUploading.value = false;
+          TDesign.MessagePlugin.error('保存失败: ' + e.message);
+        } finally {
+          contractSaving.value = false;
+          contractUploading.value = false;
+        }
+      };
+
+      // ═══════════════════════════════════════════
+      //  子弹窗2：升级权益文案
+      // ═══════════════════════════════════════════
+      const subBenefitsV = ref(false);
+      const detailBenefits = ref([]);
+      const benefitsSaving = ref(false);
+
+      const openSubBenefits = async () => {
+        detailV.value = false;
+        const row = detailRow.value;
+        if (row.upgrade_benefits) {
+          try {
+            const parsed = typeof row.upgrade_benefits === 'string'
+              ? JSON.parse(row.upgrade_benefits)
+              : row.upgrade_benefits;
+            detailBenefits.value = Array.isArray(parsed)
+              ? parsed.map(b => ({ title: b.title || '', desc: b.desc || '' }))
+              : [];
+          } catch (e) { detailBenefits.value = []; }
+        } else {
+          detailBenefits.value = [];
+        }
+        subBenefitsV.value = true;
+        // 同步富文本编辑器
+        await nextTick();
+        detailBenefits.value.forEach((item, i) => {
+          const el = document.getElementById(`editor-benefit-${i}`);
+          if (el) el.innerHTML = item.desc || '';
+        });
+      };
+
+      const addBenefit = async () => {
+        if (detailBenefits.value.length >= 8) return;
+        detailBenefits.value.push({ title: '', desc: '' });
+        await nextTick();
+        const i = detailBenefits.value.length - 1;
+        const el = document.getElementById(`editor-benefit-${i}`);
+        if (el) el.innerHTML = '';
+      };
+
+      const removeBenefit = index => { detailBenefits.value.splice(index, 1); };
+
+      const saveBenefits = async () => {
+        benefitsSaving.value = true;
+        try {
+          // 从 DOM 同步各项内容
+          detailBenefits.value.forEach((item, i) => {
+            const el = document.getElementById(`editor-benefit-${i}`);
+            if (el) item.desc = el.innerHTML;
+          });
+          const validItems = detailBenefits.value.filter(b => b.title || b.desc);
+          await AdminAPI.updateLevelConfig({
+            level: detailRow.value.level,
+            upgrade_benefits: JSON.stringify(validItems)
+          });
+          // 更新本地数据
+          const idx = d.value.findIndex(r => r.level === detailRow.value.level);
+          if (idx !== -1) d.value[idx].upgrade_benefits = JSON.stringify(validItems);
+          detailRow.value.upgrade_benefits = JSON.stringify(validItems);
+          TDesign.MessagePlugin.success('权益文案保存成功');
+          subBenefitsV.value = false;
+        } catch (e) {
+          TDesign.MessagePlugin.error('保存失败: ' + e.message);
+        } finally {
+          benefitsSaving.value = false;
+        }
+      };
+
+      // ═══════════════════════════════════════════
+      //  子弹窗3：申请列表文案
+      // ═══════════════════════════════════════════
+      const subQuestionsV = ref(false);
+      const detailQuestions = ref([]);
+      const questionsSaving = ref(false);
+
+      const openSubQuestions = () => {
+        detailV.value = false;
+        const row = detailRow.value;
+        if (row.apply_questions) {
+          try {
+            const parsed = typeof row.apply_questions === 'string'
+              ? JSON.parse(row.apply_questions)
+              : row.apply_questions;
+            detailQuestions.value = Array.isArray(parsed)
+              ? parsed.map(q => ({ question: q.question || '' }))
+              : [];
+          } catch (e) { detailQuestions.value = []; }
+        } else {
+          detailQuestions.value = [];
+        }
+        subQuestionsV.value = true;
+      };
+
+      const addQuestion = () => {
+        if (detailQuestions.value.length >= 10) return;
+        detailQuestions.value.push({ question: '' });
+      };
+
+      const removeQuestion = index => { detailQuestions.value.splice(index, 1); };
+
+      const saveQuestions = async () => {
+        questionsSaving.value = true;
+        try {
+          const validItems = detailQuestions.value.filter(q => q.question.trim());
+          await AdminAPI.updateLevelConfig({
+            level: detailRow.value.level,
+            apply_questions: JSON.stringify(validItems)
+          });
+          const idx = d.value.findIndex(r => r.level === detailRow.value.level);
+          if (idx !== -1) d.value[idx].apply_questions = JSON.stringify(validItems);
+          detailRow.value.apply_questions = JSON.stringify(validItems);
+          TDesign.MessagePlugin.success('申请文案保存成功');
+          subQuestionsV.value = false;
+        } catch (e) {
+          TDesign.MessagePlugin.error('保存失败: ' + e.message);
+        } finally {
+          questionsSaving.value = false;
+        }
+      };
+
+      // ═══════════════════════════════════════════
+      //  子弹窗4：等级描述文案
+      // ═══════════════════════════════════════════
+      const subDescV = ref(false);
+      const descHtml = ref('');
+      const descSaving = ref(false);
+
+      const openSubDesc = async () => {
+        detailV.value = false;
+        descHtml.value = detailRow.value.level_desc || '';
+        subDescV.value = true;
+        await nextTick();
+        const el = document.getElementById('editor-desc');
+        if (el) el.innerHTML = descHtml.value;
+      };
+
+      const saveDesc = async () => {
+        descSaving.value = true;
+        try {
+          const el = document.getElementById('editor-desc');
+          if (el) descHtml.value = el.innerHTML;
+          await AdminAPI.updateLevelConfig({
+            level: detailRow.value.level,
+            level_desc: descHtml.value
+          });
+          const idx = d.value.findIndex(r => r.level === detailRow.value.level);
+          if (idx !== -1) d.value[idx].level_desc = descHtml.value;
+          detailRow.value.level_desc = descHtml.value;
+          TDesign.MessagePlugin.success('等级描述保存成功');
+          subDescV.value = false;
+        } catch (e) {
+          TDesign.MessagePlugin.error('保存失败: ' + e.message);
+        } finally {
+          descSaving.value = false;
+        }
+      };
+
+      // ═══════════════════════════════════════════
+      //  富文本工具函数
+      // ═══════════════════════════════════════════
+
+      /** 在协议编辑器执行命令 */
+      function execCmd(cmd, val) {
+        const el = document.getElementById('editor-contract');
+        if (el) el.focus();
+        document.execCommand(cmd, false, val || null);
+      }
+
+      /** 格式块（标题/正文）*/
+      function execFormatBlock(tag) {
+        if (!tag) return;
+        const el = document.getElementById('editor-contract');
+        if (el) el.focus();
+        document.execCommand('formatBlock', false, tag);
+      }
+
+      /** 插入链接（协议编辑器） */
+      function insertLink() {
+        const url = prompt('请输入链接地址：', 'https://');
+        if (url) {
+          const el = document.getElementById('editor-contract');
+          if (el) el.focus();
+          document.execCommand('createLink', false, url);
+        }
+      }
+
+      /** 包裹 code 标签 */
+      function wrapCode() {
+        const el = document.getElementById('editor-contract');
+        if (!el) return;
+        el.focus();
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const code = document.createElement('code');
+          code.style.background = '#f5f5f5';
+          code.style.padding = '0 4px';
+          code.style.borderRadius = '3px';
+          try { range.surroundContents(code); } catch (e) { document.execCommand('insertHTML', false, '<code style="background:#f5f5f5;padding:0 4px;border-radius:3px;">code</code>'); }
+        }
+      }
+
+      /** 对权益编辑器中某项执行命令 */
+      function execCmdOn(event, index, cmd, type) {
+        const id = type === 'benefits' ? `editor-benefit-${index}` : `editor-question-${index}`;
+        const el = document.getElementById(id);
+        if (el) el.focus();
+        document.execCommand(cmd, false, null);
+      }
+
+      /** 对权益编辑器中某项执行颜色命令 */
+      function execCmdColor(color, index, type) {
+        const id = type === 'benefits' ? `editor-benefit-${index}` : `editor-question-${index}`;
+        const el = document.getElementById(id);
+        if (el) el.focus();
+        document.execCommand('foreColor', false, color);
+      }
+
+      /** 在等级描述编辑器执行命令 */
+      function execCmdDesc(cmd, val) {
+        const el = document.getElementById('editor-desc');
+        if (el) el.focus();
+        document.execCommand(cmd, false, val || null);
+      }
+
+      function insertLinkDesc() {
+        const url = prompt('请输入链接地址：', 'https://');
+        if (url) {
+          const el = document.getElementById('editor-desc');
+          if (el) el.focus();
+          document.execCommand('createLink', false, url);
+        }
+      }
+
+      /** 格式块选择（修复：避免内联 handler 含分号导致模板编译报错） */
+      function handleFormatBlockChange(e) {
+        execFormatBlock(e.target.value);
+        e.target.value = '';
+      }
+
+      /** 协议编辑器颜色选择 */
+      function onContractColor(e) {
+        execCmd('foreColor', e.target.value);
+      }
+
+      /** 等级描述编辑器颜色选择 */
+      function onDescColor(e) {
+        execCmdDesc('foreColor', e.target.value);
+      }
+
+      onMounted(ld);
+
+      return {
+        adminInfo, handleMenuChange, handleLogout,
+        lg, d, v, f, addV, addF, cols,
+        edit, save, handleAdd, saveAdd, handleDel,
+        // 详情主
+        detailV, detailRow, openDetail,
+        // 子弹窗1 - 协议
+        subContractV, contractLoading, contractSaving, contractUploading, contractForm,
+        openSubContract, saveContract, onContractFileChange, previewContractFile,
+        contractFileInput, triggerContractFileInput, handleContractFileChange,
+        // 子弹窗2 - 权益
+        subBenefitsV, detailBenefits, benefitsSaving,
+        openSubBenefits, addBenefit, removeBenefit, saveBenefits,
+        // 子弹窗3 - 申请问题
+        subQuestionsV, detailQuestions, questionsSaving,
+        openSubQuestions, addQuestion, removeQuestion, saveQuestions,
+        // 子弹窗4 - 等级描述
+        subDescV, descHtml, descSaving,
+        openSubDesc, saveDesc,
+        // 富文本工具
+        execCmd, execFormatBlock, insertLink, wrapCode,
+        execCmdOn, execCmdColor, execCmdDesc, insertLinkDesc,
+        handleFormatBlockChange, onContractColor, onDescColor,
+      };
+    }
+  }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
+  </script>
+</body></html>

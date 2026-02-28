@@ -60,6 +60,14 @@
           </view>
 
           <view class="t-card__footer">
+            <button
+              v-if="contract.contract_file_url"
+              class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
+              style="margin-right: 16rpx;"
+              @click.stop="handleViewContract(contract)"
+            >
+              <text class="t-button__text">查看电子版合同</text>
+            </button>
             <button class="t-button t-button--outline" @click.stop="handleViewDetail(contract.id)">
               <text class="t-button__text">查看详情</text>
             </button>
@@ -85,6 +93,7 @@ import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi } from '@/api'
+import { openContractDocument } from '@/utils/open-document'
 import type { Contract } from '@/api/types/ambassador'
 
 // 协议列表
@@ -130,6 +139,16 @@ const goToContractDetail = (id: number) => {
 // 查看详情
 const handleViewDetail = (id: number) => {
   goToContractDetail(id)
+}
+
+// 查看电子版合同（下载并打开 PDF/Word）
+const handleViewContract = (contract: Contract) => {
+  const url = contract.contract_file_url
+  if (!url) {
+    uni.showToast({ title: '暂无电子版合同', icon: 'none' })
+    return
+  }
+  openContractDocument(url, contract.title)
 }
 
 // 计算剩余天数

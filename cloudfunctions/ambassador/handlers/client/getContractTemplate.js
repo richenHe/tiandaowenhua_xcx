@@ -1,9 +1,13 @@
 /**
  * 客户端接口：获取协议模板
  * Action: getContractTemplate
+ * 协议内容改为电子合同文件（PDF/Word），返回 contract_file_url 供下载查看
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, cloudFileIDToURL } = require('../../common');
+
+/** 等级名称映射 */
+const LEVEL_NAMES = { 1: '准青鸾', 2: '青鸾', 3: '鸿鹄', 4: '金凤' };
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -20,7 +24,7 @@ module.exports = async (event, context) => {
     // 查询指定等级的最新协议模板（数据库列名为 ambassador_level）
     const { data: templates, error } = await db
       .from('contract_templates')
-      .select('*')
+      .select('id, contract_name, ambassador_level, version, contract_file_id, validity_years, effective_time')
       .eq('ambassador_level', level)
       .eq('status', 1)  // 启用状态
       .order('version', { ascending: false })
@@ -47,15 +51,19 @@ module.exports = async (event, context) => {
 
     const signature = signatures;
 
+    // 电子合同文件 URL（用于下载查看）
+    const contractFileUrl = template.contract_file_id ? cloudFileIDToURL(template.contract_file_id) : null;
+
     return response.success({
       template: {
         id: template.id,
-        title: template.title,
-        content: template.content,
-        level: template.level,
+        title: template.contract_name,
         version: template.version,
-        effective_date: template.effective_date,
-        expiry_date: template.expiry_date
+        level: template.ambassador_level,
+        level_name: LEVEL_NAMES[template.ambassador_level] || '未知',
+        validity_years: template.validity_years || 1,
+        effective_date: template.effective_time ? template.effective_time.slice(0, 10) : null,
+        contract_file_url: contractFileUrl
       },
       signed: !!signature,
       signature: signature ? {

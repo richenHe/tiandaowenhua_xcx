@@ -8,206 +8,186 @@
       :style="{ height: scrollHeight }"
     >
       <view class="page-content">
-        
+
         <!-- 当前等级卡片 -->
         <view class="current-level-card">
-          <view class="level-icon">{{ currentLevelInfo.icon }}</view>
+          <view class="level-icon">{{ currentLevelIcon }}</view>
           <view class="level-info">
             <view class="level-label">当前等级</view>
-            <view class="level-name">{{ currentLevelInfo.name }}</view>
+            <view class="level-name">{{ currentLevelName }}</view>
           </view>
         </view>
 
         <!-- 升级路径图 -->
         <view class="t-section-title t-section-title--simple">📍 升级路径</view>
         <view class="path-card">
-          <view class="path-item">
-            <view class="path-icon">🥚</view>
-            <view class="path-label">准青鸾</view>
-          </view>
-          <view class="path-arrow">→</view>
-          <view class="path-item active">
-            <view class="path-icon">🐦</view>
-            <view class="path-label current">青鸾 (当前)</view>
-          </view>
-          <view class="path-arrow">→</view>
-          <view class="path-item">
-            <view class="path-icon inactive">🦅</view>
-            <view class="path-label">鸿鹄</view>
-          </view>
-          <view class="path-arrow">→</view>
-          <view class="path-item">
-            <view class="path-icon inactive">🦚</view>
-            <view class="path-label">金凤</view>
-          </view>
+          <template v-for="(step, i) in pathSteps" :key="step.level">
+            <view class="path-item" :class="{ active: step.level === currentLevel }">
+              <view class="path-icon" :class="{ inactive: step.level > currentLevel }">{{ step.icon }}</view>
+              <view class="path-label" :class="{ current: step.level === currentLevel }">
+                {{ step.name }}<template v-if="step.level === currentLevel"> (当前)</template>
+              </view>
+            </view>
+            <view v-if="i < pathSteps.length - 1" class="path-arrow">→</view>
+          </template>
         </view>
 
-        <!-- 下一等级标题 -->
-        <view v-if="nextLevelInfo" class="t-section-title t-section-title--simple">
-          🎯 下一等级：{{ nextLevelInfo.name }}
+        <!-- 未加载时 loading -->
+        <view v-if="loading" style="text-align:center;padding:48rpx;color:#999;">
+          加载中…
         </view>
 
-        <!-- 升级条件 - 准青鸾升级到青鸾 -->
-        <view v-if="currentLevel === 1" class="upgrade-card">
-          <view class="card-header">
-            <view class="card-title">📋 升级条件</view>
-          </view>
-          <view class="card-body">
-            <!-- 步骤1：推荐初探班 -->
-            <view class="step-item">
-              <view class="step-number">1</view>
-              <view class="step-content">
-                <view class="step-title">推荐初探班课程</view>
-                <view v-if="hasRecommendedCourse" class="step-desc">
-                  您已成功推荐初探班课程 ✓
-                </view>
-                <view v-else class="step-desc">推荐1名学员报名初探班课程</view>
-                <view v-if="hasRecommendedCourse" class="step-badge success">已满足</view>
-              </view>
-            </view>
-
-            <!-- 步骤2：签署协议 -->
-            <view v-if="canUpgradeToQingluan" class="step-item">
-              <view class="step-number">2</view>
-              <view class="step-content">
-                <view class="step-title">签署《青鸾大使协议》</view>
-                <view class="step-desc">已满足青鸾大使升级条件，请签署协议</view>
-                <view @tap="goToContractSign">
-                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
-                    <span class="t-button__text">📝 立即签署协议</span>
-                  </button>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 升级条件 - 青鸾升级到鸿鹄 -->
-        <view v-else-if="currentLevel === 2" class="upgrade-card">
-          <view class="card-header">
-            <view class="card-title">📋 升级条件</view>
-          </view>
-          <view class="card-body">
-            <!-- 步骤1 -->
-            <view class="step-item">
-              <view class="step-number">1</view>
-              <view class="step-content">
-                <view class="step-title">已是青鸾大使</view>
-                <view class="step-desc">当前等级：青鸾大使 ✓</view>
-                <view class="step-badge success">已满足</view>
-              </view>
-            </view>
-
-            <!-- 步骤2 -->
-            <view class="step-item">
-              <view class="step-number">2</view>
-              <view class="step-content">
-                <view class="step-title">签署《鸿鹄大使补充协议》</view>
-                <view class="step-desc">需要在支付升级费用前签署补充协议</view>
-                <view @tap="goToContractSign">
-                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
-                    <span class="t-button__text">📝 立即签署</span>
-                  </button>
-                </view>
-              </view>
-            </view>
-
-            <!-- 步骤3 -->
-            <view class="step-item">
-              <view class="step-number">3</view>
-              <view class="step-content">
-                <view class="step-title">支付9800元升级费用</view>
-                <view class="step-desc">获得10个初探班名额（可赠送学员）</view>
-                <view @tap="handleUpgrade">
-                  <button class="t-button t-button--theme-primary t-button--variant-base t-button--block">
-                    <span class="t-button__text">💳 支付升级费用</span>
-                  </button>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 升级收益 -->
-        <view class="upgrade-card">
-          <view class="card-header">
-            <view class="card-title">💰 升级收益</view>
-          </view>
-          <view class="card-body">
-            
-            <view class="benefit-item">
-              <view class="benefit-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-                💎
-              </view>
-              <view class="benefit-content">
-                <view class="benefit-title">获得16880冻结积分</view>
-                <view class="benefit-desc">推荐初探班解冻1688积分，解冻完毕后持续获得可提现积分</view>
-              </view>
-            </view>
-
-            <view class="divider"></view>
-
-            <view class="benefit-item">
-              <view class="benefit-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-                🎁
-              </view>
-              <view class="benefit-content">
-                <view class="benefit-title">10个初探班名额</view>
-                <view class="benefit-desc">可赠送给学员，每个名额价值1688元</view>
-              </view>
-            </view>
-
-            <view class="divider"></view>
-
-            <view class="benefit-item">
-              <view class="benefit-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                💰
-              </view>
-              <view class="benefit-content">
-                <view class="benefit-title">推荐只获得积分（可提现）</view>
-                <view class="benefit-desc">
-                  • 推荐初探班：解冻1688积分（有冻结时）<br/>
-                  • 推荐密训班：直接获得20%可提现积分<br/>
-                  • 推荐咨询：直接获得20%可提现积分
-                </view>
-              </view>
-            </view>
-
-            <view class="divider"></view>
-
-            <view class="benefit-item">
-              <view class="benefit-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
-                👨‍🏫
-              </view>
-              <view class="benefit-content">
-                <view class="benefit-title">可担任辅导员获得功德分</view>
-                <view class="benefit-desc">辅导员、会务义工、沙龙活动等额外获得功德分</view>
-              </view>
-            </view>
-
-          </view>
-        </view>
-
-        <!-- 注意事项 -->
-        <view class="alert-box warning">
-          <view class="alert-icon">⚠️</view>
+        <!-- 已到最高等级 -->
+        <view v-else-if="!nextLevelName" class="alert-box info">
+          <view class="alert-icon">🎉</view>
           <view class="alert-content">
-            <view class="alert-title">升级注意事项</view>
-            <view class="alert-message">
-              1. 升级费用9800元不退还<br/>
-              2. 10个初探班名额有效期1年<br/>
-              3. 合同期从签署之日起计算1年<br/>
-              4. 到期前30天可续签
-            </view>
+            <view class="alert-title">您已达到最高等级</view>
+            <view class="alert-message">感谢您长期支持天道文化的传播事业！</view>
           </view>
         </view>
 
-        <!-- 升级按钮 -->
-        <view v-if="nextLevelInfo" @tap="handleUpgrade">
-          <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
-            <span class="t-button__text">🚀 立即升级为{{ nextLevelInfo.name }}</span>
-          </button>
-        </view>
+        <template v-else>
+
+          <!-- 下一等级标题 -->
+          <view class="t-section-title t-section-title--simple">
+            🎯 下一等级：{{ nextLevelName }}
+          </view>
+
+          <!-- 升级条件步骤卡片 -->
+          <view class="upgrade-card">
+            <view class="card-header">
+              <view class="card-title">📋 升级条件</view>
+            </view>
+            <view class="card-body">
+
+              <!-- 步骤1：申请审核 -->
+              <view class="step-item">
+                <view class="step-number" :class="stepClass(applicationStepStatus)">1</view>
+                <view class="step-content">
+                  <view class="step-title">申请成为{{ nextLevelName }}</view>
+
+                  <!-- 未申请（null 或 undefined 均视为未申请） -->
+                  <template v-if="applicationStatus == null">
+                    <view class="step-desc">请提交申请，等待管理员审核</view>
+                    <view @tap="goToApply">
+                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
+                        <span class="t-button__text">📝 立即申请</span>
+                      </button>
+                    </view>
+                  </template>
+
+                  <!-- 待审核（status=0） -->
+                  <template v-else-if="applicationStatus === 0">
+                    <view class="step-desc">申请已提交，等待管理员审核…</view>
+                    <view class="step-badge pending">审核中</view>
+                  </template>
+
+                  <!-- 已通过（status=1） -->
+                  <template v-else-if="applicationStatus === 1">
+                    <view class="step-desc">申请已通过 ✓</view>
+                    <view class="step-badge success">已通过</view>
+                  </template>
+
+                  <!-- 已驳回（status=2） -->
+                  <template v-else-if="applicationStatus === 2">
+                    <view class="step-desc">
+                      申请被驳回{{ rejectReason ? '：' + rejectReason : '' }}
+                    </view>
+                    <view class="step-badge error">已驳回</view>
+                    <view @tap="goToApply" style="margin-top:16rpx;">
+                      <button class="t-button t-button--theme-primary t-button--variant-outline t-button--block">
+                        <span class="t-button__text">重新申请</span>
+                      </button>
+                    </view>
+                  </template>
+                </view>
+              </view>
+
+              <!-- 签署协议步骤 -->
+              <view v-if="contractOption" class="step-item">
+                <view class="step-number" :class="stepClass(contractStepStatus)">2</view>
+                <view class="step-content">
+                  <view class="step-title">签署协议</view>
+                  <view class="step-desc">{{ contractOption.requirements?.join('；') || contractOption.name }}</view>
+                  <template v-if="contractOption.eligible">
+                    <view @tap="goToContractSign">
+                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
+                        <span class="t-button__text">📝 立即签署</span>
+                      </button>
+                    </view>
+                  </template>
+                  <template v-else>
+                    <view class="step-desc-reason">{{ contractOption.reason }}</view>
+                  </template>
+                </view>
+              </view>
+
+              <!-- 支付升级费用步骤（仅需支付的等级显示） -->
+              <view v-if="paymentOption" class="step-item">
+                <view class="step-number" :class="stepClass(paymentStepStatus)">3</view>
+                <view class="step-content">
+                  <view class="step-title">支付 {{ paymentOption.fee }} 元升级费用</view>
+                  <view class="step-desc">支付后即可完成升级，获得对应权益</view>
+                  <template v-if="paymentOption.eligible">
+                    <view @tap="handlePayUpgrade">
+                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--block" style="margin-top:16rpx;">
+                        <span class="t-button__text">💳 支付升级费用</span>
+                      </button>
+                    </view>
+                  </template>
+                  <template v-else>
+                    <view class="step-desc-reason">{{ paymentOption.reason }}</view>
+                  </template>
+                </view>
+              </view>
+
+            </view>
+          </view>
+
+          <!-- 升级收益卡片 -->
+          <view class="upgrade-card">
+            <view class="card-header">
+              <view class="card-title">💰 升级收益</view>
+            </view>
+            <view class="card-body">
+
+              <!-- 优先使用后台配置的 upgrade_benefits -->
+              <template v-if="upgradeBenefits && upgradeBenefits.length">
+                <template v-for="(item, idx) in upgradeBenefits" :key="idx">
+                  <view class="benefit-item">
+                    <view class="benefit-icon" :style="benefitIconStyle(idx)">{{ benefitIconEmoji(idx) }}</view>
+                    <view class="benefit-content">
+                      <view class="benefit-title">{{ item.title }}</view>
+                      <rich-text v-if="item.desc" class="benefit-desc" :nodes="item.desc" />
+                    </view>
+                  </view>
+                  <view v-if="idx < upgradeBenefits.length - 1" class="divider"></view>
+                </template>
+              </template>
+
+              <!-- 降级：使用自动计算的 benefits 字符串列表 -->
+              <template v-else-if="autoBenefits && autoBenefits.length">
+                <template v-for="(text, idx) in autoBenefits" :key="idx">
+                  <view class="benefit-item">
+                    <view class="benefit-icon" :style="benefitIconStyle(idx)">{{ benefitIconEmoji(idx) }}</view>
+                    <view class="benefit-content">
+                      <view class="benefit-title">{{ text }}</view>
+                    </view>
+                  </view>
+                  <view v-if="idx < autoBenefits.length - 1" class="divider"></view>
+                </template>
+              </template>
+
+              <template v-else>
+                <view style="color:#999;font-size:24rpx;text-align:center;padding:24rpx;">
+                  升级权益配置中…
+                </view>
+              </template>
+
+            </view>
+          </view>
+
+        </template>
 
         <!-- 底部留白 -->
         <view style="height: 120rpx;"></view>
@@ -217,146 +197,185 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { AmbassadorApi } from '@/api';
-import type { UpgradeGuide } from '@/api/types/ambassador';
+import { ref, computed } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import { AmbassadorApi, UserApi } from '@/api'
+import type { UpgradeGuide, UpgradeBenefitItem } from '@/api/types/ambassador'
 
-// 用户当前等级: 1=准青鸾, 2=青鸾, 3=鸿鹄, 4=金凤
-const currentLevel = ref(1);
+// ── 等级常量 ──
+const LEVEL_ICONS: Record<number, string> = { 0: '👤', 1: '🥚', 2: '🐦', 3: '🦅', 4: '🦚' }
+const LEVEL_NAMES: Record<number, string> = {
+  0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使', 4: '金凤大使'
+}
+const BENEFIT_ICONS = ['💎', '🎁', '💰', '👨‍🏫', '🌟', '🏆', '🎯', '✨']
+const BENEFIT_STYLES = [
+  'background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  'background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
+  'background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+  'background: linear-gradient(135deg, #0052d9 0%, #6c9ffc 100%)'
+]
 
-// 升级指南数据
-const upgradeGuideData = ref<UpgradeGuide | null>(null);
+// ── 状态 ──
+const loading = ref(true)
+const currentLevel = ref(0)
+const guideData = ref<UpgradeGuide | null>(null)
 
-// 是否推荐初探班成功
-const hasRecommendedCourse = ref(false);
+const scrollHeight = computed(() =>
+  'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
+)
 
-// 是否已签署协议
-const hasSignedContract = ref(false);
+// ── 路径图数据 ──
+const pathSteps = [
+  { level: 0, name: '普通用户', icon: '👤' },
+  { level: 1, name: '准青鸾', icon: '🥚' },
+  { level: 2, name: '青鸾', icon: '🐦' },
+  { level: 3, name: '鸿鹄', icon: '🦅' },
+  { level: 4, name: '金凤', icon: '🦚' }
+]
 
-const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))';
-});
+// ── 派生数据 ──
+const currentLevelIcon = computed(() => LEVEL_ICONS[currentLevel.value] || '👤')
+const currentLevelName = computed(() => LEVEL_NAMES[currentLevel.value] || '普通用户')
+const nextLevelName = computed(() => {
+  if (!guideData.value) return ''
+  return guideData.value.target_level?.name || ''
+})
 
-// 当前等级信息
-const currentLevelInfo = computed(() => {
-  if (!upgradeGuideData.value) {
-    const levels = [
-      { id: 0, name: '普通用户', icon: '👤' },
-      { id: 1, name: '准青鸾大使', icon: '🥚' },
-      { id: 2, name: '青鸾大使', icon: '🐦' },
-      { id: 3, name: '鸿鹄大使', icon: '🦅' },
-      { id: 4, name: '金凤大使', icon: '🦚' },
-    ];
-    return levels.find((l) => l.id === currentLevel.value) || levels[0];
-  }
+// null/undefined 均视为"未申请"
+const applicationStatus = computed<number | null>(() => {
+  const s = guideData.value?.application_status
+  return s != null ? Number(s) : null
+})
+const rejectReason = computed(() => guideData.value?.application_reject_reason || '')
 
-  const iconMap: Record<number, string> = {
-    0: '👤',
-    1: '🥚',
-    2: '🐦',
-    3: '🦅',
-    4: '🦚'
-  };
+const contractOption = computed(() =>
+  guideData.value?.upgrade_options.find(o => o.type === 'contract') || null
+)
+const paymentOption = computed(() =>
+  guideData.value?.upgrade_options.find(o => o.type === 'payment') || null
+)
 
+// 升级收益文案
+const upgradeBenefits = computed<UpgradeBenefitItem[] | null>(() => {
+  const ub = guideData.value?.target_level?.upgrade_benefits
+  return Array.isArray(ub) && ub.length > 0 ? ub : null
+})
+const autoBenefits = computed<string[]>(() =>
+  guideData.value?.target_level?.benefits || []
+)
+
+// ── 步骤状态（用于圆圈颜色） ──
+// DB 状态：null=未申请, 0=待审核, 1=已通过, 2=已驳回
+// 'done' | 'active' | 'pending' | 'error'
+const applicationStepStatus = computed(() => {
+  if (applicationStatus.value === 1) return 'done'   // 已通过
+  if (applicationStatus.value === 2) return 'error'  // 已驳回
+  if (applicationStatus.value === 0) return 'active' // 审核中
+  return 'pending'
+})
+const contractStepStatus = computed(() => {
+  if (!contractOption.value) return 'pending'
+  if (contractOption.value.eligible) return 'active'
+  return 'pending'
+})
+const paymentStepStatus = computed(() => {
+  if (!paymentOption.value) return 'pending'
+  if (paymentOption.value.eligible) return 'active'
+  return 'pending'
+})
+
+function stepClass(status: string) {
   return {
-    id: upgradeGuideData.value.current_level.level,
-    name: upgradeGuideData.value.current_level.name,
-    icon: iconMap[upgradeGuideData.value.current_level.level] || '👤'
-  };
-});
-
-// 下一等级信息
-const nextLevelInfo = computed(() => {
-  if (!upgradeGuideData.value) {
-    const nextId = currentLevel.value + 1;
-    const levels = [
-      { id: 1, name: '准青鸾大使', icon: '🥚' },
-      { id: 2, name: '青鸾大使', icon: '🐦' },
-      { id: 3, name: '鸿鹄大使', icon: '🦅' },
-      { id: 4, name: '金凤大使', icon: '🦚' },
-    ];
-    return levels.find((l) => l.id === nextId);
+    'step-done': status === 'done',
+    'step-active': status === 'active',
+    'step-error': status === 'error',
+    'step-pending': status === 'pending'
   }
+}
 
-  const iconMap: Record<number, string> = {
-    1: '🥚',
-    2: '🐦',
-    3: '🦅',
-    4: '🦚'
-  };
+function benefitIconEmoji(idx: number) {
+  return BENEFIT_ICONS[idx % BENEFIT_ICONS.length]
+}
+function benefitIconStyle(idx: number) {
+  return BENEFIT_STYLES[idx % BENEFIT_STYLES.length]
+}
 
-  return {
-    id: upgradeGuideData.value.target_level.level,
-    name: upgradeGuideData.value.target_level.name,
-    icon: iconMap[upgradeGuideData.value.target_level.level] || '🥚'
-  };
-});
+// ── 加载数据 ──
+// onLoad 接收 URL 参数，支持 /upgrade-guide/index?targetLevel=2
+let _urlTargetLevel: number | null = null
+onLoad(async (options) => {
+  _urlTargetLevel = options?.targetLevel ? Number(options.targetLevel) : null
+  await fetchGuide(_urlTargetLevel)
+})
 
-// 是否满足青鸾大使升级条件
-const canUpgradeToQingluan = computed(() => {
-  if (!upgradeGuideData.value) return false;
+// onShow 在从申请页返回后刷新状态（onLoad 只触发一次，onShow 每次显示都触发）
+onShow(async () => {
+  // guideData 已有说明页面曾经加载过，刷新最新申请状态
+  if (guideData.value !== null) {
+    await fetchGuide(_urlTargetLevel)
+  }
+})
 
-  const contractOption = upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'contract');
-  return contractOption?.eligible || false;
-});
-
-// 获取支付升级选项
-const paymentOption = computed(() => {
-  if (!upgradeGuideData.value) return null;
-  return upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'payment');
-});
-
-// 获取协议升级选项
-const contractOption = computed(() => {
-  if (!upgradeGuideData.value) return null;
-  return upgradeGuideData.value.upgrade_options.find(opt => opt.type === 'contract');
-});
-
-onMounted(() => {
-  fetchUserUpgradeStatus();
-});
-
-// 获取用户升级状态
-const fetchUserUpgradeStatus = async () => {
+const fetchGuide = async (urlTargetLevel: number | null = null) => {
+  loading.value = true
   try {
-    uni.showLoading({ title: '加载中...' });
-    // 获取用户当前等级（从个人中心或其他地方获取）
-    const targetLevel = currentLevel.value + 1;
+    let resolvedTargetLevel: number
 
-    const result = await AmbassadorApi.getUpgradeGuide(targetLevel);
-    upgradeGuideData.value = result;
+    if (urlTargetLevel && urlTargetLevel >= 1 && urlTargetLevel <= 4) {
+      // URL 明确指定目标等级，同时从 API 返回中同步当前等级
+      resolvedTargetLevel = urlTargetLevel
+    } else {
+      // 未传 URL 参数：先获取用户真实等级，再计算目标等级
+      const profile = await UserApi.getProfile()
+      const actualLevel = profile.ambassador_level || 0
+      currentLevel.value = actualLevel
+      resolvedTargetLevel = actualLevel + 1
+    }
 
-    // 更新当前等级
-    currentLevel.value = result.current_level.level;
+    if (resolvedTargetLevel > 4) {
+      // 已是最高等级
+      loading.value = false
+      return
+    }
 
-    // 检查是否推荐过课程
-    hasRecommendedCourse.value = result.current_stats.order_count > 0;
-    uni.hideLoading();
-  } catch (error) {
-    console.error('获取升级指南失败:', error);
-    uni.hideLoading();
+    const result = await AmbassadorApi.getUpgradeGuide(resolvedTargetLevel)
+    guideData.value = result
+    // 以 API 返回的当前等级为准（确保和服务端一致）
+    currentLevel.value = result.current_level.level
+  } catch (error: any) {
+    console.error('获取升级指南失败:', error)
+    uni.showToast({ title: error?.message || '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
   }
-};
+}
+
+// ── 导航函数 ──
+const goToApply = () => {
+  const tl = currentLevel.value + 1
+  uni.navigateTo({
+    url: `/pages/ambassador/apply/index?targetLevel=${tl}`
+  })
+}
 
 const goToContractSign = () => {
-  // 跳转到签署协议页面，传递升级类型参数
+  const tl = currentLevel.value + 1
   uni.navigateTo({
-    url: `/pages/ambassador/contract-sign/index?upgradeType=${currentLevel.value + 1}`,
-  });
-};
+    url: `/pages/ambassador/contract-sign/index?upgradeType=${tl}`
+  })
+}
 
-const handleUpgrade = () => {
-  if (currentLevel.value === 1 && canUpgradeToQingluan.value) {
-    // 准青鸾升级到青鸾，只需签署协议
-    goToContractSign();
-  } else if (currentLevel.value === 2 && paymentOption.value) {
-    // 青鸾升级到鸿鹄，需要支付费用，跳转到订单确认页
-    uni.navigateTo({
-      url: `/pages/order/confirm/index?upgradeType=3&amount=${paymentOption.value.fee}`,
-    });
-  }
-};
+const handlePayUpgrade = () => {
+  if (!paymentOption.value) return
+  uni.navigateTo({
+    url: `/pages/order/confirm/index?upgradeType=${currentLevel.value + 1}&amount=${paymentOption.value.fee}`
+  })
+}
 </script>
 
 <style scoped lang="scss">
@@ -366,14 +385,11 @@ const handleUpgrade = () => {
   background: #F5F5F5;
 }
 
-.scroll-area {
-  width: 100%;
-}
+.scroll-area { width: 100%; }
 
-.page-content {
-  padding: 32rpx;
-}
+.page-content { padding: 32rpx; }
 
+// 当前等级卡片
 .current-level-card {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border-radius: 24rpx;
@@ -384,26 +400,12 @@ const handleUpgrade = () => {
   align-items: center;
   gap: 32rpx;
 }
+.level-icon { font-size: 96rpx; }
+.level-info { flex: 1; }
+.level-label { font-size: 28rpx; opacity: 0.9; margin-bottom: 8rpx; }
+.level-name { font-size: 48rpx; font-weight: 700; }
 
-.level-icon {
-  font-size: 96rpx;
-}
-
-.level-info {
-  flex: 1;
-}
-
-.level-label {
-  font-size: 28rpx;
-  opacity: 0.9;
-  margin-bottom: 8rpx;
-}
-
-.level-name {
-  font-size: 48rpx;
-  font-weight: 700;
-}
-
+// 升级路径图
 .path-card {
   background: #fff;
   border-radius: 16rpx;
@@ -415,74 +417,33 @@ const handleUpgrade = () => {
   flex-wrap: wrap;
   gap: 16rpx;
 }
+.path-item { text-align: center; flex: 1; min-width: 100rpx; }
+.path-icon { font-size: 56rpx; margin-bottom: 8rpx; &.inactive { opacity: 0.4; } }
+.path-label { font-size: 22rpx; color: #999; &.current { color: #0052D9; font-weight: 600; } }
+.path-arrow { color: #999; font-size: 28rpx; }
 
-.path-item {
-  text-align: center;
-  flex: 1;
-  min-width: 120rpx;
-}
-
-.path-icon {
-  font-size: 64rpx;
-  margin-bottom: 8rpx;
-  
-  &.inactive {
-    opacity: 0.4;
-  }
-}
-
-.path-label {
-  font-size: 22rpx;
-  color: #999;
-  
-  &.current {
-    color: #0052D9;
-    font-weight: 600;
-  }
-}
-
-.path-arrow {
-  color: #999;
-  font-size: 28rpx;
-}
-
+// 卡片
 .upgrade-card {
   background: #fff;
   border-radius: 16rpx;
   margin-bottom: 24rpx;
   overflow: hidden;
 }
+.card-header { padding: 32rpx; border-bottom: 2rpx solid #F5F5F5; }
+.card-title { font-size: 32rpx; font-weight: 600; color: #333; }
+.card-body { padding: 32rpx; }
 
-.card-header {
-  padding: 32rpx;
-  border-bottom: 2rpx solid #F5F5F5;
-}
-
-.card-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-}
-
-.card-body {
-  padding: 32rpx;
-}
-
+// 步骤
 .step-item {
   display: flex;
   gap: 24rpx;
   margin-bottom: 48rpx;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
+  &:last-child { margin-bottom: 0; }
 }
-
 .step-number {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -490,45 +451,32 @@ const handleUpgrade = () => {
   font-size: 32rpx;
   font-weight: 600;
   flex-shrink: 0;
+  
+  &.step-done   { background: linear-gradient(135deg, #00a870 0%, #6edea0 100%); }
+  &.step-active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  &.step-error  { background: linear-gradient(135deg, #e34d59 0%, #ff8a8a 100%); }
+  &.step-pending { background: #ccc; }
 }
-
-.step-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.step-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 12rpx;
-}
-
-.step-desc {
-  font-size: 24rpx;
-  color: #999;
-  line-height: 1.6;
-  margin-bottom: 16rpx;
-}
-
+.step-content { flex: 1; min-width: 0; }
+.step-title { font-size: 28rpx; font-weight: 500; color: #333; margin-bottom: 12rpx; }
+.step-desc { font-size: 24rpx; color: #666; line-height: 1.6; margin-bottom: 12rpx; }
+.step-desc-reason { font-size: 22rpx; color: #e34d59; margin-top: 8rpx; }
 .step-badge {
   display: inline-block;
-  padding: 8rpx 20rpx;
+  padding: 6rpx 20rpx;
   border-radius: 24rpx;
   font-size: 22rpx;
-  
-  &.success {
-    background: #E8F8F2;
-    color: #00A870;
-  }
+  &.success { background: #E8F8F2; color: #00A870; }
+  &.pending { background: #FFF4E5; color: #D4AF37; }
+  &.error   { background: #FFECEC; color: #E34D59; }
 }
 
+// 权益
 .benefit-item {
   display: flex;
   gap: 24rpx;
   align-items: flex-start;
 }
-
 .benefit-icon {
   width: 80rpx;
   height: 80rpx;
@@ -539,64 +487,22 @@ const handleUpgrade = () => {
   font-size: 40rpx;
   flex-shrink: 0;
 }
+.benefit-content { flex: 1; min-width: 0; }
+.benefit-title { font-size: 28rpx; font-weight: 500; color: #333; margin-bottom: 8rpx; }
+.benefit-desc { font-size: 24rpx; color: #999; line-height: 1.5; }
+.divider { height: 2rpx; background: #F5F5F5; margin: 32rpx 0; }
 
-.benefit-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.benefit-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 8rpx;
-}
-
-.benefit-desc {
-  font-size: 24rpx;
-  color: #999;
-  line-height: 1.5;
-}
-
-.divider {
-  height: 2rpx;
-  background: #F5F5F5;
-  margin: 32rpx 0;
-}
-
+// 提示框
 .alert-box {
   border-radius: 16rpx;
   padding: 24rpx;
   margin-bottom: 48rpx;
   display: flex;
   gap: 16rpx;
-  
-  &.warning {
-    background: #FFF4E5;
-  }
+  &.info { background: #E6F4FF; }
 }
-
-.alert-icon {
-  font-size: 32rpx;
-  flex-shrink: 0;
-}
-
-.alert-content {
-  flex: 1;
-}
-
-.alert-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 12rpx;
-}
-
-.alert-message {
-  font-size: 24rpx;
-  color: #666;
-  line-height: 1.6;
-}
-
+.alert-icon { font-size: 32rpx; flex-shrink: 0; }
+.alert-content { flex: 1; }
+.alert-title { font-size: 28rpx; font-weight: 500; color: #333; margin-bottom: 12rpx; }
+.alert-message { font-size: 24rpx; color: #666; line-height: 1.6; }
 </style>
-

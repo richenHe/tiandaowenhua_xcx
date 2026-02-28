@@ -324,12 +324,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -351,13 +351,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -585,7 +579,7 @@
         const toggleStatus = async (course) => {
           try {
             await AdminAPI.updateCourse({
-              courseId: course.id,
+              id: course.id,
               status: course.status === 1 ? 0 : 1
             });
             TDesign.MessagePlugin.success('状态更新成功');
@@ -597,21 +591,12 @@
 
         // 删除课程
         const deleteCourse = async (course) => {
-          const confirmed = await TDesign.Dialog.confirm({
-            header: '删除课程',
-            body: `确认删除课程"${course.name}"？`,
-            confirmBtn: '确认',
-            cancelBtn: '取消'
-          });
-          
-          if (confirmed) {
-            try {
-              await AdminAPI.deleteCourse({ courseId: course.id });
-              TDesign.MessagePlugin.success('课程删除成功');
-              fetchCourses();
-            } catch (error) {
-              TDesign.MessagePlugin.error('删除失败: ' + error.message);
-            }
+          try {
+            await AdminAPI.deleteCourse({ id: course.id });
+            TDesign.MessagePlugin.success('课程删除成功');
+            fetchCourses();
+          } catch (error) {
+            TDesign.MessagePlugin.error('删除失败: ' + error.message);
           }
         };
 

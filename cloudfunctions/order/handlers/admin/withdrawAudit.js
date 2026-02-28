@@ -16,10 +16,10 @@ module.exports = async (event, context) => {
     if (!withdrawal_id) {
       return response.paramError('缺少提现记录ID');
     }
-    if (status !== 1 && status !== 2) {
-      return response.paramError('状态参数错误（1通过/2拒绝）'); // 入参 1=通过 2=拒绝，DB 写入 1=通过 3=拒绝
+    if (status !== 2) {
+      return response.paramError('状态参数错误（仅支持 2=驳回）');
     }
-    if (status === 2 && !reject_reason) {
+    if (!reject_reason) {
       return response.paramError('拒绝时需要提供原因');
     }
 
@@ -29,8 +29,8 @@ module.exports = async (event, context) => {
       return response.notFound('提现记录不存在');
     }
 
-    // 3. 验证提现状态
-    if (withdrawal.status !== 0) {
+    // 3. 验证提现状态（status=0 或 status=1 均可驳回）
+    if (withdrawal.status !== 0 && withdrawal.status !== 1) {
       return response.error('该提现申请已处理');
     }
 
@@ -40,50 +40,16 @@ module.exports = async (event, context) => {
       return response.error('用户不存在');
     }
 
-    // 5. 处理审核结果
-    if (status === 1) {
-      // 审核通过
-      await update('withdrawals',
-        {
-          status: 1,
-          audit_admin_id: admin.id,
-          audit_time: utils.formatDateTime(new Date()),
-          audit_remark: '审核通过'
-        },
-        { id: withdrawal_id }
-      );
+    // parseFloat 防止 DB 返回字符串时字符串拼接
+    const pendingNow = parseFloat(user.cash_points_pending || 0);
+    const availableNow = parseFloat(user.cash_points_available || 0);
+    const withdrawAmount = parseFloat(withdrawal.amount);
 
-      // 扣除冻结积分
-      await update('users',
-        {
-          cash_points_frozen: user.cash_points_frozen - withdrawal.amount
-        },
-        { id: user.id }
-      );
+    // 5. 审核驳回（DB status=3）：pending 退回到 available
+    {
+      const newPending = pendingNow - withdrawAmount;
+      const newAvailable = availableNow + withdrawAmount;
 
-      // 记录积分变动
-      await insert('cash_points_records', {
-        user_id: user.id,
-        user_uid: user.uid,
-        type: 3, // 提现
-        amount: -withdrawal.amount,
-        frozen_after: user.cash_points_frozen - withdrawal.amount,
-        available_after: user.cash_points_available,
-        withdraw_no: withdrawal.withdraw_no,
-        remark: `提现审核通过：${withdrawal.amount}元`,
-        _openid: ''
-      });
-
-      console.log(`[withdrawAudit] 审核通过`);
-
-      return response.success({
-        withdrawal_id,
-        status: 1,
-        status_name: '审核通过'
-      }, '审核通过');
-
-    } else {
-      // 审核拒绝（DB status=3）
       await update('withdrawals',
         {
           status: 3,
@@ -94,24 +60,23 @@ module.exports = async (event, context) => {
         { id: withdrawal_id }
       );
 
-      // 解冻积分（退回到可用积分）
       await update('users',
         {
-          cash_points_frozen: user.cash_points_frozen - withdrawal.amount,
-          cash_points_available: user.cash_points_available + withdrawal.amount
+          cash_points_pending: newPending,
+          cash_points_available: newAvailable
         },
         { id: user.id }
       );
 
-      // 记录积分变动
+      // 记录积分流水（type=5：提现失败退回，amount 为正）
       await insert('cash_points_records', {
         user_id: user.id,
-        type: 4, // 退回
-        amount: withdrawal.amount,
-        balance_after: user.cash_points_available + withdrawal.amount,
-        source_type: 4, // 提现
-        source_id: withdrawal_id,
-        description: `提现审核拒绝，积分退回：${reject_reason}`
+        _openid: user._openid || '',
+        type: 5,
+        amount: withdrawAmount,
+        available_after: newAvailable,
+        withdraw_no: withdrawal.withdraw_no,
+        remark: `提现审核驳回，积分退回：${reject_reason}`
       });
 
       console.log(`[withdrawAudit] 审核拒绝`);

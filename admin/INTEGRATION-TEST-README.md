@@ -1,5 +1,58 @@
 # 小程序端 · 端到端业务流程集成测试指南
 
+## 🧪 测试执行规范（用户必读）
+
+> **本节为人工测试操作规范，每次开始新流程测试前必须遵守。**
+
+### 规则 0：逐步推进原则（最高优先级）
+
+**⛔ 禁止一次性点击"运行全部业务流程"，禁止跳步骤。**
+
+每次测试必须按以下流程执行：
+
+#### 步骤推进顺序
+
+```
+第1步  单流程运行     → 在流程卡片上点击，只运行当前流程
+第2步  逐步核查       → 对当前流程每个步骤的结果逐一确认（含 biz 断言）
+第3步  DB 交叉验证    → 将当前流程的 SQL 发给 AI，执行 MCP 验证
+第4步  用例完善       → AI 根据结果补充/更新 BUSINESS-FLOW-CASES.md
+第5步  标注完成       → AI 将该流程的步骤标题加 ✅ 前缀 + 验证日期
+第6步  进入下一流程   → 重复第1~5步
+─────────────────────────────────────────────
+最后一步  全量运行    → 所有流程均 ✅ 后，才能点击"运行全部业务流程"
+```
+
+#### 当前测试进度
+
+| 流程 | 状态 | 最后验证日期 |
+|------|------|-------------|
+| F1 用户资料 · 推荐人 · 资格验证 | ✅ 已完成 | 2026-02-27 |
+| F1B 边界验证 · 未完善资料 · 无推荐人 · 功德分=0 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
+| F2 课程浏览 · 详情 · 购买条件验证 | ✅ 已完成 | 2026-02-23 |
+| F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成 | 2026-02-23 |
+| F4 功德分 · 积分 · 提现 · 余额一致性 | ✅ 已完成（数据清理后全通过） | 2026-02-27 |
+| F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
+| F5 大使体系 · 等级配置 · 升级条件 | ⏳ 待测 | — |
+| F6 协议模板 · 我的协议 · 签署验证 | ⏳ 待测 | — |
+| F7 预约 · 排期 · 学习进度 · 签到 | ⏳ 待测 | — |
+| F8 反馈 · 类型联动 · 课程关联 | ⏳ 待测 | — |
+| F9 系统公共 · 公告 · Banner · 配置 | ⏳ 待测 | — |
+| F10 跨模块数据完整性终极验证 | ⏳ 待测（需 F1~F9 完成后） | — |
+
+> AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
+
+#### 违规情形
+
+| 违规操作 | 后果 |
+|---------|------|
+| 直接运行全部流程 | 无法定位具体失败步骤，DB 验证无从下手 |
+| 跳过某个流程直接测下一个 | 跨流程依赖（规则4清单）的前置数据未确认 |
+| 未等 DB 验证完成就标记 ✅ | 可能掩盖数据库层面的 BUG |
+| 未完善用例就进入下一流程 | 弱断言步骤永远得不到改进 |
+
+---
+
 ## ⚡ AI 助手强制规则（每次测试报告后必须执行）
 
 > **本节为给 AI 助手的行为约束，优先级最高，不可跳过。**
@@ -226,6 +279,42 @@
 | F5 | 大使升级（准青鸾→青鸾，协议类型） | §9.x 大使升级 | `ambassador.upgrade` |
 | F7 | 预约操作后 booked_quota 正确递增 | §5.1 创建预约 | `course.createAppointment` |
 | F10 | 密训班赠课 is_gift=1 完整性 | §3.4 支付回调 type=1 | 购买密训班后验证 |
+
+---
+
+### 规则 8：测试用例复用与优化原则
+
+> **目的**：避免重复验证已通过的场景，同时确保弱覆盖步骤持续加强。
+
+#### 原则 A：已手动验证的写操作场景不必重复自动化
+
+若某个写操作场景已在 `BUSINESS-FLOW-CASES.md` 中标记为 `✅ 已验证 YYYY-MM-DD`，则：
+- **无需**在 `integration-test.html` 中新增对应的条件写步骤
+- 已验证记录即为永久测试证据
+- 例外：若该写操作有**清理路径**（如兑换→撤销），可保留自动化
+
+#### 原则 B：单断言步骤（仅1条 biz）属于覆盖不足，优先补充
+
+当某个步骤只有1条 biz 断言（`p:raw.success===true`）时，须按如下优先级补充：
+1. **字段存在性** — 关键字段不为 null/undefined
+2. **枚举合法性** — status/type 等枚举字段在合法值域内
+3. **业务规则** — 与需求文档对应的具体数值约束（如冻结积分=1688）
+4. **跨流程追踪** — 补充规则4清单中指定该步骤的验证
+
+#### 原则 C：优化已验证流程的测试用例，指向未覆盖场景
+
+对于某个流程已完成手动验证后：
+- 将原有"只验证接口连通性"的 biz 断言，**替换或补充**为真正的业务规则验证
+- 调整 `rules` 计数反映实际覆盖数
+
+#### 判断表
+
+| 场景 | 处理方式 |
+|------|---------|
+| 写操作已手动验证（BUSINESS-FLOW-CASES.md 有 ✅） | 不新增自动化，保留手动记录即可 |
+| 写操作有完整清理路径 | 可保留/新增自动化 |
+| 只读接口只有1条 biz 断言 | 必须补充字段/枚举/业务规则断言 |
+| 跨流程追踪条目（规则4）指向当前步骤 | 必须在该步骤 biz 中加入对应验证 |
 
 ---
 
@@ -558,8 +647,12 @@ getMeritPoints → getMeritPointsHistory → getCashPoints → getCashPointsHist
 | 2 | 冻结积分 ≥ 0 | 需求 3.1.7.3 |
 | 3 | 可提现积分 ≥ 0 | 需求 3.1.7.3 |
 | 4 | **users.merit_points = SUM(merit_points_records.amount)** | 数据一致性 |
-| 5 | **users.cash_points_frozen = 冻结获得 - 解冻总计** | 数据一致性 |
-| 6 | **users.cash_points_available = 解冻 + 直接发放 - 提现** | 数据一致性 |
+| 5 | **users.cash_points_frozen = SUM(type=1) + SUM(type=2)** | 数据一致性 |
+| 6 | **users.cash_points_available = SUM(type=2) + SUM(type=3) + SUM(type=5) + SUM(type=6)** | 数据一致性 |
+| 7 | 提现申请：写 type=3(amount<0)，available↓，pending↑ | 需求 3.1.7.3 |
+| 8 | 标记已转账：写 type=4(amount=0)，pending↓，status=2，invoice_file_id 有值 | 需求 3.1.7.3 |
+| 9 | 驳回提现：写 type=5(amount>0)，pending↓，available↑，status=3 | 需求 3.1.7.3 |
+| 10 | 工作流简化：管理员可直接从 status=0 发起驳回或标记已转账，无冗余审核步骤 | 业务需求（2026-02-27 简化） |
 
 **★ 核心验证 SQL**：
 ```sql
@@ -572,16 +665,30 @@ FROM tiandao_culture.users u
 LEFT JOIN tiandao_culture.merit_points_records mp ON mp.user_id=u.id
 WHERE u.id = 30 GROUP BY u.id
 
--- 积分各字段 vs 明细分类汇总
+-- 积分各字段 vs 明细分类汇总（type 含义：1=冻结获得 2=解冻 3=提现申请扣减 4=提现成功通知 5=提现失败退回 6=系统调整）
 SELECT u.id,
-  u.cash_points_frozen as 冻结, u.cash_points_available as 可用,
+  u.cash_points_frozen as 冻结余额,
+  u.cash_points_available as 可用余额,
+  u.cash_points_pending as 提现中余额,
   SUM(CASE WHEN cp.type=1 THEN cp.amount ELSE 0 END) as 冻结获得,
   SUM(CASE WHEN cp.type=2 THEN cp.amount ELSE 0 END) as 解冻,
-  SUM(CASE WHEN cp.type=3 THEN cp.amount ELSE 0 END) as 直接发放,
-  SUM(CASE WHEN cp.type=4 THEN cp.amount ELSE 0 END) as 提现
+  SUM(CASE WHEN cp.type=3 THEN cp.amount ELSE 0 END) as 提现申请扣减,
+  SUM(CASE WHEN cp.type=4 THEN cp.amount ELSE 0 END) as 提现成功通知,
+  SUM(CASE WHEN cp.type=5 THEN cp.amount ELSE 0 END) as 提现失败退回,
+  SUM(CASE WHEN cp.type=6 THEN cp.amount ELSE 0 END) as 系统调整
 FROM tiandao_culture.users u
 LEFT JOIN tiandao_culture.cash_points_records cp ON cp.user_id=u.id
 WHERE u.id = 30 GROUP BY u.id
+
+-- 提现全链路验证：申请→成功/驳回流水完整性
+SELECT w.withdraw_no, w.amount, w.status,
+  w.transfer_time, w.invoice_file_id,
+  (SELECT cp.type FROM tiandao_culture.cash_points_records cp
+   WHERE cp.withdraw_no=w.withdraw_no AND cp.type=3 LIMIT 1) as 申请扣减记录_type3,
+  (SELECT cp.type FROM tiandao_culture.cash_points_records cp
+   WHERE cp.withdraw_no=w.withdraw_no AND cp.type IN (4,5) LIMIT 1) as 结果记录_type4或5
+FROM tiandao_culture.withdrawals w
+WHERE w.user_id = 30 ORDER BY w.id DESC LIMIT 5
 ```
 
 ---

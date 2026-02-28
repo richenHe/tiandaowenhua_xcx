@@ -36,9 +36,14 @@ module.exports = async (event, context) => {
     if (backgroundImage) {
       updateData.background_image = backgroundImage;
     }
-    if (gender) {
-      // 转换性别为数字: 男=1, 女=2
-      updateData.gender = gender === '男' ? 1 : gender === '女' ? 2 : 0;
+    // 修复：用 != null 而非 if(gender)，防止 0（女）因 falsy 被跳过
+    // 前端传来数字（1=男/0=女）或字符串（'男'/'女'），统一映射到 DB 规范：0=女/1=男
+    if (gender != null && gender !== '') {
+      if (gender === 1 || gender === '男') {
+        updateData.gender = 1;  // 男
+      } else if (gender === 0 || gender === '女') {
+        updateData.gender = 0;  // 女
+      }
     }
     if (industry) {
       updateData.industry = industry;

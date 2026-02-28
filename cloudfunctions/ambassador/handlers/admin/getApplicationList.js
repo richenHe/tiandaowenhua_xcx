@@ -33,7 +33,7 @@ module.exports = async (event, context) => {
       // 查询用户信息
       const { data: user } = await db
         .from('users')
-        .select('real_name, phone, avatar_url')
+        .select('real_name, phone, avatar, ambassador_level')
         .eq('id', app.user_id)
         .single();
 
@@ -42,11 +42,17 @@ module.exports = async (event, context) => {
         user_id: app.user_id,
         user_name: app.real_name || user?.real_name || '',
         phone: app.phone || user?.phone || '',
-        avatar: user?.avatar_url || '',
+        avatar: user?.avatar || '',
         real_name: app.real_name,
+        // 前端需要 current_level 字段
+        current_level: user?.ambassador_level || 0,
+        // 目标等级（申请表中没有 target_level 字段，用 status 辅助判断，实际存储在 audit_remark 或通过业务约定）
+        target_level: app.target_level || null,
         city: app.city,
         occupation: app.occupation,
         apply_reason: app.apply_reason,
+        // 前端列表用 reason 列，映射自 apply_reason
+        reason: app.apply_reason || '',
         understanding: app.understanding,
         willing_help: app.willing_help,
         promotion_plan: app.promotion_plan,

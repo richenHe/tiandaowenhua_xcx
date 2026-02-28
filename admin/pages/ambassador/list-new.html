@@ -249,7 +249,7 @@
               </template>
               
               <template #cashPoints="{ row }">
-                ¥{{ ((row.cash_points_available || 0) / 100).toFixed(2) }}
+                {{ Math.floor(row.cash_points_available || 0) }}
               </template>
               
               <template #status="{ row }">
@@ -333,10 +333,10 @@
                       {{ currentAmbassador.merit_points || 0 }}
                     </t-descriptions-item>
                     <t-descriptions-item label="现金积分">
-                      ¥{{ ((currentAmbassador.cash_points_available || 0) / 100).toFixed(2) }}
+                      {{ Math.floor(currentAmbassador.cash_points_available || 0) }}
                     </t-descriptions-item>
-                    <t-descriptions-item label="冻结现金">
-                      ¥{{ ((currentAmbassador.cash_points_frozen || 0) / 100).toFixed(2) }}
+                    <t-descriptions-item label="冻结积分">
+                      {{ Math.floor(currentAmbassador.cash_points_frozen || 0) }}
                     </t-descriptions-item>
                     <t-descriptions-item label="累计收益">
                       ¥{{ ((currentAmbassador.total_earnings || 0) / 100).toFixed(2) }}
@@ -407,8 +407,8 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260226"></script>
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -430,13 +430,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -615,14 +609,6 @@
             TDesign.MessagePlugin.warning('已是最高等级');
             return;
           }
-          
-          const confirmed = await TDesign.DialogPlugin.confirm({
-            header: '确认升级',
-            body: `确认将 ${row.real_name} 升级为 ${levels[nextLevel]} 吗？`,
-            theme: 'warning',
-          });
-          
-          if (!confirmed) return;
           
           try {
             await AdminAPI.upgradeAmbassador({

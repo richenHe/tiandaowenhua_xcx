@@ -10,6 +10,18 @@
     >
       <view class="page-content">
 
+        <!-- 申请报名入口卡片 -->
+        <view class="apply-banner" @tap="goToApply">
+          <view class="apply-banner-left">
+            <view class="apply-banner-icon">🎯</view>
+            <view>
+              <view class="apply-banner-title">申请报名活动</view>
+              <view class="apply-banner-desc">查看可报名的活动岗位，获得功德分奖励</view>
+            </view>
+          </view>
+          <view class="apply-banner-arrow">›</view>
+        </view>
+
         <!-- 活动统计卡片 -->
         <view class="stats-card">
           <view class="stats-label">📊 活动统计</view>
@@ -35,7 +47,7 @@
           <view class="alert-content">
             <view class="alert-message">
               <text style="font-weight: 500;">活动类型：</text>辅导员、会务义工、沙龙组织、其他<br/>
-              <text style="font-weight: 500;">功德分奖励：</text>根据活动类型和时长发放<br/>
+              <text style="font-weight: 500;">功德分奖励：</text>根据活动岗位发放<br/>
               <text style="font-weight: 500;">适用等级：</text>所有大使都可以参与活动获得功德分
             </view>
           </view>
@@ -112,6 +124,11 @@
         <view v-if="!loading && activityRecords.length === 0" class="empty-state">
           <text class="empty-icon">📦</text>
           <text class="empty-text">暂无活动记录</text>
+          <view style="margin-top: 32rpx;" @tap="goToApply">
+            <button class="t-button t-button--theme-primary t-button--variant-outline">
+              <span class="t-button__text">去报名活动</span>
+            </button>
+          </view>
         </view>
 
         <!-- 加载更多 -->
@@ -125,6 +142,84 @@
         <view style="height: 120rpx;"></view>
       </view>
     </scroll-view>
+
+    <!-- 报名活动弹窗 -->
+    <view v-if="showApplyModal" class="modal-mask" @tap.self="showApplyModal = false">
+      <view class="modal-box">
+        <view class="modal-header">
+          <text class="modal-title">申请报名活动</text>
+          <text class="modal-close" @tap="showApplyModal = false">✕</text>
+        </view>
+
+        <!-- 活动列表 -->
+        <scroll-view class="modal-scroll" scroll-y>
+          <view v-if="applyLoading" class="modal-loading">
+            <text>加载中...</text>
+          </view>
+          <view v-else-if="availableActivities.length === 0" class="modal-empty">
+            <text>暂无可报名的活动</text>
+          </view>
+          <view v-else>
+            <view
+              v-for="act in availableActivities"
+              :key="act.id"
+              class="apply-activity-card"
+              :class="{ 'selected': selectedActivity?.id === act.id }"
+              @tap="selectActivity(act)"
+            >
+              <view class="apply-act-header">
+                <view class="apply-act-name">{{ act.schedule_name }}</view>
+                <view class="apply-act-date">{{ act.schedule_date }}</view>
+              </view>
+              <view v-if="act.schedule_location" class="apply-act-loc">📍 {{ act.schedule_location }}</view>
+
+              <!-- 已报名状态 -->
+              <view v-if="act.my_registration" class="apply-act-registered">
+                ✅ 已报名「{{ act.my_registration.position_name }}」岗位
+              </view>
+
+              <!-- 岗位列表 -->
+              <view v-else class="apply-positions">
+                <view
+                  v-for="pos in act.positions"
+                  :key="pos.name"
+                  class="position-item"
+                  :class="{
+                    'position-full': pos.remaining <= 0,
+                    'position-locked': !pos.can_apply,
+                    'position-selected': selectedActivity?.id === act.id && selectedPosition === pos.name
+                  }"
+                  @tap.stop="selectPosition(act, pos)"
+                >
+                  <view class="pos-name">{{ pos.name }}</view>
+                  <view class="pos-info">
+                    <!-- 等级门槛提示 -->
+                    <text v-if="!pos.can_apply" class="pos-lock-tip">
+                      🔒 需{{ pos.required_level_name }}
+                    </text>
+                    <text v-else-if="pos.remaining <= 0" class="pos-quota pos-full">已满</text>
+                    <text v-else class="pos-quota">余{{ pos.remaining }}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <!-- 确认报名按钮 -->
+        <view class="modal-footer">
+          <button
+            class="t-button t-button--theme-primary t-button--block"
+            :disabled="!selectedActivity || !selectedPosition || !!selectedActivity.my_registration"
+            @tap="confirmApply"
+          >
+            <span class="t-button__text">
+              {{ applySubmitting ? '报名中...' : (selectedPosition ? `报名「${selectedPosition}」岗位` : '请选择岗位') }}
+            </span>
+          </button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -135,7 +230,7 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import { AmbassadorApi } from '@/api'
-import type { ActivityRecord, ActivityStats } from '@/api/types/ambassador'
+import type { ActivityRecord, ActivityStats, AvailableActivity, ActivityPosition } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'
@@ -165,13 +260,10 @@ const hasMore = ref(true)
 // 加载活动统计
 const loadActivityStats = async () => {
   try {
-    uni.showLoading({ title: '加载中...' })
     const stats = await AmbassadorApi.getActivityStats()
     activityStats.value = stats
-    uni.hideLoading()
   } catch (error) {
     console.error('加载活动统计失败:', error)
-    uni.hideLoading()
   }
 }
 
@@ -180,7 +272,6 @@ const loadActivityRecords = async (activityType?: number) => {
   if (loading.value || !hasMore.value) return
 
   try {
-    uni.showLoading({ title: '加载中...' })
     loading.value = true
     const result = await AmbassadorApi.getActivityRecords({
       activity_type: activityType || 0,
@@ -196,42 +287,33 @@ const loadActivityRecords = async (activityType?: number) => {
 
     hasMore.value = activityRecords.value.length < result.total
     page.value++
-    uni.hideLoading()
   } catch (error) {
     console.error('加载活动记录失败:', error)
-    uni.hideLoading()
   } finally {
     loading.value = false
   }
 }
 
-// 获取活动类型对应的值（与数据库 ambassador_activity_records.activity_type 一致：1辅导员/2会务义工/3沙龙组织/4其他）
+// 获取活动类型对应的值
 const getActivityTypeValue = (tabValue: string): number => {
   const typeMap: Record<string, number> = {
-    'all': 0,
-    'tutor': 1,
-    'volunteer': 2,
-    'salon': 3,
-    'other': 4
+    'all': 0, 'tutor': 1, 'volunteer': 2, 'salon': 3, 'other': 4
   }
   return typeMap[tabValue] || 0
 }
 
 onMounted(() => {
-  // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
 
-  // 加载数据
   loadActivityStats()
   loadActivityRecords()
 })
 
 onShow(() => {
   loadActivityStats()
-  loadActivityRecords()
 })
 
 // 处理滚动事件
@@ -241,7 +323,6 @@ const handleScroll = (e: any) => {
   }
 }
 
-// tabs 与数据库 ambassador_activity_records.activity_type 对齐：1辅导员/2会务义工/3沙龙组织/4其他
 const tabs = ref([
   { label: '全部', value: 'all' },
   { label: '辅导员', value: 'tutor' },
@@ -262,12 +343,7 @@ const onTabChange = (value: string) => {
 
 // 获取活动类型图标
 const getActivityIcon = (type: number): string => {
-  const iconMap: Record<number, string> = {
-    1: '👨‍🏫',
-    2: '🤝',
-    3: '🎉',
-    4: '✨'
-  }
+  const iconMap: Record<number, string> = { 1: '👨‍🏫', 2: '🤝', 3: '🎉', 4: '✨' }
   return iconMap[type] || '✨'
 }
 
@@ -281,6 +357,84 @@ const getActivityGradient = (type: number): string => {
   }
   return gradientMap[type] || 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
 }
+
+// ==================== 申请报名功能 ====================
+const showApplyModal = ref(false)
+const applyLoading = ref(false)
+const availableActivities = ref<AvailableActivity[]>([])
+const selectedActivity = ref<AvailableActivity | null>(null)
+const selectedPosition = ref<string>('')
+const applySubmitting = ref(false)
+
+// 打开报名弹窗
+const goToApply = async () => {
+  showApplyModal.value = true
+  selectedActivity.value = null
+  selectedPosition.value = ''
+  await loadAvailableActivities()
+}
+
+// 加载可报名活动
+const loadAvailableActivities = async () => {
+  applyLoading.value = true
+  try {
+    const result = await AmbassadorApi.getAvailableActivities({ pageSize: 50 })
+    availableActivities.value = result.list || []
+  } catch (error) {
+    console.error('获取可报名活动失败:', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  } finally {
+    applyLoading.value = false
+  }
+}
+
+// 选择活动
+const selectActivity = (act: AvailableActivity) => {
+  if (act.my_registration) return  // 已报名则不响应
+  selectedActivity.value = act
+  selectedPosition.value = ''
+}
+
+// 选择岗位（含等级门槛校验）
+const selectPosition = (act: AvailableActivity, pos: ActivityPosition) => {
+  // 等级门槛检查
+  if (!pos.can_apply) {
+    uni.showToast({
+      title: `需要「${pos.required_level_name}」等级大使才能报名该岗位`,
+      icon: 'none',
+      duration: 2000
+    })
+    return
+  }
+  if (pos.remaining <= 0) {
+    uni.showToast({ title: '该岗位名额已满', icon: 'none' })
+    return
+  }
+  selectedActivity.value = act
+  selectedPosition.value = pos.name
+}
+
+// 确认报名
+const confirmApply = async () => {
+  if (!selectedActivity.value || !selectedPosition.value) return
+  if (applySubmitting.value) return
+
+  applySubmitting.value = true
+  try {
+    await AmbassadorApi.applyForActivity({
+      activityId: selectedActivity.value.id,
+      positionName: selectedPosition.value
+    })
+    uni.showToast({ title: '报名成功', icon: 'success' })
+    showApplyModal.value = false
+    // 刷新活动列表
+    loadAvailableActivities()
+  } catch (error: any) {
+    uni.showToast({ title: error?.message || '报名失败', icon: 'none' })
+  } finally {
+    applySubmitting.value = false
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -288,6 +442,7 @@ const getActivityGradient = (type: number): string => {
   width: 100%;
   height: 100vh;
   background: #F5F5F5;
+  position: relative;
 }
 
 .scroll-area {
@@ -298,6 +453,46 @@ const getActivityGradient = (type: number): string => {
   padding: 32rpx;
 }
 
+/* 申请报名入口横幅 */
+.apply-banner {
+  background: linear-gradient(135deg, #0052D9 0%, #266FE8 100%);
+  border-radius: 24rpx;
+  padding: 32rpx 40rpx;
+  margin-bottom: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.apply-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.apply-banner-icon {
+  font-size: 64rpx;
+  flex-shrink: 0;
+}
+
+.apply-banner-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.apply-banner-desc {
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+.apply-banner-arrow {
+  font-size: 48rpx;
+  opacity: 0.7;
+}
+
+/* 统计卡片 */
 .stats-card {
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
   border-radius: 24rpx;
@@ -391,10 +586,6 @@ const getActivityGradient = (type: number): string => {
   color: #0052D9;
 }
 
-.tabs-wrapper {
-  margin-bottom: 32rpx;
-}
-
 .activity-card {
   background: #fff;
   border-radius: 16rpx;
@@ -484,32 +675,200 @@ const getActivityGradient = (type: number): string => {
   margin-bottom: 16rpx;
 }
 
-.activity-badges {
-  display: flex;
-  gap: 8rpx;
-  flex-wrap: wrap;
-}
-
-.badge {
-  padding: 8rpx 20rpx;
-  border-radius: 24rpx;
-  font-size: 20rpx;
-  
-  &.success {
-    background: #E8F8F2;
-    color: #00A870;
-  }
-  
-  &.primary {
-    background: #E6F4FF;
-    color: #0052D9;
-  }
-}
-
 .load-more {
   text-align: center;
   padding: 40rpx 0;
 }
 
-</style>
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
 
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 报名弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal-box {
+  width: 100%;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40rpx 48rpx 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 40rpx;
+  color: #999;
+  padding: 0 8rpx;
+}
+
+.modal-scroll {
+  flex: 1;
+  padding: 24rpx 32rpx;
+  overflow: hidden;
+}
+
+.modal-loading,
+.modal-empty {
+  text-align: center;
+  padding: 80rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.modal-footer {
+  padding: 24rpx 32rpx 48rpx;
+  border-top: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+/* 可报名活动卡片 */
+.apply-activity-card {
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &.selected {
+    border-color: #0052D9;
+    background: #EEF3FF;
+  }
+}
+
+.apply-act-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.apply-act-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.apply-act-date {
+  font-size: 24rpx;
+  color: #999;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.apply-act-loc {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+}
+
+.apply-act-registered {
+  font-size: 26rpx;
+  color: #00A870;
+  padding: 12rpx 0;
+}
+
+/* 岗位列表 */
+.apply-positions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.position-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #fff;
+  border: 2rpx solid #dcdcdc;
+  border-radius: 12rpx;
+  padding: 16rpx 24rpx;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.position-full {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  &.position-locked {
+    opacity: 0.55;
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    cursor: not-allowed;
+  }
+
+  &.position-selected {
+    border-color: #0052D9;
+    background: #E6F4FF;
+  }
+}
+
+.pos-name {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.pos-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.pos-quota {
+  font-size: 20rpx;
+  color: #999;
+
+  &.pos-full {
+    color: #E34D59;
+  }
+}
+
+.pos-lock-tip {
+  font-size: 20rpx;
+  color: #E65100;
+  white-space: nowrap;
+}
+</style>

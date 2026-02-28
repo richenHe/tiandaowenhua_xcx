@@ -66,31 +66,40 @@
           </view>
         </view>
 
-        <!-- 协议内容 -->
+        <!-- 电子版合同 -->
         <view v-if="contractDetail" class="t-section-title t-section-title--simple">📄 协议内容</view>
         <view v-if="contractDetail" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
             <view
+              v-if="contractDetail.signature.contract_file_url"
               :style="{
-                maxHeight: '800rpx',
+                padding: '32rpx',
                 background: '#F5F5F5',
                 borderRadius: '12rpx',
-                overflow: 'hidden'
+                textAlign: 'center'
               }"
             >
-              <scroll-view
-                scroll-y
-                :style="{
-                  height: '800rpx',
-                  padding: '24rpx',
-                  fontSize: '26rpx',
-                  lineHeight: '1.8',
-                  color: '#666',
-                  boxSizing: 'border-box'
-                }"
+              <view :style="{ fontSize: '48rpx', marginBottom: '16rpx' }">📄</view>
+              <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '24rpx' }">
+                下载并查看电子版合同
+              </view>
+              <button
+                class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
+                @tap="handleViewContract"
               >
-                <view v-html="contractDetail.signature.content"></view>
-              </scroll-view>
+                查看电子版合同
+              </button>
+            </view>
+            <view
+              v-else
+              :style="{
+                padding: '32rpx',
+                textAlign: 'center',
+                color: '#999',
+                fontSize: '26rpx'
+              }"
+            >
+              该协议暂无电子版文件
             </view>
           </view>
         </view>
@@ -106,6 +115,7 @@
 import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi } from '@/api'
+import { openContractDocument } from '@/utils/open-document'
 import type { ContractDetail } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
@@ -161,6 +171,16 @@ const remainingDays = computed(() => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   return dateStr.split(' ')[0]
+}
+
+// 查看电子版合同（下载并打开 PDF/Word）
+const handleViewContract = () => {
+  const url = contractDetail.value?.signature?.contract_file_url
+  if (!url) {
+    uni.showToast({ title: '暂无电子版合同', icon: 'none' })
+    return
+  }
+  openContractDocument(url, contractDetail.value?.signature?.title)
 }
 </script>
 

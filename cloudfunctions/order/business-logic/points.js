@@ -4,7 +4,7 @@
  * 所有比例和金额参数均从 ambassador_level_configs 表读取，禁止硬编码
  */
 
-const { db } = require('common');
+const { findOne, insert, update } = require('common');
 const { getLevelConfig } = require('./config');
 
 /**
@@ -90,73 +90,107 @@ async function calculateCashPoints(orderAmount, ambassadorLevel, frozenBalance, 
 
 /**
  * 处理推荐奖励的完整流程（在支付回调中调用）
- * @param {number} orderId - 订单 ID
- * @param {number} refereeId - 推荐人用户 ID
- * @param {number} orderAmount - 订单金额
- * @param {string} courseType - 课程类型
+ * @param {Object} params
+ * @param {number} params.order_id      - 订单 ID
+ * @param {number} params.user_id       - 购课用户 ID
+ * @param {number} params.referee_id    - 推荐人用户 ID
+ * @param {number} params.order_amount  - 订单金额（元）
+ * @param {number} params.order_type    - 订单类型（1=课程购买）
  * @returns {Promise<Object|null>} 奖励发放结果
  */
-async function processReferralReward(orderId, refereeId, orderAmount, courseType) {
-  // 查询推荐人信息
-  const referees = await db.query(
-    'SELECT * FROM users WHERE id = ? AND is_deleted = 0',
-    [refereeId]
-  );
-  const referee = referees[0];
-
-  // 从数据库读取配置判断是否有资格
-  const config = await getLevelConfig(referee?.ambassador_level);
-  if (!referee || !config || !config.can_earn_reward) {
-    return null; // 无资格不发放奖励
+async function processReferralReward({ order_id, user_id, referee_id, order_amount, order_type }) {
+  // 仅处理课程购买订单
+  if (order_type !== 1) {
+    console.log('[processReferralReward] 非课程购买订单，跳过推荐奖励');
+    return null;
   }
 
-  const meritResult = await calculateMeritPoints(orderAmount, referee.ambassador_level, courseType);
-  const cashResult = await calculateCashPoints(orderAmount, referee.ambassador_level, referee.cash_points_frozen || 0, courseType);
+  // 查询推荐人信息
+  const referee = await findOne('users', { id: referee_id });
+  const config = await getLevelConfig(referee?.ambassador_level);
+  if (!referee || !config || !config.can_earn_reward) {
+    console.log(`[processReferralReward] 推荐人 id=${referee_id} 无资格获得奖励（等级=${referee?.ambassador_level}）`);
+    return null;
+  }
 
-  // 查询订单号用于记录
-  const orders = await db.query('SELECT order_no FROM orders WHERE id = ?', [orderId]);
-  const orderNo = orders[0]?.order_no || '';
+  // 查询订单信息（获取课程 ID）
+  const order = await findOne('orders', { id: order_id });
+  const orderNo = order?.order_no || '';
 
-  await db.transaction(async (conn) => {
-    // 更新功德分
-    if (meritResult.meritPoints > 0) {
-      await conn.execute(
-        'UPDATE users SET merit_points = merit_points + ? WHERE id = ?',
-        [meritResult.meritPoints, refereeId]
-      );
-      await conn.execute(
-        'INSERT INTO merit_points_records (user_id, user_uid, _openid, type, source, amount, balance_after, order_no, remark) VALUES (?, ?, ?, 1, ?, ?, (SELECT merit_points FROM users WHERE id = ?), ?, ?)',
-        [refereeId, referee.uid, referee._openid, courseType === 'basic' ? 1 : 2, meritResult.meritPoints, refereeId, orderNo, meritResult.description]
-      );
-    }
+  // 根据课程类型决定奖励方式
+  let courseType = 'basic';
+  if (order?.related_id) {
+    const course = await findOne('courses', { id: order.related_id });
+    if (course?.type === 2) courseType = 'advanced';
+  }
 
-    // 解冻积分或发放可提现积分
-    if (cashResult.unfreezePoints > 0) {
-      await conn.execute(
-        'UPDATE users SET cash_points_frozen = cash_points_frozen - ?, cash_points_available = cash_points_available + ? WHERE id = ?',
-        [cashResult.unfreezePoints, cashResult.unfreezePoints, refereeId]
-      );
-      // 记录积分明细
-      await conn.execute(
-        'INSERT INTO cash_points_records (user_id, user_uid, _openid, type, source, amount, order_no, remark) VALUES (?, ?, ?, 3, ?, ?, ?, ?)',
-        [refereeId, referee.uid, referee._openid, courseType === 'basic' ? 1 : 2, cashResult.unfreezePoints, orderNo, cashResult.description]
-      );
-    } else if (cashResult.cashPoints > 0) {
-      await conn.execute(
-        'UPDATE users SET cash_points_available = cash_points_available + ? WHERE id = ?',
-        [cashResult.cashPoints, refereeId]
-      );
-      // 记录积分明细
-      await conn.execute(
-        'INSERT INTO cash_points_records (user_id, user_uid, _openid, type, source, amount, order_no, remark) VALUES (?, ?, ?, 1, ?, ?, ?, ?)',
-        [refereeId, referee.uid, referee._openid, courseType === 'basic' ? 1 : 2, cashResult.cashPoints, orderNo, cashResult.description]
-      );
-    }
-  });
+  const amount = parseFloat(order_amount) || 0;
+  const meritResult = await calculateMeritPoints(amount, referee.ambassador_level, courseType);
+  const cashResult  = await calculateCashPoints(amount, referee.ambassador_level, parseFloat(referee.cash_points_frozen) || 0, courseType);
+
+  // ── 发放功德分 ──
+  if (meritResult.meritPoints > 0) {
+    const newMerit = Math.round(parseFloat(referee.merit_points || 0) + meritResult.meritPoints);
+    await update('users', { merit_points: newMerit }, { id: referee_id });
+    await insert('merit_points_records', {
+      user_id:      referee_id,
+      user_uid:     referee.uid || '',
+      _openid:      referee._openid || '',
+      type:         1,
+      source:       courseType === 'basic' ? 1 : 2,
+      amount:       meritResult.meritPoints,
+      balance_after: newMerit,
+      order_no:     orderNo,
+      remark:       meritResult.description
+    });
+    console.log(`[processReferralReward] 功德分 +${meritResult.meritPoints} → 推荐人 id=${referee_id}`);
+  }
+
+  // ── 解冻积分（青鸾首次推荐初探班）──
+  if (cashResult.unfreezePoints > 0) {
+    const newFrozen    = Math.round(Math.max(0, parseFloat(referee.cash_points_frozen || 0) - cashResult.unfreezePoints));
+    const newAvailable = Math.round(parseFloat(referee.cash_points_available || 0) + cashResult.unfreezePoints);
+    await update('users', {
+      cash_points_frozen:    newFrozen,
+      cash_points_available: newAvailable,
+      is_first_recommend:    1
+    }, { id: referee_id });
+    await insert('cash_points_records', {
+      user_id:         referee_id,
+      user_uid:        referee.uid || '',
+      _openid:         referee._openid || '',
+      type:            2,  // 解冻
+      amount:          cashResult.unfreezePoints,
+      frozen_after:    newFrozen,
+      available_after: newAvailable,
+      order_no:        orderNo,
+      referee_user_id: user_id,
+      remark:          cashResult.description
+    });
+    console.log(`[processReferralReward] 解冻积分 +${cashResult.unfreezePoints}，frozen=${newFrozen}，available=${newAvailable} → 推荐人 id=${referee_id}`);
+
+  // ── 直接发放可提现积分（冻结耗尽后或密训班）──
+  } else if (cashResult.cashPoints > 0) {
+    const newAvailable = Math.round(parseFloat(referee.cash_points_available || 0) + cashResult.cashPoints);
+    await update('users', { cash_points_available: newAvailable }, { id: referee_id });
+    await insert('cash_points_records', {
+      user_id:         referee_id,
+      user_uid:        referee.uid || '',
+      _openid:         referee._openid || '',
+      type:            3,  // 直接发放
+      amount:          cashResult.cashPoints,
+      frozen_after:    parseFloat(referee.cash_points_frozen || 0),
+      available_after: newAvailable,
+      order_no:        orderNo,
+      referee_user_id: user_id,
+      remark:          cashResult.description
+    });
+    console.log(`[processReferralReward] 直接发放积分 +${cashResult.cashPoints} → 推荐人 id=${referee_id}`);
+  }
 
   return {
-    meritPoints: meritResult.meritPoints,
-    cashPoints: cashResult.cashPoints,
+    meritPoints:    meritResult.meritPoints,
+    cashPoints:     cashResult.cashPoints,
     unfreezePoints: cashResult.unfreezePoints
   };
 }

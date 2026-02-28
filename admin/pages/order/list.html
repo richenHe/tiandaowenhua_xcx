@@ -148,8 +148,8 @@
           </t-select>
         </t-form-item>
         
-        <t-form-item label="订单状态" name="status">
-          <t-select v-model="searchForm.status" placeholder="请选择订单状态" clearable>
+        <t-form-item label="订单状态" name="pay_status">
+          <t-select v-model="searchForm.pay_status" placeholder="请选择订单状态" clearable>
             <t-option :value="0" label="待支付" />
             <t-option :value="1" label="已支付" />
             <t-option :value="2" label="已取消" />
@@ -221,21 +221,21 @@
           <t-space>
             <t-link theme="primary" @click="viewDetail(row)">查看详情</t-link>
             <t-link 
-              v-if="row.status === 0" 
+              v-if="row.pay_status === 0" 
               theme="success" 
               @click="confirmPayment(row)"
             >
               确认支付
             </t-link>
             <t-link 
-              v-if="row.status === 1" 
+              v-if="row.pay_status === 1" 
               theme="warning" 
               @click="initiateRefund(row)"
             >
               发起退款
             </t-link>
             <t-link 
-              v-if="row.status === 0" 
+              v-if="row.pay_status === 0" 
               theme="danger" 
               @click="cancelOrder(row)"
             >
@@ -257,27 +257,27 @@
         <div v-if="currentOrder">
         <t-descriptions bordered>
           <t-descriptions-item label="订单编号">{{ currentOrder.order_no }}</t-descriptions-item>
-          <t-descriptions-item label="用户昵称">{{ currentOrder.user_nickname }}</t-descriptions-item>
+          <t-descriptions-item label="用户姓名">{{ currentOrder.user_name }}</t-descriptions-item>
           <t-descriptions-item label="订单类型">
             <span v-if="currentOrder.order_type === 1">课程订单</span>
             <span v-else-if="currentOrder.order_type === 2">复训订单</span>
             <span v-else-if="currentOrder.order_type === 4">大使升级</span>
             <span v-else>{{ currentOrder.order_type }}</span>
           </t-descriptions-item>
-          <t-descriptions-item label="商品名称">{{ currentOrder.item_name }}</t-descriptions-item>
-          <t-descriptions-item label="订单金额">¥{{ currentOrder.total_amount }}</t-descriptions-item>
-          <t-descriptions-item label="实付金额">¥{{ currentOrder.paid_amount }}</t-descriptions-item>
+          <t-descriptions-item label="商品名称">{{ currentOrder.order_name }}</t-descriptions-item>
+          <t-descriptions-item label="订单金额">¥{{ currentOrder.original_amount }}</t-descriptions-item>
+          <t-descriptions-item label="实付金额">¥{{ currentOrder.final_amount }}</t-descriptions-item>
           <t-descriptions-item label="使用积分">{{ currentOrder.points_used || 0 }}</t-descriptions-item>
           <t-descriptions-item label="订单状态">
-            <span :class="['status-tag', getStatusClass(currentOrder.status)]">
-              {{ getStatusText(currentOrder.status) }}
+            <span :class="['status-tag', getStatusClass(currentOrder.pay_status)]">
+              {{ getStatusText(currentOrder.pay_status) }}
             </span>
           </t-descriptions-item>
           <t-descriptions-item label="支付方式">
-            {{ currentOrder.payment_method || '-' }}
+            {{ currentOrder.pay_method || '-' }}
           </t-descriptions-item>
           <t-descriptions-item label="支付时间">
-            {{ currentOrder.paid_at || '-' }}
+            {{ currentOrder.pay_time || '-' }}
           </t-descriptions-item>
           <t-descriptions-item label="推荐人">{{ currentOrder.referee_name || '-' }}</t-descriptions-item>
           <t-descriptions-item label="备注" span="2">{{ currentOrder.remark || '-' }}</t-descriptions-item>
@@ -296,10 +296,10 @@
   <!-- CloudBase SDK -->
   <script src="../../assets/libs/tcb-v2.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260226"></script>
+  <script src="../../assets/js/config.js?v=20260227"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260226b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260226b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -321,13 +321,7 @@
         
         // 退出登录
         const handleLogout = () => {
-          TDesign.DialogPlugin.confirm({
-            header: '确认退出',
-            body: '确定要退出登录吗？',
-            onConfirm: () => {
-              AdminAPI.logout();
-            }
-          });
+          AdminAPI.logout();
         };
         
         // 菜单切换
@@ -370,7 +364,7 @@
           orderNo: '',
           userId: '',
           orderType: '',
-          status: '',
+          pay_status: '',
           paymentMethod: '',
           dateRange: []
         });
@@ -439,7 +433,7 @@
             orderNo: '',
             userId: '',
             orderType: '',
-            status: '',
+            pay_status: '',
             paymentMethod: '',
             dateRange: []
           });
@@ -470,60 +464,33 @@
 
         // 确认支付
         const confirmPayment = async (order) => {
-          const confirmed = await TDesign.Dialog.confirm({
-            header: '确认支付',
-            body: `确认订单 ${order.order_no} 已支付？`,
-            confirmBtn: '确认',
-            cancelBtn: '取消'
-          });
-          
-          if (confirmed) {
-            try {
-              // 后端暂无 updateOrderStatus 接口，支付确认请通过微信支付回调处理
-              TDesign.MessagePlugin.warning('手动确认支付功能暂未上线，请通过支付回调自动处理');
-            } catch (error) {
-              TDesign.MessagePlugin.error('支付确认失败: ' + error.message);
-            }
+          try {
+            // 后端暂无 updateOrderStatus 接口，支付确认请通过微信支付回调处理
+            TDesign.MessagePlugin.warning('手动确认支付功能暂未上线，请通过支付回调自动处理');
+          } catch (error) {
+            TDesign.MessagePlugin.error('支付确认失败: ' + error.message);
           }
         };
 
         // 发起退款
         const initiateRefund = async (order) => {
-          const confirmed = await TDesign.Dialog.confirm({
-            header: '发起退款',
-            body: `确认为订单 ${order.order_no} 发起退款？`,
-            confirmBtn: '确认',
-            cancelBtn: '取消'
-          });
-          
-          if (confirmed) {
-            try {
-              // 使用 refund action 直接发起退款，需要退款原因
-              await AdminAPI.refund(order.order_no, order.final_amount, '管理员发起退款');
-              TDesign.MessagePlugin.success('退款申请已提交');
-              fetchOrders();
-            } catch (error) {
-              TDesign.MessagePlugin.error('退款申请失败: ' + error.message);
-            }
+          try {
+            // 使用 refund action 直接发起退款，需要退款原因
+            await AdminAPI.refund(order.order_no, order.final_amount, '管理员发起退款');
+            TDesign.MessagePlugin.success('退款申请已提交');
+            fetchOrders();
+          } catch (error) {
+            TDesign.MessagePlugin.error('退款申请失败: ' + error.message);
           }
         };
 
         // 取消订单
         const cancelOrder = async (order) => {
-          const confirmed = await TDesign.Dialog.confirm({
-            header: '取消订单',
-            body: `确认取消订单 ${order.order_no}？`,
-            confirmBtn: '确认',
-            cancelBtn: '取消'
-          });
-          
-          if (confirmed) {
-            try {
-              // 后端暂无 cancelOrder/updateOrderStatus 接口，取消订单需通过退款流程处理
-              TDesign.MessagePlugin.warning('取消订单功能暂未上线，如需处理请直接联系技术团队');
-            } catch (error) {
-              TDesign.MessagePlugin.error('取消订单失败: ' + error.message);
-            }
+          try {
+            // 后端暂无 cancelOrder/updateOrderStatus 接口，取消订单需通过退款流程处理
+            TDesign.MessagePlugin.warning('取消订单功能暂未上线，如需处理请直接联系技术团队');
+          } catch (error) {
+            TDesign.MessagePlugin.error('取消订单失败: ' + error.message);
           }
         };
 

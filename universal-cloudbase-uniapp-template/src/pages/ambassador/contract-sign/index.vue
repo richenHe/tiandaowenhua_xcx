@@ -22,7 +22,7 @@
             </view>
             <view class="info-row">
               <text class="info-label">合同期限：</text>
-              <text class="info-value">1年</text>
+              <text class="info-value">{{ contractTemplate.validity_years || 1 }}年</text>
             </view>
             <view class="info-row">
               <text class="info-label">大使等级：</text>
@@ -37,32 +37,41 @@
           <text class="empty-text">加载协议模板中...</text>
         </view>
 
-        <!-- 协议内容 -->
+        <!-- 电子版合同（PDF/Word） -->
         <view v-if="contractTemplate" class="t-section-title t-section-title--simple">📄 协议内容</view>
 
         <view v-if="contractTemplate" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
             <view
+              v-if="contractTemplate.contract_file_url"
               :style="{
-                maxHeight: '800rpx',
+                padding: '32rpx',
                 background: '#F5F5F5',
                 borderRadius: '12rpx',
-                overflow: 'hidden'
+                textAlign: 'center'
               }"
             >
-              <scroll-view
-                scroll-y
-                :style="{
-                  height: '800rpx',
-                  padding: '24rpx',
-                  fontSize: '26rpx',
-                  lineHeight: '1.8',
-                  color: '#666',
-                  boxSizing: 'border-box'
-                }"
+              <view :style="{ fontSize: '48rpx', marginBottom: '16rpx' }">📄</view>
+              <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '24rpx' }">
+                请下载并查看电子版合同
+              </view>
+              <button
+                class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
+                @tap="handleViewContract"
               >
-                <view v-html="contractTemplate.content"></view>
-              </scroll-view>
+                查看电子版合同
+              </button>
+            </view>
+            <view
+              v-else
+              :style="{
+                padding: '32rpx',
+                textAlign: 'center',
+                color: '#999',
+                fontSize: '26rpx'
+              }"
+            >
+              该协议暂无电子版文件，请联系管理员
             </view>
           </view>
         </view>
@@ -70,6 +79,7 @@
         <!-- 签署确认 -->
         <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
           <view class="t-card__body">
+            <!-- 阅读同意勾选 -->
             <view 
               @tap="toggleAgree"
               :style="{ 
@@ -91,28 +101,38 @@
               </text>
             </view>
 
+            <!-- 手写签名区域 -->
             <view>
               <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '16rpx' }">
-                <text :style="{ color: '#E34D59', marginRight: '8rpx' }">*</text>手机号后四位确认
+                <text :style="{ color: '#E34D59', marginRight: '8rpx' }">*</text>手写签名确认
               </view>
-              <input 
-                v-model="phoneLastFour" 
-                type="number" 
-                maxlength="4" 
-                placeholder="请输入手机号后四位"
-                :style="{ 
-                  width: '100%',
-                  height: '88rpx',
-                  background: '#F5F5F5',
-                  borderRadius: '12rpx',
-                  padding: '0 24rpx',
-                  fontSize: '28rpx',
-                  border: '2rpx solid #E5E5E5',
-                  boxSizing: 'border-box'
-                }"
-              />
+
+              <!-- 未签名：点击跳转签名板 -->
+              <view
+                v-if="!signatureFileId"
+                class="signature-empty-box"
+                @tap="goToSignaturePad"
+              >
+                <view :style="{ fontSize: '48rpx', marginBottom: '12rpx' }">✍️</view>
+                <view :style="{ fontSize: '28rpx', color: '#0052D9', fontWeight: '600' }">点击手写签名</view>
+                <view :style="{ fontSize: '24rpx', color: '#999', marginTop: '8rpx' }">请在签名板上手写您的签名</view>
+              </view>
+
+              <!-- 已签名：显示预览 + 重签按钮 -->
+              <view v-else class="signature-preview-box">
+                <image
+                  :src="signaturePreviewUrl"
+                  mode="aspectFit"
+                  class="signature-preview-img"
+                />
+                <view class="signature-preview-footer">
+                  <text class="signature-ok-text">✓ 签名已完成</text>
+                  <text class="signature-redo-text" @tap="goToSignaturePad">重新签名</text>
+                </view>
+              </view>
+
               <view :style="{ fontSize: '24rpx', color: '#999', marginTop: '8rpx' }">
-                用于验证身份，确保签署安全
+                签名将填写到合同甲方/负责人签名栏
               </view>
             </view>
           </view>
@@ -134,8 +154,9 @@
           <view :style="{ flex: '1' }">
             <view :style="{ fontSize: '24rpx', color: '#666', lineHeight: '1.6' }">
               • 签署后协议立即生效，合同期1年<br/>
+              • 签名将自动嵌入合同文件甲方/负责人签名栏<br/>
               • 签署记录将保存在"我的协议"中<br/>
-              • 可随时查看和下载协议PDF文件
+              • 可随时查看和下载签署后的合同文件
             </view>
           </view>
         </view>
@@ -157,9 +178,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi } from '@/api'
+import { openContractDocument } from '@/utils/open-document'
+import { cloudFileIDToURL } from '@/api/modules/storage'
 import type { ContractTemplate } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
@@ -167,7 +190,10 @@ const scrollHeight = computed(() => {
 })
 
 const agreed = ref(false)
-const phoneLastFour = ref('')
+/** 手写签名图片的 cloud:// fileID */
+const signatureFileId = ref('')
+/** 用于预览的签名图片 HTTPS URL */
+const signaturePreviewUrl = ref('')
 
 // 协议模板数据
 const contractTemplate = ref<ContractTemplate | null>(null)
@@ -176,7 +202,6 @@ const contractTemplate = ref<ContractTemplate | null>(null)
 const targetLevel = ref(2)
 
 onMounted(() => {
-  // 获取路由参数
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const options = currentPage.options || {}
@@ -186,22 +211,33 @@ onMounted(() => {
   }
 
   loadContractTemplate()
+
+  // 监听签名板回传事件
+  uni.$on('signatureCompleted', onSignatureCompleted)
 })
+
+onUnmounted(() => {
+  uni.$off('signatureCompleted', onSignatureCompleted)
+})
+
+/** 接收签名画板回传的 fileID */
+function onSignatureCompleted(data: { fileId: string }) {
+  if (!data?.fileId) return
+  signatureFileId.value = data.fileId
+  signaturePreviewUrl.value = cloudFileIDToURL(data.fileId)
+}
 
 // 加载协议模板
 const loadContractTemplate = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
     const result = await AmbassadorApi.getContractTemplate(targetLevel.value)
-    contractTemplate.value = result
+    contractTemplate.value = (result as any).template ?? result
     uni.hideLoading()
   } catch (error) {
     console.error('获取协议模板失败:', error)
     uni.hideLoading()
-    uni.showToast({
-      title: '获取协议模板失败',
-      icon: 'none'
-    })
+    uni.showToast({ title: '获取协议模板失败', icon: 'none' })
   }
 }
 
@@ -209,16 +245,31 @@ const toggleAgree = () => {
   agreed.value = !agreed.value
 }
 
+/** 跳转到手写签名画板 */
+const goToSignaturePad = () => {
+  uni.navigateTo({ url: '/pages/ambassador/signature-pad/index' })
+}
+
+/** 查看电子版合同 */
+const handleViewContract = () => {
+  const url = contractTemplate.value?.contract_file_url
+  if (!url) {
+    uni.showToast({ title: '暂无电子版合同', icon: 'none' })
+    return
+  }
+  openContractDocument(url, contractTemplate.value?.title)
+}
+
+/** 提交签署 */
 const handleSign = async () => {
   if (!agreed.value) {
     uni.showToast({ title: '请先阅读并同意协议', icon: 'none' })
     return
   }
-  if (!phoneLastFour.value || phoneLastFour.value.length !== 4) {
-    uni.showToast({ title: '请输入手机号后四位', icon: 'none' })
+  if (!signatureFileId.value) {
+    uni.showToast({ title: '请先完成手写签名', icon: 'none' })
     return
   }
-
   if (!contractTemplate.value) {
     uni.showToast({ title: '协议模板未加载', icon: 'none' })
     return
@@ -227,14 +278,11 @@ const handleSign = async () => {
   try {
     const result = await AmbassadorApi.signContract({
       templateId: contractTemplate.value.id,
-      phoneLastFour: phoneLastFour.value
+      signatureFileId: signatureFileId.value,
+      agreed: true
     })
 
-    uni.showToast({
-      title: '签署成功',
-      icon: 'success',
-      duration: 2000
-    })
+    uni.showToast({ title: '签署成功', icon: 'success', duration: 2000 })
 
     setTimeout(() => {
       uni.navigateTo({
@@ -318,7 +366,6 @@ const handleSign = async () => {
   font-weight: 500;
 }
 
-
 .checkbox {
   width: 40rpx;
   height: 40rpx;
@@ -338,6 +385,52 @@ const handleSign = async () => {
   }
 }
 
+/* 未签名占位框 */
+.signature-empty-box {
+  border: 2rpx dashed #0052D9;
+  border-radius: 12rpx;
+  padding: 40rpx 24rpx;
+  background: #F0F6FF;
+  text-align: center;
+  margin-bottom: 10rpx;
+}
+
+/* 已签名预览框 */
+.signature-preview-box {
+  border: 2rpx solid #d0e4ff;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 10rpx;
+}
+
+.signature-preview-img {
+  width: 100%;
+  height: 200rpx;
+  display: block;
+  background: #fff;
+}
+
+.signature-preview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background: #f8fbff;
+  border-top: 2rpx solid #e8f0fe;
+}
+
+.signature-ok-text {
+  font-size: 24rpx;
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.signature-redo-text {
+  font-size: 24rpx;
+  color: #0052D9;
+}
+
 .fixed-bottom {
   position: fixed;
   bottom: 0;
@@ -349,7 +442,6 @@ const handleSign = async () => {
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
-// 空状态
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -368,6 +460,4 @@ const handleSign = async () => {
   font-size: 28rpx;
   color: #999;
 }
-
 </style>
-

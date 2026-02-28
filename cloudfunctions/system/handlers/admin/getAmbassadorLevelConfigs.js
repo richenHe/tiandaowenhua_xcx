@@ -21,37 +21,30 @@ module.exports = async (event, context) => {
       throw error;
     }
 
-    // 解析 JSON 字段（安全解析）
-    const processedConfigs = (configs || []).map(c => {
-      let upgrade_conditions = null;
-      let benefits = null;
-      
-      try {
-        if (c.upgrade_conditions && typeof c.upgrade_conditions === 'string') {
-          upgrade_conditions = JSON.parse(c.upgrade_conditions);
-        } else if (typeof c.upgrade_conditions === 'object') {
-          upgrade_conditions = c.upgrade_conditions;
+    /**
+     * 安全解析 JSON 字段
+     * @param {any} value - 原始值（可能是字符串或已解析对象）
+     * @param {string} fieldName - 字段名（用于日志）
+     * @returns {any} 解析后的值，失败返回 null
+     */
+    function safeParseJson(value, fieldName) {
+      if (value == null) return null;
+      if (typeof value === 'string') {
+        try { return JSON.parse(value); } catch (e) {
+          console.error(`解析 ${fieldName} 失败:`, e.message);
+          return null;
         }
-      } catch (e) {
-        console.error('解析 upgrade_conditions 失败:', e.message);
       }
-      
-      try {
-        if (c.benefits && typeof c.benefits === 'string') {
-          benefits = JSON.parse(c.benefits);
-        } else if (typeof c.benefits === 'object') {
-          benefits = c.benefits;
-        }
-      } catch (e) {
-        console.error('解析 benefits 失败:', e.message);
-      }
-      
-      return {
-        ...c,
-        upgrade_conditions,
-        benefits
-      };
-    });
+      return value;
+    }
+
+    const processedConfigs = (configs || []).map(c => ({
+      ...c,
+      upgrade_conditions: safeParseJson(c.upgrade_conditions, 'upgrade_conditions'),
+      benefits:           safeParseJson(c.benefits, 'benefits'),
+      upgrade_benefits:   safeParseJson(c.upgrade_benefits, 'upgrade_benefits'),
+      apply_questions:    safeParseJson(c.apply_questions, 'apply_questions'),
+    }));
 
     return response.success(processedConfigs, '获取成功');
 

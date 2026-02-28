@@ -50,35 +50,10 @@ module.exports = async (event, context) => {
       { id: application_id }
     );
 
-    // 如果通过，升级用户为大使
-    if (approved) {
-      await update('users',
-        {
-          ambassador_level: 1,  // 初级大使
-          ambassador_start_date: formatDateTime(new Date()).split(' ')[0]  // 只保留日期部分
-        },
-        { id: user.id }
-      );
-
-      // 发送通知
-      try {
-        await business.sendSubscribeMessage({
-          touser: user._openid,
-          template_id: 'ambassador_approved',
-          data: {
-            name: user.real_name,
-            level: '初级大使',
-            time: new Date().toLocaleString('zh-CN')
-          }
-        });
-      } catch (notifyError) {
-        console.error('发送通知失败:', notifyError);
-      }
-    }
-
     return response.success({
       success: true,
-      message: approved ? '申请已通过，用户已成为初级大使' : '申请已拒绝'
+      // 审核通过后等待用户签署协议，签约完成后再升级等级
+      message: approved ? '申请已通过，请引导用户签署协议后完成升级' : '申请已拒绝'
     });
 
   } catch (error) {

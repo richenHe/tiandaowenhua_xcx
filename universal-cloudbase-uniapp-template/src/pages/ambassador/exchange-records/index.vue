@@ -144,7 +144,7 @@ const totalPoints = computed(() => {
       : record.merit_points_used;
     return sum + (isNaN(points) ? 0 : points);
   }, 0);
-  return sum.toFixed(1);
+  return String(Math.round(sum));
 });
 
 // 根据 activeTab 筛选记录

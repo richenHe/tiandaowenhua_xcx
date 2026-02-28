@@ -196,6 +196,20 @@ function generateRandomPassword(length = 12) {
   return password;
 }
 
+/**
+ * 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用）
+ */
+function cloudFileIDToURL(fileID) {
+  if (!fileID || !fileID.startsWith('cloud://')) return fileID;
+  const withoutScheme = fileID.slice(8);
+  const dotIdx = withoutScheme.indexOf('.');
+  const slashIdx = withoutScheme.indexOf('/');
+  if (dotIdx === -1 || slashIdx === -1 || dotIdx >= slashIdx) return fileID;
+  const bucket = withoutScheme.slice(dotIdx + 1, slashIdx);
+  const filePath = withoutScheme.slice(slashIdx + 1);
+  return `https://${bucket}.tcb.qcloud.la/${filePath}`;
+}
+
 module.exports = {
   validateRequired,
   getPagination,
@@ -207,7 +221,8 @@ module.exports = {
   generateCode,
   hashPassword,
   verifyPassword,
-  generateRandomPassword
+  generateRandomPassword,
+  cloudFileIDToURL
 };
 
 
