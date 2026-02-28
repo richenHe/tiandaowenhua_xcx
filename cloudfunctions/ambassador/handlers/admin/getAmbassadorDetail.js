@@ -52,13 +52,13 @@ module.exports = async (event, context) => {
 
     // 查询功德金统计
     const { count: meritPointsCount } = await db
-      .from('merit_points_logs')
+      .from('merit_points_records')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
     // 查询现金积分统计
     const { count: cashPointsCount } = await db
-      .from('cash_points_logs')
+      .from('cash_points_records')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 

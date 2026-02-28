@@ -25,7 +25,6 @@
             v-for="appointment in filteredAppointments" 
             :key="appointment.id"
             class="t-card"
-            @click="goToAppointmentDetail(appointment.id)"
           >
             <view class="t-card__body">
               <view class="card-header">
@@ -153,9 +152,14 @@ const loadAppointments = async (status?: number) => {
       const statusInfo = statusMap[item.status] ?? statusMap[0]
       return {
         id: item.id,
+        courseId: item.course_id,
+        classRecordId: item.class_record_id,
+        courseName: item.course_name || '',
+        classDate: item.class_date || '',
+        classTime: item.start_time || item.class_time || '',
         title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
         time: `${item.class_date} ${item.start_time || ''}`,
-        location: item.location,
+        location: item.location || '',
         teacher: item.teacher,
         phone: '',
         status: statusInfo.text,
@@ -185,13 +189,6 @@ const handleTabChange = (value: number) => {
   activeTab.value = value
   const statusValue = value === -1 ? undefined : value
   loadAppointments(statusValue)
-}
-
-// 跳转到预约详情
-const goToAppointmentDetail = (id: number) => {
-  uni.navigateTo({
-    url: `/pages/course/appointment-confirm/index?id=${id}`
-  })
 }
 
 // 取消预约
@@ -273,10 +270,6 @@ onShow(() => {
   overflow: hidden;
   transition: all 0.3s;
 
-  &:active {
-    transform: scale(0.98);
-    opacity: 0.9;
-  }
 }
 
 .t-card__body {

@@ -63,6 +63,11 @@ async function generateShareQRCode(options) {
   }
 
   try {
+    console.log('[QRCode] _cloud type:', typeof _cloud, ', has openapi:', !!_cloud.openapi);
+    if (_cloud.openapi) {
+      console.log('[QRCode] has wxacode:', !!_cloud.openapi.wxacode);
+    }
+
     const result = await _cloud.openapi.wxacode.getUnlimited({
       scene,
       page,
@@ -71,13 +76,15 @@ async function generateShareQRCode(options) {
       envVersion: 'release'
     });
 
+    console.log('[QRCode] getUnlimited result: errCode=', result.errCode, ', bufferLen=', result.buffer?.length);
+
     if (result.errCode && result.errCode !== 0) {
       throw new Error(`生成小程序码失败: ${result.errMsg || '未知错误'} (${result.errCode})`);
     }
 
     return result.buffer;
   } catch (error) {
-    console.error('生成分享码失败:', error);
+    console.error('[QRCode] 生成分享码失败:', error.message, error.stack);
     throw new Error(`生成分享码失败: ${error.message}`);
   }
 }
@@ -150,6 +157,44 @@ async function generateAmbassadorQRCode(options) {
  *   }
  * }
  */
+/**
+ * 生成签到二维码并上传云存储
+ *
+ * @param {Object} options
+ * @param {number} options.classRecordId - 排期 ID
+ * @param {number} [options.width=430] - 二维码宽度
+ * @returns {Promise<Object>} { buffer, cloudPath, fileID }
+ */
+async function generateCheckinQRCode(options) {
+  _checkInit();
+
+  const { classRecordId, width = 430 } = options;
+
+  if (!classRecordId) {
+    throw new Error('classRecordId 不能为空');
+  }
+
+  const scene = `ci=${classRecordId}`;
+  const page = 'pages/course/checkin/index';
+
+  const buffer = await generateShareQRCode({ scene, page, width });
+
+  const timestamp = Date.now();
+  const cloudPath = `qrcodes/checkin/${classRecordId}_${timestamp}.png`;
+
+  const uploadResult = await _cloud.uploadFile({
+    cloudPath,
+    fileContent: buffer
+  });
+
+  return {
+    buffer,
+    cloudPath,
+    fileID: uploadResult.fileID,
+    scene
+  };
+}
+
 function decodeScene(scene) {
   if (!scene || typeof scene !== 'string') {
     return {};
@@ -172,5 +217,6 @@ module.exports = {
   initQRCode,
   generateShareQRCode,
   generateAmbassadorQRCode,
+  generateCheckinQRCode,
   decodeScene
 };

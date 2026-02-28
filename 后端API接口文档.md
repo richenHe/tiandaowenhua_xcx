@@ -3474,25 +3474,153 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **云函数**: `course` → Action: `autoUpdateScheduleStatus`
 **触发方式**: 定时器（每天 0 点触发，`cloudfunction.json` 配置）
 
-**功能说明**: 自动将已过期的排课状态从「进行中（status=1）」更新为「已结束（status=2）」。
+**功能说明**: 自动更新排课状态 + 标记缺席预约。
 
 **判断逻辑**:
-- 有结束日期的排课：`class_end_date < 今天`
-- 无结束日期的排课（单次课）：`class_date < 今天`
+1. 未开始(1) → 进行中(2)：`class_date <= 今天`
+2. 进行中(2) → 已结束(3)：有结束日期 `class_end_date < 今天`
+3. 进行中(2) → 已结束(3)：无结束日期（单次课）`class_date < 今天`
+4. 缺席标记：已结束排期(status=3)中 appointments.status=0(待上课) → status=2(缺席)
 
 **响应数据**（日志用）:
 ```json
 {
   "success": true,
   "data": {
-    "date": "2026-02-27",
-    "affectedRows": 3,
-    "withEndDate": 2,
-    "withoutEndDate": 1,
-    "message": "成功更新 3 条排课状态为已结束"
+    "date": "2026-02-28",
+    "affectedRows": 5,
+    "toOngoing": 1,
+    "toEndedWithEndDate": 1,
+    "toEndedSingleDay": 0,
+    "toAbsent": 3,
+    "message": "更新 5 条记录（排期状态 2 + 缺席 3）"
   }
 }
 ```
+
+**新增（2026-02-28）**：第四步 - 标记缺席。已结束排期（status=3）中仍为待上课（appointments.status=0）的预约 → 更新为缺席（appointments.status=2）。
+
+---
+
+## 6.C2 签到二维码管理（新增 2026-02）
+
+### 🟡 6.C2.1 生成签到二维码
+**云函数**: `course` → Action: `generateCheckinQRCode`
+**权限**: 管理员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| classRecordId | Number | 是 | 排期ID |
+
+**业务逻辑**:
+1. 验证排期存在且未取消
+2. 调用 `wxacode.getUnlimited` 生成小程序码（scene=`ci={classRecordId}`，page=`pages/course/checkin/index`）
+3. 上传云存储（路径 `qrcodes/checkin/{classRecordId}_{timestamp}.png`）
+4. 存入 `checkin_qrcodes` 表
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "qrcode_url": "https://xxx.tcb.qcloud.la/qrcodes/checkin/1_1709000000.png",
+    "file_id": "cloud://xxx.xxx/qrcodes/checkin/1_1709000000.png",
+    "scene": "ci=1",
+    "class_record_id": 1,
+    "course_name": "天道初探",
+    "class_date": "2026-03-01"
+  }
+}
+```
+
+### 🟡 6.C2.2 获取签到二维码列表
+**云函数**: `course` → Action: `getCheckinQRCodeList`
+**权限**: 管理员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| classRecordId | Number | 否 | 按排期ID过滤 |
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "class_record_id": 5,
+        "course_name": "天道初探",
+        "class_date": "2026-03-01",
+        "qrcode_url": "https://xxx.tcb.qcloud.la/qrcodes/checkin/5_1709000000.png",
+        "scene": "ci=5",
+        "status": 1,
+        "created_at": "2026-02-28 10:00:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+### 🟡 6.C2.3 删除签到二维码
+**云函数**: `course` → Action: `deleteCheckinQRCode`
+**权限**: 管理员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Number | 是 | 签到码ID |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": { "id": 1 },
+  "message": "签到码删除成功"
+}
+```
+
+### 🔵 6.C2.4 扫码签到（客户端）
+**云函数**: `course` → Action: `scanCheckin`
+**权限**: 已登录用户
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| classRecordId | Number | 是 | 排期ID（从二维码 scene 参数解析） |
+
+**业务逻辑**:
+1. 查找当前用户在该排期下的预约记录
+2. 验证预约状态为待上课（status=0）
+3. 更新为已签到（status=1），记录 checkin_time
+4. 更新 user_courses.attend_count
+5. 异步解冻推荐人积分
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "签到成功",
+    "checkin_at": "2026-03-01 09:15:00"
+  }
+}
+```
+
+**错误场景**:
+| 状态 | 错误信息 |
+|------|---------|
+| 无预约 | "您没有该课程的预约记录，无法签到" |
+| 已签到 | "您已签到，请勿重复签到" |
+| 已缺席 | "该预约已标记为缺席，无法签到" |
+| 已取消 | "该预约已取消，无法签到" |
 
 ---
 
@@ -4318,16 +4446,29 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **字段说明**:
 | 字段 | 说明 | 影响范围 |
 |------|------|---------|
-| merit_rate_basic | 推荐初探班功德分比例 | 积分计算 |
-| merit_rate_advanced | 推荐密训班功德分比例 | 积分计算 |
-| cash_rate_basic | 推荐初探班可提现积分比例 | 积分计算 |
-| cash_rate_advanced | 推荐密训班可提现积分比例 | 积分计算 |
-| frozen_points | 升级发放的冻结积分 | 大使升级 |
-| unfreeze_per_referral | 每次推荐解冻积分金额 | 签到/推荐奖励 |
+| merit_rate_basic | 推荐初探班功德分比例 | 奖励计算（与 cash_rate_basic 互斥） |
+| merit_rate_advanced | 推荐密训班功德分比例 | 奖励计算（与 cash_rate_advanced 互斥） |
+| cash_rate_basic | 推荐初探班可提现积分比例 | 奖励计算（与 merit_rate_basic 互斥） |
+| cash_rate_advanced | 推荐密训班可提现积分比例 | 奖励计算（与 merit_rate_advanced 互斥） |
+| frozen_points | 升级发放的冻结积分（必须是 unfreeze_per_referral 的整数倍） | 大使升级 |
+| unfreeze_per_referral | 每次推荐初探班解冻的固定积分金额 | 推荐奖励（仅初探班触发解冻） |
 | upgrade_payment_amount | 支付升级所需金额 | 创建订单 |
 | gift_quota_basic | 升级赠送初探班名额 | 大使升级 |
 | gift_quota_advanced | 升级赠送密训班名额 | 大使升级 |
-| can_earn_reward | 是否可获得推荐奖励 | 推荐奖励判断 |
+| can_earn_reward | 是否可获得推荐奖励 | 推荐奖励前置判断 |
+
+**业务校验规则**（保存时前后端双重校验）:
+1. `merit_rate_basic` 和 `cash_rate_basic` 不能同时 > 0（功德分和积分互斥）
+2. `merit_rate_advanced` 和 `cash_rate_advanced` 不能同时 > 0
+3. `unfreeze_per_referral > 0` 时，`frozen_points` 必须是其整数倍
+
+**奖励发放优先级**:
+```
+1. can_earn_reward=0 → 无奖励
+2. 初探班 + frozen>0 → 解冻 unfreeze_per_referral 到 available → 结束
+3. merit_rate>0 → 发功德分 → 结束
+4. cash_rate>0 → 发积分到 available → 结束
+```
 
 ### 🔴 10.9 后台用户管理 - CRUD
 **接口**:
@@ -4593,32 +4734,42 @@ exports.main = async (event, context) => {
 首次购买 → 锁定用户推荐人（永久）
 ```
 
-### B. 青鸾大使奖励流程
+### B. 统一奖励发放流程（所有等级通用）
 ```
-⚠️ 以下数值均从 ambassador_level_configs 表动态读取
+⚠️ 所有数值均从 ambassador_level_configs 表动态读取，不得硬编码
+⚠️ 功德分率和积分率互斥（同课程类型只能配一个，后台强制二选一）
 
-成为青鸾 → 获得 config.frozen_points 冻结积分
+支付成功回调 → 查询推荐人等级配置
   ↓
-第1次推荐初探班 → 解冻 config.unfreeze_per_referral 积分（可提现）
+can_earn_reward=0 → 无奖励，结束
   ↓
-第2次推荐初探班 → 获得 config.merit_rate_basic 比例的功德分
+初探班 + frozen>0 → 解冻 config.unfreeze_per_referral（frozen→available）→ 结束
   ↓
-推荐密训班 → 获得 config.merit_rate_advanced 比例的功德分
+merit_rate>0 → 发 merit_rate 比例的功德分 → 结束
+  ↓
+cash_rate>0 → 发 cash_rate 比例的积分到 available → 结束
 ```
 
-### C. 鸿鹄大使奖励流程
+### B1. 青鸾大使奖励举例
 ```
-⚠️ 以下数值均从 ambassador_level_configs 表动态读取
+配置：frozen_points=1688, unfreeze_per_referral=1688
+      merit_rate_basic=0.30, cash_rate_basic=0（功德分模式）
+      merit_rate_advanced=0.20, cash_rate_advanced=0
 
-升级鸿鹄 → 支付 config.upgrade_payment_amount 元
-         → 获得 config.frozen_points 冻结积分
-         → 获得 config.gift_quota_basic 个初探班名额
-  ↓
-推荐初探班 → 解冻 config.unfreeze_per_referral 积分（重复至冻结积分用完）
-  ↓
-冻结积分用完 → 推荐初探班 → 获得 config.cash_rate_basic 比例的可提现积分
-  ↓
-推荐密训班 → 直接获得 config.cash_rate_advanced 比例的可提现积分（不消耗冻结积分）
+第1次推荐初探班 → frozen>0 → 解冻1688（frozen=0, available+1688）
+第2次推荐初探班 → frozen=0 → merit_rate=0.30 → 功德分=1688×30%=506.4
+推荐密训班      → merit_rate=0.20 → 功德分=38888×20%=7777.6
+```
+
+### C1. 鸿鹄大使奖励举例
+```
+配置：frozen_points=16880, unfreeze_per_referral=1688
+      merit_rate_basic=0, cash_rate_basic=0.30（积分模式）
+      merit_rate_advanced=0, cash_rate_advanced=0.20
+
+第1~10次推荐初探班 → frozen>0 → 每次解冻1688（frozen递减至0）
+第11次推荐初探班    → frozen=0 → cash_rate=0.30 → 积分=1688×30%到available
+推荐密训班          → cash_rate=0.20 → 积分=38888×20%到available（不消耗frozen）
 ```
 
 ---

@@ -185,11 +185,11 @@ const goToCourseDetail = (courseId: string) => {
   });
 };
 
-// 跳转到课程排期
+// 跳转到课程排期（参数名必须为 course_id，与 schedule 页一致）
 const goToCourseSchedule = (courseId: string) => {
   console.log('前往课程排期:', courseId);
   uni.navigateTo({
-    url: '/pages/course/schedule/index?id=' + courseId,
+    url: '/pages/course/schedule/index?course_id=' + courseId,
   });
 };
 </script>

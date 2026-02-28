@@ -4,7 +4,10 @@
   },
   "envVariables": {
     "WECHAT_TOKEN": "tiandao_wechat_2026",
-    "MCH_KEY": "e6f4c2a8b1d5973820fedcba56789012"
+    "MCH_KEY": "e6f4c2a8b1d5973820fedcba56789012",
+    "MCH_API_V3_KEY": "Kj8mP2nQ5rT9wX3yZ6aB4cD7eF0gH1iL",
+    "MCH_ID": "1710089873",
+    "WECHAT_APPID": "wx26753b179de5c25c"
   },
   "triggers": []
 }

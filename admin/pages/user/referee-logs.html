@@ -142,7 +142,7 @@
               </div>
               <div class="stat-item">
                 <div class="stat-value" :style="{color: '#e34d59'}">{{ stats.abnormal_count || 0 }}</div>
-                <div class="stat-label">管理员修改</div>
+                <div class="stat-label">异常变更</div>
               </div>
             </div>
           </div>
@@ -159,12 +159,11 @@
               </t-form-item>
               
               <t-form-item label="变更类型">
-                <!-- referee_change_logs.change_type: 1首次设置/2用户主动修改/3管理员修改/4订单页修改 -->
+                <!-- 云函数 changeTypeMap: 1系统自动/2管理员修改/3异常变更 -->
                 <t-select v-model="searchForm.changeType" clearable placeholder="全部" style="width: 150px;">
-                  <t-option :value="1" label="首次设置"></t-option>
-                  <t-option :value="2" label="用户主动修改"></t-option>
-                  <t-option :value="3" label="管理员修改"></t-option>
-                  <t-option :value="4" label="订单页修改"></t-option>
+                  <t-option :value="1" label="系统自动"></t-option>
+                  <t-option :value="2" label="管理员修改"></t-option>
+                  <t-option :value="3" label="异常变更"></t-option>
                 </t-select>
               </t-form-item>
               
@@ -196,12 +195,11 @@
               :pagination="pagination"
               @page-change="onPageChange"
             >
-              <!-- referee_change_logs.change_type: 1首次设置/2用户主动修改/3管理员修改/4订单页修改 -->
+              <!-- 云函数 changeTypeMap: 1系统自动/2管理员修改/3异常变更 -->
               <template #changeType="{ row }">
-                <t-tag v-if="row.change_type === 1" theme="success">首次设置</t-tag>
-                <t-tag v-else-if="row.change_type === 2" theme="primary">用户主动修改</t-tag>
-                <t-tag v-else-if="row.change_type === 3" theme="warning">管理员修改</t-tag>
-                <t-tag v-else-if="row.change_type === 4" theme="default">订单页修改</t-tag>
+                <t-tag v-if="row.change_type === 1" theme="success">系统自动</t-tag>
+                <t-tag v-else-if="row.change_type === 2" theme="primary">管理员修改</t-tag>
+                <t-tag v-else-if="row.change_type === 3" theme="danger">异常变更</t-tag>
               </template>
               
               <template #oldReferee="{ row }">
@@ -258,10 +256,9 @@
                 <span v-else style="color: #999;">无</span>
               </t-descriptions-item>
               <t-descriptions-item label="变更类型">
-                <t-tag v-if="currentLog.change_type === 1" theme="success">首次设置</t-tag>
-                <t-tag v-else-if="currentLog.change_type === 2" theme="primary">用户主动修改</t-tag>
-                <t-tag v-else-if="currentLog.change_type === 3" theme="warning">管理员修改</t-tag>
-                <t-tag v-else-if="currentLog.change_type === 4" theme="default">订单页修改</t-tag>
+                <t-tag v-if="currentLog.change_type === 1" theme="success">系统自动</t-tag>
+                <t-tag v-else-if="currentLog.change_type === 2" theme="primary">管理员修改</t-tag>
+                <t-tag v-else-if="currentLog.change_type === 3" theme="danger">异常变更</t-tag>
               </t-descriptions-item>
               <t-descriptions-item label="操作人">
                 {{ currentLog.operator_name || '系统' }}

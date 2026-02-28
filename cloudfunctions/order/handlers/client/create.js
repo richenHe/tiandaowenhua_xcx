@@ -7,7 +7,7 @@
  * - order_type=2: 复训费支付
  * - order_type=4: 需支付的大使升级
  */
-const { findOne, insert, query } = require('../../common/db');
+const { findOne, insert, query, db } = require('../../common/db');
 const { response } = require('../../common');
 const business = require('../../business-logic');
 
@@ -122,13 +122,15 @@ async function handleCourseOrder(user, course_id, referee_id) {
     throw new Error('课程已下架');
   }
 
-  // 2. 检查重复购买
-  const existingCourse = await findOne('user_courses', {
-    user_id: user.id,
-    course_id: course_id,
-    status: 1
-  });
-  if (existingCourse) {
+  // 2. 检查重复购买（用 select+limit 代替 findOne，防止多行报错）
+  const { data: existingCourses } = await db
+    .from('user_courses')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('course_id', course_id)
+    .eq('status', 1)
+    .limit(1);
+  if (existingCourses && existingCourses.length > 0) {
     throw new Error('您已购买过该课程');
   }
 

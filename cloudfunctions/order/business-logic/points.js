@@ -125,12 +125,40 @@ async function processReferralReward({ order_id, user_id, referee_id, order_amou
   }
 
   const amount = parseFloat(order_amount) || 0;
-  const meritResult = await calculateMeritPoints(amount, referee.ambassador_level, courseType);
-  const cashResult  = await calculateCashPoints(amount, referee.ambassador_level, parseFloat(referee.cash_points_frozen) || 0, courseType);
+  const frozenBalance = parseFloat(referee.cash_points_frozen) || 0;
 
-  // ── 发放功德分 ──
+  // 核心互斥逻辑：解冻 > 功德分 > 积分，三者只走一个分支
+  const cashResult = await calculateCashPoints(amount, referee.ambassador_level, frozenBalance, courseType);
+
+  // ── 分支1：解冻积分（仅初探班 + frozen>0 时触发） ──
+  if (cashResult.unfreezePoints > 0) {
+    const newFrozen    = Math.max(0, frozenBalance - cashResult.unfreezePoints);
+    const newAvailable = (parseFloat(referee.cash_points_available) || 0) + cashResult.unfreezePoints;
+    await update('users', {
+      cash_points_frozen:    newFrozen,
+      cash_points_available: newAvailable
+    }, { id: referee_id });
+    await insert('cash_points_records', {
+      user_id:         referee_id,
+      user_uid:        referee.uid || '',
+      _openid:         referee._openid || '',
+      type:            2,
+      amount:          cashResult.unfreezePoints,
+      frozen_after:    newFrozen,
+      available_after: newAvailable,
+      order_no:        orderNo,
+      referee_user_id: user_id,
+      remark:          cashResult.description
+    });
+    console.log(`[processReferralReward] 解冻积分 +${cashResult.unfreezePoints}，frozen=${newFrozen}，available=${newAvailable}`);
+    return { meritPoints: 0, cashPoints: 0, unfreezePoints: cashResult.unfreezePoints };
+  }
+
+  // ── 分支2：功德分或积分（互斥，由配置保证只有一个>0） ──
+  const meritResult = await calculateMeritPoints(amount, referee.ambassador_level, courseType);
+
   if (meritResult.meritPoints > 0) {
-    const newMerit = Math.round(parseFloat(referee.merit_points || 0) + meritResult.meritPoints);
+    const newMerit = Math.round((parseFloat(referee.merit_points) || 0) + meritResult.meritPoints);
     await update('users', { merit_points: newMerit }, { id: referee_id });
     await insert('merit_points_records', {
       user_id:      referee_id,
@@ -141,58 +169,34 @@ async function processReferralReward({ order_id, user_id, referee_id, order_amou
       amount:       meritResult.meritPoints,
       balance_after: newMerit,
       order_no:     orderNo,
+      referee_user_id: user_id,
       remark:       meritResult.description
     });
-    console.log(`[processReferralReward] 功德分 +${meritResult.meritPoints} → 推荐人 id=${referee_id}`);
+    console.log(`[processReferralReward] 功德分 +${meritResult.meritPoints}`);
+    return { meritPoints: meritResult.meritPoints, cashPoints: 0, unfreezePoints: 0 };
   }
 
-  // ── 解冻积分（青鸾首次推荐初探班）──
-  if (cashResult.unfreezePoints > 0) {
-    const newFrozen    = Math.round(Math.max(0, parseFloat(referee.cash_points_frozen || 0) - cashResult.unfreezePoints));
-    const newAvailable = Math.round(parseFloat(referee.cash_points_available || 0) + cashResult.unfreezePoints);
-    await update('users', {
-      cash_points_frozen:    newFrozen,
-      cash_points_available: newAvailable,
-      is_first_recommend:    1
-    }, { id: referee_id });
-    await insert('cash_points_records', {
-      user_id:         referee_id,
-      user_uid:        referee.uid || '',
-      _openid:         referee._openid || '',
-      type:            2,  // 解冻
-      amount:          cashResult.unfreezePoints,
-      frozen_after:    newFrozen,
-      available_after: newAvailable,
-      order_no:        orderNo,
-      referee_user_id: user_id,
-      remark:          cashResult.description
-    });
-    console.log(`[processReferralReward] 解冻积分 +${cashResult.unfreezePoints}，frozen=${newFrozen}，available=${newAvailable} → 推荐人 id=${referee_id}`);
-
-  // ── 直接发放可提现积分（冻结耗尽后或密训班）──
-  } else if (cashResult.cashPoints > 0) {
-    const newAvailable = Math.round(parseFloat(referee.cash_points_available || 0) + cashResult.cashPoints);
+  if (cashResult.cashPoints > 0) {
+    const newAvailable = (parseFloat(referee.cash_points_available) || 0) + cashResult.cashPoints;
     await update('users', { cash_points_available: newAvailable }, { id: referee_id });
     await insert('cash_points_records', {
       user_id:         referee_id,
       user_uid:        referee.uid || '',
       _openid:         referee._openid || '',
-      type:            3,  // 直接发放
+      type:            3,
       amount:          cashResult.cashPoints,
-      frozen_after:    parseFloat(referee.cash_points_frozen || 0),
+      frozen_after:    frozenBalance,
       available_after: newAvailable,
       order_no:        orderNo,
       referee_user_id: user_id,
       remark:          cashResult.description
     });
-    console.log(`[processReferralReward] 直接发放积分 +${cashResult.cashPoints} → 推荐人 id=${referee_id}`);
+    console.log(`[processReferralReward] 可提现积分 +${cashResult.cashPoints}`);
+    return { meritPoints: 0, cashPoints: cashResult.cashPoints, unfreezePoints: 0 };
   }
 
-  return {
-    meritPoints:    meritResult.meritPoints,
-    cashPoints:     cashResult.cashPoints,
-    unfreezePoints: cashResult.unfreezePoints
-  };
+  console.log('[processReferralReward] 无可发放奖励');
+  return { meritPoints: 0, cashPoints: 0, unfreezePoints: 0 };
 }
 
 /**

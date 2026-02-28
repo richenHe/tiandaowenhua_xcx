@@ -171,18 +171,18 @@
         <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙 -->
         <t-form-item label="课程类型" name="type">
           <t-select v-model="searchForm.type" placeholder="请选择课程类型" clearable>
-            <t-option :value="1" label="初探班" />
-            <t-option :value="2" label="密训班" />
-            <t-option :value="3" label="咨询服务" />
-            <t-option :value="4" label="沙龙" />
+            <t-option :value="1" label="初探班"></t-option>
+            <t-option :value="2" label="密训班"></t-option>
+            <t-option :value="3" label="咨询服务"></t-option>
+            <t-option :value="4" label="沙龙"></t-option>
           </t-select>
         </t-form-item>
 
         <!-- courses.status: 0下架/1上架 -->
         <t-form-item label="状态" name="status">
           <t-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-            <t-option :value="1" label="上架" />
-            <t-option :value="0" label="下架" />
+            <t-option :value="1" label="上架"></t-option>
+            <t-option :value="0" label="下架"></t-option>
           </t-select>
         </t-form-item>
         
@@ -260,10 +260,10 @@
         <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙 -->
         <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
           <t-select v-model="editForm.type" placeholder="请选择课程类型">
-            <t-option :value="1" label="初探班" />
-            <t-option :value="2" label="密训班" />
-            <t-option :value="3" label="咨询服务" />
-            <t-option :value="4" label="沙龙" />
+            <t-option :value="1" label="初探班"></t-option>
+            <t-option :value="2" label="密训班"></t-option>
+            <t-option :value="3" label="咨询服务"></t-option>
+            <t-option :value="4" label="沙龙"></t-option>
           </t-select>
         </t-form-item>
         

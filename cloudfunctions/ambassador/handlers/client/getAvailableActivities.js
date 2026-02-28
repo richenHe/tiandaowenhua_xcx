@@ -31,12 +31,11 @@ module.exports = async (event, context) => {
     const levelNameMap = {};
     (levelRows || []).forEach(l => { levelNameMap[l.level] = l.level_name; });
 
-    // 查询所有 status=1 的活动（含报名截止但活动未结束的），按开始日期升序
-    // 前端根据 class_date 判断是否置灰（today >= class_date 则显示"报名截止"）
+    // status=1（报名中）+ status=2（报名截止）均返回，前端根据 status 决定按钮状态
     const queryBuilder = db
       .from('ambassador_activities')
       .select('*', { count: 'exact' })
-      .eq('status', 1)
+      .in('status', [1, 2])
       .order('schedule_date', { ascending: true });
 
     const result = await executePaginatedQuery(queryBuilder, page, pageSize);

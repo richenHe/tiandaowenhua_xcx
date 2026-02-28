@@ -50,9 +50,9 @@
                 <t-input v-model="q" placeholder="搜索排期名称" clearable />
               </div>
               <t-select v-model="filterStatus" placeholder="状态" style="width:120px;" clearable>
-                <t-option :value="1" label="报名中" />
-                <t-option :value="2" label="待发放" />
-                <t-option :value="0" label="已结束" />
+                <t-option :value="1" label="报名中"></t-option>
+                <t-option :value="2" label="报名截止"></t-option>
+                <t-option :value="0" label="已结束"></t-option>
               </t-select>
               <t-button theme="primary" @click="load">查询</t-button>
               <t-button @click="reset">重置</t-button>
@@ -63,6 +63,7 @@
               :pagination="page" @page-change="changePage" bordered stripe>
               <template #status="{row}">
                 <t-tag v-if="row.status===1" theme="success">报名中</t-tag>
+                <t-tag v-else-if="row.status===2" theme="warning">报名截止</t-tag>
                 <t-tag v-else>已结束</t-tag>
               </template>
               <template #merit_distributed="{row}">
@@ -219,7 +220,13 @@
               </t-select>
             </div>
             <div class="modal-scroll">
-              <t-table :data="regList" :columns="regCols" :loading="regLoading" bordered size="small" />
+              <t-table :data="regList" :columns="regCols" :loading="regLoading" bordered size="small">
+                <template #reg_op="{row}">
+                  <t-button v-if="row.status===1 && registrantsActivity?.status!==0"
+                    size="small" variant="text" theme="danger" @click="removeRegistrant(row)">移除</t-button>
+                  <span v-else style="color:#999;font-size:12px;">-</span>
+                </template>
+              </t-table>
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:12px;">
               <t-pagination
@@ -420,7 +427,7 @@
         try {
           const today = new Date();
           const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-          // 只加载 status=1（正常）且上课日期 >= 今天的排期
+          // 只加载 status=1（未开始）且上课日期 >= 今天的排期
           const data = await AdminAPI.getScheduleList({ pageSize: 500, page: 1, status: 1, start_date: todayStr });
           scheduleOptions.value = data.list || [];
         } catch (e) {
@@ -526,7 +533,8 @@
         { colKey: 'position_name', title: '报名岗位', width: 120 },
         { colKey: 'merit_points', title: '功德分', width: 80 },
         { colKey: 'status_text', title: '状态', width: 100 },
-        { colKey: 'created_at', title: '报名时间', width: 150 }
+        { colKey: 'created_at', title: '报名时间', width: 150 },
+        { colKey: 'reg_op', title: '操作', width: 80, cell: 'reg_op' }
       ];
 
       const openRegistrants = (row) => {
@@ -535,6 +543,16 @@
         regPage.value = { current: 1, pageSize: 20, total: 0 };
         showRegistrants.value = true;
         loadRegistrants(1);
+      };
+
+      const removeRegistrant = async (row) => {
+        if (!confirm(`确认移除「${row.user_name}」的报名记录？此操作不可恢复。`)) return;
+        try {
+          await AdminAPI.removeActivityRegistrant({ registrationId: row.id });
+          TDesign.MessagePlugin.success('移除成功');
+          loadRegistrants(regPage.value.current);
+          load();
+        } catch (e) { TDesign.MessagePlugin.error(e.message); }
       };
 
       const loadRegistrants = async (currentPage = 1, ps = regPage.value.pageSize) => {
@@ -576,7 +594,7 @@
         showDetail, detailData, detailCols, openDetail,
         // 报名人员
         showRegistrants, registrantsActivity, regLoading, regList, regPage, regFilter, regCols,
-        openRegistrants, loadRegistrants
+        openRegistrants, loadRegistrants, removeRegistrant
       };
     }
   }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');

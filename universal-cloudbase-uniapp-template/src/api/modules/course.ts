@@ -217,6 +217,19 @@ export class CourseApi {
   }
 
   /**
+   * 扫码签到（扫描签到二维码后自动调用）
+   * @param classRecordId 排期ID
+   */
+  static async scanCheckin(classRecordId: number): Promise<{ message: string; checkin_at: string }> {
+    return callCloudFunction<{ message: string; checkin_at: string }>({
+      name: 'course',
+      action: 'scanCheckin',
+      data: { classRecordId },
+      loadingText: '签到中...'
+    })
+  }
+
+  /**
    * 13. 记录商学院学习进度
    * @param params 学习进度参数
    * @returns 记录结果
@@ -258,6 +271,7 @@ export const {
   cancelAppointment,
   getMyAppointments,
   checkin,
+  scanCheckin,
   recordAcademyProgress,
   getAcademyProgress
 } = CourseApi

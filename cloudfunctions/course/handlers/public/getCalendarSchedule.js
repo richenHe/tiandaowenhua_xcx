@@ -34,7 +34,7 @@ module.exports = async (event, context) => {
       `)
       .gte('class_date', startDate)
       .lte('class_date', endDate)
-      .eq('status', 1)  // 正常状态
+      .in('status', [1, 2,3])  // 未开始 + 进行中
       .order('class_date', { ascending: true })
       .order('course_id', { ascending: true });  // 按课程ID正序，确保同一天取ID最小的课程
 

@@ -35,7 +35,7 @@ module.exports = async (event, context) => {
     });
 
     const result = {
-      balance: user.merit_points || 0,
+      balance: Number(user.merit_points || 0),
       total_earned,
       total_spent
     };

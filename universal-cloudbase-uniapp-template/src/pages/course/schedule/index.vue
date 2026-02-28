@@ -14,7 +14,7 @@
           class="t-card t-card--bordered schedule-card"
         >
           <view class="t-card__body">
-            <view class="schedule-title">{{ schedule.courseName }} 第{{ schedule.period }}期</view>
+            <view class="schedule-title">{{ schedule.courseName }}</view>
 
             <view class="schedule-info">
               <view class="info-item">📅 {{ schedule.startDate }}{{ schedule.startTime ? ' ' + schedule.startTime : '' }}</view>
@@ -29,7 +29,7 @@
 
             <button
               class="t-button t-button--theme-light t-button--variant-base t-button--block"
-              @click="handleAppointment(schedule.id)"
+              @click="handleAppointment(schedule)"
             >
               <span class="t-button__text">立即预约</span>
             </button>
@@ -47,8 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { ref } from 'vue';
+import { onLoad, onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api';
 
@@ -95,21 +95,24 @@ const loadSchedules = async () => {
 };
 
 // 处理预约
-const handleAppointment = (scheduleId: number) => {
-  console.log('预约课程:', scheduleId);
+const handleAppointment = (schedule: any) => {
+  const q = [
+    `classRecordId=${schedule.id}`,
+    `courseId=${courseId.value}`,
+    `courseName=${encodeURIComponent(schedule.courseName || '')}`,
+    `classDate=${encodeURIComponent(schedule.startDate || '')}`,
+    `classTime=${encodeURIComponent(schedule.startTime || '')}`,
+    `location=${encodeURIComponent(schedule.location || '')}`
+  ].join('&')
   uni.navigateTo({
-    url: '/pages/course/appointment-confirm/index?classRecordId=' + scheduleId,
+    url: `/pages/course/appointment-confirm/index?${q}`,
   });
 };
 
-onMounted(() => {
-  // 获取页面参数
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = (currentPage as any).options || {};
-
-  if (options.course_id) {
-    courseId.value = Number(options.course_id);
+onLoad((options: any) => {
+  const id = options?.course_id ?? options?.courseId ?? options?.id;
+  if (id) {
+    courseId.value = Number(id);
     loadSchedules();
   }
 });

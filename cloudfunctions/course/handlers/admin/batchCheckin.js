@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
         .from('appointments')
         .select('id, user_id, course_id')
         .in('id', appointment_ids)
-        .in('status', [0, 1]);
+        .eq('status', 0);
 
       if (queryError) throw queryError;
 
@@ -32,7 +32,7 @@ module.exports = async (event, context) => {
 
       const { error: updateError } = await db
         .from('appointments')
-        .update({ status: 2, checkin_time: now })
+        .update({ status: 1, checkin_time: now })
         .in('id', appointmentIdList);
 
       if (updateError) throw updateError;
@@ -72,13 +72,13 @@ module.exports = async (event, context) => {
       return response.paramError('user_ids 必须是非空数组');
     }
 
-    // 查询待签到的预约记录（注意：appointments 表没有 deleted_at 字段，status=0或1 表示待上课）
+    // 查询待签到的预约记录（status=0 为待上课）
     const { data: appointments, error: queryError } = await db
       .from('appointments')
       .select('id, user_id, course_id')
       .eq('class_record_id', parseInt(class_record_id))
       .in('user_id', user_ids)
-      .in('status', [0, 1]);  // 0 或 1 都表示待上课
+      .eq('status', 0);
 
     if (queryError) {
       throw queryError;
@@ -95,7 +95,7 @@ module.exports = async (event, context) => {
     const { error: updateError } = await db
       .from('appointments')
       .update({
-        status: 2,  // 2 = 已签到
+        status: 1,
         checkin_time: now
       })
       .in('id', appointmentIds);

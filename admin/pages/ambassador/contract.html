@@ -118,12 +118,12 @@
               </t-form-item>
               
               <t-form-item label="合约状态">
-                <!-- contract_signatures.status: 0已作废/1有效/2已过期/3已续签 -->
+                <!-- 云函数 contract_signatures.status: 1有效/2已过期/3已续签/4已作废 -->
                 <t-select v-model="searchForm.status" clearable placeholder="全部" style="width: 150px;">
-                  <t-option :value="0" label="已作废"></t-option>
                   <t-option :value="1" label="有效"></t-option>
                   <t-option :value="2" label="已过期"></t-option>
                   <t-option :value="3" label="已续签"></t-option>
+                  <t-option :value="4" label="已作废"></t-option>
                 </t-select>
               </t-form-item>
               
@@ -152,12 +152,12 @@
                 <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
               </template>
 
-              <!-- contract_signatures.status: 0已作废/1有效/2已过期/3已续签 -->
+              <!-- 云函数 contract_signatures.status: 1有效/2已过期/3已续签/4已作废 -->
               <template #status="{ row }">
-                <t-tag v-if="row.status === 0" theme="default">已作废</t-tag>
-                <t-tag v-else-if="row.status === 1" theme="success">有效</t-tag>
+                <t-tag v-if="row.status === 1" theme="success">有效</t-tag>
                 <t-tag v-else-if="row.status === 2" theme="warning">已过期</t-tag>
                 <t-tag v-else-if="row.status === 3" theme="primary">已续签</t-tag>
+                <t-tag v-else-if="row.status === 4" theme="default">已作废</t-tag>
               </template>
               
               <template #action="{ row }">
@@ -187,10 +187,10 @@
                 <t-tag v-else-if="currentContract.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
               </t-descriptions-item>
               <t-descriptions-item label="合约状态">
-                <t-tag v-if="currentContract.status === 0" theme="default">已作废</t-tag>
-                <t-tag v-else-if="currentContract.status === 1" theme="success">有效</t-tag>
+                <t-tag v-if="currentContract.status === 1" theme="success">有效</t-tag>
                 <t-tag v-else-if="currentContract.status === 2" theme="warning">已过期</t-tag>
                 <t-tag v-else-if="currentContract.status === 3" theme="primary">已续签</t-tag>
+                <t-tag v-else-if="currentContract.status === 4" theme="default">已作废</t-tag>
               </t-descriptions-item>
               <t-descriptions-item label="合约编号" :span="2">{{ currentContract.contract_no }}</t-descriptions-item>
               <t-descriptions-item label="签署时间">{{ formatDateTime(currentContract.signed_at) }}</t-descriptions-item>

@@ -219,12 +219,9 @@
               row-key="id"
             >
               <template #trigger_type="{ row }">
-                <t-tag v-if="row.trigger_type === 1" theme="success">预约成功</t-tag>
-                <t-tag v-else-if="row.trigger_type === 2" theme="primary">上课提醒</t-tag>
-                <t-tag v-else-if="row.trigger_type === 3" theme="default">签到成功</t-tag>
-                <t-tag v-else-if="row.trigger_type === 4" theme="warning">支付成功</t-tag>
-                <t-tag v-else-if="row.trigger_type === 5" theme="danger">手动发送</t-tag>
-                <t-tag v-else theme="default">其他</t-tag>
+                <t-tag v-if="row.trigger_type === 'before_class'" theme="primary">上课前</t-tag>
+                <t-tag v-else-if="row.trigger_type === 'after_pay'" theme="success">支付后</t-tag>
+                <t-tag v-else theme="warning">其他</t-tag>
               </template>
               
               <template #operation="{ row }">
@@ -388,13 +385,12 @@
         const notificationList = ref([]);
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         const sendDialogVisible = ref(false);
-        const sendForm = ref({ target: 0, type: 'system', title: '', content: '' });
+        const sendForm = ref({ target: 'all', type: 'system', title: '', content: '' });
         
-        // announcements.target_type: 0全部用户/1普通用户/2大使用户
         const targetOptions = [
-          { label: '全部用户', value: 0 },
-          { label: '普通用户', value: 1 },
-          { label: '大使用户', value: 2 }
+          { label: '全部用户', value: 'all' },
+          { label: '全部大使', value: 'ambassadors' },
+          { label: '指定用户', value: 'users' }
         ];
         
         const typeOptions = [
@@ -418,13 +414,10 @@
         const configForm = ref({ course_id: null, trigger_type: '', template_id: '', advance_days: 1 });
         const courseOptions = ref([]);
         
-        // notification_configs.trigger_type: 1预约成功/2上课提醒/3签到成功/4支付成功/5手动发送
         const triggerOptions = [
-          { label: '预约成功', value: 1 },
-          { label: '上课提醒', value: 2 },
-          { label: '签到成功', value: 3 },
-          { label: '支付成功', value: 4 },
-          { label: '手动发送', value: 5 }
+          { label: '上课前提醒', value: 'before_class' },
+          { label: '支付成功后', value: 'after_pay' },
+          { label: '预约成功后', value: 'after_appointment' }
         ];
         
         const configColumns = [

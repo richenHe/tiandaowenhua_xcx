@@ -142,28 +142,28 @@
         
         <t-form-item label="订单类型" name="orderType">
           <t-select v-model="searchForm.orderType" placeholder="请选择订单类型" clearable>
-            <t-option :value="1" label="课程订单" />
-            <t-option :value="2" label="复训订单" />
-            <t-option :value="4" label="大使升级" />
+            <t-option :value="1" label="课程订单"></t-option>
+            <t-option :value="2" label="复训订单"></t-option>
+            <t-option :value="4" label="大使升级"></t-option>
           </t-select>
         </t-form-item>
         
         <t-form-item label="订单状态" name="pay_status">
           <t-select v-model="searchForm.pay_status" placeholder="请选择订单状态" clearable>
-            <t-option :value="0" label="待支付" />
-            <t-option :value="1" label="已支付" />
-            <t-option :value="2" label="已取消" />
-            <t-option :value="3" label="已关闭" />
-            <t-option :value="4" label="已退款" />
+            <t-option :value="0" label="待支付"></t-option>
+            <t-option :value="1" label="已支付"></t-option>
+            <t-option :value="2" label="已取消"></t-option>
+            <t-option :value="3" label="已关闭"></t-option>
+            <t-option :value="4" label="已退款"></t-option>
           </t-select>
         </t-form-item>
         
         <t-form-item label="支付方式" name="paymentMethod">
           <t-select v-model="searchForm.paymentMethod" placeholder="请选择支付方式" clearable>
-            <t-option value="wechat" label="微信支付" />
-            <t-option value="alipay" label="支付宝" />
-            <t-option value="points" label="积分兑换" />
-            <t-option value="offline" label="线下支付" />
+            <t-option value="wechat" label="微信支付"></t-option>
+            <t-option value="alipay" label="支付宝"></t-option>
+            <t-option value="points" label="积分兑换"></t-option>
+            <t-option value="offline" label="线下支付"></t-option>
           </t-select>
         </t-form-item>
         

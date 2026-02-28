@@ -8,7 +8,7 @@
         <view class="section-title section-title--simple">📚 课程信息</view>
         <view class="t-card t-card--bordered">
           <view class="t-card__body">
-            <view class="info-title">{{ courseInfo.courseName }} 第{{ courseInfo.period }}期</view>
+            <view class="info-title">{{ courseInfo.courseName }}</view>
             <view class="info-details">
               <view class="info-item">📅 {{ courseInfo.startDate }}{{ courseInfo.startTime ? ' ' + courseInfo.startTime : '' }}</view>
               <view class="info-item">📍 {{ courseInfo.location }}</view>
@@ -44,7 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi, SystemApi } from '@/api';
 
@@ -189,35 +190,40 @@ const handleSubmit = async () => {
   });
 };
 
-onMounted(() => {
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = (currentPage as any).options || {};
-
-  if (options.classRecordId) {
+onLoad((options: any) => {
+  if (options?.classRecordId) {
     courseInfo.value.classRecordId = Number(options.classRecordId);
   }
-  if (options.courseId) {
+  if (options?.courseId) {
     courseInfo.value.courseId = Number(options.courseId);
   }
 
-  const userCourseId = options.userCourseId ? Number(options.userCourseId) : 0;
-
-  if (courseInfo.value.classRecordId && courseInfo.value.courseId) {
-    loadClassRecordDetail(courseInfo.value.classRecordId);
-    if (userCourseId) {
-      loadUserAttendCount(userCourseId);
-    }
-  } else {
-    // 缺少必要参数，显示错误并停止加载
-    loading.value = false;
-    uni.showToast({
-      title: '参数缺失',
-      icon: 'none'
-    });
+  // 优先使用 URL 直传的展示数据（避免二次 API 请求）
+  if (options?.courseName) {
+    courseInfo.value.courseName = decodeURIComponent(options.courseName);
+  }
+  if (options?.classDate) {
+    courseInfo.value.startDate = decodeURIComponent(options.classDate);
+  }
+  if (options?.classTime) {
+    courseInfo.value.startTime = decodeURIComponent(options.classTime);
+  }
+  if (options?.location) {
+    courseInfo.value.location = decodeURIComponent(options.location);
   }
 
-  // 加载客服电话
+  // 如果 URL 没有直传数据，才通过 API 加载
+  if (!courseInfo.value.courseName && courseInfo.value.classRecordId && courseInfo.value.courseId) {
+    loadClassRecordDetail(courseInfo.value.classRecordId);
+  } else {
+    loading.value = false;
+  }
+
+  const userCourseId = options?.userCourseId ? Number(options.userCourseId) : 0;
+  if (userCourseId) {
+    loadUserAttendCount(userCourseId);
+  }
+
   loadCustomerServicePhone();
 });
 </script>

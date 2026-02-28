@@ -123,8 +123,12 @@ module.exports = async (event, context) => {
       return response.notFound('预约记录不存在');
     }
 
-    if (appointment.status === 2) {
+    if (appointment.status === 1) {
       return response.error('已签到，请勿重复签到');
+    }
+
+    if (appointment.status === 2) {
+      return response.error('已缺席，无法签到');
     }
 
     if (appointment.status === 3) {
@@ -152,12 +156,12 @@ module.exports = async (event, context) => {
       });
     }
 
-    // 更新签到状态（checkin_time 为实际列名）
+    // 更新签到状态：1=已签到（checkin_time 为实际列名）
     await db
       .from('appointments')
       .update({
-        status: 2,
-        checkin_time: new Date().toISOString()
+        status: 1,
+        checkin_time: formatDateTime(new Date())
       })
       .eq('id', appointment_id);
 

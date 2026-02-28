@@ -38,6 +38,7 @@ function buildPaginationResponse(list, total, page, pageSize) {
     total: total || 0,
     page: parseInt(page),
     pageSize: parseInt(pageSize),
+    page_size: parseInt(pageSize),
     totalPages,
     hasMore: page < totalPages,
     hasPrev: page > 1

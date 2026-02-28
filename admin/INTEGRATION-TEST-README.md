@@ -30,7 +30,7 @@
 | F1 用户资料 · 推荐人 · 资格验证 | ✅ 已完成 | 2026-02-27 |
 | F1B 边界验证 · 未完善资料 · 无推荐人 · 功德分=0 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
 | F2 课程浏览 · 详情 · 购买条件验证 | ✅ 已完成 | 2026-02-23 |
-| F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成 | 2026-02-23 |
+| F3 订单 · 商城兑换 · 多表数据一致性 | ⏳ 重测（新增 confirmPickup 写步骤 S3.9，共 17 项） | 2026-02-28 |
 | F4 功德分 · 积分 · 提现 · 余额一致性 | ✅ 已完成（数据清理后全通过） | 2026-02-27 |
 | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
 | F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（修复2处测试用例缺陷后全通过 7/8→8/8） | 2026-02-27 |
@@ -40,11 +40,11 @@
 | F5E 流程5-E: 申请被拒绝(status=2) · 拒绝原因返回验证 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
 | F5F 流程5-F: 申请待审核(status=0) · 升级指南审核中状态 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
 | F6 协议模板 · 我的协议 · 签署验证 | ✅ 已完成（全通过 7/7，含边界 S6.4～S6.7） | 2026-02-27 |
-| F7 预约 · 排期 · 学习进度 · 签到 | ✅ 已完成（全通过 5/5，含边界 S7.4～S7.5） | 2026-02-27 |
+| F7 预约 · 排期 · 学习进度 · 签到 | ⏳ 重测（新增 createAppointment+cancelAppointment 写步骤 S7.1b/S7.1c，共 14 项） | 2026-02-28 |
 | F8 反馈 · 类型联动 · 课程关联 | ✅ 已完成（修复3处问题后全通过 8/8，含写操作+边界+分页+reply验证，DB交叉16项一致） | 2026-02-28 |
 | F9 系统公共 · 公告 · Banner · 配置 · 通知 | ✅ 已完成（修复2处测试缺陷后 7/7，含S9.6详情+S9.7边界） | 2026-02-28 |
 | F10 跨模块数据完整性终极验证 | ⏳ 待测（需 F1~F9 完成后） | — |
-| F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ✅ 已完成（修复admin认证+3处测试缺陷后 12/12） | 2026-02-28 |
+| F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ⏳ 重测（新增 applyForActivity 写步骤 S11.2b + 清理 S11.12b，共 18 项） | 2026-02-28 |
 
 > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
@@ -189,6 +189,17 @@
 | MT-05 | **预约操作后 booked_quota 递增**：调用 createAppointment 后 class_records.booked_quota 应+1，且 appointments 新增 status=0 记录 | F7 S7.1/S7.2 | user_id=30 有 user_courses，选 status=1 排期 | 小程序进入课程详情→选择排期→点击预约 | `SELECT cr.id, cr.booked_quota, (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN(0,1)) as cnt FROM tiandao_culture.class_records cr WHERE cr.id=<排期id>` | ⏳ 待测 |
 | MT-06 | **取消预约后 booked_quota 递减**：取消后 appointments.status=3，class_records.booked_quota 应-1 | F7 S7.2 | 存在 status=0 的预约记录 | 小程序进入我的预约→找到待上课记录→点击取消 | `SELECT a.id, a.status, cr.booked_quota FROM tiandao_culture.appointments a JOIN tiandao_culture.class_records cr ON a.class_record_id=cr.id WHERE a.user_id=30 AND a.id=<预约id>` | ⏳ 待测 |
 | MT-07 | **后台签到操作**：batchCheckin 后 appointments.status 从 0→1，checkin_time 有值 | F7 S7.2 | 存在 status=0 的预约记录 | 后台→排期管理→找到排期→勾选用户→批量签到 | `SELECT id, status, checkin_time, checkin_admin_id FROM tiandao_culture.appointments WHERE user_id=30 AND status=1 ORDER BY checkin_time DESC LIMIT 3` | ⏳ 待测 |
+| MT-08 | **推荐初探班奖励-解冻场景**：推荐人有frozen>0时购买初探班，应解冻unfreeze_per_referral到available，不发功德分/积分 | 奖励验证 | 推荐人frozen>0，购买初探班 | 小程序购买初探班→等待支付回调 | `SELECT u.cash_points_frozen, u.cash_points_available, u.merit_points FROM tiandao_culture.users u WHERE u.id=<推荐人id>` + `SELECT type, amount FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>' AND user_id=<推荐人id>` — type应为2(解冻) | ⏳ 待测 |
+| MT-09 | **推荐初探班奖励-功德分场景**：推荐人frozen=0且merit_rate_basic>0时购买初探班，应按比例发功德分 | 奖励验证 | 推荐人frozen=0，等级配置merit_rate_basic>0 | 小程序购买初探班→等待支付回调 | `SELECT merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` + `SELECT source, amount FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` | ⏳ 待测 |
+| MT-10 | **推荐密训班奖励-不消耗冻结**：推荐人有frozen>0时购买密训班，应按比例发奖励（功德分或积分），frozen不变 | 奖励验证 | 推荐人frozen>0，购买密训班 | 小程序购买密训班→等待支付回调 | `SELECT cash_points_frozen, cash_points_available, merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` — frozen应不变 | ⏳ 待测 |
+| MT-11 | **奖励互斥验证**：不应同时产生功德分记录和积分记录 | 奖励验证 | 任意等级推荐人，购买任意课程 | 支付完成后查询 | `SELECT COUNT(*) as merit_cnt FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` + `SELECT COUNT(*) as cash_cnt FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>'` — 两者不应同时>0 | ⏳ 待测 |
+| MT-12 | **密训班赠课验证**：购买密训班后user_courses应同时有is_gift=1的初探班记录 | 赠课验证 | 购买密训班(type=2, included_course_ids=[1]) | 小程序购买密训班→等待支付回调 | `SELECT course_id, is_gift, source_order_id FROM tiandao_culture.user_courses WHERE user_id=<uid> ORDER BY id DESC LIMIT 5` — 应有is_gift=1,course_id=1 | ⏳ 待测 |
+| MT-13 | **后台等级配置互斥校验**：初探班功德率和积分率同时>0时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→同时填功德率和积分率→保存 | 应提示"不能同时大于0" | ⏳ 待测 |
+| MT-14 | **后台等级配置倍数校验**：frozen_points不是unfreeze_per_referral整数倍时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→设置非倍数关系→保存 | 应提示"必须是整数倍" | ⏳ 待测 |
+| MT-15 | **大使申请写操作（F5B apply）**：调用 `ambassador.apply` 应创建 status=0 申请，has_application 变为 true | F5B `apply` | user_id=34 (level=0，无待审核申请) | 使用 F5B openid 调用 apply (targetLevel=1, real_name='孙海荣', phone填真实值) | `SELECT id, user_id, target_level, status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — 应出现 status=0 记录 | ⏳ 待测 |
+| MT-16 | **还原 MT-15 数据（驳回申请）**：驳回 MT-15 产生的申请，使 user_id=34 回到无申请状态，F5B 方可再次正常运行 | F5B 数据还原 | MT-15 完成后 | 后台→大使管理→申请列表→找 user_id=34 待审核→驳回 | `SELECT status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — status 应为 2 | ⏳ 待测 |
+
+> ⚠️ **为什么 F5 apply 不自动化**：`ambassador.apply` 创建的申请需要管理员人工审批才能还原状态，无法自动清理。若自动化运行，第一次执行后 user_id=34 就会处于"待审核"状态，导致 F5B S5B.1 断言 `has_application===false` 永久失败。凡写操作无自动清理路径的场景，均应登记为 MT 手动项而非强行自动化。
 
 ---
 
@@ -1089,6 +1100,8 @@ WHERE o.order_no = 'ORDER_NO'
 | S11.10 | getActivityRecords | ambassador | 验证活动记录写入（同时验证附带 stats 统计对象） |
 | S11.11 | getActivityStats | ambassador | 验证统计汇总字段（total_count/total_merit_points/type_stats） |
 | S11.12 | cancelActivityRegistration | ambassador | 边界测试：活动已结束时应返回"已结束"错误 |
+| **S11.2b** | **applyForActivity** | **ambassador** | **【核心写操作】报名活动，取无等级限制岗位（2026-02-28 补充）** |
+| **S11.12b** | **cancelActivityRegistration** | **ambassador** | **【清理写操作】取消 S11.2b 报名，保证测试幂等（2026-02-28 补充）** |
 
 **涉及数据库表**:
 
@@ -1153,11 +1166,91 @@ WHERE r.user_id=${U.id} ORDER BY r.created_at DESC LIMIT 5;
 
 ---
 
+---
+
+## 🔴 规则 10：写操作测试设计规范（2026-02-28 经验总结）
+
+> **背景**：F11 流程曾因"报名"核心写操作完全缺失，导致测试全部通过却掩盖了真实 BUG（`applyForActivity` 静默失败、名额虚减）。以下规则为此次教训的直接产物，必须严格遵守。
+
+### 原则 W1：每个流程的核心写操作必须包含在自动化测试中
+
+| 流程 | 核心写操作 | 自动化状态 | 备注 |
+|------|-----------|-----------|------|
+| F3 | `exchangeGoods` + `cancelExchange` + `confirmPickup` | ✅ S3.6/S3.7/S3.9 | S3.9 为条件写（依赖 status=1 记录） |
+| F7 | `createAppointment` + `cancelAppointment` | ✅ S7.1b/S7.1c | 创建后立即清理，幂等 |
+| F8 | `submitFeedback` | ✅ S8.4 | 每次产生新记录，无 cleanup |
+| F11 | **`applyForActivity`** + `cancelActivityRegistration` | ✅ S11.2b/S11.12b | 创建后流程末尾清理，幂等 |
+| F5 | `apply`（申请大使） | ❌ MT-15 | 无自动清理路径，登记为手动项 |
+| F6 | `signContract`（签署协议） | ❌ MT（需文件上传） | 涉及 .docx/.pdf 文件，不适合自动化 |
+
+**判断标准**：若某流程的名称或 desc 包含"报名"/"创建"/"提交"/"兑换"等动词，但 steps 中全部都是读接口，则**必须**补充写操作步骤，否则该流程标记为 ⏳ 未完成。
+
+### 原则 W2：写操作必须有"操作前快照 → 执行 → 操作后验证"三段结构
+
+```
+快照（前置 SQL）: 记录操作前的 DB 状态（余额/计数/状态）
+执行（API 调用）: 触发写操作
+验证（后置 SQL）: 通过 SQL 交叉确认数据库已正确变更
+```
+
+若写操作后不执行 DB SQL 验证，等同于没有写操作测试（如原 F11 S11.7 的"跳过"即为此类失效）。
+
+### 原则 W3：写操作必须有 cleanup（清理路径），使测试可重复执行
+
+| 写操作类型 | Cleanup 方式 | 示例 |
+|-----------|------------|------|
+| 创建记录（有对应删除/取消接口） | 立即调用 cancel/delete 清理 | S7.1b createAppointment → S7.1c cancelAppointment |
+| 状态流转（终态不可逆，如 status 2/3） | 接受终态，biz 允许幂等通过 | S3.9 confirmPickup（status=1→2，终态） |
+| 余额/计数变更（有反向接口） | 调用反向操作还原 | S11.2b applyForActivity → S11.12b cancelActivityRegistration |
+| 无清理路径（需管理员审批） | 登记为 MT 手动项 | MT-15 apply（需后台驳回还原） |
+
+**⛔ 禁止**：写操作成功后不做 cleanup，且下次运行时若数据状态已变就报错——这会让测试变成"一次性"测试，CI 无法重复执行。
+
+### 原则 W4：条件写步骤的 biz 必须覆盖"跳过"和"幂等"两种合法场景
+
+```javascript
+// ✅ 正确写法：三种情况均通过
+(d, raw, C) => {
+  if (!C.precondition) return { r: '[跳过] 前置数据不满足', p: true, a: '⚠跳过' };
+  if (!raw.success && raw.message?.includes('已XX')) return { r: '幂等：已存在记录', p: true, a: `⚠${raw.message}` };
+  return { r: '写操作应成功', p: raw.success === true, a: ... }
+}
+
+// ❌ 错误写法：只有 success 才通过，导致"跳过"时整个流程变红
+(d, raw) => ({ r: '写操作应成功', p: raw.success === true, a: raw.message })
+```
+
+### 原则 W5：禁止把"跳过"（softFail/暂无数据）当作写操作的通过证明
+
+这是 F11 原始 S11.7 的核心缺陷：
+```javascript
+// ❌ 原 S11.7 - "暂无报名记录，无法发放" 被视为通过 → 实际上报名功能完全没有测试
+const isOk = raw.success === true || msg.includes('已发放') || msg.includes('暂无报名');
+```
+
+**正确做法**：如果写操作依赖前置数据，**先用 S11.2b 这样的写步骤创建前置数据**，而不是接受"无数据时跳过"。
+
+---
+
+### Mock 数据说明（integration-test.html 中硬编码值说明）
+
+| Mock 字段 | 当前值 | 数据库验证 | 备注 |
+|-----------|--------|-----------|------|
+| `U.id` | `30` | `users.id=30` 存在，`ambassador_level=2` | 青鸾大使测试账号 |
+| `U._openid` | `2017456901935075328` | `users._openid` 对应 id=30 | |
+| F5B 测试用户 | `oJr1c7IzbD3FlbdmeiO1fnYDCaL4` (id=34) | level=0 | 普通用户边界测试 |
+| F7 `course_id` | `1` | `user_courses.course_id=1, user_id=30, status=1` 存在 | 确保 createAppointment 不被"未购买"拦截 |
+| F11 活动 | 动态从 `getAvailableActivities` 取 | `ambassador_activities.id=2-8, schedule_date=2026-03-01` | 活动 schedule_name 已于 2026-02-28 更新 |
+| F11 岗位 | 动态取第一个 `required_level=null` 的岗位 | `会务义工/沙龙组织` | 无等级限制，user_id=30 必然满足 |
+| F3 S3.9 exchange_no | 动态从 S3.8 列表取 status=1 记录 | 现有 EX2026022X 系列 | 每次确认领取后减少一条；S3.6 成功时可补充 |
+
+---
+
 ## 常见问题
 
 ### Q: 自动化测试与手动场景的区别？
 
-自动化测试（HTML脚本）覆盖所有 **只读 API** 的连通性和数据一致性验证。涉及支付回调、管理员操作等 **写入操作** 的复杂链路需要手动辅助测试（见"复杂业务流程手动测试场景"章节）。
+自动化测试（HTML脚本）覆盖所有 **只读 API** 的连通性和数据一致性验证，以及有**自动清理路径**的写操作。凡写操作无法自动还原状态（涉及支付回调、管理员审批、文件上传等），均登记为 MT 手动测试待办清单。
 
 ### Q: 业务规则异常一定是 BUG 吗？
 

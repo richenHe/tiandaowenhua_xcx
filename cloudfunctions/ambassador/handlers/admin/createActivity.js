@@ -6,7 +6,7 @@
  * 映射到 DB 字段：activity_name/start_time+end_time/location/activity_desc/images
  */
 const { insert } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
@@ -38,7 +38,7 @@ module.exports = async (event, context) => {
       reward_config: reward_config ? JSON.stringify(reward_config) : null,
       participant_count: 0,
       status: 1,
-      created_at: new Date().toISOString()
+      created_at: formatDateTime(new Date())
     });
 
     return response.success({

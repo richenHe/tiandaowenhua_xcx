@@ -59,7 +59,7 @@ module.exports = async (event, context) => {
         booked_quota
       `, { count: 'exact' })
       .eq('course_id', finalCourseId)
-      .eq('status', 1)
+      .in('status', [1, 2])
       .order('class_date', { ascending: true });
 
     // 日期过滤

@@ -1,6 +1,6 @@
 /**
  * Course 云函数入口
- * 课程模块 - 35个action + 1个定时任务
+ * 课程模块 - 39个action + 1个定时任务
  *
  * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  * 定时任务：每日 0 点自动更新过期排期状态（通过 cloudfunction.json timer trigger 触发）
@@ -12,11 +12,11 @@ const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase（business-logic 使用）
+// 初始化 CloudBase
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
 
-// 初始化 business-logic
-business.init(app);
+// 初始化 business-logic（传 wx-server-sdk cloud 实例，wxacode/uploadFile/cloudPay 均需要它）
+business.init(cloud);
 
 // 导入处理器 - 公开接口（8个）
 const publicHandlers = {
@@ -30,13 +30,14 @@ const publicHandlers = {
   getCalendarSchedule: require('./handlers/public/getCalendarSchedule')
 };
 
-// 导入处理器 - 客户端接口（7个）
+// 导入处理器 - 客户端接口（8个）
 const clientHandlers = {
   getClassRecords: require('./handlers/client/getClassRecords'),
   createAppointment: require('./handlers/client/createAppointment'),
   cancelAppointment: require('./handlers/client/cancelAppointment'),
   getMyAppointments: require('./handlers/client/getMyAppointments'),
   checkin: require('./handlers/client/checkin'),
+  scanCheckin: require('./handlers/client/scanCheckin'),
   recordAcademyProgress: require('./handlers/client/recordAcademyProgress'),
   getAcademyProgress: require('./handlers/client/getAcademyProgress')
 };
@@ -44,7 +45,7 @@ const clientHandlers = {
 // 导入处理器 - 定时任务（由 cloudfunction.json timer trigger 触发）
 const autoUpdateScheduleStatus = require('./handlers/admin/autoUpdateScheduleStatus');
 
-// 导入处理器 - 管理端接口（20个）
+// 导入处理器 - 管理端接口（23个）
 const adminHandlers = {
   createCourse: require('./handlers/admin/createCourse'),
   updateCourse: require('./handlers/admin/updateCourse'),
@@ -57,6 +58,9 @@ const adminHandlers = {
   getAppointmentList: require('./handlers/admin/getAppointmentList'),
   updateAppointmentStatus: require('./handlers/admin/updateAppointmentStatus'),
   batchCheckin: require('./handlers/admin/batchCheckin'),
+  generateCheckinQRCode: require('./handlers/admin/generateCheckinQRCode'),
+  getCheckinQRCodeList: require('./handlers/admin/getCheckinQRCodeList'),
+  deleteCheckinQRCode: require('./handlers/admin/deleteCheckinQRCode'),
   createCase: require('./handlers/admin/createCase'),
   updateCase: require('./handlers/admin/updateCase'),
   deleteCase: require('./handlers/admin/deleteCase'),

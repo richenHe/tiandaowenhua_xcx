@@ -68,6 +68,7 @@ const adminHandlers = {
   getActivityRegistrants: require('./handlers/admin/getActivityRegistrants'),
   distributeActivityMeritPoints: require('./handlers/admin/distributeActivityMeritPoints'),
   deleteAmbassadorActivity: require('./handlers/admin/deleteAmbassadorActivity'),
+  adminRemoveRegistrant: require('./handlers/admin/adminRemoveRegistrant'),
   // 岗位类型 CRUD
   getPositionTypeList: require('./handlers/admin/getPositionTypeList'),
   createPositionType: require('./handlers/admin/createPositionType'),

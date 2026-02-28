@@ -637,8 +637,8 @@
         };
         
         const getContractStatusText = (status) => {
-          // contract_signatures.status: 0已作废/1有效/2已过期/3已续签
-          const texts = { 0: '已作废', 1: '有效', 2: '已过期', 3: '已续签' };
+          // 云函数 contract_signatures.status: 1有效/2已过期/3已续签/4已作废
+          const texts = { 1: '有效', 2: '已过期', 3: '已续签', 4: '已作废' };
           return texts[status] || '未知';
         };
         

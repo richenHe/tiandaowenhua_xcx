@@ -230,8 +230,8 @@
         <!-- 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝） -->
         <template #status="{ row }">
           <t-tag v-if="row.status === 0" theme="warning">待审核</t-tag>
-          <t-tag v-else-if="row.status === 1" theme="primary">审核通过待转账</t-tag>
-          <t-tag v-else-if="row.status === 2" theme="success">已转账</t-tag>
+          <t-tag v-else-if="row.status === 1" theme="primary">审核通过</t-tag>
+          <t-tag v-else-if="row.status === 2" theme="success">已打款</t-tag>
           <t-tag v-else-if="row.status === 3" theme="danger">已拒绝</t-tag>
         </template>
 
@@ -315,8 +315,8 @@
           </t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
             <t-tag v-if="currentRecord.status === 0" theme="warning">待审核</t-tag>
-            <t-tag v-else-if="currentRecord.status === 1" theme="warning">待转账</t-tag>
-            <t-tag v-else-if="currentRecord.status === 2" theme="success">已转账</t-tag>
+            <t-tag v-else-if="currentRecord.status === 1" theme="primary">审核通过</t-tag>
+            <t-tag v-else-if="currentRecord.status === 2" theme="success">已打款</t-tag>
             <t-tag v-else-if="currentRecord.status === 3" theme="danger">已拒绝</t-tag>
           </t-descriptions-item>
           <t-descriptions-item v-if="currentRecord.reject_reason" label="驳回原因" :span="2">
@@ -558,12 +558,12 @@
           dateRange: []
         });
 
-        // withdrawals.status: 0待审核/1审核通过待转账/2已转账/3已拒绝
+        // 云函数 getStatusText: 0待审核/1审核通过/2已打款/3已拒绝
         const statusOptions = [
           { label: '全部', value: null },
           { label: '待审核', value: 0 },
-          { label: '审核通过待转账', value: 1 },
-          { label: '已转账', value: 2 },
+          { label: '审核通过', value: 1 },
+          { label: '已打款', value: 2 },
           { label: '已拒绝', value: 3 }
         ];
 

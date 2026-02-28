@@ -46,13 +46,13 @@ module.exports = async (event, context) => {
       return response.forbidden('您还未购买该课程');
     }
 
-    // 检查是否已预约
+    // 检查是否已预约（0待上课/1已签到 均算已预约）
     const { data: existingAppointments } = await db
       .from('appointments')
       .select('*')
       .eq('user_id', user.id)
       .eq('class_record_id', finalClassRecordId)
-      .in('status', [1, 2])
+      .in('status', [0, 1])
       .single();
 
     if (existingAppointments) {
@@ -64,7 +64,7 @@ module.exports = async (event, context) => {
       return response.error('该课程名额已满');
     }
 
-    // 创建预约记录（user_course_id 为 NOT NULL，必须包含）
+    // 创建预约记录（status: 0=待上课，user_course_id 为 NOT NULL 必须包含）
     const { data: newAppointment, error: insertError } = await db
       .from('appointments')
       .insert({
@@ -73,7 +73,7 @@ module.exports = async (event, context) => {
         course_id: classRecord.course_id,
         class_record_id: finalClassRecordId,
         user_course_id: userCourses.id,
-        status: 1
+        status: 0
       })
       .select()
       .single();

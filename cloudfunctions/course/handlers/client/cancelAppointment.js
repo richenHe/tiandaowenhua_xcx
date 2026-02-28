@@ -47,21 +47,35 @@ module.exports = async (event, context) => {
       .eq('id', appointment.class_record_id)
       .single();
 
-    // 取消预约（cancel_time 为实际列名）
-    await db
+    // 取消预约（cancel_time 为实际列名，日期必须用 YYYY-MM-DD HH:MM:SS 格式）
+    const now = new Date();
+    const cancelTimeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+    const { error: updateErr } = await db
       .from('appointments')
       .update({
         status: 3,
-        cancel_time: new Date().toISOString()
+        cancel_time: cancelTimeStr
       })
       .eq('id', appointment_id);
 
+    if (updateErr) {
+      console.error('[Course/cancelAppointment] 更新预约状态失败:', updateErr);
+      throw updateErr;
+    }
+
     // 恢复名额
     if (classRecord) {
-      await db
+      const newQuota = Math.max(0, (classRecord.booked_quota || 0) - 1);
+      console.log(`[Course/cancelAppointment] 恢复名额: class_record_id=${appointment.class_record_id}, ${classRecord.booked_quota} -> ${newQuota}`);
+      const { error: quotaErr } = await db
         .from('class_records')
-        .update({ booked_quota: Math.max(0, (classRecord.booked_quota || 0) - 1) })
+        .update({ booked_quota: newQuota })
         .eq('id', appointment.class_record_id);
+
+      if (quotaErr) {
+        console.error('[Course/cancelAppointment] 恢复名额失败:', quotaErr);
+      }
     }
 
     return response.success({

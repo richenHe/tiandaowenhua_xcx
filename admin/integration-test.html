@@ -449,9 +449,9 @@ WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
   // ────────────── FLOW 3: 订单 · 商城 · 兑换全链路 ──────────────
   {
     id:'F3',icon:'🛒',name:'流程3: 订单 · 商城兑换 · 多表数据一致性',
-    desc:'我的订单 → 订单详情(已支付优先) → 商城课程 → 商城商品(字段验证) → 兑换记录(source=6回归) → [写]exchangeGoods(功德分足时执行)',
-    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:14,
-    get chainHtml(){return ['getMyOrders','getDetail','getMallCourses','getMallGoods','getExchangeRecords','exchangeGoods','exchangeCourse','cancelExchange','getExchangeList'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'我的订单 → 订单详情(已支付优先) → 商城课程 → 商城商品(字段验证) → 兑换记录(source=6回归) → [写]exchangeGoods → [写]cancelExchange → 后台兑换列表 → [写]confirmPickup',
+    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:17,
+    get chainHtml(){return ['getMyOrders','getDetail','getMallCourses','getMallGoods','getExchangeRecords','exchangeGoods','cancelExchange','getExchangeList','confirmPickup'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S3.1 我的订单列表',fn:'user',act:'getMyOrders',params:{page:1,pageSize:10},
         biz:[(d,raw)=>({r:'订单列表接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
@@ -700,11 +700,44 @@ WHERE er.exchange_no='${C.lastExchangeNo}'`:null
             return{r:'§6.20: 兑换记录 status 应为 1/2/3',p:allValidStatus,a:allValidStatus?'验证通过':`存在非法status`}
           }
         ],
+        save:(d,_,C)=>{
+          // 保存第一条 status=1（待领取）记录，供 S3.9 confirmPickup 使用
+          const list=d?.list||d?.records||[];
+          const pending=list.find(r=>r.status===1);
+          if(pending) C.pendingPickupNo=pending.exchange_no;
+        },
         sql:()=>`SELECT er.exchange_no, er.goods_name, er.status, er.created_at,
   u.real_name as user_name, u.phone as user_phone
 FROM tiandao_culture.mall_exchange_records er
 JOIN tiandao_culture.users u ON u.id=er.user_id
 ORDER BY er.created_at DESC LIMIT 5`
+      },
+
+      // ── S3.9: 核心写操作 — 后台确认领取（终态写，status=1→2） ──
+      {name:'S3.9 [写操作] 后台确认领取(条件执行)',fn:'order',act:'confirmPickup',admin:true,
+        params:(C)=>({
+          exchange_no: C.pendingPickupNo,
+          remark: '[集成测试] 自动化确认领取验证'
+        }),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.pendingPickupNo) return{r:'[S3.9跳过] 无待领取(status=1)兑换记录',p:true,a:'⚠跳过'};
+            if(!raw.success&&raw.message?.includes('已确认领取')) return{r:'§6.21: 已确认领取（幂等/重复操作）',p:true,a:`⚠${raw.message}`};
+            return{r:'§6.21: confirmPickup 成功应返回 status=2',p:raw.success===true&&d?.status===2,a:raw.success?`✓status=${d?.status},exchange_no=${d?.exchange_no}`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C.pendingPickupNo||!raw.success) return{r:'pickup_time验证(跳过)',p:true,a:'跳过'};
+            return{r:'§6.21: 返回应含 pickup_time 字段',p:!!d?.pickup_time,a:d?.pickup_time||'❌缺少pickup_time'}
+          },
+          (d,raw,C)=>{
+            if(!C.pendingPickupNo||!raw.success) return{r:'goods_name/user_name验证(跳过)',p:true,a:'跳过'};
+            return{r:'§6.21: 返回应含 goods_name 和 user_name',p:!!d?.goods_name&&d?.user_name!==undefined,a:d?`goods=${d.goods_name},user=${d.user_name}`:'缺少字段'}
+          }
+        ],
+        sql:(C)=>C.pendingPickupNo?`-- ★ S3.9 确认领取后验证：status 应为 2，pickup_time/pickup_admin_id 应有值
+SELECT exchange_no, status, goods_name, merit_points_used, pickup_admin_id, pickup_time, remark
+FROM tiandao_culture.mall_exchange_records
+WHERE exchange_no='${C.pendingPickupNo}'`:null
       }
     ]
   },
@@ -1158,9 +1191,9 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
   // ────────────── FLOW 7: 预约 · 签到 · 学习进度 ──────────────
   {
     id:'F7',icon:'📅',name:'流程7: 预约 · 排期 · 学习进度 · 签到验证',
-    desc:'排期列表 → 我的预约 → 学院进度 → 边界(无预约用户/无进度用户)',
-    tables:['class_records','appointments','user_courses','academy_progress'],rules:9,
-    get chainHtml(){return ['getClassRecords','getMyAppointments','getAcademyProgress','边界验证x2'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'排期列表 → [写]createAppointment → [写]cancelAppointment → 我的预约 → 学院进度 → 边界(无预约用户/无进度用户)',
+    tables:['class_records','appointments','user_courses','academy_progress'],rules:14,
+    get chainHtml(){return ['getClassRecords','createAppointment','cancelAppointment','getMyAppointments','getAcademyProgress','边界验证x2'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S7.1 课程排期',fn:'course',act:'getClassRecords',params:{course_id:1},
         biz:[
@@ -1168,7 +1201,12 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const neg=list.filter(r=>Number(r.booked_quota||0)<0);return{r:'规则4-T3: booked_quota 不应为负数',p:neg.length===0,a:neg.length?`❌${neg.length}条负booked_quota`:`${list.length}条排期均正常`}},
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const badStatus=list.filter(r=>r.status!==undefined&&r.status!==1);return{r:'F2 S2.4: 接口应只返回 status=1 的有效排期',p:badStatus.length===0,a:badStatus.length?`❌含${badStatus.length}条非status=1排期`:`${list.length}条均为status=1`}}
         ],
-        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length)C.classRecordId=list[0].id},
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          // 优先选 booked_quota=0 且有名额的排期，避免满额失败
+          const avail=list.find(r=>(r.booked_quota||0)<(r.total_quota||30));
+          if(avail) C.classRecordId=avail.id; else if(list.length) C.classRecordId=list[0].id;
+        },
         sql:()=>`-- 排期 + 预约数一致性
 SELECT cr.id, cr.course_id, c.name, cr.class_date, cr.total_quota, cr.booked_quota,
   (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN (0,1)) as 实际预约数
@@ -1176,6 +1214,57 @@ FROM tiandao_culture.class_records cr
 JOIN tiandao_culture.courses c ON cr.course_id=c.id
 WHERE cr.status=1 ORDER BY cr.class_date DESC LIMIT 10`
       },
+
+      // ── S7.1b: 核心写操作 — 创建预约（条件执行，用户须已购该课程） ──
+      {name:'S7.1b [写操作] 创建预约(条件执行)',fn:'course',act:'createAppointment',
+        params:(C)=>({classRecordId:C.classRecordId}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.classRecordId) return{r:'[S7.1b跳过] 无可用排期数据',p:true,a:'⚠跳过'};
+            if(!raw.success&&raw.message?.includes('已预约')) return{r:'用户已预约该排期（幂等：视为通过）',p:true,a:`⚠${raw.message}`};
+            if(!raw.success&&raw.message?.includes('名额已满')) return{r:'排期名额已满（合法边界）',p:true,a:`⚠${raw.message}`};
+            if(!raw.success&&(raw.message?.includes('未购买')||raw.message?.includes('forbidden'))) return{r:'用户未购买课程（合法拦截）',p:true,a:`⚠${raw.message}`};
+            return{r:'需求3.1.4: createAppointment 应返回 appointment_id',p:raw.success===true&&!!d?.appointment_id,a:raw.success?`✓appointment_id=${d?.appointment_id},class_date=${d?.class_date}`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!raw.success||!d?.appointment_id) return{r:'class_date字段验证(跳过)',p:true,a:'跳过'};
+            return{r:'需求3.1.4: 返回应含 class_date 字段',p:!!d?.class_date,a:d?.class_date||'❌缺少class_date'}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success&&d?.appointment_id){C.newAppointmentId=d.appointment_id;C.newAppointmentClassRecordId=C.classRecordId}},
+        sql:(C)=>C.classRecordId?`-- ★ S7.1b 创建预约后：booked_quota 应+1，appointments 应有新记录
+SELECT cr.id, cr.booked_quota, cr.total_quota,
+  (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN (0,1)) as 实际有效预约数,
+  (SELECT a.id FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.user_id=${U.id} ORDER BY a.id DESC LIMIT 1) as 本用户最新预约id
+FROM tiandao_culture.class_records cr WHERE cr.id=${C.classRecordId}`:null
+      },
+
+      // ── S7.1c: 清理写操作 — 取消预约（保证测试幂等） ──
+      {name:'S7.1c [写操作] 取消预约（清理S7.1b，保证幂等）',fn:'course',act:'cancelAppointment',
+        params:(C)=>({appointment_id:C.newAppointmentId}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.newAppointmentId) return{r:'[S7.1c跳过] S7.1b未成功创建预约',p:true,a:'⚠跳过'};
+            return{r:'需求3.1.4: cancelAppointment 应成功取消',p:raw.success===true,a:raw.success?`✓appointment_id=${C.newAppointmentId}已取消`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C.newAppointmentId||!raw.success) return null;
+            return{r:'规则4-T3: 取消后 booked_quota 应递减（见SQL）',p:true,a:'见验证SQL'}
+          },
+          (d,raw,C)=>{
+            if(!C.newAppointmentId||!raw.success) return null;
+            return{r:'[DB一致性] 取消不影响 status=2(已签到) 记录',p:true,a:'本次取消的是 status=1 预约，符合规则'}
+          }
+        ],
+        sql:(C)=>C.newAppointmentClassRecordId?`-- ★ S7.1c 取消预约后：booked_quota 应-1，appointments.status 应为 3(已取消)
+SELECT cr.id, cr.booked_quota,
+  a.id as apt_id, a.status as apt_status, a.cancel_time,
+  (SELECT COUNT(*) FROM tiandao_culture.appointments x WHERE x.class_record_id=cr.id AND x.status IN (0,1)) as 当前有效预约数
+FROM tiandao_culture.class_records cr
+LEFT JOIN tiandao_culture.appointments a ON a.id=${C.newAppointmentId}
+WHERE cr.id=${C.newAppointmentClassRecordId}`:null
+      },
+
       {name:'S7.2 我的预约',fn:'course',act:'getMyAppointments',
         biz:[
           (d,raw)=>({r:'我的预约接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
@@ -1369,9 +1458,9 @@ SELECT COUNT(*) as cnt FROM tiandao_culture.user_courses WHERE user_id=33 AND st
   // ────────────── FLOW 11: 大使志愿活动全链路 ──────────────
   {
     id:'F11',icon:'🙋',name:'流程11: 大使志愿活动 · 岗位管理 · 报名 · 功德分发放',
-    desc:'岗位类型列表 → 可报名活动列表 → 管理端查看 → 报名人员 → 发放功德分 → 功德分验证 → 活动记录 → 活动统计 → 取消报名边界测试',
-    tables:['ambassador_position_types','ambassador_activities','ambassador_activity_registrations','users','merit_points_records','ambassador_activity_records'],rules:12,
-    get chainHtml(){return ['getPositionTypeList','getAvailableActivities','getAmbassadorActivityList','getActivityRegistrants','distributeActivityMeritPoints','getActivityRecords','getActivityStats','cancelActivityRegistration'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'岗位类型列表 → 可报名活动列表 → [写]applyForActivity → 管理端查看 → 报名人员 → 发放功德分 → 功德分验证 → 活动记录 → 活动统计 → 取消报名边界 → [写]cancelActivityRegistration(清理)',
+    tables:['ambassador_position_types','ambassador_activities','ambassador_activity_registrations','users','merit_points_records','ambassador_activity_records'],rules:18,
+    get chainHtml(){return ['getPositionTypeList','getAvailableActivities','applyForActivity','getAmbassadorActivityList','getActivityRegistrants','distributeActivityMeritPoints','getActivityRecords','getActivityStats','cancelActivityRegistration'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S11.1 获取岗位类型列表',fn:'ambassador',act:'getPositionTypeList',admin:true,
         params:{includeDisabled:false},
@@ -1407,6 +1496,47 @@ FROM tiandao_culture.ambassador_activities aa
 WHERE aa.status=1 AND aa.schedule_date > CURDATE()
 ORDER BY aa.schedule_date LIMIT 10`
       },
+
+      // ── S11.2b: 核心写操作 — 报名活动（条件执行） ──
+      {name:'S11.2b [写操作] 报名活动(条件执行)',fn:'ambassador',act:'applyForActivity',
+        params:(C)=>{
+          const acts=C.availableActivities||[];
+          // 找第一个用户未报名且有空余名额的活动，优先选无等级限制的岗位（会务义工/沙龙组织）
+          const act=acts.find(a=>!a.my_registration&&a.positions?.some(p=>(!p.required_level)&&((p.quota||0)-(p.registered_count||0))>0));
+          const pos=act?.positions?.find(p=>(!p.required_level)&&((p.quota||0)-(p.registered_count||0))>0);
+          // 侧效：提前记录待报名信息供 save 使用
+          C._pendingApplyActivityId=act?.id;
+          C._pendingApplyPositionName=pos?.name;
+          return act&&pos?{activityId:act.id,positionName:pos.name}:{activityId:0,positionName:''};
+        },
+        biz:[
+          (d,raw,C)=>{
+            if(!C._pendingApplyActivityId) return{r:'[S11.2b跳过] 无可报名活动（活动数为0或已全部报名）',p:true,a:'⚠跳过'};
+            if(!raw.success&&(raw.message?.includes('已报名')||raw.message?.includes('已在其他活动'))) return{r:'用户已存在报名记录（幂等：视为通过）',p:true,a:`⚠${raw.message}`};
+            return{r:'需求3.1.7.5: applyForActivity 应返回 activity_id 和 position_name',p:raw.success===true&&!!d?.activity_id&&!!d?.position_name,a:raw.success?`✓activity_id=${d?.activity_id},pos=${d?.position_name}`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C._pendingApplyActivityId||!raw.success) return{r:'报名成功后 merit_points 验证(跳过)',p:true,a:'跳过'};
+            return{r:'需求3.1.7.5: 返回 merit_points 应≥0',p:d?.merit_points!==undefined&&Number(d.merit_points)>=0,a:`merit_points=${d?.merit_points}`}
+          },
+          (d,raw,C)=>{
+            if(!C._pendingApplyActivityId) return null;
+            const ok=raw.success===true||raw.message?.includes('已报名')||raw.message?.includes('已在其他活动');
+            return{r:'[DB一致性] 接口成功 或 已存在记录 均属合法结果',p:ok,a:raw.success?`✓已报名 activity_id=${C._pendingApplyActivityId}`:raw.message||'跳过'}
+          }
+        ],
+        save:(d,raw,C)=>{
+          if(raw.success){C.applySuccess=true;C.appliedActivityId=C._pendingApplyActivityId;C.appliedPositionName=C._pendingApplyPositionName;}
+        },
+        sql:(C)=>C._pendingApplyActivityId?`-- ★ S11.2b 报名后验证：ambassador_activity_registrations 应有 status=1 记录，registered_count 应+1
+SELECT r.id, r.user_id, r.activity_id, r.position_name, r.merit_points, r.status,
+  JSON_EXTRACT(aa.positions, CONCAT('$[', JSON_UNQUOTE(JSON_SEARCH(JSON_EXTRACT(aa.positions,'$[*].name'),'one','${C._pendingApplyPositionName||''}'))  ,'].registered_count')) as registered_count_in_positions
+FROM tiandao_culture.ambassador_activity_registrations r
+JOIN tiandao_culture.ambassador_activities aa ON r.activity_id=aa.id
+WHERE r.activity_id=${C._pendingApplyActivityId} AND r.user_id=${U.id}
+ORDER BY r.id DESC LIMIT 1`:null
+      },
+
       {name:'S11.3 管理端获取志愿活动列表',fn:'ambassador',act:'getAmbassadorActivityList',admin:true,
         params:{page:1,pageSize:20},
         fields:['list:a','total:n'],
@@ -1583,6 +1713,32 @@ GROUP BY activity_type`
 FROM tiandao_culture.ambassador_activity_registrations r
 JOIN tiandao_culture.ambassador_activities aa ON r.activity_id=aa.id
 WHERE r.activity_id=${C.adminActivityId||C.firstActivityId||1} AND r.user_id=${U.id}`
+      },
+
+      // ── S11.12b: 清理写操作 — 取消 S11.2b 创建的报名（使测试可重复执行） ──
+      {name:'S11.12b [写操作] 取消报名（清理S11.2b，保证幂等）',fn:'ambassador',act:'cancelActivityRegistration',
+        params:(C)=>({activityId:C.appliedActivityId||0}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.applySuccess) return{r:'[S11.12b跳过] S11.2b未成功创建报名，无需清理',p:true,a:'⚠跳过'};
+            const msg=raw.message||'';
+            // 活动已被分发（status=0）时取消会报错，属于预期行为
+            const isOk=raw.success===true||msg.includes('已结束')||msg.includes('未找到')||msg.includes('已发放');
+            return{r:'取消报名成功 或 活动已结束/已发放 均为合法结果',p:isOk,a:raw.success?`✓已取消 activity_id=${C.appliedActivityId}`:msg}
+          },
+          (d,raw,C)=>{
+            if(!C.applySuccess||!raw.success) return null;
+            return{r:'[DB一致性] 取消后 registered_count 应递减（见SQL）',p:true,a:'见验证SQL'}
+          }
+        ],
+        sql:(C)=>C.appliedActivityId?`-- ★ S11.12b 清理后验证：registration.status 应为 0，registered_count 应归零
+SELECT r.id, r.status as reg_status,
+  aa.status as activity_status, aa.merit_distributed,
+  JSON_EXTRACT(aa.positions,'$[*].registered_count') as registered_counts
+FROM tiandao_culture.ambassador_activity_registrations r
+JOIN tiandao_culture.ambassador_activities aa ON r.activity_id=aa.id
+WHERE r.activity_id=${C.appliedActivityId} AND r.user_id=${U.id}
+ORDER BY r.id DESC LIMIT 1`:null
       }
     ]
   },

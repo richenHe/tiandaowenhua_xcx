@@ -6,7 +6,7 @@
  * - signatureId: 原合约签署ID（必填）
  * - contractEnd: 新的到期时间（必填，ISO 日期字符串）
  */
-const { db, response } = require('../../common');
+const { db, response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -30,7 +30,7 @@ module.exports = async (event, context) => {
     await db.from('contract_signatures').update({ status: 3 }).eq('id', signatureId);
 
     // 创建新的续签合约（继承原合约的电子合同文件快照）
-    const now = new Date().toISOString();
+    const now = formatDateTime(new Date());
     const dateOnly = (s) => (s && typeof s === 'string' ? s.slice(0, 10) : null);
     const { data: newSig, error: insertErr } = await db.from('contract_signatures').insert({
       user_id: sig.user_id,

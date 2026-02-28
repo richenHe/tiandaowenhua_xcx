@@ -111,8 +111,8 @@ async function deleteAcademyIntro(id) {
   }
 
   // 删除介绍（academy_intro 表没有 deleted_at 字段，直接删除）
-  const { hardDelete } = require('../../common/db');
-  await hardDelete('academy_intro', { id });
+  const { deleteRecord } = require('../../common/db');
+  await deleteRecord('academy_intro', { id });
 
   return response.success({
     message: '商学院介绍删除成功'

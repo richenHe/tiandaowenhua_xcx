@@ -262,45 +262,104 @@ async function handleRefundFail(refundInfo) {
 }
 
 /**
- * 回退推荐人奖励
+ * 回退推荐人奖励（按实际发放记录回退，不硬编码比例）
  * @param {Object} order - 订单对象
  */
 async function rollbackReferralReward(order) {
   try {
-    const { findOne, update, insert } = require('../common/db');
+    const { getDb } = require('../common/db');
+    const { formatDateTime } = require('../common/utils');
+    const db = getDb();
 
-    // 查询推荐人
-    const referee = await findOne('users', { id: order.referee_id });
+    if (!order.referee_id) {
+      console.log('[Refund] 无推荐人，跳过奖励回退');
+      return;
+    }
+
+    const { data: referee } = await db
+      .from('users')
+      .select('id, merit_points, cash_points_available, cash_points_frozen, _openid, uid')
+      .eq('id', order.referee_id)
+      .single();
 
     if (!referee) {
       console.warn('[Refund] 推荐人不存在:', order.referee_id);
       return;
     }
 
-    // 计算需要回退的奖励金额
-    const rewardAmount = order.final_amount * 0.1; // 假设奖励比例为 10%
+    // 查询该订单实际发放的功德分记录
+    const { data: meritRecords } = await db
+      .from('merit_points_records')
+      .select('id, amount')
+      .eq('order_no', order.order_no)
+      .eq('user_id', referee.id);
 
-    // 扣减推荐人的积分
-    await update('users', {
-      cash_points_available: referee.cash_points_available - rewardAmount,
-      updated_at: new Date()
-    }, { id: referee.id });
+    // 查询该订单实际发放的积分记录
+    const { data: cashRecords } = await db
+      .from('cash_points_records')
+      .select('id, type, amount')
+      .eq('order_no', order.order_no)
+      .eq('user_id', referee.id);
 
-    // 记录积分变动
-    await insert('cash_points_records', {
-      user_id: referee.id,
-      change_type: 4, // 4 表示退款扣减
-      change_amount: -rewardAmount,
-      balance_after: referee.cash_points_available - rewardAmount,
-      related_order_id: order.id,
-      remark: `订单退款，回退推荐奖励（订单号：${order.order_no}）`,
-      created_at: new Date()
-    });
+    // 回退功德分
+    const totalMerit = (meritRecords || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    if (totalMerit > 0) {
+      const newMerit = Math.max(0, (parseFloat(referee.merit_points) || 0) - totalMerit);
+      await db.from('users').update({ merit_points: newMerit }).eq('id', referee.id);
+      await db.from('merit_points_records').insert({
+        user_id: referee.id,
+        _openid: referee._openid || '',
+        type: 2,
+        source: 5,
+        amount: -totalMerit,
+        balance_after: newMerit,
+        order_no: order.order_no,
+        remark: `订单退款回退功德分（${order.order_no}）`,
+        created_at: formatDateTime(new Date())
+      });
+      console.log('[Refund] 功德分已回退:', totalMerit);
+    }
 
-    console.log('[Refund] 推荐人奖励已回退:', {
-      refereeId: referee.id,
-      amount: rewardAmount
-    });
+    // 回退积分（区分解冻和直接发放）
+    for (const record of (cashRecords || [])) {
+      const amt = parseFloat(record.amount) || 0;
+      if (amt <= 0) continue;
+
+      if (record.type === 2) {
+        // 解冻记录 → 冻回去
+        const curFrozen = parseFloat(referee.cash_points_frozen) || 0;
+        const curAvail = parseFloat(referee.cash_points_available) || 0;
+        await db.from('users').update({
+          cash_points_frozen: curFrozen + amt,
+          cash_points_available: Math.max(0, curAvail - amt)
+        }).eq('id', referee.id);
+      } else if (record.type === 3) {
+        // 直接发放 → 扣 available
+        const curAvail = parseFloat(referee.cash_points_available) || 0;
+        await db.from('users').update({
+          cash_points_available: Math.max(0, curAvail - amt)
+        }).eq('id', referee.id);
+      }
+
+      await db.from('cash_points_records').insert({
+        user_id: referee.id,
+        _openid: referee._openid || '',
+        type: 5,
+        amount: -amt,
+        order_no: order.order_no,
+        remark: `订单退款回退积分（${order.order_no}）`,
+        created_at: formatDateTime(new Date())
+      });
+      console.log('[Refund] 积分已回退:', amt, 'type:', record.type);
+    }
+
+    // 重置订单奖励标记
+    await db.from('orders').update({
+      is_reward_granted: 0,
+      reward_granted_at: null
+    }).eq('order_no', order.order_no);
+
+    console.log('[Refund] 推荐人奖励回退完成');
 
   } catch (error) {
     console.error('[Refund] 回退推荐人奖励失败:', error);

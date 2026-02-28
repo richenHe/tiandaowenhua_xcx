@@ -357,6 +357,19 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'batchCheckin', { appointment_ids });
   }
 
+  // 签到码管理
+  static async generateCheckinQRCode(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'generateCheckinQRCode', data);
+  }
+
+  static async getCheckinQRCodeList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getCheckinQRCodeList', params);
+  }
+
+  static async deleteCheckinQRCode(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCheckinQRCode', data);
+  }
+
   // 案例管理
   static async getCaseList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getCaseList', params);
@@ -500,6 +513,11 @@ class AdminAPI {
   /** 删除活动（新版，操作 ambassador_activities 表） */
   static async deleteAmbassadorActivity({ activityId }) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'deleteAmbassadorActivity', { activityId });
+  }
+
+  /** 管理员移除活动报名人员（物理删除） */
+  static async removeActivityRegistrant({ registrationId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminRemoveRegistrant', { registrationId });
   }
 
   // 岗位类型管理

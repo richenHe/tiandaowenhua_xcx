@@ -161,8 +161,8 @@
               <t-form-item label="等级名称"><t-input v-model="addF.levelName" placeholder="如：天道宗师"/></t-form-item>
               <t-form-item label="升级方式">
                 <t-select v-model="addF.upgradeType" style="width:100%;">
-                  <t-option value="payment" label="付费升级"/>
-                  <t-option value="contract" label="签约升级"/>
+                  <t-option value="payment" label="付费升级"></t-option>
+                  <t-option value="contract" label="签约升级"></t-option>
                 </t-select>
               </t-form-item>
               <t-form-item label="等级描述"><t-textarea v-model="addF.description" placeholder="等级描述"/></t-form-item>
@@ -176,10 +176,27 @@
               <t-form-item label="升级费用"><t-input-number v-model="f.upgrade_payment_amount" :min="0"/></t-form-item>
               <t-form-item label="冻结积分"><t-input-number v-model="f.frozen_points" :min="0"/></t-form-item>
               <t-form-item label="单次解冻积分"><t-input-number v-model="f.unfreeze_per_referral" :min="0"/></t-form-item>
-              <t-form-item label="初探班功德率"><t-input-number v-model="f.merit_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item>
-              <t-form-item label="密训班功德率"><t-input-number v-model="f.merit_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item>
-              <t-form-item label="初探班现金率"><t-input-number v-model="f.cash_rate_basic" :min="0" :max="1" :step="0.01"/></t-form-item>
-              <t-form-item label="密训班现金率"><t-input-number v-model="f.cash_rate_advanced" :min="0" :max="1" :step="0.01"/></t-form-item>
+
+              <t-form-item label="提成类型">
+                <t-radio-group v-model="f._reward_type" @change="onRewardTypeChange">
+                  <t-radio value="merit">功德分</t-radio>
+                  <t-radio value="cash">积分(可提现)</t-radio>
+                  <t-radio value="none">无提成</t-radio>
+                </t-radio-group>
+              </t-form-item>
+              <t-form-item v-if="f._reward_type==='merit'" label="初探班功德率">
+                <t-input-number v-model="f.merit_rate_basic" :min="0" :max="1" :step="0.01"/>
+              </t-form-item>
+              <t-form-item v-if="f._reward_type==='merit'" label="密训班功德率">
+                <t-input-number v-model="f.merit_rate_advanced" :min="0" :max="1" :step="0.01"/>
+              </t-form-item>
+              <t-form-item v-if="f._reward_type==='cash'" label="初探班积分率">
+                <t-input-number v-model="f.cash_rate_basic" :min="0" :max="1" :step="0.01"/>
+              </t-form-item>
+              <t-form-item v-if="f._reward_type==='cash'" label="密训班积分率">
+                <t-input-number v-model="f.cash_rate_advanced" :min="0" :max="1" :step="0.01"/>
+              </t-form-item>
+
               <t-form-item label="初探班赠课配额"><t-input-number v-model="f.gift_quota_basic" :min="0"/></t-form-item>
               <t-form-item label="密训班赠课配额"><t-input-number v-model="f.gift_quota_advanced" :min="0"/></t-form-item>
             </t-form>
@@ -477,11 +494,46 @@
         }
       };
 
-      const edit = row => { f.value = { ...row }; v.value = true; };
+      const edit = row => {
+        const r = { ...row };
+        const hasMerit = (parseFloat(r.merit_rate_basic) || 0) > 0 || (parseFloat(r.merit_rate_advanced) || 0) > 0;
+        const hasCash = (parseFloat(r.cash_rate_basic) || 0) > 0 || (parseFloat(r.cash_rate_advanced) || 0) > 0;
+        r._reward_type = hasMerit ? 'merit' : hasCash ? 'cash' : 'none';
+        f.value = r;
+        v.value = true;
+      };
+
+      const onRewardTypeChange = (val) => {
+        if (val === 'merit') {
+          f.value.cash_rate_basic = 0;
+          f.value.cash_rate_advanced = 0;
+        } else if (val === 'cash') {
+          f.value.merit_rate_basic = 0;
+          f.value.merit_rate_advanced = 0;
+        } else {
+          f.value.merit_rate_basic = 0; f.value.cash_rate_basic = 0;
+          f.value.merit_rate_advanced = 0; f.value.cash_rate_advanced = 0;
+        }
+      };
 
       const save = async () => {
+        const d = f.value;
+        const unfreeze = parseFloat(d.unfreeze_per_referral) || 0;
+        const frozen = parseFloat(d.frozen_points) || 0;
+        if (unfreeze > 0 && frozen > 0 && frozen % unfreeze !== 0) {
+          TDesign.MessagePlugin.error('冻结积分必须是单次解冻积分的整数倍');
+          return;
+        }
+        const hasMerit = (parseFloat(d.merit_rate_basic) || 0) > 0 || (parseFloat(d.merit_rate_advanced) || 0) > 0;
+        const hasCash = (parseFloat(d.cash_rate_basic) || 0) > 0 || (parseFloat(d.cash_rate_advanced) || 0) > 0;
+        if (hasMerit && hasCash) {
+          TDesign.MessagePlugin.error('功德分和积分不能同时配置，请统一选择提成类型');
+          return;
+        }
         try {
-          await AdminAPI.updateLevelConfig(f.value);
+          const submitData = { ...d };
+          delete submitData._reward_type;
+          await AdminAPI.updateLevelConfig(submitData);
           TDesign.MessagePlugin.success('保存成功');
           v.value = false;
           ld();
@@ -924,7 +976,7 @@
       return {
         adminInfo, handleMenuChange, handleLogout,
         lg, d, v, f, addV, addF, cols,
-        edit, save, handleAdd, saveAdd, handleDel,
+        edit, save, handleAdd, saveAdd, handleDel, onRewardTypeChange,
         // 详情主
         detailV, detailRow, openDetail,
         // 子弹窗1 - 协议

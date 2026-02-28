@@ -138,14 +138,21 @@
 						"navigationStyle": "custom"
 					}
 				},
-				{
-					"path": "appointment-confirm/index",
-					"style": {
-						"navigationBarTitleText": "预约确认",
-						"navigationStyle": "custom"
-					}
+			{
+				"path": "appointment-confirm/index",
+				"style": {
+					"navigationBarTitleText": "预约确认",
+					"navigationStyle": "custom"
 				}
-			]
+			},
+			{
+				"path": "checkin/index",
+				"style": {
+					"navigationBarTitleText": "课程签到",
+					"navigationStyle": "custom"
+				}
+			}
+		]
 		},
 		{
 			"root": "pages/order",

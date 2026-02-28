@@ -10,6 +10,8 @@ export default defineConfig({
       scss: {
         // 抑制 Sass 废弃警告
         silenceDeprecations: ['legacy-js-api', 'import'],
+        // 全局注入 TDesign SCSS 变量，所有 .vue 文件无需手动 @import
+        additionalData: `@import "@/styles/tdesign-vars.scss";`,
       }
     }
   },

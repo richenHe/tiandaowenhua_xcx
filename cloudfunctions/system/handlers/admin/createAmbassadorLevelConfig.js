@@ -36,10 +36,9 @@ module.exports = async (event, context) => {
     const { data: newConfig, error } = await db.from('ambassador_level_configs').insert({
       level: levelNum,
       level_name: levelName,
-      upgrade_type: upgradeType,
-      description,
-      upgrade_conditions: JSON.stringify({}),
-      benefits: JSON.stringify({}),
+      level_desc: description || null,
+      upgrade_conditions: null,
+      benefits: null,
       merit_rate_basic: 0,
       merit_rate_advanced: 0,
       cash_rate_basic: 0,
@@ -48,8 +47,9 @@ module.exports = async (event, context) => {
       unfreeze_per_referral: 0,
       gift_quota_basic: 0,
       gift_quota_advanced: 0,
-      upgrade_payment_amount: 0
-    }).select().single();
+      upgrade_payment_amount: 0,
+      _openid: ''
+    }).select('id, level').single();
 
     if (error) throw error;
 

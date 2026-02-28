@@ -96,9 +96,10 @@ module.exports = {
   generateUserCourseRecord: order.generateUserCourseRecord,
   generateOrderNo: order.generateOrderNo,
 
-  // 小程序码（分享码）
+  // 小程序码（分享码 / 签到码）
   generateShareQRCode: qrcode.generateShareQRCode,
   generateAmbassadorQRCode: qrcode.generateAmbassadorQRCode,
+  generateCheckinQRCode: qrcode.generateCheckinQRCode,
   decodeScene: qrcode.decodeScene
 };
 

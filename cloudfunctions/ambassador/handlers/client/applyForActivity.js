@@ -27,13 +27,13 @@ module.exports = async (event, context) => {
     const activity = actRows[0];
     if (activity.status !== 1) return response.error('该活动当前不在报名中');
 
-    // 校验报名截止：上课日期当天起不再受理（即上课前一天为最后报名日）
-    // schedule_date 与 class_records.class_date 一致，直接使用
+    // 服务端兜底校验：开课前一天（class_date - 1）起截止报名
     if (activity.schedule_date) {
-      // 北京时间 (UTC+8) 今日日期，避免时区偏差
       const todayStr = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
-      if (todayStr >= activity.schedule_date) {
-        return response.error('活动报名已截止（上课前一天为最后报名日）');
+      const classDate = new Date(activity.schedule_date + 'T00:00:00+08:00');
+      const deadlineStr = new Date(classDate.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+      if (todayStr >= deadlineStr) {
+        return response.error('活动报名已截止（开课前一天为最后报名日）');
       }
     }
 
@@ -102,19 +102,43 @@ module.exports = async (event, context) => {
 
     const now = formatDateTime(new Date());
 
-    // 写入报名记录
-    await db.from('ambassador_activity_registrations').insert({
-      _openid: user._openid || '',
-      activity_id: activityId,
-      user_id: user.id,
-      user_uid: user.uid || '',
-      user_name: user.real_name || '',
-      user_phone: user.phone || '',
-      position_name: positionName,
-      merit_points: targetPos.merit_points || 0,
-      status: 1,
-      created_at: now
-    });
+    // 查询是否存在已取消的报名记录（status=0），唯一索引要求 UPDATE 而非 INSERT
+    const { data: cancelledRegs } = await db
+      .from('ambassador_activity_registrations')
+      .select('id')
+      .eq('activity_id', activityId)
+      .eq('user_id', user.id)
+      .eq('status', 0);
+
+    if (cancelledRegs && cancelledRegs.length > 0) {
+      // 已取消过：复用原记录，更新字段（避免唯一索引冲突）
+      const { error: updateRegError } = await db
+        .from('ambassador_activity_registrations')
+        .update({
+          position_name: positionName,
+          merit_points: targetPos.merit_points || 0,
+          status: 1,
+          updated_at: now
+        })
+        .eq('id', cancelledRegs[0].id);
+      if (updateRegError) throw updateRegError;
+    } else {
+      // 首次报名：插入新记录
+      const { error: insertError } = await db.from('ambassador_activity_registrations').insert({
+        _openid: user._openid || '',
+        activity_id: activityId,
+        user_id: user.id,
+        user_uid: user.uid || '',
+        user_name: user.real_name || '',
+        user_phone: user.phone || '',
+        position_name: positionName,
+        merit_points: targetPos.merit_points || 0,
+        status: 1,
+        created_at: now
+      });
+      // INSERT 失败必须抛出，否则后续 registered_count++ 会导致名额虚减
+      if (insertError) throw insertError;
+    }
 
     // 更新岗位的 registered_count
     targetPos.registered_count = (targetPos.registered_count || 0) + 1;

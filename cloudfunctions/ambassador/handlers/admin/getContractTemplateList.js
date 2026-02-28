@@ -18,12 +18,12 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('contract_templates')
       .select('*', { count: 'exact' })
-      .order('level', { ascending: true })
+      .order('ambassador_level', { ascending: true })
       .order('version', { ascending: false });
 
     // 等级筛选
     if (level != null && level !== '') {
-      queryBuilder = queryBuilder.eq('level', level);
+      queryBuilder = queryBuilder.eq('ambassador_level', level);
     }
 
     // 状态筛选
@@ -43,8 +43,8 @@ module.exports = async (event, context) => {
 
       return {
         id: template.id,
-        title: template.title,
-        level: template.level,
+        title: template.contract_name,
+        level: template.ambassador_level,
         version: template.version,
         effective_date: template.effective_date,
         expiry_date: template.expiry_date,

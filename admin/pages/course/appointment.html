@@ -118,8 +118,8 @@
         <template #operation="{ row }">
           <t-space size="small">
             <t-button theme="primary" size="small" variant="text" @click="handleView(row)">查看详情</t-button>
-            <t-button v-if="row.status === 2" theme="success" size="small" variant="text" @click="handleCheckIn(row)">签到</t-button>
-            <t-button v-if="row.status === 1" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
+            <t-button v-if="row.status === 0" theme="success" size="small" variant="text" @click="handleCheckIn(row)">签到</t-button>
+            <t-button v-if="row.status === 0" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
           </t-space>
         </template>
       </t-table>
