@@ -33,7 +33,8 @@ module.exports = async (event, context) => {
 
     // 3. 检查订单是否超时（仅检查待支付订单）
     if (order.pay_status === 0) {
-      const createdTime = new Date(order.created_at).getTime();
+      // 数据库存储的是 CST（UTC+8），需加时区后缀才能被 Node.js 正确解析
+      const createdTime = new Date(order.created_at.replace(' ', 'T') + '+08:00').getTime();
       const now = Date.now();
       const elapsed = Math.floor((now - createdTime) / 1000);
       const timeout = 15 * 60; // 15分钟
@@ -46,7 +47,7 @@ module.exports = async (event, context) => {
           const { data: updateResult, error: updateError } = await db
             .from('orders')
             .update({ 
-              pay_status: 3,  // 已关闭（超时）
+              pay_status: 2,  // 超时视为已取消
               updated_at: utils.formatDateTime(new Date())
             })
             .eq('order_no', order_no);
@@ -54,8 +55,8 @@ module.exports = async (event, context) => {
           if (updateError) {
             console.error('[getDetail] 更新订单状态失败:', updateError);
           } else {
-            console.log('[getDetail] 成功更新订单状态为已关闭:', updateResult);
-            order.pay_status = 3;
+            console.log('[getDetail] 成功更新订单状态为已取消（超时）:', updateResult);
+            order.pay_status = 2;
           }
         } catch (updateErr) {
           console.error('[getDetail] 更新订单异常:', updateErr);

@@ -45,21 +45,32 @@
 
         <!-- 推荐人信息 -->
         <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
-        <view class="t-card t-card--bordered t-card--hoverable mb-l" @click="goToSelectReferee">
+        <view
+          class="t-card t-card--bordered mb-l"
+          :class="refereeLocked ? 'referee-card--locked' : 't-card--hoverable'"
+          @click="goToSelectReferee"
+        >
           <view class="t-card__body">
             <view class="referee-info">
               <view class="referee-left">
-                <view class="t-avatar t-avatar--theme-primary">
+                <view class="t-avatar" :class="refereeLocked ? 't-avatar--theme-locked' : 't-avatar--theme-primary'">
                   <text class="t-avatar__text">{{ refereeInfo.name.charAt(0) }}</text>
                 </view>
                 <view class="referee-details">
-                  <view class="referee-name">{{ refereeInfo.name }}</view>
+                  <view class="referee-name" :class="{ 'referee-name--locked': refereeLocked }">
+                    {{ refereeInfo.name }}
+                  </view>
                   <view class="t-badge--standalone t-badge--theme-warning t-badge--size-small">
                     {{ refereeInfo.level }}
                   </view>
                 </view>
               </view>
-              <text class="arrow-icon">›</text>
+              <!-- 锁定状态显示锁图标+提示文字；未锁定显示右箭头 -->
+              <view v-if="refereeLocked" class="locked-indicator">
+                <text class="locked-icon">🔒</text>
+                <text class="locked-text">无法修改</text>
+              </view>
+              <text v-else class="arrow-icon">›</text>
             </view>
           </view>
         </view>
@@ -132,6 +143,9 @@ const refereeInfo = ref({
   level: '',
 });
 
+// 推荐人是否已锁定（首次支付成功后锁定）
+const refereeLocked = ref(false);
+
 // 加载状态
 const isLoading = ref(true);
 
@@ -186,7 +200,9 @@ const loadPageData = async () => {
         name: profile.referee_name,
         level: getAmbassadorLevelName(profile.referee_level || 0)
       };
-      console.log('📌 已设置推荐人:', refereeInfo.value);
+      // referee_confirmed_at 不为空表示首次支付已完成，推荐人永久锁定
+      refereeLocked.value = !!profile.referee_confirmed_at;
+      console.log('📌 已设置推荐人:', refereeInfo.value, '锁定状态:', refereeLocked.value);
     } else {
       console.log('📌 未设置推荐人');
     }
@@ -248,8 +264,16 @@ const totalAmount = computed(() => {
   return courseInfo.value.price - discount.value;
 });
 
-// 跳转到选择推荐人页面
+// 跳转到选择推荐人页面（推荐人锁定时提示无法修改）
 const goToSelectReferee = () => {
+  if (refereeLocked.value) {
+    uni.showToast({
+      title: '推荐人已锁定，无法修改',
+      icon: 'none',
+      duration: 2000
+    });
+    return;
+  }
   uni.navigateTo({
     url: '/pages/order/select-referee/index',
   });
@@ -396,6 +420,13 @@ const handleConfirm = () => {
   color: $td-text-color-primary;
 }
 
+// 推荐人卡片 - 锁定态
+.referee-card--locked {
+  opacity: 0.7;
+  background-color: $td-bg-color-container;
+  cursor: not-allowed;
+}
+
 // 推荐人信息
 .referee-info {
   display: flex;
@@ -422,6 +453,10 @@ const handleConfirm = () => {
   &--theme-primary {
     background-color: $td-brand-color;
   }
+
+  &--theme-locked {
+    background-color: $td-text-color-placeholder;
+  }
 }
 
 .t-avatar__text {
@@ -440,10 +475,31 @@ const handleConfirm = () => {
   font-size: 28rpx;
   font-weight: 500;
   color: $td-text-color-primary;
+
+  &--locked {
+    color: $td-text-color-secondary;
+  }
 }
 
 .arrow-icon {
   font-size: 48rpx;
+  color: $td-text-color-placeholder;
+}
+
+// 锁定状态指示器
+.locked-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.locked-icon {
+  font-size: 32rpx;
+}
+
+.locked-text {
+  font-size: 20rpx;
   color: $td-text-color-placeholder;
 }
 

@@ -103,31 +103,12 @@
                 </view>
               </view>
 
-              <!-- 签署协议步骤 -->
-              <view v-if="contractOption" class="step-item">
-                <view class="step-number" :class="stepClass(contractStepStatus)">2</view>
-                <view class="step-content">
-                  <view class="step-title">签署协议</view>
-                  <view class="step-desc">{{ contractOption.requirements?.join('；') || contractOption.name }}</view>
-                  <template v-if="contractOption.eligible">
-                    <view @tap="goToContractSign">
-                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
-                        <span class="t-button__text">📝 立即签署</span>
-                      </button>
-                    </view>
-                  </template>
-                  <template v-else>
-                    <view class="step-desc-reason">{{ contractOption.reason }}</view>
-                  </template>
-                </view>
-              </view>
-
-              <!-- 支付升级费用步骤（仅需支付的等级显示） -->
+              <!-- 步骤2：支付升级费用（有支付要求的等级才显示，先于签合同） -->
               <view v-if="paymentOption" class="step-item">
-                <view class="step-number" :class="stepClass(paymentStepStatus)">3</view>
+                <view class="step-number" :class="stepClass(paymentStepStatus)">2</view>
                 <view class="step-content">
                   <view class="step-title">支付 {{ paymentOption.fee }} 元升级费用</view>
-                  <view class="step-desc">支付后即可完成升级，获得对应权益</view>
+                  <view class="step-desc">{{ paymentOption.completed ? '升级费用已支付 ✓' : '申请通过后支付升级费，费用将转为冻结积分' }}</view>
                   <template v-if="paymentOption.eligible">
                     <view @tap="handlePayUpgrade">
                       <button class="t-button t-button--theme-warning t-button--variant-base t-button--block" style="margin-top:16rpx;">
@@ -135,8 +116,29 @@
                       </button>
                     </view>
                   </template>
-                  <template v-else>
+                  <template v-else-if="!paymentOption.completed">
                     <view class="step-desc-reason">{{ paymentOption.reason }}</view>
+                  </template>
+                </view>
+              </view>
+
+              <!-- 步骤2或步骤3：签署协议（无支付=步骤2，有支付=步骤3） -->
+              <view v-if="contractOption" class="step-item">
+                <view class="step-number" :class="stepClass(contractStepStatus)">{{ paymentOption ? 3 : 2 }}</view>
+                <view class="step-content">
+                  <view class="step-title">签署协议</view>
+                  <view class="step-desc">
+                    {{ contractOption.completed ? '协议已签署 ✓' : (paymentOption ? '支付升级费后签署协议，签署即完成升级' : (contractOption.requirements?.join('；') || contractOption.name)) }}
+                  </view>
+                  <template v-if="contractOption.eligible">
+                    <view @tap="goToContractSign">
+                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
+                        <span class="t-button__text">📝 立即签署</span>
+                      </button>
+                    </view>
+                  </template>
+                  <template v-else-if="!contractOption.completed">
+                    <view class="step-desc-reason">{{ contractOption.reason }}</view>
                   </template>
                 </view>
               </view>
@@ -280,11 +282,13 @@ const applicationStepStatus = computed(() => {
 })
 const contractStepStatus = computed(() => {
   if (!contractOption.value) return 'pending'
+  if (contractOption.value.completed) return 'done'
   if (contractOption.value.eligible) return 'active'
   return 'pending'
 })
 const paymentStepStatus = computed(() => {
   if (!paymentOption.value) return 'pending'
+  if (paymentOption.value.completed) return 'done'
   if (paymentOption.value.eligible) return 'active'
   return 'pending'
 })

@@ -142,25 +142,11 @@ const loadOrderDetail = async (orderNo: string) => {
       return;
     }
 
-    // 检查订单状态：如果已取消，返回订单列表
-    if (order.pay_status === 2) {
+    // 检查订单状态：已取消（含超时自动取消）或已关闭（旧数据兼容）
+    if (order.pay_status === 2 || order.pay_status === 3) {
       uni.hideLoading();
       uni.showToast({
         title: '订单已取消',
-        icon: 'none',
-        duration: 1500
-      });
-      setTimeout(() => {
-        uni.navigateBack();
-      }, 1500);
-      return;
-    }
-
-    // 检查订单状态：如果已关闭（超时），返回订单列表
-    if (order.pay_status === 3) {
-      uni.hideLoading();
-      uni.showToast({
-        title: '订单已超时',
         icon: 'none',
         duration: 1500
       });
@@ -180,17 +166,28 @@ const loadOrderDetail = async (orderNo: string) => {
     };
 
     // 计算剩余时间（15分钟）
-    const createdTime = new Date(order.created_at).getTime();
+    // iOS WebKit 不支持 "YYYY-MM-DD HH:MM:SS" 空格格式，需替换为 'T' 分隔符才能正确解析
+    const createdTimeStr = (order.created_at || '').replace(' ', 'T');
+    const createdTime = new Date(createdTimeStr).getTime();
     const now = Date.now();
-    const elapsed = Math.floor((now - createdTime) / 1000);
-    const remaining = 15 * 60 - elapsed;
-    
-    if (remaining > 0) {
-      countdown.value = remaining;
+
+    if (isNaN(createdTime)) {
+      // 日期解析失败时，默认给足 15 分钟，避免误回退
+      console.warn('[pending] created_at 解析失败，给足默认倒计时:', order.created_at);
+      countdown.value = 15 * 60;
       startCountdown();
     } else {
-      // 订单已超时，直接返回
-      uni.navigateBack();
+      const elapsed = Math.floor((now - createdTime) / 1000);
+      const remaining = 15 * 60 - elapsed;
+
+      if (remaining > 0) {
+        countdown.value = remaining;
+        startCountdown();
+      } else {
+        // 订单已超时（前端兜底判断），提示后返回
+        uni.showToast({ title: '订单已超时', icon: 'none', duration: 1500 });
+        setTimeout(() => uni.navigateBack(), 1500);
+      }
     }
 
     uni.hideLoading();

@@ -110,10 +110,10 @@
         hover
       >
         <template #status="{ row }">
-          <t-tag v-if="row.status === 1" theme="success">已确认</t-tag>
-          <t-tag v-else-if="row.status === 2" theme="primary">待签到</t-tag>
-          <t-tag v-else-if="row.status === 3" theme="default">已签到</t-tag>
-          <t-tag v-else theme="danger">已取消</t-tag>
+          <t-tag v-if="row.status === 0" theme="warning">待上课</t-tag>
+          <t-tag v-else-if="row.status === 1" theme="success">已签到</t-tag>
+          <t-tag v-else-if="row.status === 2" theme="danger">缺席</t-tag>
+          <t-tag v-else-if="row.status === 3" theme="default">已取消</t-tag>
         </template>
         <template #operation="{ row }">
           <t-space size="small">
@@ -135,10 +135,10 @@
         <t-descriptions-item label="上课地点" :span="2">{{ currentRecord.location }}</t-descriptions-item>
         <t-descriptions-item label="预约时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
         <t-descriptions-item label="状态" :span="2">
-          <t-tag v-if="currentRecord.status === 1" theme="success">已确认</t-tag>
-          <t-tag v-else-if="currentRecord.status === 2" theme="primary">待签到</t-tag>
-          <t-tag v-else-if="currentRecord.status === 3" theme="default">已签到</t-tag>
-          <t-tag v-else theme="danger">已取消</t-tag>
+          <t-tag v-if="currentRecord.status === 0" theme="warning">待上课</t-tag>
+          <t-tag v-else-if="currentRecord.status === 1" theme="success">已签到</t-tag>
+          <t-tag v-else-if="currentRecord.status === 2" theme="danger">缺席</t-tag>
+          <t-tag v-else-if="currentRecord.status === 3" theme="default">已取消</t-tag>
         </t-descriptions-item>
       </t-descriptions>
     </t-dialog>
@@ -164,7 +164,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -178,7 +178,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -211,7 +211,8 @@
         
         const loading = ref(false); const tableData = ref([]); const detailVisible = ref(false); const currentRecord = ref(null);
         const filters = ref({ keyword: '', courseId: null, status: null }); const courseOptions = ref([]);
-        const statusOptions = [{ label: '已确认', value: 1 }, { label: '待签到', value: 2 }, { label: '已签到', value: 3 }, { label: '已取消', value: 0 }];
+        // appointments.status: 0待上课/1已签到/2缺席/3已取消
+        const statusOptions = [{ label: '待上课', value: 0 }, { label: '已签到', value: 1 }, { label: '缺席', value: 2 }, { label: '已取消', value: 3 }];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         const selectedRowKeys = ref([]); // 批量签到选中的行
         const columns = [

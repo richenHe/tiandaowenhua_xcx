@@ -118,10 +118,12 @@
               </t-form-item>
               
               <t-form-item label="合约状态">
+                <!-- contract_signatures.status: 0已作废/1有效/2已过期/3已续签 -->
                 <t-select v-model="searchForm.status" clearable placeholder="全部" style="width: 150px;">
-                  <t-option :value="1" label="生效中"></t-option>
-                  <t-option :value="2" label="即将到期"></t-option>
-                  <t-option :value="3" label="已到期"></t-option>
+                  <t-option :value="0" label="已作废"></t-option>
+                  <t-option :value="1" label="有效"></t-option>
+                  <t-option :value="2" label="已过期"></t-option>
+                  <t-option :value="3" label="已续签"></t-option>
                 </t-select>
               </t-form-item>
               
@@ -145,16 +147,17 @@
               @page-change="onPageChange"
             >
               <template #ambassadorLevel="{ row }">
-                <t-tag v-if="row.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+                <t-tag v-if="row.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
                 <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-                <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
-                <t-tag v-else-if="row.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
               </template>
-              
+
+              <!-- contract_signatures.status: 0已作废/1有效/2已过期/3已续签 -->
               <template #status="{ row }">
-                <t-tag v-if="row.status === 1" theme="success">生效中</t-tag>
-                <t-tag v-else-if="row.status === 2" theme="warning">即将到期</t-tag>
-                <t-tag v-else-if="row.status === 3" theme="danger">已到期</t-tag>
+                <t-tag v-if="row.status === 0" theme="default">已作废</t-tag>
+                <t-tag v-else-if="row.status === 1" theme="success">有效</t-tag>
+                <t-tag v-else-if="row.status === 2" theme="warning">已过期</t-tag>
+                <t-tag v-else-if="row.status === 3" theme="primary">已续签</t-tag>
               </template>
               
               <template #action="{ row }">
@@ -179,15 +182,15 @@
               <t-descriptions-item label="大使姓名">{{ currentContract.ambassador_name }}</t-descriptions-item>
               <t-descriptions-item label="手机号">{{ currentContract.phone }}</t-descriptions-item>
               <t-descriptions-item label="大使等级">
-                <t-tag v-if="currentContract.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+                <t-tag v-if="currentContract.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
                 <t-tag v-else-if="currentContract.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-                <t-tag v-else-if="currentContract.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
-                <t-tag v-else-if="currentContract.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+                <t-tag v-else-if="currentContract.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
               </t-descriptions-item>
               <t-descriptions-item label="合约状态">
-                <t-tag v-if="currentContract.status === 1" theme="success">生效中</t-tag>
-                <t-tag v-else-if="currentContract.status === 2" theme="warning">即将到期</t-tag>
-                <t-tag v-else-if="currentContract.status === 3" theme="danger">已到期</t-tag>
+                <t-tag v-if="currentContract.status === 0" theme="default">已作废</t-tag>
+                <t-tag v-else-if="currentContract.status === 1" theme="success">有效</t-tag>
+                <t-tag v-else-if="currentContract.status === 2" theme="warning">已过期</t-tag>
+                <t-tag v-else-if="currentContract.status === 3" theme="primary">已续签</t-tag>
               </t-descriptions-item>
               <t-descriptions-item label="合约编号" :span="2">{{ currentContract.contract_no }}</t-descriptions-item>
               <t-descriptions-item label="签署时间">{{ formatDateTime(currentContract.signed_at) }}</t-descriptions-item>
@@ -314,7 +317,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -328,7 +331,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',

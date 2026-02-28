@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
-import { checkEnvironment, auth } from "./utils/cloudbase";
+import { checkEnvironment } from "./utils/cloudbase";
 
 onLaunch(async () => {
   // ========== 初始化 wx.cloud（微信支付等云调用必需） ==========
@@ -20,21 +20,14 @@ onLaunch(async () => {
   }
   // #endif
 
-  // ========== CloudBase 登录状态检查 ==========
-  if (checkEnvironment()) {
-    try {
-      setTimeout(async () => {
-        const loginState = await auth.getLoginState();
-        
-        if (!loginState) {
-          uni.reLaunch({
-            url: '/pages/auth/login/index'
-          });
-        }
-      }, 300);
-    } catch (error) {
-      console.error("检查登录状态失败:", error);
-    }
+  // ========== 登录状态检查 ==========
+  // MP-WEIXIN 使用 wx.cloud.callFunction()，不走 CloudBase JS SDK auth。
+  // auth.getLoginState() 对 wx.cloud 用户始终返回 null，不能用于判断登录态。
+  // 改用本地存储：响应拦截器在每次成功 API 调用后写入 userInfo.profile_completed。
+  const storedUser = uni.getStorageSync('userInfo');
+  const isLoggedIn = storedUser && storedUser.profile_completed !== undefined;
+  if (!isLoggedIn) {
+    uni.reLaunch({ url: '/pages/auth/login/index' });
   }
 });
 

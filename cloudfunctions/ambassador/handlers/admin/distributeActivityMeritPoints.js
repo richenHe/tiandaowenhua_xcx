@@ -11,7 +11,7 @@
  *   5. 更新 ambassador_activities.merit_distributed = 1
  *   6. 将报名状态更新为 status=2（已发放）
  */
-const { db, response } = require('../../common');
+const { db, response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -49,7 +49,7 @@ module.exports = async (event, context) => {
       return response.error('该活动暂无报名记录，无法发放');
     }
 
-    const now = new Date().toISOString();
+    const now = formatDateTime(new Date());
     let successCount = 0;
 
     for (const reg of registrations) {

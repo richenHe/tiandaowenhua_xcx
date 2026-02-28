@@ -5,7 +5,7 @@
  * 使用 Supabase 风格 JOIN 查询，利用外键约束优化性能
  */
 const { db } = require('../../common/db');
-const { response, executePaginatedQuery } = require('../../common');
+const { response, executePaginatedQuery, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -49,14 +49,15 @@ module.exports = async (event, context) => {
 
     for (const order of result.list || []) {
       if (order.pay_status === 0) {
-        const createdTime = new Date(order.created_at).getTime();
+        // 数据库存储的是 CST（UTC+8），需加时区后缀才能被 Node.js 正确解析
+        const createdTime = new Date(order.created_at.replace(' ', 'T') + '+08:00').getTime();
         const elapsed = now - createdTime;
 
         console.log(`[getMyOrders] 检查订单: ${order.order_no}, created: ${order.created_at}, elapsed: ${Math.floor(elapsed/1000)}秒, timeout: ${elapsed >= timeout}`);
 
         if (elapsed >= timeout) {
           timeoutOrders.push(order.order_no);
-          order.pay_status = 3; // 本地更新状态，用于返回
+          order.pay_status = 2; // 超时视为已取消，本地更新状态用于返回
         }
       }
     }
@@ -71,8 +72,8 @@ module.exports = async (event, context) => {
         const updateQuery = db
           .from('orders')
           .update({
-            pay_status: 3,
-            updated_at: new Date().toISOString()
+            pay_status: 2,
+            updated_at: formatDateTime(new Date())
           })
           .in('order_no', timeoutOrders)
           .select();  // 添加 select 确保返回结果

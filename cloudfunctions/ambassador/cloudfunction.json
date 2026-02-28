@@ -1,8 +1,15 @@
 {
   "permissions": {
     "openapi": [
-      "subscribeMessage.send"
+      "subscribeMessage.send",
+      "wxacode.getUnlimited"
     ]
   },
-  "triggers": []
+  "triggers": [
+    {
+      "name": "auto-update-activity-status",
+      "type": "timer",
+      "config": "0 0 0 * * * *"
+    }
+  ]
 }

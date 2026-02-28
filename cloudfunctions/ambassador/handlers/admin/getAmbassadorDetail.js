@@ -73,6 +73,24 @@ module.exports = async (event, context) => {
       .single()
       .catch(() => ({ data: null }));
 
+    // 查询大使赠课名额（所有有效名额按类型汇总）
+    const { data: quotas } = await db
+      .from('ambassador_quotas')
+      .select('quota_type, total_quantity, used_quantity, remaining_quantity, expire_date, status')
+      .eq('user_id', user.id)
+      .eq('status', 1)
+      .order('expire_date', { ascending: true })
+      .catch(() => ({ data: [] }));
+
+    // 按类型汇总：初探班(type=1) / 密训班(type=2)
+    const quotaSummary = { basic: { total: 0, used: 0, remaining: 0 }, advanced: { total: 0, used: 0, remaining: 0 } };
+    (quotas || []).forEach(q => {
+      const key = q.quota_type === 2 ? 'advanced' : 'basic';
+      quotaSummary[key].total += q.total_quantity || 0;
+      quotaSummary[key].used += q.used_quantity || 0;
+      quotaSummary[key].remaining += q.remaining_quantity || 0;
+    });
+
     console.log('[getAmbassadorDetail] 查询成功');
     // 🔥 转换用户头像等云存储字段 cloud:// fileID 为 CDN HTTPS URL
     if (user.avatar) user.avatar = cloudFileIDToURL(user.avatar);
@@ -100,6 +118,9 @@ module.exports = async (event, context) => {
         expires_at: contract.contract_end,
         status: contract.status
       } : null,
+      // 赠课名额汇总
+      quota_summary: quotaSummary,
+      quota_list: quotas || [],
       // 推荐人列表
       referees: referees || [],
       // 统计对象（保留向后兼容）

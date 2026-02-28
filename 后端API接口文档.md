@@ -3020,6 +3020,520 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 
 ---
 
+## 6.B 大使志愿活动模块（新增 2026-02）
+
+> 本节接口对应 `ambassador` 云函数，管理端负责创建与派分功德分，客户端负责查看与报名。
+
+### 🔴 6.B.1 获取岗位类型列表（管理端/客户端通用）
+**云函数**: `ambassador` → Action: `getPositionTypeList`
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| includeDisabled | Boolean | 否 | 是否包含已停用岗位（默认 false） |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "引导员",
+        "required_level": 1,
+        "required_level_name": "准青鸾",
+        "merit_points_default": 100,
+        "description": "负责活动引导",
+        "status": 1,
+        "sort_order": 0,
+        "created_at": "2026-02-01 10:00:00"
+      }
+    ],
+    "total": 5
+  }
+}
+```
+
+---
+
+### 🔴 6.B.2 创建岗位类型
+**云函数**: `ambassador` → Action: `createPositionType`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | String | 是 | 岗位名称（不可重复） |
+| requiredLevel | Number | 否 | 最低大使等级要求 |
+| meritPointsDefault | Number | 否 | 默认功德分值 |
+| description | String | 否 | 岗位描述 |
+| sortOrder | Number | 否 | 排序值（升序） |
+
+**业务逻辑**:
+1. 校验岗位名称不重复
+2. 若指定 `requiredLevel`，校验该等级在 `ambassador_level_configs` 中存在
+3. 插入 `ambassador_position_types` 表
+
+**响应数据**:
+```json
+{ "success": true, "message": "岗位类型创建成功" }
+```
+
+---
+
+### 🔴 6.B.3 更新岗位类型
+**云函数**: `ambassador` → Action: `updatePositionType`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Number | 是 | 岗位类型ID |
+| name | String | 否 | 岗位名称 |
+| requiredLevel | Number/null | 否 | 最低等级（null = 无限制） |
+| meritPointsDefault | Number | 否 | 默认功德分值 |
+| description | String | 否 | 描述 |
+| status | Number | 否 | 状态（1启用 / 0停用） |
+| sortOrder | Number | 否 | 排序值 |
+
+**响应数据**:
+```json
+{ "success": true, "message": "岗位类型更新成功" }
+```
+
+---
+
+### 🔴 6.B.4 删除岗位类型
+**云函数**: `ambassador` → Action: `deletePositionType`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Number | 是 | 岗位类型ID |
+
+**响应数据**:
+```json
+{ "success": true, "message": "岗位类型「引导员」已删除" }
+```
+
+---
+
+### 🔴 6.B.5 按等级获取协议模板
+**云函数**: `ambassador` → Action: `getContractTemplateByLevel`
+**权限**: 管理端
+
+**功能说明**: 用于后台等级配置弹窗中回显该等级对应的协议模板，包含合同文件下载 URL。
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| level | Number | 是 | 大使等级（1-5） |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "template": {
+      "id": 3,
+      "contract_name": "青鸾大使协议",
+      "contract_type": 1,
+      "ambassador_level": 2,
+      "version": "v1.2",
+      "contract_file_id": "cloud://xxx/contracts/level2/template.pdf",
+      "contract_file_url": "https://xxx.tcb.qcloud.la/contracts/level2/template.pdf",
+      "validity_years": 1,
+      "status": 1,
+      "created_at": "2026-01-10 08:00:00"
+    }
+  }
+}
+```
+
+---
+
+### 🔴 6.B.6 获取大使志愿活动列表
+**云函数**: `ambassador` → Action: `getAmbassadorActivityList`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| keyword | String | 否 | 按排课名称搜索 |
+| status | Number | 否 | 状态筛选（1进行中 / 0已结束） |
+| page | Number | 否 | 页码（默认1） |
+| pageSize | Number | 否 | 每页数量（默认20） |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "schedule_id": 5,
+        "schedule_name": "孙膑道·密训班 第3期",
+        "schedule_date": "2026-03-01",
+        "schedule_location": "深圳总部",
+        "positions": [
+          { "name": "引导员", "quota": 5, "merit_points": 100, "registered_count": 3 }
+        ],
+        "total_quota": 10,
+        "total_registered": 3,
+        "status": 1,
+        "merit_distributed": 0,
+        "merit_distributed_at": null,
+        "created_at": "2026-02-10 08:00:00"
+      }
+    ],
+    "total": 20,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+**活动状态说明**:
+- `1`: 招募中（报名未截止）
+- `0`: 已结束（功德分已发放）
+
+---
+
+### 🔴 6.B.7 获取大使志愿活动详情
+**云函数**: `ambassador` → Action: `getAmbassadorActivityDetail`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "schedule_id": 5,
+    "schedule_name": "孙膑道·密训班 第3期",
+    "schedule_date": "2026-03-01",
+    "schedule_location": "深圳总部",
+    "positions": [
+      {
+        "name": "引导员",
+        "quota": 5,
+        "merit_points": 100,
+        "registered_count": 3,
+        "remaining": 2
+      }
+    ],
+    "total_quota": 10,
+    "total_registered": 3,
+    "status": 1,
+    "merit_distributed": 0,
+    "merit_distributed_at": null,
+    "created_at": "2026-02-10 08:00:00"
+  }
+}
+```
+
+---
+
+### 🔴 6.B.8 创建大使志愿活动
+**云函数**: `ambassador` → Action: `createAmbassadorActivity`
+**权限**: 管理端
+
+**功能说明**: 基于排课记录创建志愿服务活动，每个排课只能创建一次活动，岗位配置内嵌于活动中（不依赖岗位类型表，支持自定义）。
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| scheduleId | Number | 是 | 关联排课ID（class_records.id） |
+| positions | Array | 是 | 岗位列表，见下方格式 |
+
+**positions 格式**:
+```json
+[
+  { "name": "引导员", "quota": 5, "merit_points": 100 },
+  { "name": "沙盘助教", "quota": 3, "merit_points": 150 }
+]
+```
+
+**业务规则**:
+- 同一排课只能创建一个活动（重复创建返回错误）
+- 岗位名称不能为空，名额 ≥ 1，功德分 ≥ 0
+- 初始化每个岗位的 `registered_count = 0`
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "message": "创建成功",
+  "data": {
+    "id": 1,
+    "schedule_id": 5,
+    "schedule_name": "孙膑道·密训班 第3期",
+    "positions": [
+      { "name": "引导员", "quota": 5, "merit_points": 100, "registered_count": 0 }
+    ]
+  }
+}
+```
+
+---
+
+### 🔴 6.B.9 删除大使志愿活动
+**云函数**: `ambassador` → Action: `deleteAmbassadorActivity`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+
+**业务规则**:
+- 若功德分已发放（`merit_distributed = 1`），禁止删除
+- 同步删除该活动的所有报名记录
+
+**响应数据**:
+```json
+{ "success": true, "message": "删除成功" }
+```
+
+---
+
+### 🔴 6.B.10 获取活动报名人员列表
+**云函数**: `ambassador` → Action: `getActivityRegistrants`
+**权限**: 管理端
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+| positionName | String | 否 | 按岗位名称筛选 |
+| page | Number | 否 | 页码（默认1） |
+| pageSize | Number | 否 | 每页数量（默认20） |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "user_id": 30,
+        "user_name": "张三",
+        "user_phone": "138****8000",
+        "position_name": "引导员",
+        "merit_points": 100,
+        "status": 1,
+        "status_text": "已报名",
+        "created_at": "2026-02-15 09:00:00"
+      }
+    ],
+    "total": 3,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+**报名状态说明**:
+- `1`: 已报名
+- `2`: 已发放功德分
+
+---
+
+### 🔴 6.B.11 发放活动功德分
+**云函数**: `ambassador` → Action: `distributeActivityMeritPoints`
+**权限**: 管理端
+
+**功能说明**: 活动结束后，管理员手动触发发放功德分。批量处理所有有效报名记录，为每位大使增加对应岗位的功德分，并写入活动记录供小程序展示。
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+
+**业务逻辑**:
+1. 校验活动存在且功德分未发放（`merit_distributed = 0`）
+2. 查询所有有效报名（`status = 1`）
+3. 遍历报名记录：
+   - 更新 `users.merit_points`（累加）
+   - 插入 `merit_points_records`（type=1收入，source=7志愿活动岗位）
+   - 插入 `ambassador_activity_records`（大使端展示用）
+   - 更新报名状态为 `status = 2`（已发放）
+4. 更新活动 `merit_distributed = 1`，`status = 0`（已结束）
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "message": "功德分发放完成，共发放 3 人",
+  "data": {
+    "total": 3,
+    "success_count": 3
+  }
+}
+```
+
+---
+
+### 🔵 6.B.12 获取可报名的活动列表（客户端）
+**云函数**: `ambassador` → Action: `getAvailableActivities`
+**权限**: 客户端（需登录）
+
+**功能说明**: 返回当前招募中（status=1）且报名截止日期未到（排课日期 > 今天）的活动列表，附带当前用户等级和已报名状态。
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | Number | 否 | 页码（默认1） |
+| pageSize | Number | 否 | 每页数量（默认20） |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "schedule_name": "孙膑道·密训班 第3期",
+        "schedule_date": "2026-03-01",
+        "schedule_location": "深圳总部",
+        "positions": [
+          {
+            "name": "引导员",
+            "quota": 5,
+            "merit_points": 100,
+            "registered_count": 3,
+            "remaining": 2,
+            "required_level": 1,
+            "required_level_name": "准青鸾",
+            "can_apply": true
+          }
+        ],
+        "status": 1,
+        "user_level": 2,
+        "my_registration": {
+          "position_name": "引导员",
+          "status": 1
+        }
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+---
+
+### 🔵 6.B.13 报名活动志愿岗位（客户端）
+**云函数**: `ambassador` → Action: `applyForActivity`
+**权限**: 客户端（需登录）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+| positionName | String | 是 | 要报名的岗位名称 |
+
+**业务规则**:
+- 活动必须为招募中（`status = 1`）
+- 报名截止日期为排课日期前一天（当天起不可报名）
+- 岗位剩余名额 > 0
+- 若岗位设有等级要求，用户大使等级必须达到
+- 每个用户每个活动只能报名一个岗位（已报名的不可重复报名）
+- 报名成功后 `registered_count + 1`
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "message": "报名成功",
+  "data": {
+    "activity_id": 1,
+    "position_name": "引导员",
+    "merit_points": 100
+  }
+}
+```
+
+---
+
+## 6.C 课程排课自动更新（定时触发，新增 2026-02）
+
+### ⚙️ 6.C.1 自动更新排课状态
+**云函数**: `course` → Action: `autoUpdateScheduleStatus`
+**触发方式**: 定时器（每天 0 点触发，`cloudfunction.json` 配置）
+
+**功能说明**: 自动将已过期的排课状态从「进行中（status=1）」更新为「已结束（status=2）」。
+
+**判断逻辑**:
+- 有结束日期的排课：`class_end_date < 今天`
+- 无结束日期的排课（单次课）：`class_date < 今天`
+
+**响应数据**（日志用）:
+```json
+{
+  "success": true,
+  "data": {
+    "date": "2026-02-27",
+    "affectedRows": 3,
+    "withEndDate": 2,
+    "withoutEndDate": 1,
+    "message": "成功更新 3 条排课状态为已结束"
+  }
+}
+```
+
+---
+
+## 6.D 测试辅助接口（仅限测试环境，新增 2026-02）
+
+### ⚠️ 6.D.1 模拟支付成功
+**云函数**: `order` → Action: `testSimulatePayment`
+**权限**: 公开（需传入测试密钥，⚠️ 仅限测试/开发环境使用）
+
+**功能说明**: 跳过微信签名验证，直接触发支付成功业务逻辑（包含课程记录生成、推荐人奖励发放等），用于自动化测试和开发联调。
+
+**⚠️ 安全警告**: 生产环境需通过配置关闭或限制此接口的访问，防止被恶意调用。
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| order_no | String | 是 | 订单号 |
+| test_secret | String | 是 | 测试密钥（固定值：`tiandao_test_2026`） |
+
+**业务逻辑**:
+1. 验证测试密钥
+2. 查询订单（必须处于未支付状态）
+3. 更新订单状态：`pay_status = 1`，生成模拟 `transaction_id`
+4. 根据订单类型执行业务逻辑：
+   - `order_type = 1`（课程）：生成课程记录、处理推荐人奖励、锁定推荐人
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "message": "模拟支付成功，业务已处理",
+  "data": {
+    "order_no": "TD202602270001",
+    "transaction_id": "TEST_TXN_1709000000000",
+    "processed_at": "2026-02-27 10:00:00"
+  }
+}
+```
+
+---
+
 ## 7. 协议模块
 
 ### 🔵 7.1 获取协议模板

@@ -101,8 +101,33 @@
               </text>
             </view>
 
+            <!-- 甲方信息（填入合同头部）-->
+            <view class="form-section">
+              <view class="form-section-title">合同甲方信息</view>
+              <!-- 真实姓名 -->
+              <view class="form-item">
+                <text class="form-label"><text class="required-star">*</text>真实姓名</text>
+                <input
+                  class="form-input"
+                  v-model="realName"
+                  placeholder="请输入真实姓名（将填入合同甲方）"
+                  maxlength="20"
+                />
+              </view>
+              <!-- 身份证号码 -->
+              <view class="form-item">
+                <text class="form-label"><text class="required-star">*</text>身份证号码</text>
+                <input
+                  class="form-input"
+                  v-model="idNumber"
+                  placeholder="请输入身份证号码（将填入合同头部）"
+                  maxlength="18"
+                />
+              </view>
+            </view>
+
             <!-- 手写签名区域 -->
-            <view>
+            <view :style="{ marginTop: '32rpx' }">
               <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '16rpx' }">
                 <text :style="{ color: '#E34D59', marginRight: '8rpx' }">*</text>手写签名确认
               </view>
@@ -168,11 +193,7 @@
 
     <!-- 底部签署按钮 -->
     <view class="fixed-bottom">
-      <view @tap="handleSign">
-        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
-          <span class="t-button__text">✍️ 确认签署协议</span>
-        </button>
-      </view>
+      <button class="sign-btn" @tap="handleSign">✍️ 确认签署协议</button>
     </view>
   </view>
 </template>
@@ -194,6 +215,10 @@ const agreed = ref(false)
 const signatureFileId = ref('')
 /** 用于预览的签名图片 HTTPS URL */
 const signaturePreviewUrl = ref('')
+/** 真实姓名（将填入合同甲方，从 profile 预填，用户可修改） */
+const realName = ref('')
+/** 身份证号码（将填入合同头部身份证字段） */
+const idNumber = ref('')
 
 // 协议模板数据
 const contractTemplate = ref<ContractTemplate | null>(null)
@@ -211,6 +236,7 @@ onMounted(() => {
   }
 
   loadContractTemplate()
+  loadUserProfile()
 
   // 监听签名板回传事件
   uni.$on('signatureCompleted', onSignatureCompleted)
@@ -241,6 +267,19 @@ const loadContractTemplate = async () => {
   }
 }
 
+// 加载用户资料，预填真实姓名
+const loadUserProfile = async () => {
+  try {
+    const { UserApi } = await import('@/api')
+    const profile = await UserApi.getProfile()
+    if (profile?.real_name) {
+      realName.value = profile.real_name
+    }
+  } catch (e) {
+    // 预填失败不影响主流程
+  }
+}
+
 const toggleAgree = () => {
   agreed.value = !agreed.value
 }
@@ -266,6 +305,14 @@ const handleSign = async () => {
     uni.showToast({ title: '请先阅读并同意协议', icon: 'none' })
     return
   }
+  if (!realName.value.trim()) {
+    uni.showToast({ title: '请填写真实姓名', icon: 'none' })
+    return
+  }
+  if (!idNumber.value.trim()) {
+    uni.showToast({ title: '请填写身份证号码', icon: 'none' })
+    return
+  }
   if (!signatureFileId.value) {
     uni.showToast({ title: '请先完成手写签名', icon: 'none' })
     return
@@ -279,6 +326,7 @@ const handleSign = async () => {
     const result = await AmbassadorApi.signContract({
       templateId: contractTemplate.value.id,
       signatureFileId: signatureFileId.value,
+      idNumber: idNumber.value.trim(),
       agreed: true
     })
 
@@ -440,6 +488,71 @@ const handleSign = async () => {
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   background: #fff;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.sign-btn {
+  width: 100%;
+  height: 96rpx;
+  background: #1976D2;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 48rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    border: none;
+  }
+}
+
+/* 合同甲方信息表单 */
+.form-section {
+  background: #F8F9FB;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.form-section-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.form-item {
+  margin-bottom: 20rpx;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.form-label {
+  font-size: 24rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.required-star {
+  color: #E34D59;
+  margin-right: 4rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  background: #fff;
+  border: 2rpx solid #E5E5E5;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 26rpx;
+  color: #333;
+  box-sizing: border-box;
 }
 
 .empty-state {

@@ -130,6 +130,8 @@ export interface UpgradeGuide {
     type: 'payment' | 'contract'
     name: string
     eligible: boolean
+    /** 该步骤是否已完成（已支付 / 已签署） */
+    completed?: boolean
     fee?: number
     requirements?: string[]
     reason?: string
@@ -170,7 +172,9 @@ export interface GenerateQRCodeParams {
 export interface GenerateQRCodeResponse {
   qrcode_url: string
   referee_code: string
-  share_link: string
+  /** 分享文案，格式：'我是{姓名}大使，邀请您一起学习！' */
+  share_text: string
+  expires_at: null
 }
 
 /**
@@ -248,10 +252,12 @@ export interface SignContractParams {
   templateId?: number
   /** 协议模板ID */
   template_id?: number
-  /** 手写签名图片的 cloud:// fileID（取代手机号后四位确认） */
+  /** 手写签名图片的 cloud:// fileID */
   signatureFileId: string
   /** 是否同意协议（必填 true） */
   agreed: boolean
+  /** 身份证号码，用于注入 Word 合同头部「身份证号码」字段 */
+  idNumber?: string
 }
 
 /**
@@ -606,4 +612,40 @@ export interface ApplyForActivityParams {
   activityId: number
   /** 报名岗位名称 */
   positionName: string
+}
+
+/**
+ * 用户当前全局有效报名（跨活动唯一报名）
+ */
+export interface MyActiveRegistration {
+  /** 报名记录ID */
+  registration_id: number
+  /** 活动ID */
+  activity_id: number
+  /** 活动名称 */
+  activity_name: string
+  /** 已报名的岗位名称 */
+  position_name: string
+  /** 活动排期日期 */
+  schedule_date: string
+  /** 活动地点 */
+  schedule_location: string
+}
+
+/**
+ * 取消报名活动参数
+ */
+export interface CancelActivityRegistrationParams {
+  /** 活动ID */
+  activityId: number
+}
+
+/**
+ * 获取可报名活动响应（含全局报名状态）
+ */
+export interface AvailableActivitiesResult {
+  list: AvailableActivity[]
+  total: number
+  /** 用户当前全局有效报名（null 表示无有效报名） */
+  my_active_registration: MyActiveRegistration | null
 }

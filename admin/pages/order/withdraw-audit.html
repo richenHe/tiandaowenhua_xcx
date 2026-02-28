@@ -148,7 +148,7 @@
       <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-label">待转账</div>
+          <div class="stat-label">待审核</div>
           <div class="stat-value">{{ statistics.pending || 0 }}</div>
         </div>
         <div class="stat-card">
@@ -156,7 +156,7 @@
           <div class="stat-value">{{ statistics.transferred || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已驳回</div>
+          <div class="stat-label">已拒绝</div>
           <div class="stat-value">{{ statistics.rejected || 0 }}</div>
         </div>
         <div class="stat-card">
@@ -229,9 +229,10 @@
       >
         <!-- 提现状态（与数据库 withdrawals.status 一致：0待审核/1审核通过待转账/2已转账/3已拒绝） -->
         <template #status="{ row }">
-          <t-tag v-if="row.status === 0 || row.status === 1" theme="warning">待转账</t-tag>
+          <t-tag v-if="row.status === 0" theme="warning">待审核</t-tag>
+          <t-tag v-else-if="row.status === 1" theme="primary">审核通过待转账</t-tag>
           <t-tag v-else-if="row.status === 2" theme="success">已转账</t-tag>
-          <t-tag v-else-if="row.status === 3" theme="danger">已驳回</t-tag>
+          <t-tag v-else-if="row.status === 3" theme="danger">已拒绝</t-tag>
         </template>
 
         <template #amount="{ row }">
@@ -477,7 +478,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -491,7 +492,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -557,12 +558,13 @@
           dateRange: []
         });
 
-        // 提现状态（0待转账/2已转账/3已驳回，不再使用 status=1 中间审核状态）
+        // withdrawals.status: 0待审核/1审核通过待转账/2已转账/3已拒绝
         const statusOptions = [
           { label: '全部', value: null },
-          { label: '待转账', value: 0 },
+          { label: '待审核', value: 0 },
+          { label: '审核通过待转账', value: 1 },
           { label: '已转账', value: 2 },
-          { label: '已驳回', value: 3 }
+          { label: '已拒绝', value: 3 }
         ];
 
         const pagination = ref({
@@ -660,7 +662,7 @@
             for (const wid of ids) {
               await AdminAPI.withdrawAudit(wid, 2, rejectReason.value);
             }
-            TDesign.MessagePlugin.success('已驳回');
+            TDesign.MessagePlugin.success('已拒绝');
             rejectVisible.value = false;
             rejectReason.value = '';
             selectedRowKeys.value = [];

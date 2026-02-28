@@ -33,12 +33,18 @@
 | F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成 | 2026-02-23 |
 | F4 功德分 · 积分 · 提现 · 余额一致性 | ✅ 已完成（数据清理后全通过） | 2026-02-27 |
 | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
-| F5 大使体系 · 等级配置 · 升级条件 | ⏳ 待测 | — |
-| F6 协议模板 · 我的协议 · 签署验证 | ⏳ 待测 | — |
-| F7 预约 · 排期 · 学习进度 · 签到 | ⏳ 待测 | — |
-| F8 反馈 · 类型联动 · 课程关联 | ⏳ 待测 | — |
-| F9 系统公共 · 公告 · Banner · 配置 | ⏳ 待测 | — |
+| F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（修复2处测试用例缺陷后全通过 7/8→8/8） | 2026-02-27 |
+| F5B 边界验证 · 普通用户拦截(level=0) · 无申请 · 升级指南0→1 | ✅ 已完成（全通过 4/4） | 2026-02-27 |
+| F5C 边界验证 · 准青鸾升级路径(level=1) · target≤current拒绝 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
+| F5D 流程5-D: 青鸾大使升级路径(level=2→3) · 名额remaining=0边界 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
+| F5E 流程5-E: 申请被拒绝(status=2) · 拒绝原因返回验证 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
+| F5F 流程5-F: 申请待审核(status=0) · 升级指南审核中状态 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
+| F6 协议模板 · 我的协议 · 签署验证 | ✅ 已完成（全通过 7/7，含边界 S6.4～S6.7） | 2026-02-27 |
+| F7 预约 · 排期 · 学习进度 · 签到 | ✅ 已完成（全通过 5/5，含边界 S7.4～S7.5） | 2026-02-27 |
+| F8 反馈 · 类型联动 · 课程关联 | ✅ 已完成（修复3处问题后全通过 8/8，含写操作+边界+分页+reply验证，DB交叉16项一致） | 2026-02-28 |
+| F9 系统公共 · 公告 · Banner · 配置 · 通知 | ✅ 已完成（修复2处测试缺陷后 7/7，含S9.6详情+S9.7边界） | 2026-02-28 |
 | F10 跨模块数据完整性终极验证 | ⏳ 待测（需 F1~F9 完成后） | — |
+| F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ✅ 已完成（修复admin认证+3处测试缺陷后 12/12） | 2026-02-28 |
 
 > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
@@ -68,8 +74,8 @@
 ```
 1. 用户发送测试报告
 2. AI 读取报告中的测试用户 ID（默认 id=30）
-3. 按流程 F1→F10 顺序，对每个步骤（S1.1、S1.2、...、S10.6）逐一执行该步骤对应的验证 SQL
-   - 每个步骤的验证 SQL 见本文档"10 大业务流程详解"各节中的"多表验证 SQL"/"★ 核心验证 SQL"
+3. 按流程 F1→F11 顺序，对每个步骤（S1.1、S1.2、...、S11.12）逐一执行该步骤对应的验证 SQL
+   - 每个步骤的验证 SQL 见本文档"业务流程详解"各节中的"多表验证 SQL"/"★ 核心验证 SQL"
    - 无对应 SQL 的步骤（仅接口连通性检查）则对比接口返回字段是否符合业务规则
 4. AI 对比 SQL 结果与接口返回值，明确报告：
    - ✓ 一致：接口值与数据库值匹配
@@ -147,6 +153,45 @@
 
 ---
 
+### 规则 M（手动测试）：凡需真机/人工操作的场景，必须登记到待办清单，由用户自行完成
+
+> **本规则最高优先级，AI 不得跳过任何需要真机/人工操作的测试场景。**
+
+#### 核心原则
+
+1. **AI 不可替代人工**：凡涉及以下任意一种情况，AI **不得自行标记为"已完成"**，必须显式登记到"手动测试待办清单"：
+   - 微信支付回调（真实付款）
+   - 小程序真机扫码（generateQRCode 写 DB 验证）
+   - 微信登录（code 换 openid）
+   - 小程序端页面交互（滚动、点击、弹窗）
+   - 任何需要真实微信 session 的操作
+
+2. **AI 必须做的事**：每当发现需要手动测试的场景时，**立即追加**到下方"手动测试待办清单"，格式如下：
+   - 登记编号（MT-序号）
+   - 场景描述
+   - 前置条件（测试前需满足的状态）
+   - 验证步骤（操作步骤）
+   - 验证 SQL（操作完成后用 MCP 执行，确认 DB 状态）
+   - 状态（⏳ 待测 / ✅ 已测 YYYY-MM-DD）
+
+3. **用户完成后**：将结果（截图/描述）发给 AI，AI 执行对应验证 SQL 后标记 ✅
+
+---
+
+#### 手动测试待办清单
+
+| 编号 | 场景 | 流程 | 前置条件 | 验证步骤 | 验证 SQL | 状态 |
+|------|------|------|---------|---------|---------|------|
+| MT-01 | **generateQRCode 真实写 DB**：真机生成推广二维码后 `users.qrcode_url` 应回写 cloud:// fileID | F5 S5.8 | 用 level≥1 大使账号登录小程序 | 进入大使中心→我的推广码→点击生成 | `SELECT id, referee_code, qrcode_url FROM tiandao_culture.users WHERE id=30` | ✅ 通过（2026-02-27，id=32 真机验证，qrcode_url 写入 cloud://fileID） |
+| MT-02 | **新用户扫码绑定推荐人**：新用户扫大使二维码注册后 `users.referee_id` 应绑定到该大使 | F1 扫码场景 | 准备一个从未注册过的新微信账号 | 用新账号手机扫大使推广码，完成登录注册 | `SELECT id, referee_id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=32 ORDER BY created_at DESC LIMIT 3` | ⏳ 待测（需新微信账号；`login.js` 代码逻辑已审查确认正确） |
+| MT-03 | **已购课+已有推荐人用户扫码不可修改推荐人** | F1 扫码边界 | 准备已购课且已有 referee_id 的用户 | 用该用户扫其他大使的推广码并登录 | `SELECT id, referee_id FROM tiandao_culture.users WHERE id=<该用户id>` — referee_id 应不变 | ⏳ 待测 |
+| MT-04 | **微信支付回调全链路**：真实支付后 is_reward_granted=1、推荐人积分入账 | F3 S3.2 / F4 奖励验证 | 使用真实微信支付购买课程（user_id=30 或测试账号） | 完成支付 → 等待支付回调 | `SELECT o.order_no, o.is_reward_granted, o.pay_status FROM tiandao_culture.orders o WHERE o.user_id=30 AND o.pay_status=1 ORDER BY o.pay_time DESC LIMIT 3` | ⏳ 待测 |
+| MT-05 | **预约操作后 booked_quota 递增**：调用 createAppointment 后 class_records.booked_quota 应+1，且 appointments 新增 status=0 记录 | F7 S7.1/S7.2 | user_id=30 有 user_courses，选 status=1 排期 | 小程序进入课程详情→选择排期→点击预约 | `SELECT cr.id, cr.booked_quota, (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN(0,1)) as cnt FROM tiandao_culture.class_records cr WHERE cr.id=<排期id>` | ⏳ 待测 |
+| MT-06 | **取消预约后 booked_quota 递减**：取消后 appointments.status=3，class_records.booked_quota 应-1 | F7 S7.2 | 存在 status=0 的预约记录 | 小程序进入我的预约→找到待上课记录→点击取消 | `SELECT a.id, a.status, cr.booked_quota FROM tiandao_culture.appointments a JOIN tiandao_culture.class_records cr ON a.class_record_id=cr.id WHERE a.user_id=30 AND a.id=<预约id>` | ⏳ 待测 |
+| MT-07 | **后台签到操作**：batchCheckin 后 appointments.status 从 0→1，checkin_time 有值 | F7 S7.2 | 存在 status=0 的预约记录 | 后台→排期管理→找到排期→勾选用户→批量签到 | `SELECT id, status, checkin_time, checkin_admin_id FROM tiandao_culture.appointments WHERE user_id=30 AND status=1 ORDER BY checkin_time DESC LIMIT 3` | ⏳ 待测 |
+
+---
+
 ### 规则 4：跨流程数据一致性追踪清单（每次新增测试信息时必须更新）
 
 > **此清单记录在某个流程测试时发现的、需要在后续流程中再次核验的数据状态。**  
@@ -158,7 +203,7 @@
 | # | 数据依赖描述 | 发现于 | 需在哪里验证 | 验证 SQL / 说明 | 状态 |
 |---|------------|--------|------------|----------------|------|
 | 1 | **密训班赠课 is_gift=1 完整性**：购买密训班(type=2)后，user_courses 中应同时有 is_gift=1 的初探班记录。当前 user_id=30 的 user_courses 仅 1 条(is_gift=0)，无赠送记录，说明尚未触发密训班购买场景 | F2 S2.3（我的课程 is_gift 计数=0） | **F10 S10.3** ★必验 | `SELECT uc_main.id as 主课程, uc_gift.id as 赠送课程 FROM orders o JOIN courses c ON o.related_id=c.id LEFT JOIN user_courses uc_main ON uc_main.order_id=o.id AND uc_main.is_gift=0 LEFT JOIN user_courses uc_gift ON uc_gift.source_order_id=o.id AND uc_gift.is_gift=1 WHERE o.pay_status=1 AND c.type=2` | ⏳ 待触发密训班购买后验 |
-| 2 | **排期 booked_quota 一致性**：class_records.booked_quota 应与实际 appointments 表预约数一致。当前 booked_quota=0 且无预约记录，一致；但每次预约/取消后需重新验证 | F2 S2.4（排期日历 booked_quota=0） | **F7 S7.1/S7.2** ★必验 | `SELECT cr.booked_quota, COUNT(a.id) as 实际预约数 FROM class_records cr LEFT JOIN appointments a ON a.class_record_id=cr.id AND a.status IN (0,1) WHERE cr.status=1 GROUP BY cr.id` | ⏳ 每次预约操作后重验 |
+| 2 | **排期 booked_quota 一致性**：class_records.booked_quota 应与实际 appointments 表预约数一致。F7 验证时 id=10 booked_quota=1/actual=1 一致，其余均 0/0，全表 HAVING diff≠0 返回 0 行 | F2 S2.4（排期日历 booked_quota=0） | **F7 S7.1/S7.2** ★必验 | `SELECT cr.booked_quota, COUNT(a.id) as 实际预约数 FROM class_records cr LEFT JOIN appointments a ON a.class_record_id=cr.id AND a.status IN (0,1) WHERE cr.status=1 GROUP BY cr.id` | ✅ F7 已验证（2026-02-27），每次预约操作后仍需重验 |
 | 3 | **密训班 included_course_ids 与实际赠课记录匹配**：courses.included_course_ids=[1] 已确认，但实际购买后 user_courses 中的赠课 course_id 必须与 included_course_ids 一致 | F2 S2.2b（密训班 included_course_ids=[1] 已确认） | **F10 S10.3** ★必验 | 与条目1同步验证：确认赠送的 user_courses.course_id 在 included_course_ids 数组内 | ⏳ 待触发密训班购买后验 |
 | 4 | **用户30存在手动插入的已支付订单（奖励未发放）**：F3 数据库验证（2026-02-23）确认 user_id=30 存在 `TEST20260215001`（pay_status=1，支付时间 2026-02-15），但该订单号格式不符规范（应为 ORD+日期+8位随机数），为手动插入测试数据，未经支付回调，导致 is_reward_granted=0、无 merit/cash 积分记录、推荐人余额为0。**S3.1 接口因 LIMIT 10 + 时间排序**，该已支付订单排在第11位，未出现在接口返回中。需通过真实支付回调验证：referee_confirmed_at、is_reward_granted=1、merit/cash 积分入账逻辑 | F3 S3.1（订单列表+DB验证） | **F3 S3.2**、**F10 S10.4**、**F10 S10.5**、**F4 奖励验证** | 执行测试场景A（微信支付回调全链路）或手动调用支付回调云函数，验证完整奖励发放链路 | ⚠ 手动插入订单未触发回调，需补充真实支付场景 |
 
@@ -363,6 +408,50 @@
    - 已手动测试并通过：`- [x]` + 通过日期
    - 仍待覆盖：保留 `- [ ]`，更新补充方式
 3. 已完成的步骤的"结论"列统一从 ⚠ 更新为 ✓ 或 ✗
+
+---
+
+### 规则 9：未覆盖场景必须在当前流程内补完，不得跳过进入下一流程
+
+> **优先级最高，与规则0同级。AI 助手和用户均必须遵守。**
+
+#### 核心原则
+
+**⛔ 每个流程的「未覆盖场景汇总」中，凡属于"可自动化"的场景，必须在当前流程验证周期内全部补完（新增 biz 断言或新增 step），并重新运行测试全部通过后，才允许进入下一流程。**
+
+#### 场景分类及处理要求
+
+| 分类 | 判断标准 | 处理方式 | 是否阻塞下一流程 |
+|------|---------|---------|:---:|
+| **A. 可自动化-读接口** | 能通过现有或新增 step 的 biz 断言覆盖（仅需调用只读 API） | AI 立即在 `integration-test.html` 中新增 biz/step | ✅ 阻塞 |
+| **B. 可自动化-条件写** | 能通过条件写步骤覆盖（参照 S3.6 模式，有前置判断和清理路径） | AI 立即新增条件写 step | ✅ 阻塞 |
+| **C. 需换测试用户** | 当前 user 数据不满足场景前提，需要换 user_id 或使用边界 user | AI 新增边界子流程（如 F1B/F5B 模式），在同一轮验证中完成 | ✅ 阻塞 |
+| **D. 需补充测试数据** | DB 中缺少满足场景的数据（如缺 feedback_type=2~5 的反馈） | AI 通过 MCP `executeWriteSQL` 插入测试数据后，新增断言验证 | ✅ 阻塞 |
+| **E. 需真机/人工操作** | 涉及微信支付回调、真机扫码、小程序页面交互等 | 登记到规则 M 手动测试待办清单 | ❌ 不阻塞 |
+| **F. 需等待前置流程** | 需其他流程先完成才有数据（如密训班赠课需 F10） | 登记到规则 4 跨流程追踪清单 | ❌ 不阻塞 |
+
+#### 执行流程（AI 必须严格按顺序）
+
+```
+1. 完成 DB 交叉验证 + 覆盖分析 → 输出「未覆盖场景汇总」
+2. 对每条未覆盖场景进行分类（A/B/C/D/E/F）
+3. 对所有 A/B/C/D 类场景：
+   a. 若需测试数据 → 先通过 MCP 插入
+   b. 在 integration-test.html 中新增 biz 断言或 step
+   c. 更新 rules 计数
+4. 告知用户「请刷新页面重新运行 FX 流程」
+5. 用户发送新报告后，AI 验证新增断言全部通过
+6. 在 BUSINESS-FLOW-CASES.md 中将已覆盖场景标记 [x] ✅
+7. 确认「未覆盖场景汇总」中仅剩 E/F 类 → 允许进入下一流程
+```
+
+#### 违规情形
+
+| 违规操作 | 后果 |
+|---------|------|
+| A/B/C/D 类场景未补完就标记流程 ✅ | 弱覆盖场景永远得不到验证，回归测试无效 |
+| 仅在 BUSINESS-FLOW-CASES.md 中「记录」而不实际新增自动化 | 文档与测试脱节，下次运行仍无覆盖 |
+| 跳过 D 类（需补数据）直接进下一流程 | 枚举/边界场景长期空白 |
 
 ---
 
@@ -973,6 +1062,94 @@ WHERE o.order_no = 'ORDER_NO'
 | ✓ 通过 | 绿色 | 接口正常返回且所有字段、业务规则校验通过 |
 | ✗ 失败 | 红色 | 接口异常、HTTP 错误或必需字段缺失 |
 | ⚠ 业务异常 | 黄色 | 接口正常返回但业务规则不符（需人工判断） |
+
+---
+
+---
+
+## F11 大业务流程详解：大使志愿活动 · 岗位管理 · 报名 · 功德分发放
+
+### 流程概述
+
+**测试范围**: 新增的大使志愿活动全链路，包含岗位类型查询、活动列表（管理端+客户端）、报名人员查看、功德分发放、活动记录验证、统计汇总，以及取消报名边界测试。
+
+**涉及接口（按执行顺序）**:
+
+| 步骤 | Action | 云函数 | 说明 |
+|------|--------|--------|------|
+| S11.1 | getPositionTypeList | ambassador | 获取岗位类型列表 |
+| S11.2 | getAvailableActivities | ambassador | 客户端获取可报名活动（含 my_registration 字段） |
+| S11.3 | getAmbassadorActivityList | ambassador | 管理端获取活动列表 |
+| S11.4 | getAmbassadorActivityDetail | ambassador | 获取活动详情（含每岗位 remaining 字段） |
+| S11.5 | getActivityRegistrants | ambassador | 获取报名人员列表 |
+| S11.6 | getProfile | user | 读取发放前功德分余额（基线值） |
+| S11.7 | distributeActivityMeritPoints | ambassador | 发放活动功德分（成功或已发放均通过） |
+| S11.8 | getProfile | user | 验证发放后功德分余额变化 |
+| S11.9 | getAmbassadorActivityDetail | ambassador | 验证 merit_distributed=1 且 status=0（已结束） |
+| S11.10 | getActivityRecords | ambassador | 验证活动记录写入（同时验证附带 stats 统计对象） |
+| S11.11 | getActivityStats | ambassador | 验证统计汇总字段（total_count/total_merit_points/type_stats） |
+| S11.12 | cancelActivityRegistration | ambassador | 边界测试：活动已结束时应返回"已结束"错误 |
+
+**涉及数据库表**:
+
+| 表名 | 验证内容 |
+|------|---------|
+| ambassador_position_types | 岗位类型列表与状态 |
+| ambassador_activities | 活动记录、merit_distributed 标志、status |
+| ambassador_activity_registrations | 报名状态流转（1→2） |
+| users | merit_points 余额变化 |
+| merit_points_records | source=7 的功德分记录写入 |
+| ambassador_activity_records | 大使端展示记录写入 |
+
+### ★ 核心验证 SQL
+
+```sql
+-- S11.7 发放后状态验证（merit_distributed=1, status=0）
+SELECT aa.id, aa.schedule_name, aa.merit_distributed, aa.merit_distributed_at, aa.status,
+  COUNT(r.id) as total_reg,
+  SUM(CASE WHEN r.status=2 THEN 1 ELSE 0 END) as distributed_reg
+FROM tiandao_culture.ambassador_activities aa
+LEFT JOIN tiandao_culture.ambassador_activity_registrations r ON r.activity_id=aa.id
+GROUP BY aa.id
+ORDER BY aa.created_at DESC LIMIT 5;
+
+-- S11.8 功德分记录溯源（source=7 为志愿活动）
+SELECT mp.user_id, u.real_name, mp.source, mp.amount, mp.balance_after, mp.activity_name, mp.created_at
+FROM tiandao_culture.merit_points_records mp
+LEFT JOIN tiandao_culture.users u ON mp.user_id=u.id
+WHERE mp.source=7
+ORDER BY mp.created_at DESC LIMIT 20;
+
+-- S11.10 ambassador_activity_records 验证（验证 getActivityRecords 返回的 stats 一致）
+SELECT activity_type, COUNT(*) as cnt, SUM(merit_points) as total_merit
+FROM tiandao_culture.ambassador_activity_records
+WHERE user_id=${U.id} AND status=1
+GROUP BY activity_type;
+
+-- S11.12 取消报名边界 SQL
+SELECT r.id, r.user_id, r.position_name, r.status as reg_status,
+  aa.status as activity_status, aa.merit_distributed
+FROM tiandao_culture.ambassador_activity_registrations r
+JOIN tiandao_culture.ambassador_activities aa ON r.activity_id=aa.id
+WHERE r.user_id=${U.id} ORDER BY r.created_at DESC LIMIT 5;
+```
+
+### 关键业务规则说明
+
+| 规则 | 描述 |
+|------|------|
+| `getActivityRecords` 返回 `stats` | 接口同时返回分页列表和统计汇总，stats 含 total_count/total_merit_points/month_count/type_stats |
+| `getActivityStats` 独立统计 | 不返回列表，只返回统计数字，适合首页统计展示 |
+| `cancelActivityRegistration` 限制 | 活动 status=0（已结束）时不可取消，报名 status≠1 时无记录可取消 |
+| `signContract` 签名注入 | 仅 .docx 模板支持注入签名图片，PDF 直接使用原模板作为快照 |
+| `auditApplication` 不自动升级 | 审核通过后仅改申请状态，升级在用户签署协议后自动发生 |
+
+### 跨流程依赖
+
+| 流程 | 依赖说明 |
+|------|---------|
+| F11 → F4 | 发放功德分后用户 merit_points 变化，与 F4 功德分链路共享数据表 |
+| F11 → F5 | 大使等级影响岗位报名资格（required_level 字段） |
 
 ---
 

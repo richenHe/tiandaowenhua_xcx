@@ -151,54 +151,68 @@
           <text class="modal-close" @tap="showApplyModal = false">✕</text>
         </view>
 
-        <!-- 活动列表 -->
+        <!-- 活动列表 / 当前报名 -->
         <scroll-view class="modal-scroll" scroll-y>
-          <view v-if="applyLoading" class="modal-loading">
-            <text>加载中...</text>
-          </view>
-          <view v-else-if="availableActivities.length === 0" class="modal-empty">
-            <text>暂无可报名的活动</text>
-          </view>
-          <view v-else>
-            <view
-              v-for="act in availableActivities"
-              :key="act.id"
-              class="apply-activity-card"
-              :class="{ 'selected': selectedActivity?.id === act.id }"
-              @tap="selectActivity(act)"
-            >
-              <view class="apply-act-header">
-                <view class="apply-act-name">{{ act.schedule_name }}</view>
-                <view class="apply-act-date">{{ act.schedule_date }}</view>
+          <view class="modal-scroll-inner">
+            <view v-if="applyLoading" class="modal-loading">
+              <text>加载中...</text>
+            </view>
+            <view v-else-if="myActiveRegistration" class="active-reg-block">
+              <view class="active-reg-title">当前报名</view>
+              <view class="active-reg-card">
+                <view class="active-reg-name">{{ myActiveRegistration.activity_name }}</view>
+                <view class="active-reg-date">📅 {{ myActiveRegistration.schedule_date }}</view>
+                <view v-if="myActiveRegistration.schedule_location" class="active-reg-loc">📍 {{ myActiveRegistration.schedule_location }}</view>
+                <view class="active-reg-pos">岗位：{{ myActiveRegistration.position_name }}</view>
               </view>
-              <view v-if="act.schedule_location" class="apply-act-loc">📍 {{ act.schedule_location }}</view>
+              <view class="active-reg-tip">每人同一时期只能报名一个活动，排期结束后可报名其他活动</view>
+              <button
+                class="t-button t-button--theme-danger t-button--block cancel-btn"
+                :disabled="cancelSubmitting"
+                @tap="cancelRegistration"
+              >
+                <span class="t-button__text">{{ cancelSubmitting ? '取消中...' : '取消当前报名' }}</span>
+              </button>
+            </view>
+            <view v-else-if="availableActivities.length === 0" class="modal-empty">
+              <text>暂无可报名的活动</text>
+            </view>
+            <view v-else>
+              <view
+                v-for="act in availableActivities"
+                :key="act.id"
+                class="apply-activity-card"
+                :class="{ 'selected': selectedActivity?.id === act.id }"
+                @tap="selectActivity(act)"
+              >
+                <view class="apply-act-header">
+                  <view class="apply-act-name">{{ act.schedule_name }}</view>
+                  <view class="apply-act-date">{{ act.schedule_date }}</view>
+                </view>
+                <view v-if="act.schedule_location" class="apply-act-loc">📍 {{ act.schedule_location }}</view>
 
-              <!-- 已报名状态 -->
-              <view v-if="act.my_registration" class="apply-act-registered">
-                ✅ 已报名「{{ act.my_registration.position_name }}」岗位
-              </view>
-
-              <!-- 岗位列表 -->
-              <view v-else class="apply-positions">
-                <view
-                  v-for="pos in act.positions"
-                  :key="pos.name"
-                  class="position-item"
-                  :class="{
-                    'position-full': pos.remaining <= 0,
-                    'position-locked': !pos.can_apply,
-                    'position-selected': selectedActivity?.id === act.id && selectedPosition === pos.name
-                  }"
-                  @tap.stop="selectPosition(act, pos)"
-                >
-                  <view class="pos-name">{{ pos.name }}</view>
-                  <view class="pos-info">
-                    <!-- 等级门槛提示 -->
-                    <text v-if="!pos.can_apply" class="pos-lock-tip">
-                      🔒 需{{ pos.required_level_name }}
-                    </text>
-                    <text v-else-if="pos.remaining <= 0" class="pos-quota pos-full">已满</text>
-                    <text v-else class="pos-quota">余{{ pos.remaining }}</text>
+                <!-- 岗位列表 -->
+                <view class="apply-positions">
+                  <view
+                    v-for="pos in act.positions"
+                    :key="pos.name"
+                    class="position-item"
+                    :class="{
+                      'position-full': pos.remaining <= 0,
+                      'position-locked': !pos.can_apply,
+                      'position-selected': selectedActivity?.id === act.id && selectedPosition === pos.name
+                    }"
+                    @tap.stop="selectPosition(act, pos)"
+                  >
+                    <view class="pos-name">{{ pos.name }}</view>
+                    <view class="pos-info">
+                      <!-- 等级门槛提示 -->
+                      <text v-if="!pos.can_apply" class="pos-lock-tip">
+                        🔒 需{{ pos.required_level_name }}
+                      </text>
+                      <text v-else-if="pos.remaining <= 0" class="pos-quota pos-full">已满</text>
+                      <text v-else class="pos-quota">余{{ pos.remaining }}</text>
+                    </view>
                   </view>
                 </view>
               </view>
@@ -206,11 +220,11 @@
           </view>
         </scroll-view>
 
-        <!-- 确认报名按钮 -->
-        <view class="modal-footer">
+        <!-- 确认报名按钮（无当前报名时才显示） -->
+        <view v-if="!myActiveRegistration" class="modal-footer">
           <button
             class="t-button t-button--theme-primary t-button--block"
-            :disabled="!selectedActivity || !selectedPosition || !!selectedActivity.my_registration"
+            :disabled="!selectedActivity || !selectedPosition"
             @tap="confirmApply"
           >
             <span class="t-button__text">
@@ -230,7 +244,7 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import { AmbassadorApi } from '@/api'
-import type { ActivityRecord, ActivityStats, AvailableActivity, ActivityPosition } from '@/api/types/ambassador'
+import type { ActivityRecord, ActivityStats, AvailableActivity, ActivityPosition, MyActiveRegistration } from '@/api/types/ambassador'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--window-top))'
@@ -365,6 +379,9 @@ const availableActivities = ref<AvailableActivity[]>([])
 const selectedActivity = ref<AvailableActivity | null>(null)
 const selectedPosition = ref<string>('')
 const applySubmitting = ref(false)
+// 用户当前全局有效报名（跨活动唯一报名）
+const myActiveRegistration = ref<MyActiveRegistration | null>(null)
+const cancelSubmitting = ref(false)
 
 // 打开报名弹窗
 const goToApply = async () => {
@@ -374,18 +391,45 @@ const goToApply = async () => {
   await loadAvailableActivities()
 }
 
-// 加载可报名活动
+// 加载可报名活动（同时获取用户全局报名状态）
 const loadAvailableActivities = async () => {
   applyLoading.value = true
   try {
     const result = await AmbassadorApi.getAvailableActivities({ pageSize: 50 })
     availableActivities.value = result.list || []
+    myActiveRegistration.value = result.my_active_registration || null
   } catch (error) {
     console.error('获取可报名活动失败:', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     applyLoading.value = false
   }
+}
+
+// 取消当前报名
+const cancelRegistration = async () => {
+  if (!myActiveRegistration.value || cancelSubmitting.value) return
+
+  uni.showModal({
+    title: '取消报名',
+    content: `确定要取消「${myActiveRegistration.value.activity_name}」的「${myActiveRegistration.value.position_name}」岗位报名吗？`,
+    success: async (res) => {
+      if (!res.confirm) return
+      cancelSubmitting.value = true
+      try {
+        await AmbassadorApi.cancelActivityRegistration({
+          activityId: myActiveRegistration.value!.activity_id
+        })
+        uni.showToast({ title: '已取消报名', icon: 'success' })
+        // 刷新状态
+        await loadAvailableActivities()
+      } catch (error: any) {
+        uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
+      } finally {
+        cancelSubmitting.value = false
+      }
+    }
+  })
 }
 
 // 选择活动
@@ -713,7 +757,7 @@ const confirmApply = async () => {
   width: 100%;
   background: #fff;
   border-radius: 32rpx 32rpx 0 0;
-  max-height: 85vh;
+  height: 60vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -742,8 +786,12 @@ const confirmApply = async () => {
 
 .modal-scroll {
   flex: 1;
+  min-height: 0;
+}
+
+/* scroll-view 内容区，使用 padding 替代 scroll-view 上的 padding，确保小程序两侧对称 */
+.modal-scroll-inner {
   padding: 24rpx 32rpx;
-  overflow: hidden;
 }
 
 .modal-loading,
@@ -762,6 +810,8 @@ const confirmApply = async () => {
 
 /* 可报名活动卡片 */
 .apply-activity-card {
+  box-sizing: border-box;
+  overflow: hidden;
   background: #f8f9fa;
   border-radius: 16rpx;
   padding: 32rpx;
@@ -870,5 +920,59 @@ const confirmApply = async () => {
   font-size: 20rpx;
   color: #E65100;
   white-space: nowrap;
+}
+
+/* 当前报名区块 */
+.active-reg-block {
+  padding: 8rpx 0 24rpx;
+}
+
+.active-reg-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.active-reg-card {
+  background: #EEF3FF;
+  border-radius: 16rpx;
+  padding: 28rpx 32rpx;
+  border: 2rpx solid #0052D9;
+  margin-bottom: 20rpx;
+}
+
+.active-reg-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0052D9;
+  margin-bottom: 12rpx;
+}
+
+.active-reg-date,
+.active-reg-loc {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.active-reg-pos {
+  font-size: 26rpx;
+  color: #333;
+  margin-top: 12rpx;
+  font-weight: 500;
+}
+
+.active-reg-tip {
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.6;
+  margin-bottom: 28rpx;
+}
+
+.cancel-btn {
+  background: #fff !important;
+  border: 2rpx solid #E34D59 !important;
+  color: #E34D59 !important;
 }
 </style>

@@ -31,7 +31,20 @@ module.exports = async (event, context) => {
       positions = typeof item.positions === 'string' ? JSON.parse(item.positions) : (item.positions || []);
     } catch (e) {}
 
-    // 从报名表中实时统计每个岗位已报名人数（以 ambassador_activities.positions 的 registered_count 为准）
+    // 查询对应排期获取 class_date 和 class_end_date
+    let classDate = item.schedule_date;
+    let classEndDate = null;
+    if (item.schedule_id) {
+      const { data: scheduleRows } = await db
+        .from('class_records')
+        .select('class_date, class_end_date')
+        .eq('id', item.schedule_id);
+      if (scheduleRows && scheduleRows[0]) {
+        classDate = scheduleRows[0].class_date || classDate;
+        classEndDate = scheduleRows[0].class_end_date || null;
+      }
+    }
+
     const totalQuota = positions.reduce((sum, p) => sum + (p.quota || 0), 0);
     const totalRegistered = positions.reduce((sum, p) => sum + (p.registered_count || 0), 0);
 
@@ -39,12 +52,15 @@ module.exports = async (event, context) => {
       id: item.id,
       schedule_id: item.schedule_id,
       schedule_name: item.schedule_name,
+      class_date: classDate,
+      class_end_date: classEndDate,
       schedule_date: item.schedule_date,
       schedule_location: item.schedule_location,
       positions: positions.map(p => ({
         name: p.name,
         quota: p.quota,
         merit_points: p.merit_points,
+        required_level: p.required_level != null ? p.required_level : null,
         registered_count: p.registered_count || 0,
         remaining: (p.quota || 0) - (p.registered_count || 0)
       })),

@@ -50,6 +50,16 @@ module.exports = async (event, context) => {
       .eq('status', 1);
     const hasSignedContract = (existingContract.count || 0) > 0;
 
+    // 检查是否已支付目标等级的升级费用（order_type=4 大使升级，related_id=目标等级，已支付）
+    const paidUpgradeOrder = await db
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('order_type', 4)
+      .eq('related_id', target_level)
+      .eq('pay_status', 1);
+    const hasUpgradePaid = (paidUpgradeOrder.count || 0) > 0;
+
     // 查询最新的大使申请状态（针对目标等级）
     const { data: applications } = await db
       .from('ambassador_applications')
@@ -104,6 +114,7 @@ module.exports = async (event, context) => {
       targetLevel: target_level,
       targetConfig,
       hasSignedContract,
+      hasUpgradePaid,
       applicationApproved: applicationStatus === 1
     });
 
@@ -186,79 +197,70 @@ function buildBenefits(config) {
 
 /**
  * 根据等级和当前状态构建升级选项
+ * 顺序规则：有支付步骤的等级，统一为「先支付后签合同」
  * @param {Object} params
  * @returns {Array}
  */
-function buildUpgradeOptions({ currentLevel, targetLevel, targetConfig, hasSignedContract, applicationApproved }) {
+function buildUpgradeOptions({ currentLevel, targetLevel, targetConfig, hasSignedContract, hasUpgradePaid, applicationApproved }) {
   const options = [];
   const upgradeFee = parseFloat(targetConfig.upgrade_payment_amount) || 0;
 
   if (currentLevel === 0 && targetLevel === 1) {
-    // 普通用户 → 准青鸾：申请审核 + 签署协议
+    // 普通用户 → 准青鸾：申请审核 + 签署协议（无需支付）
     options.push({
       type: 'contract',
       name: '申请通过后签署准青鸾大使协议',
       eligible: applicationApproved && !hasSignedContract,
+      completed: hasSignedContract,
       requirements: ['提交大使申请并通过审核', '签署《准青鸾大使协议》'],
       reason: !applicationApproved ? '需先提交申请并等待审核通过' : null
     });
-  } else if (currentLevel === 1 && targetLevel === 2) {
-    // 准青鸾 → 青鸾：申请审核通过即可签署协议
-    const eligible = applicationApproved && !hasSignedContract;
+  } else if (upgradeFee > 0) {
+    // 有升级费用的等级（准青鸾→青鸾、青鸾→鸿鹄 等）：先支付后签合同
+    const contractName = targetLevel === 3 ? '鸿鹄大使补充协议'
+      : targetLevel === 2 ? '青鸾大使协议'
+      : `${targetConfig.level_name}协议`;
+
+    // 步骤1（前端步骤2）：支付升级费用
+    options.push({
+      type: 'payment',
+      name: `支付 ${upgradeFee} 元升级费用`,
+      eligible: applicationApproved && !hasUpgradePaid,
+      completed: hasUpgradePaid,
+      fee: upgradeFee,
+      requirements: [`提交大使申请并通过审核`, `支付 ${upgradeFee} 元升级费用`],
+      reason: !applicationApproved
+        ? '需先提交申请并等待审核通过'
+        : hasUpgradePaid
+        ? '升级费用已支付'
+        : null
+    });
+
+    // 步骤2（前端步骤3）：签署协议
     options.push({
       type: 'contract',
-      name: '签署青鸾大使协议',
-      eligible,
-      requirements: ['提交大使申请并通过审核', '签署《青鸾大使协议》'],
-      reason: !applicationApproved ? '需先提交申请并等待审核通过' : null
+      name: `签署《${contractName}》`,
+      eligible: applicationApproved && hasUpgradePaid && !hasSignedContract,
+      completed: hasSignedContract,
+      requirements: [`支付升级费用后签署《${contractName}》`],
+      reason: !applicationApproved
+        ? '需先提交申请并等待审核通过'
+        : !hasUpgradePaid
+        ? '请先支付升级费用'
+        : null
     });
-  } else if (currentLevel === 2 && targetLevel === 3) {
-    // 青鸾 → 鸿鹄：申请 + 签署补充协议 + 支付升级费用
-    options.push({
-      type: 'contract',
-      name: '签署鸿鹄大使补充协议',
-      eligible: applicationApproved && !hasSignedContract,
-      requirements: ['提交大使申请并通过审核', '签署《鸿鹄大使补充协议》'],
-      reason: !applicationApproved ? '需先提交申请并等待审核通过' : null
-    });
-    if (upgradeFee > 0) {
-      options.push({
-        type: 'payment',
-        name: `支付 ${upgradeFee} 元升级费用`,
-        eligible: applicationApproved && hasSignedContract,
-        fee: upgradeFee,
-        requirements: [`支付 ${upgradeFee} 元升级费用`],
-        reason: !applicationApproved
-          ? '需先提交申请并等待审核通过'
-          : !hasSignedContract
-          ? '请先签署鸿鹄大使补充协议'
-          : null
-      });
-    }
   } else {
-    // 通用逻辑：申请 + 签署协议
-    const eligible = applicationApproved && !hasSignedContract;
+    // 无升级费用的通用逻辑：申请 + 签署协议
+    const contractName = targetLevel === 2 ? '青鸾大使协议'
+      : `${targetConfig.level_name}协议`;
     options.push({
       type: 'contract',
-      name: `签署${targetConfig.level_name}协议`,
-      eligible,
-      requirements: ['提交大使申请并通过审核', `签署《${targetConfig.level_name}协议》`],
+      name: `签署《${contractName}》`,
+      eligible: applicationApproved && !hasSignedContract,
+      completed: hasSignedContract,
+      requirements: ['提交大使申请并通过审核', `签署《${contractName}》`],
       reason: !applicationApproved ? '需先提交申请并等待审核通过' : null
     });
-    if (upgradeFee > 0) {
-      options.push({
-        type: 'payment',
-        name: `支付 ${upgradeFee} 元升级费用`,
-        eligible: applicationApproved && hasSignedContract,
-        fee: upgradeFee,
-        requirements: [`支付 ${upgradeFee} 元升级费用`],
-        reason: !applicationApproved
-          ? '需先提交申请并等待审核通过'
-          : !hasSignedContract
-          ? '请先签署协议'
-          : null
-      });
-    }
   }
 
   return options;

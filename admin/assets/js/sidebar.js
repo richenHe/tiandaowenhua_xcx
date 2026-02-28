@@ -13,7 +13,7 @@ window.AdminSidebar = {
       value: 'dashboard',
       icon: 'dashboard',
       title: '数据概览',
-      url: '../../index.html'
+      url: '../../dashboard.html'
     },
     {
       value: 'user',
@@ -284,7 +284,7 @@ window.AdminSidebar = {
   checkAuth() {
     const adminInfo = AdminAPI.getCurrentAdmin();
     if (!adminInfo) {
-      window.location.href = '../../login.html';
+      window.location.href = '../../index.html';
       return false;
     }
     return true;
@@ -294,7 +294,7 @@ window.AdminSidebar = {
 // 页面加载时自动检查登录状态
 if (typeof window !== 'undefined' && window.AdminAPI) {
   // 检查是否是登录页
-  if (!window.location.pathname.includes('login.html')) {
+  if (!window.location.pathname.endsWith('/') && !window.location.pathname.endsWith('/index.html')) {
     AdminSidebar.checkAuth();
   }
 }

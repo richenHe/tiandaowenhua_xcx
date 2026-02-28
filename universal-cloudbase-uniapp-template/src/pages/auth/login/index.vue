@@ -29,7 +29,24 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { UserApi } from '@/api';
+
+/**
+ * 扫推广码进入时，微信会将 scene 参数注入 onLoad query（URL 编码）。
+ * 格式示例：query.scene = "ref%3DTEST01" → 解码后 "ref=TEST01"
+ * 该值传入 login 云函数后，由 login.js 在新用户注册时自动绑定推荐人。
+ * 老用户如需修改推荐人，可在「引荐人列表」页手动操作。
+ */
+const sceneValue = ref<string | undefined>(undefined)
+
+onLoad((options) => {
+  if (options?.scene) {
+    sceneValue.value = decodeURIComponent(options.scene)
+    console.log('[login] 扫码进入，scene:', sceneValue.value)
+  }
+})
 
 const handleWechatLogin = async () => {
   uni.showLoading({
@@ -63,7 +80,10 @@ const handleWechatLogin = async () => {
 
     // 2. 调用后端登录接口，传入 code
     console.log('[登录] 步骤2：调用后端登录接口，传入 code...');
-    const userInfo = await UserApi.login({ code: wxLoginResult.code });
+    const userInfo = await UserApi.login({
+      code: wxLoginResult.code,
+      scene: sceneValue.value || undefined,
+    });
 
     uni.hideLoading();
     uni.showToast({

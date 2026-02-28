@@ -25,8 +25,10 @@ import type {
   ActivityStats,
   LevelSystemResponse,
   AvailableActivity,
+  AvailableActivitiesResult,
   GetAvailableActivitiesParams,
-  ApplyForActivityParams
+  ApplyForActivityParams,
+  CancelActivityRegistrationParams
 } from '../types/ambassador'
 
 /**
@@ -224,8 +226,8 @@ export class AmbassadorApi {
   /**
    * 15. 获取可报名活动列表（新版）
    */
-  static async getAvailableActivities(params?: GetAvailableActivitiesParams): Promise<{ list: AvailableActivity[]; total: number }> {
-    return callCloudFunction<{ list: AvailableActivity[]; total: number }>({
+  static async getAvailableActivities(params?: GetAvailableActivitiesParams): Promise<AvailableActivitiesResult> {
+    return callCloudFunction<AvailableActivitiesResult>({
       name: 'ambassador',
       action: 'getAvailableActivities',
       data: params,
@@ -242,6 +244,18 @@ export class AmbassadorApi {
       action: 'applyForActivity',
       data: params,
       loadingText: '报名中...'
+    })
+  }
+
+  /**
+   * 17. 取消活动报名
+   */
+  static async cancelActivityRegistration(params: CancelActivityRegistrationParams): Promise<{ activity_id: number; position_name: string }> {
+    return callCloudFunction<{ activity_id: number; position_name: string }>({
+      name: 'ambassador',
+      action: 'cancelActivityRegistration',
+      data: params,
+      loadingText: '取消报名中...'
     })
   }
 }
@@ -263,7 +277,8 @@ export const {
   getActivityStats,
   getLevelSystem,
   getAvailableActivities,
-  applyForActivity
+  applyForActivity,
+  cancelActivityRegistration
 } = AmbassadorApi
 
 // 默认导出

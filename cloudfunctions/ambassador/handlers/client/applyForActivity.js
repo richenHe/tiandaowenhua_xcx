@@ -28,9 +28,10 @@ module.exports = async (event, context) => {
     if (activity.status !== 1) return response.error('该活动当前不在报名中');
 
     // 校验报名截止：上课日期当天起不再受理（即上课前一天为最后报名日）
+    // schedule_date 与 class_records.class_date 一致，直接使用
     if (activity.schedule_date) {
-      const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // 北京时间 (UTC+8) 今日日期，避免时区偏差
+      const todayStr = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
       if (todayStr >= activity.schedule_date) {
         return response.error('活动报名已截止（上课前一天为最后报名日）');
       }
@@ -70,7 +71,25 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 检查用户是否已报名该活动
+    // 全局排他校验：是否已在其他未结束活动中有有效报名（status=1）
+    const { data: globalRegs } = await db
+      .from('ambassador_activity_registrations')
+      .select('activity_id, position_name')
+      .eq('user_id', user.id)
+      .eq('status', 1);
+    if (globalRegs && globalRegs.length > 0) {
+      const { data: activeActs } = await db
+        .from('ambassador_activities')
+        .select('id, schedule_name')
+        .in('id', globalRegs.map(r => r.activity_id))
+        .neq('status', 0);
+      if (activeActs && activeActs.length > 0) {
+        const reg = globalRegs.find(r => r.activity_id === activeActs[0].id);
+        return response.error(`您已报名「${activeActs[0].schedule_name}」的「${reg.position_name}」岗位，排期结束后方可报名新活动`);
+      }
+    }
+
+    // 检查用户是否已报名该活动（同活动内不可重复报名）
     const { data: existReg } = await db
       .from('ambassador_activity_registrations')
       .select('id, position_name, status')

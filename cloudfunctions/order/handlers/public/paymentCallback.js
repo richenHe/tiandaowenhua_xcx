@@ -161,33 +161,13 @@ async function handleRetrainSuccess(order, user) {
 
 /**
  * 处理大使升级订单支付成功
- * 使用 business-logic 的 processAmbassadorUpgrade
+ * 新流程：先支付后签合同，支付回调只记录日志，实际等级升级由 signContract 触发
  */
 async function handleUpgradeSuccess(order, user) {
-  try {
-    const targetLevel = order.related_id;
-
-    // 使用 business-logic 的大使升级处理
-    await business.processAmbassadorUpgrade({
-      user_id: user.id,
-      target_level: targetLevel,
-      upgrade_type: 'payment', // 支付升级
-      order_id: order.id
-    });
-
-    // 发送升级成功通知
-    // await business.sendUpgradeSuccessNotice({
-    //   openid: user.openid,
-    //   level_name: levelConfig.level_name,
-    //   upgrade_time: new Date()
-    // });
-
-    console.log(`[handleUpgradeSuccess] 大使升级处理完成`);
-
-  } catch (error) {
-    console.error(`[handleUpgradeSuccess] 失败:`, error);
-    throw error;
-  }
+  const targetLevel = order.related_id;
+  // 升级费支付成功，仅记录日志
+  // 等级升级将在用户完成协议签署后由 signContract 云函数触发
+  console.log(`[handleUpgradeSuccess] 用户 ${user.id} 升级费支付成功，目标等级 ${targetLevel}，等待签署协议`);
 }
 
 /**

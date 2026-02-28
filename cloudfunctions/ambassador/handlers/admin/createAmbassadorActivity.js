@@ -28,10 +28,10 @@ module.exports = async (event, context) => {
       if (pos.merit_points == null || pos.merit_points < 0) return response.paramError('岗位功德分不能为负数');
     }
 
-    // 查询排期信息
+    // 查询排期信息（含结课日期）
     const { data: scheduleRows, error: scheduleError } = await db
       .from('class_records')
-      .select('id, course_name, period, class_date, class_location, status')
+      .select('id, course_name, period, class_date, class_end_date, class_location, status')
       .eq('id', scheduleId);
 
     if (scheduleError) throw scheduleError;
@@ -39,6 +39,14 @@ module.exports = async (event, context) => {
       return response.error('排期不存在');
     }
     const schedule = scheduleRows[0];
+
+    // 开始日期和结束日期均为必填，缺失则无法创建活动
+    if (!schedule.class_date) {
+      return response.error('该排期缺少上课日期，无法创建活动');
+    }
+    if (!schedule.class_end_date) {
+      return response.error('该排期缺少结课日期，无法创建活动，请先在排期管理中补充结课日期');
+    }
 
     // 检查该排期是否已创建过活动
     const { data: existCheck } = await db
@@ -49,11 +57,12 @@ module.exports = async (event, context) => {
       return response.error('该排期已创建过活动，请勿重复创建');
     }
 
-    // 初始化每个岗位的 registered_count
+    // 初始化每个岗位的 registered_count，保留门槛等级字段
     const positionsWithCount = positions.map(p => ({
       name: p.name,
       quota: parseInt(p.quota),
       merit_points: parseFloat(p.merit_points),
+      required_level: p.required_level != null ? Number(p.required_level) : null,
       registered_count: 0
     }));
 

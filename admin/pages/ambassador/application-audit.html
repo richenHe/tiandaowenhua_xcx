@@ -53,7 +53,7 @@
         <sidebar-menu active-key="application-audit"></sidebar-menu>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><h1 class="page-title">申请审核</h1><p class="page-desc">审核大使升级申请</p><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="姓名/手机号" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.targetLevel" :options="levelOptions" placeholder="目标等级" clearable style="width:150px;"/></t-form-item><t-form-item><t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe><template #targetLevel="{row}"><t-tag v-if="row.target_level===1">云雀</t-tag><t-tag v-else-if="row.target_level===2" theme="primary">青鸾</t-tag><t-tag v-else theme="warning">鸿鹄</t-tag></template><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待审核</t-tag><t-tag v-else-if="row.status===1" theme="success">已通过</t-tag><t-tag v-else theme="danger">已驳回</t-tag></template><template #operation="{row}"><t-space><t-button theme="primary" size="small" variant="text" @click="handleView(row)">详情</t-button><template v-if="row.status===0"><t-button theme="success" size="small" variant="text" @click="handleApprove(row)">通过</t-button><t-button theme="danger" size="small" variant="text" @click="handleReject(row)">驳回</t-button></template></t-space></template></t-table></div>
+        <t-content class="page-content"><div class="page-container"><h1 class="page-title">申请审核</h1><p class="page-desc">审核大使升级申请</p><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="姓名/手机号" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.targetLevel" :options="levelOptions" placeholder="目标等级" clearable style="width:150px;"/></t-form-item><t-form-item><t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe><template #targetLevel="{row}"><t-tag v-if="row.target_level===1">准青鸾大使</t-tag><t-tag v-else-if="row.target_level===2" theme="primary">青鸾大使</t-tag><t-tag v-else-if="row.target_level===3" theme="warning">鸿鹄大使</t-tag></template><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待审核</t-tag><t-tag v-else-if="row.status===1" theme="success">已通过</t-tag><t-tag v-else theme="danger">已拒绝</t-tag></template><template #operation="{row}"><t-space><t-button theme="primary" size="small" variant="text" @click="handleView(row)">详情</t-button><template v-if="row.status===0"><t-button theme="success" size="small" variant="text" @click="handleApprove(row)">通过</t-button><t-button theme="danger" size="small" variant="text" @click="handleReject(row)">驳回</t-button></template></t-space></template></t-table></div>
 
 <!-- 申请详情弹窗 -->
 <t-dialog v-model:visible="detailVisible" header="申请详情" :footer="false" width="640px">
@@ -64,7 +64,7 @@
       <div><div style="font-size:12px;color:#999;margin-bottom:4px;">手机号</div><div style="font-size:14px;">{{ detailRow.phone || '-' }}</div></div>
       <div><div style="font-size:12px;color:#999;margin-bottom:4px;">所在城市</div><div style="font-size:14px;">{{ detailRow.city || '-' }}</div></div>
       <div><div style="font-size:12px;color:#999;margin-bottom:4px;">职业</div><div style="font-size:14px;">{{ detailRow.occupation || '-' }}</div></div>
-      <div><div style="font-size:12px;color:#999;margin-bottom:4px;">申请等级</div><div><t-tag v-if="detailRow.target_level===1">准青鸾大使</t-tag><t-tag v-else-if="detailRow.target_level===2" theme="primary">青鸾大使</t-tag><t-tag v-else-if="detailRow.target_level===3" theme="warning">鸿鹄大使</t-tag><t-tag v-else-if="detailRow.target_level===4" theme="success">金凤大使</t-tag><span v-else>-</span></div></div>
+      <div><div style="font-size:12px;color:#999;margin-bottom:4px;">申请等级</div><div><t-tag v-if="detailRow.target_level===1">准青鸾大使</t-tag><t-tag v-else-if="detailRow.target_level===2" theme="primary">青鸾大使</t-tag><t-tag v-else-if="detailRow.target_level===3" theme="warning">鸿鹄大使</t-tag><span v-else>-</span></div></div>
       <div><div style="font-size:12px;color:#999;margin-bottom:4px;">申请时间</div><div style="font-size:14px;">{{ detailRow.created_at || '-' }}</div></div>
     </div>
     <!-- 申请理由 / 问答 -->
@@ -79,7 +79,7 @@
     </div>
     <!-- 状态 + 底部操作 -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #f0f0f0;">
-      <div><t-tag v-if="detailRow.status===0" theme="warning" variant="light">待审核</t-tag><t-tag v-else-if="detailRow.status===1" theme="success" variant="light">已通过</t-tag><t-tag v-else theme="danger" variant="light">已驳回</t-tag></div>
+      <div><t-tag v-if="detailRow.status===0" theme="warning" variant="light">待审核</t-tag><t-tag v-else-if="detailRow.status===1" theme="success" variant="light">已通过</t-tag><t-tag v-else theme="danger" variant="light">已拒绝</t-tag></div>
       <t-space v-if="detailRow.status===0">
         <t-button theme="danger" variant="outline" size="small" @click="handleRejectFromDetail">驳回</t-button>
         <t-button theme="success" size="small" @click="handleApproveFromDetail">通过</t-button>
@@ -112,8 +112,10 @@
         const detailVisible = ref(false);
         const detailRow = ref(null);
 
-        const levelOptions = [{ label: '准青鸾大使', value: 1 }, { label: '青鸾大使', value: 2 }, { label: '鸿鹄大使', value: 3 }, { label: '金凤大使', value: 4 }];
-        const statusOptions = [{ label: '待审核', value: 0 }, { label: '已通过', value: 1 }, { label: '已驳回', value: 2 }];
+        // ambassador_applications.target_level: 1准青鸾/2青鸾/3鸿鹄
+        const levelOptions = [{ label: '准青鸾大使', value: 1 }, { label: '青鸾大使', value: 2 }, { label: '鸿鹄大使', value: 3 }];
+        // ambassador_applications.status: 0待审核/1已通过/2已拒绝
+        const statusOptions = [{ label: '待审核', value: 0 }, { label: '已通过', value: 1 }, { label: '已拒绝', value: 2 }];
 
         const columns = [
           { colKey: 'user_name', title: '申请人', width: 110 },
@@ -187,7 +189,7 @@
           if (!rejectReason.value.trim()) { TDesign.MessagePlugin.warning('请输入驳回原因'); return; }
           try {
             await AdminAPI.rejectAmbassadorApplication({ applicationId: rejectTarget.value, rejectReason: rejectReason.value });
-            TDesign.MessagePlugin.success('已驳回');
+            TDesign.MessagePlugin.success('已拒绝');
             rejectVisible.value = false;
             rejectReason.value = '';
             fetchData();

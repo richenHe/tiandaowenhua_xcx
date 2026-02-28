@@ -24,6 +24,7 @@ module.exports = async (event, context) => {
       .select(`
         id,
         type,
+        feedback_type,
         course_id,
         content,
         images,
@@ -46,10 +47,11 @@ module.exports = async (event, context) => {
       try { images = f.images ? JSON.parse(f.images) : []; } catch (e) {}
       return {
         ...f,
+        feedback_type: f.feedback_type || f.type,
+        course_name: f.course?.name || null,
         images: images.map(img => cloudFileIDToURL(img)),
-        // 若关联课程有封面图也一并转换
         course: f.course ? { ...f.course, cover_image: cloudFileIDToURL(f.course.cover_image || '') } : f.course,
-        type_text: getTypeText(f.type),
+        type_text: getTypeText(f.feedback_type || f.type),
         status_text: getStatusText(f.status)
       };
     });

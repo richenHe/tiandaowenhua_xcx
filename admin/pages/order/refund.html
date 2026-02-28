@@ -140,15 +140,15 @@
       <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-label">待审核</div>
+          <div class="stat-label">退款中</div>
           <div class="stat-value">{{ statistics.pending || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已通过</div>
+          <div class="stat-label">已退款</div>
           <div class="stat-value">{{ statistics.approved || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已驳回</div>
+          <div class="stat-label">退款失败</div>
           <div class="stat-value">{{ statistics.rejected || 0 }}</div>
         </div>
         <div class="stat-card">
@@ -219,9 +219,10 @@
         hover
       >
         <template #status="{ row }">
-          <t-tag v-if="row.refund_status === 0" theme="warning">待审核</t-tag>
-          <t-tag v-else-if="row.refund_status === 1" theme="success">已通过</t-tag>
-          <t-tag v-else-if="row.refund_status === 2" theme="danger">已驳回</t-tag>
+          <t-tag v-if="row.refund_status === 0" theme="default">无退款</t-tag>
+          <t-tag v-else-if="row.refund_status === 1" theme="warning">退款中</t-tag>
+          <t-tag v-else-if="row.refund_status === 2" theme="success">已退款</t-tag>
+          <t-tag v-else-if="row.refund_status === 3" theme="danger">退款失败</t-tag>
         </template>
 
         <template #amount="{ row }">
@@ -279,9 +280,10 @@
           <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
           <t-descriptions-item label="退款原因" :span="2">{{ currentRecord.refund_reason || '无' }}</t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
-            <t-tag v-if="currentRecord.refund_status === 0" theme="warning">待审核</t-tag>
-            <t-tag v-else-if="currentRecord.refund_status === 1" theme="success">已通过</t-tag>
-            <t-tag v-else-if="currentRecord.refund_status === 2" theme="danger">已驳回</t-tag>
+            <t-tag v-if="currentRecord.refund_status === 0" theme="default">无退款</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 1" theme="warning">退款中</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 2" theme="success">已退款</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 3" theme="danger">退款失败</t-tag>
           </t-descriptions-item>
           <t-descriptions-item v-if="currentRecord.reject_reason" label="驳回原因" :span="2">
             {{ currentRecord.reject_reason }}
@@ -331,7 +333,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -345,7 +347,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -398,11 +400,13 @@
           dateRange: []
         });
 
+        // orders.refund_status: 0无退款/1退款中/2已退款/3退款失败
         const statusOptions = [
           { label: '全部', value: null },
-          { label: '待审核', value: 0 },
-          { label: '已通过', value: 1 },
-          { label: '已驳回', value: 2 }
+          { label: '无退款', value: 0 },
+          { label: '退款中', value: 1 },
+          { label: '已退款', value: 2 },
+          { label: '退款失败', value: 3 }
         ];
 
         const pagination = ref({

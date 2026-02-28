@@ -240,9 +240,9 @@ const handleBuy = () => {
   }
 
   if (courseInfo.value.is_purchased) {
-    // 已购买,跳转到预约确认页
+    // 已购买：先进入课程计划页选择排期，再进入预约确认
     uni.navigateTo({
-      url: `/pages/course/appointment-confirm/index?userCourseId=${courseInfo.value.user_course_id}&courseId=${courseInfo.value.id}`,
+      url: `/pages/course/schedule/index?course_id=${courseInfo.value.id}`,
     });
   } else {
     // 未购买,跳转到订单确认页

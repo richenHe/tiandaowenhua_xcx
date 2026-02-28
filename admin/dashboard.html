@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天道文化后台管理</title>
+
+  <script>
+    // 页面加载前立即检查登录状态，未登录则跳转到登录页
+    (function() {
+      if (!localStorage.getItem('adminInfo')) {
+        var h = window.location.hostname;
+        var p = window.location.pathname;
+        var base = (h === 'localhost' || h === '127.0.0.1' || h.indexOf('192.168.') === 0)
+          ? (p.indexOf('/admin/') !== -1 ? '/admin/' : '/')
+          : '/tiandaowenhua/';
+        window.location.replace(base);
+      }
+    })();
+  </script>
+
+  <!-- TDesign CSS（本地）-->
+  <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
+  
+  <!-- 自定义样式 -->
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  
+  <style>
+    .t-layout {
+      height: 100vh;
+    }
+    
+    .t-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      background: #fff;
+      border-bottom: 1px solid #dcdcdc;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .system-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .t-aside {
+      background: #fff;
+      border-right: 1px solid #dcdcdc;
+    }
+    
+    .t-content {
+      padding: 24px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+    
+    .welcome-card {
+      margin-bottom: 24px;
+    }
+    
+    .stats-row {
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout>
+      <!-- 顶部导航 -->
+      <t-header height="64px">
+        <div class="header-left">
+          <span class="system-name">🎨 天道文化后台管理</span>
+        </div>
+        <div class="header-right">
+          <span>{{ adminInfo?.real_name || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <!-- 侧边菜单（使用共享组件，与其他页面保持一致） -->
+        <sidebar-menu active-key="dashboard"></sidebar-menu>
+        
+        <!-- 主内容区 -->
+        <t-content>
+          <!-- 欢迎卡片 -->
+          <t-card class="welcome-card" title="欢迎回来">
+            <p>当前登录：{{ adminInfo?.real_name || '管理员' }} ({{ adminInfo?.role }})</p>
+          </t-card>
+          
+          <!-- 统计数据 -->
+          <t-row :gutter="16" class="stats-row">
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总用户数"
+                  :value="stats.users?.total || 0"
+                  :trend="stats.users?.today > 0 ? 'increase' : null"
+                  :trend-num="stats.users?.today || 0"
+                />
+              </t-card>
+            </t-col>
+            
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总订单数"
+                  :value="stats.orders?.total || 0"
+                  :trend="stats.orders?.today > 0 ? 'increase' : null"
+                  :trend-num="stats.orders?.today || 0"
+                />
+              </t-card>
+            </t-col>
+            
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="总预约数"
+                  :value="stats.courses?.total_appointments || 0"
+                />
+              </t-card>
+            </t-col>
+            
+            <t-col :span="6">
+              <t-card :bordered="true">
+                <t-statistic
+                  title="大使数"
+                  :value="stats.ambassadors?.total || 0"
+                />
+              </t-card>
+            </t-col>
+          </t-row>
+          
+          <t-card title="今日数据">
+            <p>新增用户：{{ stats.today?.users || 0 }}</p>
+            <p>新增订单：{{ stats.today?.orders || 0 }}</p>
+            <p>新增预约：{{ stats.today?.appointments || 0 }}</p>
+          </t-card>
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <!-- Vue 3（本地）-->
+  <script src="./assets/libs/vue.global.js"></script>
+  
+  <!-- TDesign Vue（本地）-->
+  <script src="./assets/libs/tdesign.min.js"></script>
+  
+  <!-- CloudBase SDK（本地）-->
+  <script src="./assets/libs/tcb.js"></script>
+  
+  <!-- 配置文件 -->
+  <script src="./assets/js/config.js?v=20260227"></script>
+  
+  <!-- API 封装 -->
+  <script src="./assets/js/admin-api.js?v=20260227f"></script>
+
+  <!-- 侧边栏导航（共享组件） -->
+  <script src="./assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    
+    const app = createApp({
+      setup() {
+        const stats = ref({});
+        // 复用共享 composable，获得统一的 adminInfo / handleMenuChange / handleLogout
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+        
+        // 加载统计数据
+        const loadStats = async () => {
+          try {
+            const data = await AdminAPI.getStatistics();
+            stats.value = data;
+          } catch (error) {
+            console.error('加载统计数据失败:', error);
+            TDesign.MessagePlugin.error('加载统计数据失败');
+          }
+        };
+        
+        onMounted(() => {
+          if (AdminAPI.getCurrentAdmin()) {
+            loadStats();
+          }
+        });
+        
+        return {
+          adminInfo,
+          stats,
+          handleLogout,
+          handleMenuChange,
+        };
+      }
+    });
+    
+    app.use(TDesign);
+    // 注册共享侧边栏组件
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
+    app.mount('#app');
+  </script>
+</body>
+</html>
+

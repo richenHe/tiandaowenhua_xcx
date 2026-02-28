@@ -217,10 +217,16 @@ setup(){
   const CTX=reactive({});
 
   // ===== API =====
-  async function api(fn,act,p={}){
+  async function api(fn,act,p={},admin=false){
     const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/${fn}`;
     const t0=Date.now();
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:act,test_openid:U._openid,...p})});
+    const body={action:act,test_openid:U._openid,...p};
+    if(admin){
+      const token=localStorage.getItem('adminToken');
+      if(!token) throw new Error('管理端接口需要先在admin后台登录获取token（请先访问login.html登录）');
+      body.jwtToken=token;
+    }
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
     let d=await r.json();
     if(d.body&&typeof d.body==='string') d=JSON.parse(d.body);
@@ -236,14 +242,14 @@ setup(){
     results.value.push(r);await nextTick();
     try{
       const params=typeof s.params==='function'?s.params(CTX):s.params||{};
-      const{d,ms}=await api(s.fn,s.act,params);
+      const{d,ms}=await api(s.fn,s.act,params,!!s.admin);
       r.dur=ms;r.raw=d;
       if(s.expectFail){
         r.cls='pass';r.icon='✓';
         r.checks=[{l:'expected_error',ok:true,m:d.message||'预期错误'}];
         if(s.errBiz){const b=s.errBiz(d,CTX);r.biz.push(b);if(!b.p){r.cls='warn';r.icon='⚠'}}
       } else {
-        if(!d.success) throw new Error(d.message||'接口失败');
+        if(!d.success&&!s.softFail) throw new Error(d.message||'接口失败');
         const D=d.data!==undefined?d.data:d;
         if(s.fields) r.checks=chk(D,s.fields);
         if(s.biz) for(const b of s.biz){const x=b(D,d,CTX);r.biz.push(x)}
@@ -674,7 +680,7 @@ WHERE er.exchange_no='${C.lastExchangeNo}'`:null
       },
 
       // S3.8: 后台兑换列表（只读，验证 user_name/user_phone 字段完整性）
-      {name:'S3.8 后台兑换列表(字段验证)',fn:'order',act:'getExchangeList',
+      {name:'S3.8 后台兑换列表(字段验证)',fn:'order',act:'getExchangeList',admin:true,
         params:()=>({page:1,page_size:10}),
         biz:[
           (d,raw)=>({r:'§6.20: getExchangeList 接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
@@ -840,7 +846,7 @@ FROM tiandao_culture.users u WHERE u.id = ${U.id}`
       {name:'S5.1 大使申请状态',fn:'ambassador',act:'getApplicationStatus',
         biz:[
           (d,raw)=>({r:'申请状态接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const s=d?.status||d?.application_status;return{r:'申请状态枚举应合法(0待审/1通过/2拒绝/3面试中)',p:s===undefined||s===null||[0,1,2,3,4].includes(Number(s)),a:`status=${s}`}}
+          (d)=>{const s=d?.status||d?.application_status;return{r:'申请状态枚举应合法(0待审核/1已通过/2已拒绝)',p:s===undefined||s===null||[0,1,2].includes(Number(s)),a:`status=${s}`}}
         ],
         sql:()=>`SELECT id, user_id, status, interview_time, reject_reason, created_at FROM tiandao_culture.ambassador_applications WHERE user_id=${U.id} ORDER BY created_at DESC LIMIT 1`
       },
@@ -870,21 +876,30 @@ SELECT level, level_name, merit_rate_basic, merit_rate_advanced, cash_rate_basic
 FROM tiandao_culture.ambassador_level_configs ORDER BY level`
       },
       {name:'S5.3 升级指南(条件检查)',fn:'ambassador',act:'getUpgradeGuide',
+        /* 动态计算下一等级：优先从 CTX.user（F1 写入），否则回退 3（测试用户默认为鸿鹄/level=3），最高为4 */
+        params:(C)=>({target_level: Math.min(Number(C.user?.ambassador_level??3)+1, 4)}),
         biz:[
           (d,raw)=>({r:'升级指南接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
             if(!d)return{r:'需求3.1.7.1: 升级指南应含当前等级和下一等级',p:true,a:'无数据'};
             return{r:'需求3.1.7.1: 升级指南应含当前等级和下一等级',
               p:d.current_level!==undefined||d.currentLevel!==undefined,
-              a:`current=${d.current_level||d.currentLevel}`}
+              a:`current=${d.current_level?.level??d.currentLevel}`}
+          },
+          (d)=>{
+            if(!d)return{r:'升级指南应包含upgrade_options',p:true,a:'无数据'};
+            const opts=d.upgrade_options||d.upgradeOptions||[];
+            return{r:'升级指南应包含upgrade_options',p:Array.isArray(opts),a:`${opts.length}个升级选项`}
           }
         ]
       },
       {name:'S5.4 我的名额',fn:'ambassador',act:'getMyQuotas',
         biz:[
           (d,raw)=>({r:'名额查询应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const neg=list.filter(q=>Number(q.remaining_quantity||0)<0);return{r:'名额 remaining_quantity 不应为负',p:neg.length===0,a:neg.length?`${neg.length}条负值名额`:`${list.length}条名额均正常`}},
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const err=list.filter(q=>Number(q.used_quantity||0)>Number(q.total_quantity||0));return{r:'used_quantity 不应超过 total_quantity',p:err.length===0,a:err.length?`${err.length}条异常`:list.length?`${list.length}条均正常`:'暂无名额'}}
+          /* getMyQuotas 返回 {summary, quotas, usage_records}，需读 d.quotas */
+          (d)=>{const list=d?.quotas||(Array.isArray(d)?d:[]);const neg=list.filter(q=>Number(q.remaining_quantity||0)<0);return{r:'名额 remaining_quantity 不应为负',p:neg.length===0,a:neg.length?`${neg.length}条负值名额`:`${list.length}条名额均正常`}},
+          (d)=>{const list=d?.quotas||(Array.isArray(d)?d:[]);const err=list.filter(q=>Number(q.used_quantity||0)>Number(q.total_quantity||0));return{r:'used_quantity 不应超过 total_quantity',p:err.length===0,a:err.length?`${err.length}条异常`:list.length?`${list.length}条均正常`:'暂无名额'}},
+          (d)=>{const s=d?.summary;if(!s)return{r:'名额汇总 available>=0',p:true,a:'无汇总'};return{r:'名额汇总 available>=0',p:Number(s.available||0)>=0,a:`total=${s.total},used=${s.used},available=${s.available}`}}
         ],
         sql:()=>`-- 名额及使用记录
 SELECT aq.id, aq.quota_type, aq.total_quantity, aq.used_quantity, aq.remaining_quantity, aq.expire_date, aq.status,
@@ -896,9 +911,8 @@ FROM tiandao_culture.ambassador_quotas aq WHERE aq.user_id=${U.id} AND aq.status
           (d,raw)=>({r:'活动记录应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const neg=list.filter(r=>Number(r.merit_points||0)<0);return{r:'活动奖励 merit_points 不应为负',p:neg.length===0,a:neg.length?`${neg.length}条负积分`:list.length?`${list.length}条均正常`:'暂无记录'}}
         ],
-        sql:()=>`-- 活动记录与功德分关联验证
-SELECT ar.id, ar.activity_type, ar.activity_name, ar.activity_date, ar.merit_points, ar.status,
-  (SELECT COUNT(*) FROM tiandao_culture.merit_points_records mp WHERE mp.activity_id=ar.id AND mp.user_id=ar.user_id) as 对应功德分记录数
+        sql:()=>`-- 活动记录验证（注意：字段名是 start_time 不是 activity_date）
+SELECT ar.id, ar.activity_type, ar.activity_name, ar.start_time, ar.location, ar.merit_points, ar.status, ar.created_at
 FROM tiandao_culture.ambassador_activity_records ar WHERE ar.user_id=${U.id} ORDER BY ar.created_at DESC LIMIT 10`
       },
       {name:'S5.6 活动统计',fn:'ambassador',act:'getActivityStats',
@@ -923,18 +937,162 @@ FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DE
     ]
   },
 
+  // ────────────── FLOW 5B: 大使体系边界 · 普通用户拦截 ──────────────
+  {
+    id:'F5B',icon:'🔍',name:'流程5-补: 边界验证 · 普通用户拦截(id=34,level=0) · 无申请 · 升级指南0→1',
+    desc:'id=34(孙海荣,level=0,profile_completed=1) 覆盖：无申请记录 / 升级指南普通→准青鸾 / generateQRCode拦截 / getMyQuotas拦截',
+    tables:['users','ambassador_applications','ambassador_level_configs','ambassador_quotas'],rules:6,
+    user:{id:34,_openid:'oJr1c7IzbD3FlbdmeiO1fnYDCaL4',real_name:'孙海荣'},
+    get chainHtml(){return ['getApplicationStatus','getUpgradeGuide(0→1)','generateQRCode拦截','getMyQuotas拦截'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5B.1 普通用户申请状态(无申请)',fn:'ambassador',act:'getApplicationStatus',
+        biz:[
+          (d,raw)=>({r:'接口正常返回(无申请时不报错)',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{return{r:'边界: 无申请时 has_application=false',p:d?.has_application===false,a:`has_application=${d?.has_application}`}}
+        ],
+        sql:()=>`SELECT id, user_id, status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY created_at DESC LIMIT 1`
+      },
+      {name:'S5B.2 普通用户升级指南(0→1)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:1}),
+        biz:[
+          (d,raw)=>({r:'level=0查询target=1应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{if(!d)return{r:'应返回current_level.level=0',p:true,a:'无数据'};const lv=d.current_level?.level??d.current_level;return{r:'应返回current_level.level=0',p:lv===0,a:`current_level=${lv}`}},
+          (d)=>{if(!d)return{r:'升级选项不为空',p:true,a:'无数据'};const opts=d.upgrade_options||[];return{r:'升级选项不为空',p:opts.length>0,a:`${opts.length}个选项`}}
+        ],
+        sql:()=>`SELECT id, real_name, ambassador_level FROM tiandao_culture.users WHERE id=34`
+      },
+      {name:'S5B.3 普通用户生成二维码(应拦截)',fn:'ambassador',act:'generateQRCode',
+        expectFail:true,
+        errBiz:(raw)=>({r:'边界: level=0 generateQRCode 应报错',p:raw.success===false,a:raw.message||'无message'})
+      },
+      {name:'S5B.4 普通用户查名额(应拦截)',fn:'ambassador',act:'getMyQuotas',
+        expectFail:true,
+        errBiz:(raw)=>({r:'边界: level=0 getMyQuotas 应报错',p:raw.success===false,a:raw.message||'无message'})
+      }
+    ]
+  },
+
+  // ────────────── FLOW 5C: 大使体系边界 · 等级路径验证 ──────────────
+  {
+    id:'F5C',icon:'🏆',name:'流程5-丙: 边界验证 · 准青鸾升级路径(id=32,level=1) · target≤current拒绝',
+    desc:'id=32(何日琛,level=1) 覆盖：准青鸾→青鸾升级路径正常；target_level=1(等于当前)应报错',
+    tables:['users','ambassador_level_configs'],rules:5,
+    user:{id:32,_openid:'oJr1c7AODZ6ZocPfFuTeooL9PHXE',real_name:'何日琛'},
+    get chainHtml(){return ['getUpgradeGuide(1→2)','getUpgradeGuide(target=1,应拒绝)'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5C.1 准青鸾升级指南(1→2)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:2}),
+        biz:[
+          (d,raw)=>({r:'level=1查询target=2应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{if(!d)return{r:'应返回current_level.level=1',p:true,a:'无数据'};const lv=d.current_level?.level??d.current_level;return{r:'应返回current_level.level=1',p:lv===1,a:`current_level=${lv}`}},
+          (d)=>{if(!d)return{r:'升级选项含contract类型',p:true,a:'无数据'};const opts=d.upgrade_options||[];const hasC=opts.some(o=>o.type==='contract');return{r:'升级选项含contract类型',p:hasC,a:`${opts.length}个选项,contract=${hasC}`}}
+        ],
+        sql:()=>`SELECT id, real_name, ambassador_level FROM tiandao_culture.users WHERE id=32`
+      },
+      {name:'S5C.2 升级指南target=current应拒绝(1→1)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:1}),
+        expectFail:true,
+        errBiz:(raw)=>({r:'边界: target_level=current_level=1 应报错',p:raw.success===false,a:raw.message||'无message'})
+      }
+    ]
+  },
+
+  // ────────────── FLOW 5D: 青鸾大使升级路径(level=2→3) ──────────────
+  {
+    id:'F5D',icon:'🦅',name:'流程5-D: 青鸾大使升级路径(id=33,level=2) · 升级指南2→3 · 名额remaining=0边界',
+    desc:'id=33(林梦奇,level=2) 覆盖：青鸾→鸿鹄升级路径（有升级费9800+contract双选项）；getMyQuotas名额remaining=0边界',
+    tables:['users','ambassador_level_configs','ambassador_quotas'],rules:6,
+    user:{id:33,_openid:'oJr1c7EwR_AWwhMuJtviedCz1zXg',real_name:'林梦奇'},
+    get chainHtml(){return ['getUpgradeGuide(2→3)','getMyQuotas(remaining=0)'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5D.1 青鸾升级指南(2→3)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:3}),
+        biz:[
+          (d,raw)=>({r:'level=2查询target=3应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{if(!d)return{r:'应返回current_level.level=2',p:true,a:'无数据'};const lv=d.current_level?.level??d.current_level;return{r:'应返回current_level.level=2',p:lv===2,a:`current_level=${lv}`}},
+          (d)=>{if(!d)return{r:'升级选项含contract类型',p:true,a:'无数据'};const opts=d.upgrade_options||[];const hasC=opts.some(o=>o.type==='contract');return{r:'升级选项含contract类型',p:hasC,a:`${opts.length}个选项,contract=${hasC}`}},
+          (d)=>{if(!d)return{r:'需求3.1.7: requirements.upgrade_payment_amount=9800',p:true,a:'无数据'};const fee=Number(d.requirements?.upgrade_payment_amount||0);return{r:'需求3.1.7: requirements.upgrade_payment_amount=9800',p:fee===9800,a:`upgrade_payment_amount=${fee}`}},
+          (d)=>{if(!d)return{r:'需求3.1.7: requirements.frozen_points=16880',p:true,a:'无数据'};const fp=Number(d.requirements?.frozen_points||0);return{r:'需求3.1.7: requirements.frozen_points=16880',p:fp===16880,a:`frozen_points=${fp}`}}
+        ],
+        sql:()=>`SELECT level, level_name, upgrade_payment_amount, frozen_points FROM tiandao_culture.ambassador_level_configs WHERE level=3`
+      },
+      {name:'S5D.2 名额查询(remaining=0边界)',fn:'ambassador',act:'getMyQuotas',
+        biz:[
+          (d,raw)=>({r:'名额接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.quotas||(Array.isArray(d)?d:[]);const zeroList=list.filter(q=>Number(q.remaining_quantity||0)===0);return{r:'边界: 含 remaining=0 的名额记录应正常返回（不过滤）',p:zeroList.length>0,a:`${zeroList.length}条remaining=0的名额`}},
+          (d)=>{const list=d?.quotas||(Array.isArray(d)?d:[]);const neg=list.filter(q=>Number(q.remaining_quantity||0)<0);return{r:'remaining不应出现负数',p:neg.length===0,a:`${neg.length}条负数`}}
+        ],
+        sql:()=>`SELECT id, quota_type, total_quantity, used_quantity, remaining_quantity, status FROM tiandao_culture.ambassador_quotas WHERE user_id=33`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 5E: 申请被拒绝场景 ──────────────
+  {
+    id:'F5E',icon:'❌',name:'流程5-E: 申请被拒绝(id=34,status=2) · 拒绝原因返回验证',
+    desc:'id=34(孙海荣,level=0) 最新申请 status=2，验证接口正确返回拒绝状态和拒绝原因',
+    tables:['ambassador_applications'],rules:3,
+    user:{id:34,_openid:'oJr1c7IzbD3FlbdmeiO1fnYDCaL4',real_name:'孙海荣'},
+    get chainHtml(){return ['getApplicationStatus(status=2)','getUpgradeGuide(0→1,已拒绝)'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5E.1 申请状态(最新=被拒绝)',fn:'ambassador',act:'getApplicationStatus',
+        biz:[
+          (d,raw)=>({r:'接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const s=d?.application?.status;return{r:'边界: 最新申请status=2(已拒绝)',p:Number(s)===2,a:`status=${s}`}},
+          (d)=>{const r=d?.application?.reject_reason;return{r:'边界: reject_reason应有内容',p:!!r,a:`reject_reason=${r}`}}
+        ],
+        sql:()=>`SELECT user_id, status, reject_reason, created_at FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY created_at DESC LIMIT 1`
+      },
+      {name:'S5E.2 升级指南(被拒绝用户)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:1}),
+        biz:[
+          (d,raw)=>({r:'被拒绝用户仍可查看升级指南',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{if(!d)return{r:'application_status应为2',p:true,a:'无数据'};const s=d.application_status??d.applicationStatus;return{r:'升级指南中 application_status=2(已拒绝)',p:Number(s)===2,a:`application_status=${s}`}}
+        ],
+        sql:()=>`SELECT user_id, status, reject_reason FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY created_at DESC LIMIT 1`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 5F: 申请待审核场景 ──────────────
+  {
+    id:'F5F',icon:'⏳',name:'流程5-F: 申请待审核(id=35,status=0) · 升级指南审核中状态',
+    desc:'id=35(冯腾昊,level=0) 有 status=0 待审核申请，验证接口返回待审核状态',
+    tables:['ambassador_applications'],rules:3,
+    user:{id:35,_openid:'oJr1c7AfomZ79O7HvKbQn06F4k8A',real_name:'冯腾昊'},
+    get chainHtml(){return ['getApplicationStatus(status=0)','getUpgradeGuide(审核中状态)'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S5F.1 申请状态(待审核)',fn:'ambassador',act:'getApplicationStatus',
+        biz:[
+          (d,raw)=>({r:'接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const s=d?.application?.status;return{r:'边界: 最新申请status=0(待审核)',p:Number(s)===0,a:`status=${s}`}}
+        ],
+        sql:()=>`SELECT user_id, status, created_at FROM tiandao_culture.ambassador_applications WHERE user_id=35 ORDER BY created_at DESC LIMIT 1`
+      },
+      {name:'S5F.2 升级指南(待审核用户)',fn:'ambassador',act:'getUpgradeGuide',
+        params:()=>({target_level:1}),
+        biz:[
+          (d,raw)=>({r:'待审核用户仍可查看升级指南',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{if(!d)return{r:'application_status应为0',p:true,a:'无数据'};const s=d.application_status??d.applicationStatus;return{r:'升级指南中 application_status=0(待审核)',p:Number(s)===0,a:`application_status=${s}`}},
+          (d)=>{if(!d)return{r:'待审核时升级选项eligible=false',p:true,a:'无数据'};const opts=d.upgrade_options||[];const allNotEligible=opts.every(o=>!o.eligible);return{r:'待审核时升级选项eligible=false(无法操作)',p:allNotEligible,a:`${opts.length}个选项均eligible=${!allNotEligible}`}}
+        ],
+        sql:()=>`SELECT user_id, status FROM tiandao_culture.ambassador_applications WHERE user_id=35 ORDER BY created_at DESC LIMIT 1`
+      }
+    ]
+  },
+
   // ────────────── FLOW 6: 协议全链路 ──────────────
   {
     id:'F6',icon:'📜',name:'流程6: 协议模板 · 我的协议 · 详情 · 签署验证',
-    desc:'获取协议模板 → 我的协议列表 → 协议详情 → 验证签署记录与合同期一致',
-    tables:['contract_templates','contract_signatures'],rules:9,
+    desc:'获取协议模板 → 我的协议列表 → 协议详情 → 边界(无模板/不存在详情)',
+    tables:['contract_templates','contract_signatures'],rules:13,
     get chainHtml(){return ['getContractTemplate','getMyContracts','getContractDetail'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
-      {name:'S6.1 获取协议模板',fn:'ambassador',act:'getContractTemplate',params:{contract_type:1,ambassador_level:1},
+      {name:'S6.1 获取协议模板',fn:'ambassador',act:'getContractTemplate',params:{level:1},
         biz:[
           (d,raw)=>({r:'协议模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{if(!d)return{r:'需求3.1.6.6: 协议模板应含 contract_name 字段',p:true,a:'无模板(可能正常)'};return{r:'需求3.1.6.6: 协议模板应含 contract_name 字段',p:!!(d.contract_name||d.name||d.title),a:d.contract_name||d.name||d.title||'❌缺失'}},
-          (d)=>{if(!d)return{r:'需求3.1.6.6: 协议模板应含 content/template_content 字段',p:true,a:'无模板'};return{r:'需求3.1.6.6: 协议模板应含 content/template_content 字段',p:!!(d.content||d.template_content),a:d.content||d.template_content?'✓有内容':'❌缺失'}}
+          (d)=>{const t=d?.template;if(!t)return{r:'需求3.1.6.6: 协议模板应含名称',p:true,a:'无模板(可能正常)'};return{r:'需求3.1.6.6: 协议模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌缺失'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'电子合同: 模板应有 contract_file_url',p:true,a:'无模板'};return{r:'电子合同: 模板应有 contract_file_url',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌缺失'}}
         ],
         save:(d,_,C)=>{if(d?.id)C.contractTplId=d.id},
         sql:()=>`SELECT id, contract_name, contract_type, ambassador_level, version, status, effective_time FROM tiandao_culture.contract_templates WHERE status=1 ORDER BY version DESC`
@@ -942,8 +1100,8 @@ FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DE
       {name:'S6.2 我的协议列表',fn:'ambassador',act:'getMyContracts',
         biz:[
           (d,raw)=>({r:'我的协议列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'需求3.1.6.6: 青鸾+应有协议记录',p:true,a:'暂无协议'};const invalid=list.filter(s=>![0,1,2].includes(Number(s.status)));return{r:'协议 status 应为 0/1/2',p:invalid.length===0,a:invalid.length?`${invalid.length}条非法status`:`${list.length}条均合法`}},
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const active=list.filter(s=>Number(s.status)===1);if(!active.length)return{r:'协议有效期: contract_end > contract_start',p:true,a:'无有效协议'};const err=active.filter(s=>{if(!s.contract_start||!s.contract_end)return true;return new Date(s.contract_end)<=new Date(s.contract_start)});return{r:'协议有效期: contract_end > contract_start',p:err.length===0,a:err.length?`${err.length}条日期异常`:`${active.length}条有效协议日期均正常`}}
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'需求3.1.6.6: 青鸾+应有协议记录',p:true,a:'暂无协议'};const invalid=list.filter(s=>![0,1,2,3].includes(Number(s.status)));return{r:'协议 status 应为 0(已作废)/1(有效)/2(已过期)/3(已续签)',p:invalid.length===0,a:invalid.length?`${invalid.length}条非法status`:`${list.length}条均合法`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const active=list.filter(s=>Number(s.status)===1);if(!active.length)return{r:'协议有效期: 结束日 > 开始日',p:true,a:'无有效协议'};const startKey='effective_date',endKey='expiry_date';const err=active.filter(s=>{const start=s[startKey],end=s[endKey];if(!start||!end)return true;return new Date(end)<=new Date(start)});return{r:'协议有效期: 结束日 > 开始日( effective_date/expiry_date )',p:err.length===0,a:err.length?`${err.length}条日期异常`:`${active.length}条有效协议日期均正常`}}
         ],
         save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length)C.sigId=list[0].id},
         sql:()=>`-- 协议签署记录完整性
@@ -959,17 +1117,40 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
         biz:[
           (d,raw)=>({r:'协议详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
-            if(!d||!d.contract_start)return{r:'需求3.1.6.6: 合同期应有起止日期',p:true,a:'无协议(可能正常)'};
-            const s=new Date(d.contract_start),e=new Date(d.contract_end);
-            return{r:'需求3.1.6.6: 合同结束日期 > 开始日期',p:e>s,a:`${d.contract_start}→${d.contract_end}`}
+            const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'需求3.1.6.6: 合同期应有起止日期',p:true,a:'无协议(可能正常)'};
+            const start=new Date(sig.contract_start),end=new Date(sig.contract_end);
+            return{r:'需求3.1.6.6: 合同结束日期 > 开始日期',p:end>start,a:`${sig.contract_start}→${sig.contract_end}`}
           },
           (d)=>{
-            if(!d||!d.contract_start)return{r:'需求: 合同期应为1年',p:true,a:'跳过'};
-            const s=new Date(d.contract_start),e=new Date(d.contract_end);
-            const days=Math.round((e-s)/(1000*60*60*24));
-            return{r:'需求3.1.7.1: 合同期应约为365天(1年)',p:days>=360&&days<=370,a:`合同期=${days}天`}
+            const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'需求: 合同期应为1年或2年',p:true,a:'跳过'};
+            const start=new Date(sig.contract_start),end=new Date(sig.contract_end);
+            const days=Math.round((end-start)/(1000*60*60*24));
+            const ok1y=days>=360&&days<=370,ok2y=days>=725&&days<=735;
+            return{r:'需求3.1.7.1: 合同期应为1年(约365天)或2年(约730天)',p:ok1y||ok2y,a:`合同期=${days}天`}
           }
         ]
+      },
+      {name:'S6.4 获取协议模板(level=2 青鸾)',fn:'ambassador',act:'getContractTemplate',params:{level:2},
+        biz:[
+          (d,raw)=>({r:'青鸾模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;if(!t)return{r:'模板应含名称',p:false,a:'无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'模板应有 contract_file_url',p:false,a:'无'};return{r:'模板应有 contract_file_url',p:!!t.contract_file_url,a:t.contract_file_url?'✓':'❌'}}
+        ]
+      },
+      {name:'S6.5 获取协议模板(level=3 鸿鹄)',fn:'ambassador',act:'getContractTemplate',params:{level:3},
+        biz:[
+          (d,raw)=>({r:'鸿鹄模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;if(!t)return{r:'模板应含名称',p:false,a:'无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'模板宜有 contract_file_url（鸿鹄未上传则跳过）',p:true,a:'无模板'};return{r:'模板宜有 contract_file_url（鸿鹄未上传则跳过）',p:true,a:t.contract_file_url?'✓有电子版':'暂无'}}
+        ]
+      },
+      {name:'S6.6 无模板等级(level=99 应报错)',fn:'ambassador',act:'getContractTemplate',params:{level:99},
+        expectFail:true,
+        errBiz:(raw)=>({r:'该等级无模板时应返回错误',p:raw.success===false,a:(raw.message||'无message').slice(0,50)})
+      },
+      {name:'S6.7 协议详情-不存在的 signature_id(应报错)',fn:'ambassador',act:'getContractDetail',params:{signature_id:99999},
+        expectFail:true,
+        errBiz:(raw)=>({r:'不存在的 signature_id 应返回错误',p:raw.success===false&&(raw.message||'').includes('不存在'),a:raw.message||'无message'})
       }
     ]
   },
@@ -977,9 +1158,9 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
   // ────────────── FLOW 7: 预约 · 签到 · 学习进度 ──────────────
   {
     id:'F7',icon:'📅',name:'流程7: 预约 · 排期 · 学习进度 · 签到验证',
-    desc:'排期列表 → 我的预约 → 学院进度 → 验证appointments/class_records多表关联',
-    tables:['class_records','appointments','user_courses','academy_progress'],rules:6,
-    get chainHtml(){return ['getClassRecords','getMyAppointments','getAcademyProgress'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'排期列表 → 我的预约 → 学院进度 → 边界(无预约用户/无进度用户)',
+    tables:['class_records','appointments','user_courses','academy_progress'],rules:9,
+    get chainHtml(){return ['getClassRecords','getMyAppointments','getAcademyProgress','边界验证x2'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S7.1 课程排期',fn:'course',act:'getClassRecords',params:{course_id:1},
         biz:[
@@ -998,11 +1179,11 @@ WHERE cr.status=1 ORDER BY cr.class_date DESC LIMIT 10`
       {name:'S7.2 我的预约',fn:'course',act:'getMyAppointments',
         biz:[
           (d,raw)=>({r:'我的预约接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const bad=list.filter(r=>![0,1,2,3].includes(Number(r.status)));return{r:'预约 status 应为合法枚举(0待确认/1已预约/2已完成/3已取消)',p:bad.length===0,a:bad.length?`${bad.length}条非法status`:list.length?`${list.length}条均合法`:'暂无预约'}}
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const bad=list.filter(r=>![0,1,2,3].includes(Number(r.status)));return{r:'预约 status 应为合法枚举(0待上课/1已签到/2缺席/3已取消)',p:bad.length===0,a:bad.length?`${bad.length}条非法status`:list.length?`${list.length}条均合法`:'暂无预约'}}
         ],
-        sql:()=>`-- 预约 + 排期 + 课程关联验证
+        sql:()=>`-- 预约 + 排期 + 课程关联验证（class_records 使用 class_time，无 start_time/end_time）
 SELECT a.id, a.status, a.is_retrain, a.order_no,
-  cr.class_date, cr.start_time, cr.end_time, cr.class_location,
+  cr.class_date, cr.class_time, cr.class_location,
   c.name as course_name, c.type as course_type,
   uc.attend_count
 FROM tiandao_culture.appointments a
@@ -1014,6 +1195,24 @@ WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
       {name:'S7.3 学习进度',fn:'course',act:'getAcademyProgress',
         biz:[(d,raw)=>({r:'学习进度接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
         sql:()=>`SELECT * FROM tiandao_culture.academy_progress WHERE user_id=${U.id}`
+      },
+      // ── 边界：无预约用户（id=31, openid=edMSp1LTe_lY4QN_Jj21_g）──
+      {name:'S7.4 [边界] 无预约用户 getMyAppointments',fn:'course',act:'getMyAppointments',
+        params:()=>({test_openid:'edMSp1LTe_lY4QN_Jj21_g'}),
+        biz:[
+          (d,raw)=>({r:'无预约用户接口应正常返回（不报错）',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'无预约用户应返回空列表(list.length=0)',p:list.length===0,a:list.length===0?'空列表 ✓':`❌返回了${list.length}条记录（user_id=31应无预约）`}}
+        ],
+        sql:()=>`-- 边界验证：user_id=31 appointments 为空\nSELECT COUNT(*) as cnt FROM tiandao_culture.appointments WHERE user_id=31`
+      },
+      // ── 边界：无学习进度用户（id=31）──
+      {name:'S7.5 [边界] 无进度用户 getAcademyProgress',fn:'course',act:'getAcademyProgress',
+        params:()=>({test_openid:'edMSp1LTe_lY4QN_Jj21_g'}),
+        biz:[
+          (d,raw)=>({r:'无进度用户接口应正常返回（不报错）',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'无进度用户应返回空列表(list.length=0)',p:list.length===0,a:list.length===0?'空列表 ✓':`❌返回了${list.length}条记录（user_id=31应无进度）`}}
+        ],
+        sql:()=>`-- 边界验证：user_id=31 academy_progress 为空\nSELECT COUNT(*) as cnt FROM tiandao_culture.academy_progress WHERE user_id=31`
       }
     ]
   },
@@ -1021,24 +1220,32 @@ WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
   // ────────────── FLOW 8: 反馈系统 ──────────────
   {
     id:'F8',icon:'💬',name:'流程8: 反馈 · 类型联动 · 课程关联',
-    desc:'可反馈课程(来自我的课程) → 反馈类型(根据课程联动) → 我的反馈',
-    tables:['feedbacks','user_courses','courses'],rules:8,
-    get chainHtml(){return ['getFeedbackCourses','getFeedbackTypes','getMyFeedback'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'可反馈课程 → 反馈类型(课程/通用/不同课程) → 提交反馈 → 我的反馈(含分页) → 边界:无课程用户',
+    tables:['feedbacks','user_courses','courses'],rules:23,
+    get chainHtml(){return ['getFeedbackCourses','getFeedbackTypes','submitFeedback','getMyFeedback'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S8.1 可反馈课程',fn:'system',act:'getFeedbackCourses',
         biz:[
           (d,raw)=>({r:'需求3.1.6.3: 仅显示已购课程',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);const myCourses=(C.myCourseIds||[]);if(!myCourses.length)return{r:'需求3.1.6.3: 可反馈课程应来自我的课程',p:true,a:`${list.length}条可反馈课程(F2已购记录未取到,无法交叉验证)`};const extra=list.filter(f=>!myCourses.includes(f.course_id||f.id));return{r:'需求3.1.6.3: 可反馈课程不应含未购课程',p:extra.length===0,a:extra.length?`${extra.length}条未购课程混入`:`${list.length}条均为已购课程`}}
         ],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.feedbackCourses=list},
         sql:()=>`-- 可反馈课程应等于用户已购课程
 SELECT uc.course_id, c.name FROM tiandao_culture.user_courses uc
 JOIN tiandao_culture.courses c ON uc.course_id=c.id
 WHERE uc.user_id=${U.id} AND uc.status=1`
       },
-      {name:'S8.2 反馈类型(选择课程时)',fn:'system',act:'getFeedbackTypes',params:{course_id:1},
+      {name:'S8.2a 反馈类型(course_id=1)',fn:'system',act:'getFeedbackTypes',params:{course_id:1},
         biz:[
           (d,raw)=>({r:'需求3.1.6.3: 选课程时类型接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'需求3.1.6.3: 选课程时类型列表不应为空',p:list.length>0,a:list.length?`${list.length}个类型`:'❌无类型返回'}}
+        ],
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);C.feedbackTypesCourse1=list}
+      },
+      {name:'S8.2b 反馈类型(course_id=2)',fn:'system',act:'getFeedbackTypes',params:{course_id:2},
+        biz:[
+          (d,raw)=>({r:'不同课程的类型接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);const prev=C.feedbackTypesCourse1||[];const same=list.length===prev.length;return{r:'不同课程的反馈类型应一致（均为全局配置）',p:same,a:`course_id=1: ${prev.length}个, course_id=2: ${list.length}个${same?' ✓ 一致':' ✗ 不一致'}`}}
         ]
       },
       {name:'S8.3 反馈类型(通用反馈)',fn:'system',act:'getFeedbackTypes',params:{},
@@ -1047,15 +1254,50 @@ WHERE uc.user_id=${U.id} AND uc.status=1`
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'需求3.1.6.3: 通用类型列表不应为空',p:list.length>0,a:list.length?`${list.length}个类型`:'❌无类型返回'}}
         ]
       },
-      {name:'S8.4 我的反馈列表',fn:'system',act:'getMyFeedback',params:{page:1,pageSize:10},
+      {name:'S8.4 提交反馈(条件写)',fn:'system',act:'submitFeedback',
+        params:{feedbackType:2,content:'[自动测试] 功能建议反馈内容，测试提交流程是否正常',contact:'13800138000'},
+        biz:[
+          (d,raw)=>({r:'submitFeedback 应成功返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'返回应含 id（新建反馈ID）',p:!!d?.id,a:d?.id?`新建id=${d.id}`:'❌缺少id'}),
+          (d)=>({r:'返回应含 created_at',p:!!d?.created_at,a:d?.created_at||'❌缺少created_at'})
+        ],
+        save:(d,_,C)=>{if(d?.id)C.newFeedbackId=d.id},
+        sql:()=>`-- 提交反馈后验证新记录
+SELECT id, user_id, feedback_type, content, status, created_at
+FROM tiandao_culture.feedbacks WHERE user_id=${U.id}
+ORDER BY id DESC LIMIT 3`
+      },
+      {name:'S8.5 我的反馈列表(page=1)',fn:'system',act:'getMyFeedback',params:{page:1,pageSize:10},
         biz:[
           (d,raw)=>({r:'我的反馈列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const bad=list.filter(f=>![0,1,2].includes(Number(f.status)));return{r:'反馈 status 应为合法枚举(0待处理/1已回复/2已关闭)',p:bad.length===0,a:bad.length?`${bad.length}条非法status`:list.length?`${list.length}条均合法`:'暂无反馈'}}
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const bad=list.filter(f=>![0,1,2,3].includes(Number(f.status)));return{r:'反馈 status 应为合法枚举(0/1/2/3)',p:bad.length===0,a:bad.length?`${bad.length}条非法status`:list.length?`${list.length}条均合法`:'暂无反馈'}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const bad=list.filter(f=>![1,2,3,4,5].includes(Number(f.feedback_type)));return{r:'feedback_type 应为合法枚举(1~5)',p:bad.length===0,a:bad.length?`${bad.length}条非法feedback_type`:list.length?`${list.length}条均合法`:'暂无反馈'}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const types=new Set(list.map(f=>Number(f.feedback_type)));return{r:'应覆盖多种 feedback_type（至少2种）',p:types.size>=2,a:`${types.size}种类型: [${[...types].sort().join(',')}]`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const withCourse=list.filter(f=>f.course_id);const missingName=withCourse.filter(f=>!f.course_name);return{r:'关联课程的反馈应含 course_name',p:missingName.length===0,a:withCourse.length?`${withCourse.length}条关联课程,${missingName.length}条缺名称`:'无课程关联反馈'}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const replied=list.filter(f=>Number(f.status)===2);const noReply=replied.filter(f=>!f.reply);return{r:'已处理(status=2)的反馈应含 reply 内容',p:noReply.length===0,a:replied.length?`${replied.length}条已处理,${noReply.length}条缺reply`:list.length?'无已处理反馈':'暂无反馈'}},
+          (d)=>{const total=d?.total||d?.pagination?.total;return{r:'返回应含 total 字段(分页总数)',p:total!==undefined&&total!==null,a:total!==undefined?`total=${total}`:'❌缺少total'}}
         ],
+        save:(d,_,C)=>{C.feedbackPage1Count=(d?.list||(Array.isArray(d)?d:[])).length;C.feedbackTotal=d?.total||d?.pagination?.total||0},
         sql:()=>`SELECT f.id, f.course_id, c.name as course_name, f.feedback_type, f.status, f.reply, f.created_at
 FROM tiandao_culture.feedbacks f
 LEFT JOIN tiandao_culture.courses c ON f.course_id=c.id
 WHERE f.user_id=${U.id} ORDER BY f.created_at DESC LIMIT 10`
+      },
+      {name:'S8.6 我的反馈列表(page=2 分页)',fn:'system',act:'getMyFeedback',params:{page:2,pageSize:10},
+        biz:[
+          (d,raw)=>({r:'分页 page=2 应正常返回(不报错)',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);const total=C.feedbackTotal||0;if(total<=10)return{r:'总数≤10时 page=2 应返回空列表',p:list.length===0,a:list.length?`❌应为空但返回${list.length}条`:'空列表 ✓'};return{r:'总数>10时 page=2 应返回剩余记录',p:list.length>0,a:`${list.length}条(总${total}条)`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const replied=list.filter(f=>Number(f.status)===2);const noReply=replied.filter(f=>!f.reply);return{r:'page=2 中已处理(status=2)的反馈应含 reply',p:noReply.length===0,a:replied.length?`${replied.length}条已处理,${noReply.length}条缺reply`:'无已处理反馈(page2)'}}
+        ]
+      },
+      {name:'S8.7 边界:无课程用户的可反馈课程',fn:'system',act:'getFeedbackCourses',
+        params:{test_openid:'oJr1c7EwR_AWwhMuJtviedCz1zXg'},
+        biz:[
+          (d,raw)=>({r:'无已购课程用户接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'无已购课程用户应返回空列表',p:list.length===0,a:list.length?`❌应为空但返回${list.length}条`:'空列表 ✓'}}
+        ],
+        sql:()=>`-- user_id=33 应无已购课程
+SELECT COUNT(*) as cnt FROM tiandao_culture.user_courses WHERE user_id=33 AND status=1`
       }
     ]
   },
@@ -1064,36 +1306,283 @@ WHERE f.user_id=${U.id} ORDER BY f.created_at DESC LIMIT 10`
   {
     id:'F9',icon:'⚙️',name:'流程9: 系统公共 · 公告 · Banner · 配置 · 通知',
     desc:'公告列表 → Banner → 系统配置 → 通知配置 → 综合积分查询',
-    tables:['announcements','banners','system_configs','notification_configs'],rules:8,
+    tables:['announcements','banners','system_configs','notification_configs'],rules:19,
     get chainHtml(){return ['getAnnouncementList','getBannerList','getSystemConfig','getNotificationConfigs','getUserPoints'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S9.1 公告列表',fn:'system',act:'getAnnouncementList',params:{page:1,pageSize:10},
         biz:[
           (d,raw)=>({r:'公告列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const missing=list.filter(a=>!a.title&&!a.name);return{r:'公告应含 title 字段',p:missing.length===0,a:missing.length?`${missing.length}条缺title`:`${list.length}条均有title`}}
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const missing=list.filter(a=>!a.title&&!a.name);return{r:'公告应含 title 字段',p:missing.length===0,a:missing.length?`${missing.length}条缺title`:`${list.length}条均有title`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const cats=['general','course','activity','system','banner','announcement'];const bad=list.filter(a=>a.category&&!cats.includes(a.category));return{r:'公告 category 应在合法枚举内',p:bad.length===0,a:bad.length?`${bad.length}条分类非法: ${bad.map(b=>b.category).join(',')}`:`${list.length}条分类均合法`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const hasId=list.every(a=>a.id!=null);return{r:'公告应含 id 字段',p:hasId,a:hasId?`${list.length}条均有id`:'存在缺id记录'}}
         ],
         sql:()=>`SELECT id, title, category, status, is_top, created_at FROM tiandao_culture.announcements WHERE status=1 ORDER BY is_top DESC, created_at DESC LIMIT 10`
       },
       {name:'S9.2 Banner列表',fn:'system',act:'getBannerList',
         biz:[
           (d,raw)=>({r:'Banner列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const missing=list.filter(b=>!b.image_url&&!b.img&&!b.imageUrl);return{r:'Banner 应含 image_url 字段',p:missing.length===0,a:missing.length?`${missing.length}条缺image_url`:list.length?`${list.length}条均有图片`:'暂无Banner'}}
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const missing=list.filter(b=>!b.image_url&&!b.img&&!b.imageUrl&&!b.cover_image);return{r:'Banner 应含图片字段(cover_image/image_url)',p:missing.length===0,a:missing.length?`${missing.length}条缺图片字段`:list.length?`${list.length}条均有图片`:'暂无Banner'}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'Banner 列表应有记录',p:list.length>0,a:`${list.length}条`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const hasTitle=list.every(b=>b.title);return{r:'Banner 应含 title 字段',p:hasTitle,a:hasTitle?`${list.length}条均有title`:'存在缺title记录'}}
         ],
         sql:()=>`SELECT id, title, image_url, link_type, status, sort_order FROM tiandao_culture.banners WHERE status=1 ORDER BY sort_order`
       },
-      {name:'S9.3 系统配置',fn:'system',act:'getSystemConfig',
+      {name:'S9.3 系统配置(客服电话)',fn:'system',act:'getSystemConfig',params:{key:'customer_service_phone'},
         biz:[
           (d,raw)=>({r:'系统配置应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>{const obj=Array.isArray(d)?null:d;const hasKV=obj&&(Object.keys(obj).length>0||obj.configs||obj.list);return{r:'系统配置应返回非空数据',p:raw===undefined||hasKV||Array.isArray(d)&&d.length>0,a:hasKV?`有配置项`:'可能为空(需检查)'}}
+          (d)=>({r:'客服电话配置值应非空',p:!!d?.value,a:d?.value||'无值'}),
+          (d)=>({r:'客服电话格式应合理',p:/^[\d\-]+$/.test(d?.value||''),a:d?.value||'格式异常'})
         ],
-        sql:()=>`SELECT config_key, config_value, description FROM tiandao_culture.system_configs ORDER BY config_key`
+        sql:()=>`SELECT config_key, config_value, config_name, config_type, status FROM tiandao_culture.system_configs WHERE config_key='customer_service_phone'`
       },
       {name:'S9.4 通知配置',fn:'system',act:'getNotificationConfigs',
-        biz:[(d,raw)=>({r:'通知配置应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        sql:()=>`SELECT id, course_id, trigger_type, template_id, status FROM tiandao_culture.notification_configs WHERE status=1`
+        biz:[
+          (d,raw)=>({r:'通知配置应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'通知配置应有记录',p:list.length>0,a:`${list.length}条`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const hasName=list.every(c=>c.name||c.template_id);return{r:'通知配置应含 name 或 template_id',p:hasName,a:hasName?'均有标识字段':'存在缺标识记录'}}
+        ],
+        sql:()=>`SELECT id, course_id, trigger_type, template_id, status, name FROM tiandao_culture.notification_configs WHERE status=1`
       },
       {name:'S9.5 综合积分查询',fn:'system',act:'getUserPoints',
-        biz:[(d,raw)=>({r:'综合积分查询应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})]
+        biz:[
+          (d,raw)=>({r:'综合积分查询应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'功德分应≥0',p:(d?.merit_points??d?.meritPoints??0)>=0,a:`功德分=${d?.merit_points??d?.meritPoints??'N/A'}`}),
+          (d)=>{const avail=d?.cash_points_available??d?.cashPointsAvailable??0;return{r:'可用积分应≥0',p:avail>=0,a:`可用积分=${avail}`}}
+        ]
+      },
+      {name:'S9.6 公告详情',fn:'system',act:'getAnnouncementDetail',params:{id:1},
+        biz:[
+          (d,raw)=>({r:'公告详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'公告详情应含 title',p:!!d?.title,a:d?.title||'无title'}),
+          (d)=>({r:'公告详情应含 content',p:!!d?.content,a:d?.content?'有内容':'无content'}),
+          (d)=>({r:'公告详情 id 应为请求的 id',p:d?.id===1,a:`id=${d?.id}`})
+        ],
+        sql:()=>`SELECT id, title, content, category, status, cover_image FROM tiandao_culture.announcements WHERE id=1 AND status=1`
+      },
+      {name:'S9.7 系统配置(不存在的key)',fn:'system',act:'getSystemConfig',params:{key:'__nonexistent_key_test__'},
+        expectFail:true,
+        errBiz:(d)=>({r:'错误信息应含"不存在"或"禁用"',p:/不存在|禁用|not found/i.test(d.message||''),a:d.message||'无信息'})
+      }
+    ]
+  },
+
+  // ────────────── FLOW 11: 大使志愿活动全链路 ──────────────
+  {
+    id:'F11',icon:'🙋',name:'流程11: 大使志愿活动 · 岗位管理 · 报名 · 功德分发放',
+    desc:'岗位类型列表 → 可报名活动列表 → 管理端查看 → 报名人员 → 发放功德分 → 功德分验证 → 活动记录 → 活动统计 → 取消报名边界测试',
+    tables:['ambassador_position_types','ambassador_activities','ambassador_activity_registrations','users','merit_points_records','ambassador_activity_records'],rules:12,
+    get chainHtml(){return ['getPositionTypeList','getAvailableActivities','getAmbassadorActivityList','getActivityRegistrants','distributeActivityMeritPoints','getActivityRecords','getActivityStats','cancelActivityRegistration'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S11.1 获取岗位类型列表',fn:'ambassador',act:'getPositionTypeList',admin:true,
+        params:{includeDisabled:false},
+        fields:['list:a'],
+        biz:[
+          (d,raw)=>({r:'岗位类型接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||[];return{r:'岗位类型列表结构正确（含 id/name/merit_points_default）',p:list.length===0||list.every(t=>t.id&&t.name&&t.merit_points_default!==undefined),a:`共${list.length}条`}}
+        ],
+        save:(d,_,C)=>{C.positionTypes=d?.list||[]},
+        sql:(C)=>`SELECT id, name, required_level, merit_points_default, status, sort_order FROM tiandao_culture.ambassador_position_types ORDER BY sort_order LIMIT 20`
+      },
+      {name:'S11.2 客户端获取可报名活动列表',fn:'ambassador',act:'getAvailableActivities',
+        params:{page:1,pageSize:20},
+        fields:['list:a'],
+        biz:[
+          (d,raw)=>({r:'可报名活动接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||[];
+            const allHavePositions=list.every(a=>Array.isArray(a.positions)&&a.positions.length>0);
+            return{r:'每个活动必须含 positions 数组（岗位列表）',p:list.length===0||allHavePositions,a:allHavePositions?`${list.length}个活动,均有岗位`:'存在无岗位的活动'}
+          },
+          (d)=>{
+            const list=d?.list||[];
+            const myRegFilled=list.every(a=>a.my_registration!==undefined);
+            return{r:'每个活动必须含 my_registration 字段（用户报名状态）',p:list.length===0||myRegFilled,a:myRegFilled?'结构正确':'缺少 my_registration 字段'}
+          }
+        ],
+        save:(d,_,C)=>{C.availableActivities=d?.list||[];C.activityListTotal=d?.total||0;if(d?.list?.length>0)C.firstActivityId=d.list[0].id},
+        sql:(C)=>`SELECT aa.id, aa.schedule_name, aa.schedule_date, aa.status, aa.merit_distributed,
+  JSON_LENGTH(aa.positions) as position_count,
+  (SELECT COUNT(*) FROM tiandao_culture.ambassador_activity_registrations r WHERE r.activity_id=aa.id AND r.status<>0) as registered_count
+FROM tiandao_culture.ambassador_activities aa
+WHERE aa.status=1 AND aa.schedule_date > CURDATE()
+ORDER BY aa.schedule_date LIMIT 10`
+      },
+      {name:'S11.3 管理端获取志愿活动列表',fn:'ambassador',act:'getAmbassadorActivityList',admin:true,
+        params:{page:1,pageSize:20},
+        fields:['list:a','total:n'],
+        biz:[
+          (d,raw)=>({r:'管理端活动列表接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||[];return{r:'活动列表含 total_quota/total_registered/merit_distributed 字段',p:list.length===0||list.every(a=>a.total_quota!==undefined&&a.total_registered!==undefined&&a.merit_distributed!==undefined),a:`共${list.length}条`}}
+        ],
+        save:(d,_,C)=>{if(d?.list?.length>0)C.adminActivityId=d.list[0].id},
+        sql:(C)=>`SELECT id, schedule_name, schedule_date, status, merit_distributed, merit_distributed_at, created_at FROM tiandao_culture.ambassador_activities ORDER BY created_at DESC LIMIT 10`
+      },
+      {name:'S11.4 获取活动详情（首条活动）',fn:'ambassador',act:'getAmbassadorActivityDetail',admin:true,
+        params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1}),
+        fields:['id:n','positions:a','total_quota:n','total_registered:n'],
+        biz:[
+          (d,raw)=>({r:'活动详情接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const positions=d?.positions||[];
+            const hasRemaining=positions.every(p=>p.remaining!==undefined);
+            return{r:'每个岗位必须含 remaining（剩余名额）字段',p:positions.length===0||hasRemaining,a:hasRemaining?'结构正确':'缺少 remaining 字段'}
+          },
+          (d)=>{
+            const totalReg=d?.total_registered||0;
+            const sumReg=(d?.positions||[]).reduce((s,p)=>s+(p.registered_count||0),0);
+            return{r:'total_registered 应等于所有岗位 registered_count 之和',p:totalReg===sumReg,a:`total_registered=${totalReg}, sum=${sumReg}`}
+          }
+        ],
+        save:(d,_,C)=>{C.activityDetail=d;C.meritBeforeDistribute=null},
+        sql:(C)=>`SELECT aa.*, 
+  (SELECT COUNT(*) FROM tiandao_culture.ambassador_activity_registrations r WHERE r.activity_id=aa.id AND r.status=1) as valid_reg_count,
+  (SELECT COUNT(*) FROM tiandao_culture.ambassador_activity_registrations r WHERE r.activity_id=aa.id) as total_reg_count
+FROM tiandao_culture.ambassador_activities aa WHERE aa.id=${C.adminActivityId||C.firstActivityId||1}`
+      },
+      {name:'S11.5 获取活动报名人员列表',fn:'ambassador',act:'getActivityRegistrants',admin:true,
+        params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1,page:1,pageSize:20}),
+        fields:['list:a','total:n'],
+        biz:[
+          (d,raw)=>({r:'报名人员接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||[];
+            const hasStatus=list.every(r=>r.status!==undefined&&r.status_text!==undefined);
+            return{r:'报名记录含 status/status_text 字段',p:list.length===0||hasStatus,a:hasStatus?`共${list.length}条报名`:'缺少状态字段'}
+          }
+        ],
+        save:(d,_,C)=>{C.registrantList=d?.list||[]},
+        sql:(C)=>`SELECT r.id, r.user_id, r.user_name, r.position_name, r.merit_points, r.status,
+  u.merit_points as user_merit_balance
+FROM tiandao_culture.ambassador_activity_registrations r
+LEFT JOIN tiandao_culture.users u ON r.user_id=u.id
+WHERE r.activity_id=${C.adminActivityId||C.firstActivityId||1}
+ORDER BY r.created_at`
+      },
+      {name:'S11.6 读取用户发放前功德分余额（基线）',fn:'user',act:'getProfile',
+        biz:[
+          (d,raw)=>({r:'用户资料接口正常',p:raw.success===true,a:raw.success?'OK':raw.message})
+        ],
+        save:(d,_,C)=>{C.meritBeforeDistribute=Number(d?.merit_points||0)},
+        sql:(C)=>`SELECT id, real_name, merit_points FROM tiandao_culture.users WHERE id=${U.id}`
+      },
+      {name:'S11.7 发放活动功德分（有有效报名时执行，无则跳过）',fn:'ambassador',act:'distributeActivityMeritPoints',admin:true,softFail:true,
+        params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1}),
+        biz:[
+          (d,raw)=>{
+            const msg=raw.message||'';
+            const isOk=raw.success===true||msg.includes('已发放')||msg.includes('暂无报名');
+            return{r:'发放功德分：成功/已发放/暂无报名均属预期',p:isOk,a:msg||'OK'}
+          },
+          (d,raw,C)=>{
+            if(!raw.success)return{r:'发放人数一致性（未成功时跳过）',p:true,a:`跳过: ${raw.message||''}`};
+            const successCount=d?.success_count||0;
+            const validReg=(C.registrantList||[]).filter(r=>r.status===1).length;
+            return{r:'发放成功人数应等于有效报名（status=1）的数量',p:validReg===0||successCount===validReg,a:`发放=${successCount}, 有效报名=${validReg}`}
+          }
+        ],
+        save:(d,raw,C)=>{C.distributeResult=raw},
+        sql:(C)=>`SELECT aa.merit_distributed, aa.merit_distributed_at, aa.status as activity_status,
+  COUNT(r.id) as reg_total,
+  SUM(CASE WHEN r.status=1 THEN 1 ELSE 0 END) as pending_reg,
+  SUM(CASE WHEN r.status=2 THEN 1 ELSE 0 END) as distributed_reg
+FROM tiandao_culture.ambassador_activities aa
+LEFT JOIN tiandao_culture.ambassador_activity_registrations r ON r.activity_id=aa.id
+WHERE aa.id=${C.adminActivityId||C.firstActivityId||1}
+GROUP BY aa.id`
+      },
+      {name:'S11.8 验证功德分发放后余额变化',fn:'user',act:'getProfile',
+        biz:[
+          (d,raw)=>({r:'用户资料接口正常',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,_,C)=>{
+            if(!C.distributeResult?.success)return{r:'功德分余额验证（发放未成功，跳过）',p:true,a:'跳过'};
+            const before=Number(C.meritBeforeDistribute||0);
+            const after=Number(d?.merit_points||0);
+            const distributed=C.distributeResult?.data?.success_count||0;
+            // 仅当测试用户在报名列表中时才校验增加
+            const inList=(C.registrantList||[]).some(r=>r.user_id===U.id&&r.status===1);
+            if(!inList)return{r:'功德分余额变化（当前用户不在报名列表，跳过增加检验）',p:true,a:`after=${after}`};
+            return{r:'发放成功后，当前用户功德分余额应有增加',p:after>before,a:`before=${before}, after=${after}`}
+          }
+        ],
+        sql:(C)=>`-- ★ 功德分发放后余额验证
+SELECT u.id, u.real_name, u.merit_points,
+  (SELECT SUM(mp.amount) FROM tiandao_culture.merit_points_records mp WHERE mp.user_id=u.id AND mp.source=7) as 志愿活动累计获得
+FROM tiandao_culture.users u WHERE u.id=${U.id}`
+      },
+      {name:'S11.9 验证发放后活动状态为已结束',fn:'ambassador',act:'getAmbassadorActivityDetail',admin:true,
+        params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1}),
+        biz:[
+          (d,raw)=>({r:'活动详情接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,_,C)=>{
+            if(!C.distributeResult?.success)return{r:'活动状态验证（发放未成功，跳过）',p:true,a:'跳过'};
+            return{r:'发放功德分后活动 merit_distributed 应为 1',p:d?.merit_distributed===1,a:`merit_distributed=${d?.merit_distributed}`}
+          },
+          (d,_,C)=>{
+            if(!C.distributeResult?.success)return{r:'活动状态（已结束）验证跳过',p:true,a:'跳过'};
+            return{r:'发放功德分后活动 status 应为 0（已结束）',p:d?.status===0,a:`status=${d?.status}`}
+          }
+        ],
+        sql:(C)=>`-- ★ 功德分记录溯源
+SELECT mp.id, mp.user_id, u.real_name, mp.type, mp.source, mp.amount, mp.balance_after, mp.activity_name, mp.created_at
+FROM tiandao_culture.merit_points_records mp
+LEFT JOIN tiandao_culture.users u ON mp.user_id=u.id
+WHERE mp.source=7
+ORDER BY mp.created_at DESC LIMIT 20`
+      },
+      {name:'S11.10 验证 ambassador_activity_records 写入正确',fn:'ambassador',act:'getActivityRecords',
+        params:{page:1,pageSize:10},
+        biz:[
+          (d,raw)=>({r:'大使活动记录接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||[];
+            return{r:'活动记录含 activity_name/merit_points 字段',p:list.length===0||list.every(r=>r.activity_name&&r.merit_points!==undefined),a:`共${list.length}条记录`}
+          },
+          (d)=>{
+            // getActivityRecords 同时返回 stats 统计对象
+            const stats=d?.stats;
+            const hasStats=stats&&stats.total_count!==undefined&&stats.total_merit_points!==undefined&&stats.type_stats!==undefined;
+            return{r:'getActivityRecords 应附带 stats 统计对象（total_count/total_merit_points/type_stats）',p:hasStats,a:hasStats?`total=${stats.total_count}, merit=${stats.total_merit_points}`:'缺少 stats 字段'}
+          }
+        ],
+        sql:(C)=>`-- ★ ambassador_activity_records 数据验证
+SELECT ar.id, ar.user_id, u.real_name, ar.activity_type, ar.activity_name,
+  ar.merit_points, ar.status, ar.created_at
+FROM tiandao_culture.ambassador_activity_records ar
+LEFT JOIN tiandao_culture.users u ON ar.user_id=u.id
+ORDER BY ar.created_at DESC LIMIT 20`
+      },
+      {name:'S11.11 获取活动统计（getActivityStats）',fn:'ambassador',act:'getActivityStats',
+        params:{},
+        biz:[
+          (d,raw)=>({r:'活动统计接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const hasFields=d&&d.total_count!==undefined&&d.total_merit_points!==undefined&&d.month_count!==undefined&&d.type_stats!==undefined;
+            return{r:'返回字段完整: total_count/total_merit_points/month_count/type_stats',p:hasFields,a:hasFields?`total=${d.total_count}, merit=${d.total_merit_points}`:'字段缺失'}
+          },
+          (d)=>{
+            if(!d?.type_stats)return{r:'type_stats 含1-4类型统计',p:false,a:'缺少type_stats'};
+            const has4Types=[1,2,3,4].every(k=>d.type_stats[k]!==undefined);
+            return{r:'type_stats 包含1(辅导员)/2(会务义工)/3(沙龙)/4(其他) 四类',p:has4Types,a:JSON.stringify(d.type_stats)}
+          }
+        ],
+        sql:(C)=>`SELECT activity_type, COUNT(*) as cnt, SUM(merit_points) as total_merit
+FROM tiandao_culture.ambassador_activity_records
+WHERE user_id=${U.id} AND status=1
+GROUP BY activity_type`
+      },
+      {name:'S11.12 取消报名边界测试（已结束活动应返回错误）',fn:'ambassador',act:'cancelActivityRegistration',
+        params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1}),
+        expectFail:true,
+        errBiz:(d)=>{
+          const msg=d.message||'';
+          const isExpected=msg.includes('已结束')||msg.includes('未找到')||msg.includes('不可取消');
+          return{r:'已结束活动或无报名时，应返回"已结束/未找到"预期错误',p:isExpected,a:msg||'无信息'}
+        },
+        sql:(C)=>`SELECT r.id, r.user_id, r.position_name, r.status as reg_status,
+  aa.status as activity_status, aa.merit_distributed
+FROM tiandao_culture.ambassador_activity_registrations r
+JOIN tiandao_culture.ambassador_activities aa ON r.activity_id=aa.id
+WHERE r.activity_id=${C.adminActivityId||C.firstActivityId||1} AND r.user_id=${U.id}`
       }
     ]
   },

@@ -25,20 +25,33 @@ module.exports = async (event, context) => {
 
     const result = await executePaginatedQuery(queryBuilder, page, pageSize);
 
+    // 批量查询对应排期，获取 class_date 和 class_end_date
+    const scheduleIds = (result.list || []).map(a => a.schedule_id).filter(Boolean);
+    const scheduleMap = {};
+    if (scheduleIds.length > 0) {
+      const { data: scheduleRows } = await db
+        .from('class_records')
+        .select('id, class_date, class_end_date')
+        .in('id', scheduleIds);
+      (scheduleRows || []).forEach(s => { scheduleMap[s.id] = s; });
+    }
+
     const list = (result.list || []).map(item => {
       let positions = [];
       try {
         positions = typeof item.positions === 'string' ? JSON.parse(item.positions) : (item.positions || []);
       } catch (e) {}
 
-      // 计算总名额和已报名
       const totalQuota = positions.reduce((sum, p) => sum + (p.quota || 0), 0);
       const totalRegistered = positions.reduce((sum, p) => sum + (p.registered_count || 0), 0);
+      const schedule = scheduleMap[item.schedule_id] || {};
 
       return {
         id: item.id,
         schedule_id: item.schedule_id,
         schedule_name: item.schedule_name,
+        class_date: schedule.class_date || item.schedule_date,
+        class_end_date: schedule.class_end_date || null,
         schedule_date: item.schedule_date,
         schedule_location: item.schedule_location,
         positions,

@@ -68,8 +68,8 @@
             <text class="empty-text">暂无推荐人</text>
           </view>
 
-          <!-- 修改推荐人按钮 -->
-          <view class="modify-referee-section">
+          <!-- 修改推荐人按钮：首次购课后推荐人永久锁定，不再显示 -->
+          <view v-if="showModifyRefereeBtn" class="modify-referee-section">
             <button class="t-button t-button--outline" @click="handleModifyReferee">
               <text class="t-button__text">✏️ 修改推荐人</text>
             </button>
@@ -149,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
@@ -160,6 +160,12 @@ const activeTab = ref(0)
 
 // 我的推荐人（伯乐）
 const referee = ref<RefereeInfo | null>(null)
+
+// 推荐人是否已锁定（首次购课后不可修改）
+const isRefereeConfirmed = ref(false)
+
+// 是否显示"修改推荐人"按钮（未购课时才允许修改）
+const showModifyRefereeBtn = computed(() => !isRefereeConfirmed.value)
 
 // 统计数据
 const stats = ref({
@@ -196,6 +202,8 @@ const loadRefereeInfo = async () => {
     } else {
       referee.value = null
     }
+    // 首次购课后 referee_confirmed_at 被写入，此时推荐人关系永久锁定
+    isRefereeConfirmed.value = !!profile.referee_confirmed_at
     uni.hideLoading()
   } catch (error) {
     console.error('获取推荐人信息失败:', error)

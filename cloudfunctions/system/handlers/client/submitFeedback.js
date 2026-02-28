@@ -10,7 +10,7 @@
  * - contact: 联系方式（可选）
  */
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -33,14 +33,17 @@ module.exports = async (event, context) => {
     console.log(`[submitFeedback] 用户 ${user.id} 提交反馈`);
 
     // 创建反馈记录（驼峰转下划线）
+    const now = formatDateTime(new Date());
     const feedbackData = {
       user_id: user.id,
       user_uid: user.uid,
       user_name: user.real_name || user.nickname,
       user_phone: user.phone,
-      feedback_type: feedbackType, // 驼峰转下划线
+      feedback_type: feedbackType,
+      type: feedbackType,
       content,
-      status: 0 // 待处理
+      status: 0,
+      created_at: now
     };
 
     if (courseId) {

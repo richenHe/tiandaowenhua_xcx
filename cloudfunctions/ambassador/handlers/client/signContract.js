@@ -16,7 +16,7 @@ const https = require('https');
 const http = require('http');
 const cloudbase = require('@cloudbase/node-sdk');
 
-const { db, update } = require('../../common/db');
+const { db, update, insert } = require('../../common/db');
 const { response, formatDateTime, cloudFileIDToURL } = require('../../common');
 
 // 初始化 CloudBase app（用于上传文件）
@@ -42,56 +42,165 @@ function downloadBuffer(url) {
 }
 
 /**
- * 将签名图片和文本注入 docx 模板，返回已签版 Buffer
- * 模板中需预留占位符：
- *   {%signature}  × 2（甲方/负责人签名，图片占位）
- *   {phone}       × 1（自动填入用户手机号）
- *   {date}        × 1（自动填入签署日期，格式 YYYY年MM月DD日）
+ * 构造 OOXML 内联图片 drawing XML
+ * cx/cy 单位为 EMU（1cm = 360000 EMU）
  */
-async function injectSignatureIntoDocx(docxBuffer, signatureBuffer, phone, dateStr) {
-  // 动态 require（只有 ambassador 云函数才装了这些包）
+function buildInlineImageXml(relId, cx, cy, name, id) {
+  return (
+    `<w:r><w:drawing>` +
+    `<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"` +
+    ` distT="0" distB="0" distL="0" distR="0">` +
+    `<wp:extent cx="${cx}" cy="${cy}"/>` +
+    `<wp:effectExtent l="0" t="0" r="0" b="0"/>` +
+    `<wp:docPr id="${id}" name="${name}"/>` +
+    `<wp:cNvGraphicFramePr>` +
+    `<a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>` +
+    `</wp:cNvGraphicFramePr>` +
+    `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+    `<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+    `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+    `<pic:nvPicPr>` +
+    `<pic:cNvPr id="${id}" name="${name}"/>` +
+    `<pic:cNvPicPr/>` +
+    `</pic:nvPicPr>` +
+    `<pic:blipFill>` +
+    `<a:blip r:embed="${relId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>` +
+    `<a:stretch><a:fillRect/></a:stretch>` +
+    `</pic:blipFill>` +
+    `<pic:spPr>` +
+    `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>` +
+    `</pic:spPr>` +
+    `</pic:pic>` +
+    `</a:graphicData>` +
+    `</a:graphic>` +
+    `</wp:inline>` +
+    `</w:drawing></w:r>`
+  );
+}
+
+/**
+ * 在 docx XML 中找到 fromPos 之后首个含 labelText 的位置，
+ * 定位到包含该文字的 </w:r>（run 闭合标签），并在其后插入 insertXml。
+ *
+ * 效果：内容插入在「标签所在 run」之后、「下一个 run（分隔符/右侧内容）」之前，
+ * 确保无论是表格还是制表符分隔的段落，都能正确插入到左侧（甲方侧）。
+ */
+function insertAfterLabelRun(xml, labelText, insertXml, fromPos) {
+  const labelIdx = xml.indexOf(labelText, fromPos);
+  if (labelIdx === -1) return xml;
+  // 找到包含该文字的 </w:t>（文本标签关闭）
+  const textTagEnd = xml.indexOf('</w:t>', labelIdx);
+  if (textTagEnd === -1) return xml;
+  // 找到包含该 </w:t> 的 </w:r>（run 关闭）
+  const runEnd = xml.indexOf('</w:r>', textTagEnd);
+  if (runEnd === -1) return xml;
+  // 在 </w:r> 后插入（紧接在标签 run 之后，分隔符/右侧 run 之前）
+  const insertPos = runEnd + 6; // '</w:r>'.length
+  return xml.slice(0, insertPos) + insertXml + xml.slice(insertPos);
+}
+
+/**
+ * 直接扫描 docx XML，注入签名/电话/日期（签名区域）以及姓名/证件号（文档头部）。
+ * 无需模板占位符，适用于任意标准 Word 合同。
+ *
+ * 定位策略（签名区）：
+ *   取文档 LAST 一个「甲方」—— 正文条款中的甲方在前，签名区在末尾。
+ *   然后从该位置向后查找「负责人」「电话」「日期」——表格左列先于右列出现在 XML 中。
+ *   注入顺序逆序（从文档末尾向前），保证先插入不影响后续位置计算。
+ *
+ * 定位策略（头部区）：
+ *   取文档 FIRST 一个「甲方」，并检查其附近是否有「身份证」字样（头部特征）。
+ */
+async function injectSignatureIntoDocx(docxBuffer, signatureBuffer, phone, dateStr, realName, idNumber) {
   const PizZip = require('pizzip');
-  const Docxtemplater = require('docxtemplater');
-  const ImageModule = require('docxtemplater-image-module-free');
-
-  const imageModule = new ImageModule({
-    centered: false,
-    fileType: 'docx',
-    getImage(tagValue) {
-      // tagValue 就是 data.signature（Buffer）
-      if (Buffer.isBuffer(tagValue)) return tagValue;
-      return null;
-    },
-    getSize() {
-      // 签名图片尺寸：宽 150px × 高 55px（约 4cm × 1.5cm @96dpi）
-      return [150, 55];
-    }
-  });
-
   const zip = new PizZip(docxBuffer);
-  const doc = new Docxtemplater(zip, {
-    modules: [imageModule],
-    paragraphLoop: true,
-    linebreaks: true,
-    // 占位符缺失时不报错，返回空字符串
-    nullGetter(part) {
-      if (!part.module) return '';
-      return null;
+
+  // 1. 将签名 PNG 写入 word/media/
+  const mediaRelPath = 'media/sig_user.png';
+  zip.file(`word/${mediaRelPath}`, signatureBuffer);
+
+  // 2. 在 word/_rels/document.xml.rels 中添加图片关系
+  const relsPath = 'word/_rels/document.xml.rels';
+  const relsFile = zip.file(relsPath);
+  if (!relsFile) throw new Error('无效 docx：缺少 word/_rels/document.xml.rels');
+  let relsXml = relsFile.asText();
+  const relId = 'rIdSig001';
+  if (!relsXml.includes(relId)) {
+    const rel =
+      `<Relationship Id="${relId}"` +
+      ` Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"` +
+      ` Target="${mediaRelPath}"/>`;
+    relsXml = relsXml.replace('</Relationships>', rel + '</Relationships>');
+    zip.file(relsPath, relsXml);
+  }
+
+  // 3. 构造 drawing XML（宽 4cm × 高 1.5cm）+ 文本 XML
+  const sigDrawing1 = buildInlineImageXml(relId, 1440000, 540000, 'UserSig1', 9901);
+  const sigDrawing2 = buildInlineImageXml(relId, 1440000, 540000, 'UserSig2', 9902);
+  const phoneXml = `<w:r><w:t xml:space="preserve">${phone}</w:t></w:r>`;
+  const dateXml  = `<w:r><w:t xml:space="preserve">${dateStr}</w:t></w:r>`;
+  const nameXml  = realName  ? `<w:r><w:t xml:space="preserve">${realName}</w:t></w:r>`  : '';
+  const idXml    = idNumber  ? `<w:r><w:t xml:space="preserve">${idNumber}</w:t></w:r>` : '';
+
+  // 4. 修改 word/document.xml
+  const docFile = zip.file('word/document.xml');
+  if (!docFile) throw new Error('无效 docx：缺少 word/document.xml');
+  let docXml = docFile.asText();
+
+  // ── Part A：签名区域注入（文档末尾） ──────────────────────────────────
+  const lastJiafangIdx = docXml.lastIndexOf('甲方');
+  if (lastJiafangIdx === -1) {
+    console.warn('[signContract] 未找到「甲方」字样，跳过签名区注入');
+  } else {
+    // 逆序注入（越靠后越先处理，保证之前位置的索引不受影响）
+    // ④ 日期
+    if (docXml.indexOf('日期', lastJiafangIdx) !== -1) {
+      docXml = insertAfterLabelRun(docXml, '日期', dateXml, lastJiafangIdx);
     }
-  });
+    // ③ 电话
+    if (docXml.indexOf('电话', lastJiafangIdx) !== -1) {
+      docXml = insertAfterLabelRun(docXml, '电话', phoneXml, lastJiafangIdx);
+    }
+    // ② 负责人（签名区第一个出现的负责人 = 甲方的负责人）
+    if (docXml.indexOf('负责人', lastJiafangIdx) !== -1) {
+      docXml = insertAfterLabelRun(docXml, '负责人', sigDrawing2, lastJiafangIdx);
+    }
+    // ① 甲方（最后一次出现 = 签名区的甲方行）
+    docXml = insertAfterLabelRun(docXml, '甲方', sigDrawing1, lastJiafangIdx);
+    console.log('[signContract] 签名区注入完成（甲方/负责人/电话/日期）');
+  }
 
-  doc.render({
-    signature: signatureBuffer,  // 对应模板中的 {%signature}
-    phone,                       // 对应模板中的 {phone}
-    date: dateStr                // 对应模板中的 {date}
-  });
+  // ── Part B：文档头部注入（姓名 + 证件号） ─────────────────────────────
+  // 只有当文档头部存在「身份证」字样时才注入（区分有/无头部填写区的合同）
+  const firstJiafangIdx = docXml.indexOf('甲方');
+  if (firstJiafangIdx !== -1) {
+    // 检查 firstJiafangIdx 是否在头部（不是签名区最后一个甲方）
+    const isHeaderArea = firstJiafangIdx < lastJiafangIdx - 100;
+    if (isHeaderArea) {
+      const nearbyText = docXml.slice(firstJiafangIdx, Math.min(firstJiafangIdx + 800, docXml.length));
+      const hasIdField = nearbyText.includes('身份证') || nearbyText.includes('证件号');
 
-  return doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+      // 逆序注入头部：身份证（后面的）→ 甲方姓名（前面的）
+      if (hasIdField && idXml) {
+        const idLabelText = nearbyText.includes('身份证') ? '身份证' : '证件号';
+        docXml = insertAfterLabelRun(docXml, idLabelText, idXml, firstJiafangIdx);
+        console.log('[signContract] 头部证件号注入完成');
+      }
+      if (nameXml) {
+        docXml = insertAfterLabelRun(docXml, '甲方', nameXml, firstJiafangIdx);
+        console.log('[signContract] 头部姓名注入完成');
+      }
+    }
+  }
+
+  zip.file('word/document.xml', docXml);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
 }
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
-  const { templateId, template_id, signatureFileId, agreed } = event;
+  const { templateId, template_id, signatureFileId, agreed, idNumber } = event;
   const finalTemplateId = templateId || template_id;
 
   try {
@@ -123,11 +232,13 @@ module.exports = async (event, context) => {
     }
 
     // ── 检查是否已签署 ────────────────────────────────────────────────────────
+    // 只检查有效签署记录（status=1），作废记录（status=0）不阻止重新签署
     const { data: existing } = await db
       .from('contract_signatures')
       .select('id')
       .eq('user_id', user.id)
       .eq('contract_template_id', finalTemplateId)
+      .eq('status', 1)
       .single();
 
     if (existing) {
@@ -142,6 +253,7 @@ module.exports = async (event, context) => {
       .single();
 
     const userPhone = userInfo?.phone || '';
+    const userRealName = userInfo?.real_name || '';
 
     // ── 计算合约有效期 ────────────────────────────────────────────────────────
     const formatDate = (d) => d.toISOString().slice(0, 10);
@@ -175,12 +287,14 @@ module.exports = async (event, context) => {
         const signatureUrl = cloudFileIDToURL(signatureFileId);
         const signatureBuffer = await downloadBuffer(signatureUrl);
 
-        // 3. 注入签名/电话/日期
+        // 3. 注入签名/电话/日期 + 头部姓名/证件号
         const signedBuffer = await injectSignatureIntoDocx(
           docxBuffer,
           signatureBuffer,
           userPhone,
-          signDateCN
+          signDateCN,
+          userRealName,
+          idNumber || ''
         );
 
         // 4. 上传已签版 docx
@@ -212,6 +326,8 @@ module.exports = async (event, context) => {
         ambassador_level: template.ambassador_level,
         contract_name: template.contract_name,
         contract_version: template.version,
+        // 已废弃字段，保留为空字符串以兼容旧约束
+        contract_content: '',
         // 已签版文件（含手写签名）
         contract_file_id: signedFileId,
         // 原始手写签名图片 cloud:// 路径
@@ -237,14 +353,26 @@ module.exports = async (event, context) => {
 
     const { data: levelConfig } = await db
       .from('ambassador_level_configs')
-      .select('upgrade_payment_amount')
+      .select('upgrade_payment_amount, frozen_points')
       .eq('level', targetLevel)
       .single();
 
     const needsPayment = levelConfig && Number(levelConfig.upgrade_payment_amount) > 0;
 
-    if (!needsPayment) {
-      const today = new Date().toISOString().slice(0, 10);
+    // 检查是否已支付升级费（先支付后签合同流程）
+    const { count: paidOrderCount } = await db
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('order_type', 4)
+      .eq('related_id', targetLevel)
+      .eq('pay_status', 1);
+    const hasUpgradePaid = (paidOrderCount || 0) > 0;
+
+    // 无需支付（普通用户→准青鸾）或已完成支付，签署即升级
+    if (!needsPayment || hasUpgradePaid) {
+      const now = new Date();
+      const today = formatDateTime(now).slice(0, 10);
       await update('users',
         {
           ambassador_level: targetLevel,
@@ -254,15 +382,44 @@ module.exports = async (event, context) => {
       );
       levelUpgraded = true;
       console.log(`[signContract] 用户 ${user.id} 升级至等级 ${targetLevel}`);
+
+      // 发放冻结积分（升级费转化为冻结积分，需支付升级费的等级才有）
+      const frozenPoints = Number(levelConfig?.frozen_points || 0);
+      if (needsPayment && hasUpgradePaid && frozenPoints > 0) {
+        // 增加用户冻结积分余额
+        const { data: currentUser } = await db
+          .from('users')
+          .select('cash_points_frozen')
+          .eq('id', user.id)
+          .single();
+        const currentFrozen = Number(currentUser?.cash_points_frozen || 0);
+        await update('users',
+          { cash_points_frozen: currentFrozen + frozenPoints },
+          { id: user.id }
+        );
+
+        // 记录积分流水（type=1 增加冻结积分）
+        const levelNameMap = { 2: '青鸾', 3: '鸿鹄', 4: '金凤' };
+        const levelLabel = levelNameMap[targetLevel] || `等级${targetLevel}`;
+        await insert('cash_points_records', {
+          user_id: user.id,
+          _openid: OPENID || '',
+          type: 1,
+          amount: frozenPoints,
+          remark: `升级${levelLabel}大使升级费转为冻结积分`,
+          created_at: formatDateTime(now)
+        });
+        console.log(`[signContract] 用户 ${user.id} 获得 ${frozenPoints} 冻结积分`);
+      }
     }
 
     return response.success({
       signature_id: newSignature.id,
       ambassador_level: targetLevel,
       level_upgraded: levelUpgraded,
-      needs_payment: needsPayment,
+      needs_payment: needsPayment && !hasUpgradePaid,
       signed_at: newSignature.sign_time,
-      message: levelUpgraded ? '协议签署成功，等级已升级' : '协议签署成功，请完成支付后升级等级'
+      message: levelUpgraded ? '协议签署成功，等级已升级' : '协议签署成功，请先支付升级费用'
     }, '签署成功');
 
   } catch (error) {

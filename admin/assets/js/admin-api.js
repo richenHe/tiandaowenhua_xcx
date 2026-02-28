@@ -49,7 +49,7 @@ class AdminAPI {
       if (!result.success) {
         if (result.code === 401) {
           localStorage.clear();
-          window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'login.html';
+          window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'index.html';
           throw new Error('登录已过期');
         }
         throw new Error(result.message || '请求失败');
@@ -75,7 +75,7 @@ class AdminAPI {
 
   static logout() {
     localStorage.clear();
-    window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'login.html';
+    window.location.href = (window.CONFIG?.BASE_PATH || '/tiandaowenhua/') + 'index.html';
   }
 
   static getCurrentAdmin() {

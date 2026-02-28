@@ -203,11 +203,11 @@
               </t-form-item>
               
               <t-form-item label="大使等级">
+                <!-- users.ambassador_level: 1准青鸾/2青鸾/3鸿鹄 -->
                 <t-select v-model="searchForm.ambassadorLevel" clearable placeholder="全部" style="width: 150px;">
-                  <t-option :value="1" label="青鸾使者"></t-option>
+                  <t-option :value="1" label="准青鸾大使"></t-option>
                   <t-option :value="2" label="青鸾大使"></t-option>
-                  <t-option :value="3" label="鸿鹄使者"></t-option>
-                  <t-option :value="4" label="鸿鹄大使"></t-option>
+                  <t-option :value="3" label="鸿鹄大使"></t-option>
                 </t-select>
               </t-form-item>
               
@@ -238,10 +238,9 @@
               @page-change="onPageChange"
             >
               <template #ambassadorLevel="{ row }">
-                <t-tag v-if="row.ambassador_level === 1" theme="primary">青鸾使者</t-tag>
+                <t-tag v-if="row.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
                 <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-                <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄使者</t-tag>
-                <t-tag v-else-if="row.ambassador_level === 4" theme="danger">鸿鹄大使</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
               </template>
               
               <template #meritPoints="{ row }">
@@ -422,7 +421,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -436,7 +435,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -598,10 +597,9 @@
         // 升级
         const upgrade = async (row) => {
           const levels = {
-            1: '青鸾使者',
+            1: '准青鸾大使',
             2: '青鸾大使',
-            3: '鸿鹄使者',
-            4: '鸿鹄大使'
+            3: '鸿鹄大使'
           };
           
           const nextLevel = row.ambassador_level + 1;
@@ -629,7 +627,7 @@
         };
         
         const getLevelText = (level) => {
-          const texts = { 1: '青鸾使者', 2: '青鸾大使', 3: '鸿鹄使者', 4: '鸿鹄大使' };
+          const texts = { 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使' };
           return texts[level] || '普通用户';
         };
         
@@ -639,7 +637,8 @@
         };
         
         const getContractStatusText = (status) => {
-          const texts = { 1: '生效中', 2: '即将到期', 3: '已到期' };
+          // contract_signatures.status: 0已作废/1有效/2已过期/3已续签
+          const texts = { 0: '已作废', 1: '有效', 2: '已过期', 3: '已续签' };
           return texts[status] || '未知';
         };
         

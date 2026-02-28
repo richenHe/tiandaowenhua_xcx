@@ -10,11 +10,11 @@ const cloudbase = require('@cloudbase/node-sdk');
 const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
-// 初始化 CloudBase（business-logic 使用）
+// 初始化 CloudBase（db.js 等使用 @cloudbase/node-sdk）
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
 
-// ⚠️ 必须初始化 business-logic
-business.init(app);
+// ⚠️ 必须传入 wx-server-sdk cloud 实例，qrcode.js 需要 cloud.openapi.wxacode
+business.init(cloud);
 
 // 导入处理器
 const clientHandlers = {
@@ -33,7 +33,8 @@ const clientHandlers = {
   getActivityStats: require('./handlers/client/getActivityStats'),
   getLevelSystem: require('./handlers/client/getLevelSystem'),
   getAvailableActivities: require('./handlers/client/getAvailableActivities'),
-  applyForActivity: require('./handlers/client/applyForActivity')
+  applyForActivity: require('./handlers/client/applyForActivity'),
+  cancelActivityRegistration: require('./handlers/client/cancelActivityRegistration')
 };
 
 const adminHandlers = {
@@ -95,6 +96,13 @@ function wrapHttpResponse(data) {
 }
 
 exports.main = async (event, context) => {
+  // 检测是否是定时触发（timer trigger：event 含 Time 字段，且无 action）
+  if (event.Time && !event.action) {
+    console.log('[Ambassador] 定时触发：自动更新过期活动状态并发放功德分', event.Time);
+    const autoUpdate = require('./handlers/admin/autoUpdateActivityStatus');
+    return autoUpdate(event, context);
+  }
+
   // 检测是否是 HTTP 请求
   const isHttpRequest = 
     (context && context.SOURCE === 'wx_http') || 

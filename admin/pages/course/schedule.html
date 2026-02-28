@@ -98,7 +98,7 @@
 
       <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
         <template #status="{ row }">
-          <t-tag v-if="row.status === 1" theme="success">可预约</t-tag>
+          <t-tag v-if="row.status === 1" theme="success">正常</t-tag>
           <t-tag v-else-if="row.status === 2" theme="default">已结束</t-tag>
           <t-tag v-else theme="warning">取消</t-tag>
         </template>
@@ -161,7 +161,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -175,7 +175,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -213,9 +213,11 @@
         const formData = ref({});
         const filters = ref({ courseId: null, dateRange: [], status: null });
         const courseOptions = ref([]);
+        // class_records.status: 0取消/1正常/2已结束
         const statusOptions = [
-          { label: '可预约', value: 1 },
+          { label: '正常', value: 1 },
           { label: '已结束', value: 2 },
+          { label: '取消', value: 0 },
           { label: '取消', value: 0 }
         ];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });

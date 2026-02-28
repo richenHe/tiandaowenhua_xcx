@@ -136,17 +136,31 @@ module.exports = async (event, context) => {
     console.log('[login] 推荐码:', refereeCode);
 
     // 解析推荐人
+    // scene 格式有两种：
+    //   1. 扫码来源：'ref=TEST01'（来自 wxacode.getUnlimited 的 scene 参数）
+    //   2. 直接传码：'TEST01'（兼容旧版直接传推荐码的逻辑）
     let refereeId = null;
     let refereeUid = null;
     if (scene) {
       console.log('[login] 解析推荐人 (scene:', scene, ')');
-      const refereeUser = await findOne('users', { referee_code: scene });
+
+      // 解析 key=value 格式的 scene，提取 ref 字段
+      const sceneParams = String(scene).split('&').reduce((acc, part) => {
+        const [k, v] = part.split('=');
+        if (k) acc[k] = v || '';
+        return acc;
+      }, {});
+      // ref 参数优先（扫码路径），否则将整个 scene 当作推荐码（兼容旧路径）
+      const refereeCodeFromScene = sceneParams.ref || scene;
+
+      console.log('[login] 解析后推荐码:', refereeCodeFromScene);
+      const refereeUser = await findOne('users', { referee_code: refereeCodeFromScene });
       if (refereeUser) {
         refereeId = refereeUser.id;
         refereeUid = refereeUser.uid;
         console.log('[login] ✅ 找到推荐人, id:', refereeId);
       } else {
-        console.log('[login] ⚠️ 未找到推荐人');
+        console.log('[login] ⚠️ 未找到推荐人, scene:', scene);
       }
     }
 

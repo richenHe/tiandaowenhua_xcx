@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi } from '@/api';
 import type { SearchRefereeItem } from '@/api/types/user';
@@ -101,6 +101,9 @@ const referees = ref<SearchRefereeItem[]>([]);
 
 // 加载状态
 const loading = ref(false);
+
+// 推荐人是否已锁定（首次支付成功后永久锁定）
+const refereeLocked = ref(false);
 
 // 获取主题颜色
 const getAvatarTheme = (level: number) => {
@@ -169,6 +172,31 @@ const searchReferees = async () => {
   }
 };
 
+// 显示锁定弹窗（仅确认按钮）
+const showLockedDialog = () => {
+  uni.showModal({
+    title: '提示',
+    content: '推荐人已锁定，无法修改',
+    showCancel: false,
+    confirmText: '确认'
+  });
+};
+
+// 页面挂载时检查推荐人锁定状态
+onMounted(async () => {
+  try {
+    const profile = await UserApi.getProfile();
+    refereeLocked.value = !!profile.referee_confirmed_at;
+
+    if (refereeLocked.value) {
+      // 推荐人已锁定，立即弹出提示
+      showLockedDialog();
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+  }
+});
+
 // 监听搜索关键词变化，实时搜索
 let searchTimer: number | null = null;
 watch(searchKeyword, () => {
@@ -182,6 +210,12 @@ watch(searchKeyword, () => {
 
 // 选择推荐人
 const handleSelectReferee = async (referee: SearchRefereeItem) => {
+  // 推荐人已锁定时弹出提示，不允许修改
+  if (refereeLocked.value) {
+    showLockedDialog();
+    return;
+  }
+
   console.log('选择推荐人:', referee);
 
   try {

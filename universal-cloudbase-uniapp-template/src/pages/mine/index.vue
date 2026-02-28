@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import { UserApi, SystemApi } from '@/api';
+import { UserApi, SystemApi, CourseApi, AmbassadorApi } from '@/api';
 import { formatPoints } from '@/utils';
 
 // 获取成长等级显示（根据活动次数）
@@ -218,18 +218,18 @@ const loadStats = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
     // 并行加载各项统计数据
-    const [orders, courses, appointments] = await Promise.all([
+    const [orders, courses, appointments, contracts] = await Promise.all([
       UserApi.getMyOrders({ page: 1, page_size: 1 }),
       UserApi.getMyCourses({ page: 1, page_size: 1 }),
-      // 预约数据需要从课程模块获取，这里暂时使用0
-      Promise.resolve({ total: 0 })
+      CourseApi.getMyAppointments({ page: 1, page_size: 1 }),
+      AmbassadorApi.getMyContracts()
     ]);
 
     stats.value = [
       { type: 'orders', count: orders.total || 0, label: '我的订单', color: '#0052D9' },
       { type: 'appointments', count: appointments.total || 0, label: '我的预约', color: '#00A870' },
       { type: 'courses', count: courses.total || 0, label: '我的课程', color: '#D4AF37' },
-      { type: 'contracts', count: 0, label: '我的合同', color: '#E34D59' }
+      { type: 'contracts', count: Array.isArray(contracts) ? contracts.length : 0, label: '我的合同', color: '#E34D59' }
     ];
     uni.hideLoading()
   } catch (error) {

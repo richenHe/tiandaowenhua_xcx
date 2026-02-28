@@ -114,13 +114,13 @@
             <!-- 页面头部 -->
             <div class="page-header">
               <h1 class="page-title">兑换管理</h1>
-              <p class="page-desc">查看用户兑换记录，核对用户与商品信息后确认领取（待领取 → 已领取）</p>
+              <p class="page-desc">查看用户兑换记录，核对用户与商品信息后确认领取（已兑换 → 已领取）</p>
             </div>
 
             <!-- 统计卡片 -->
             <div class="stats-cards">
               <div class="stat-card">
-                <div class="stat-label">待领取</div>
+                <div class="stat-label">已兑换</div>
                 <div class="stat-value">{{ statistics.pending || 0 }}</div>
               </div>
               <div class="stat-card">
@@ -183,7 +183,7 @@
               >
                 <!-- 状态列 -->
                 <template #status="{ row }">
-                  <t-tag v-if="row.status === 1" theme="warning" variant="light">待领取</t-tag>
+                  <t-tag v-if="row.status === 1" theme="warning" variant="light">已兑换</t-tag>
                   <t-tag v-else-if="row.status === 2" theme="success" variant="light">已领取</t-tag>
                   <t-tag v-else-if="row.status === 3" theme="danger" variant="light">已取消</t-tag>
                   <t-tag v-else theme="default" variant="light">未知</t-tag>
@@ -259,7 +259,7 @@
           <t-descriptions-item label="商品名称" :span="2">{{ currentRecord.goods_name }}</t-descriptions-item>
           <t-descriptions-item label="兑换数量">{{ currentRecord.quantity }}</t-descriptions-item>
           <t-descriptions-item label="状态">
-            <t-tag v-if="currentRecord.status === 1" theme="warning">待领取</t-tag>
+            <t-tag v-if="currentRecord.status === 1" theme="warning">已兑换</t-tag>
             <t-tag v-else-if="currentRecord.status === 2" theme="success">已领取</t-tag>
             <t-tag v-else-if="currentRecord.status === 3" theme="danger">已取消</t-tag>
           </t-descriptions-item>
@@ -328,7 +328,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -381,9 +381,10 @@
 
         const filters = ref({ keyword: '', status: null });
 
+        // mall_exchange_records.status: 1已兑换/2已领取/3已取消
         const statusOptions = [
           { label: '全部',   value: null },
-          { label: '待领取', value: 1 },
+          { label: '已兑换', value: 1 },
           { label: '已领取', value: 2 },
           { label: '已取消', value: 3 }
         ];

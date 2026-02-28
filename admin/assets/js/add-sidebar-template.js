@@ -104,7 +104,7 @@ const SIDEBAR_SETUP_CODE = `        // 管理员信息
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -124,7 +124,7 @@ const SIDEBAR_SETUP_CODE = `        // 管理员信息
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'order-list': '../order/list.html',

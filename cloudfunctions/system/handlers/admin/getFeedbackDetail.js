@@ -47,15 +47,18 @@ module.exports = async (event, context) => {
       }
     }
 
+    let images = [];
+    try { images = feedbacks.images ? (Array.isArray(feedbacks.images) ? feedbacks.images : JSON.parse(feedbacks.images)) : []; } catch (e) {}
+
     return response.success({
       id: feedbacks.id,
       user_id: feedbacks.user_id,
       user,
-      type: feedbacks.type,
-      category: feedbacks.category,
-      related_id: feedbacks.related_id,
+      feedback_type: feedbacks.feedback_type || feedbacks.type,
+      course_id: feedbacks.course_id,
+      course_name: feedbacks.course_name,
       content: feedbacks.content,
-      images: feedbacks.images ? (Array.isArray(feedbacks.images) ? feedbacks.images : JSON.parse(feedbacks.images)) : [],
+      images,
       contact: feedbacks.contact,
       reply: feedbacks.reply,
       reply_time: feedbacks.reply_time,

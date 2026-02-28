@@ -281,6 +281,45 @@
                   </t-descriptions>
                 </div>
                 
+                <!-- 赠课名额 -->
+                <div class="detail-section">
+                  <h3 class="detail-section-title">赠课名额</h3>
+                  <div class="stat-grid">
+                    <div class="stat-card">
+                      <div class="stat-value" :style="{color: '#0052d9'}">{{ currentAmbassador.quota_summary?.basic?.total || 0 }}</div>
+                      <div class="stat-label">初探班 · 总名额</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-value" :style="{color: '#e34d59'}">{{ currentAmbassador.quota_summary?.basic?.used || 0 }}</div>
+                      <div class="stat-label">初探班 · 已赠出</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-value" :style="{color: '#00a870'}">{{ currentAmbassador.quota_summary?.basic?.remaining || 0 }}</div>
+                      <div class="stat-label">初探班 · 剩余</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-value" :style="{color: '#00a870'}">{{ currentAmbassador.quota_summary?.advanced?.remaining || 0 }}</div>
+                      <div class="stat-label">密训班 · 剩余</div>
+                    </div>
+                  </div>
+                  <!-- 名额明细列表（仅在有多条记录时展示） -->
+                  <div v-if="currentAmbassador.quota_list?.length > 1" style="margin-top:12px;">
+                    <t-table
+                      :data="currentAmbassador.quota_list"
+                      :columns="[
+                        {colKey:'quota_type',title:'类型',cell:(h,{row})=>h('span',row.quota_type===2?'密训班':'初探班')},
+                        {colKey:'total_quantity',title:'总数量'},
+                        {colKey:'used_quantity',title:'已使用'},
+                        {colKey:'remaining_quantity',title:'剩余'},
+                        {colKey:'expire_date',title:'到期日期'},
+                      ]"
+                      row-key="expire_date"
+                      size="small"
+                      :bordered="true"
+                    />
+                  </div>
+                </div>
+
                 <!-- 合约信息 -->
                 <div class="detail-section" v-if="currentAmbassador.contract">
                   <h3 class="detail-section-title">合约信息</h3>
@@ -388,7 +427,7 @@
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
-            window.location.href = '../../login.html';
+            window.location.href = '../../index.html';
             return false;
           }
           return true;
@@ -402,7 +441,7 @@
         // 菜单切换
         const handleMenuChange = (value) => {
           const routes = {
-            'dashboard': '../../index.html',
+            'dashboard': '../../dashboard.html',
             'user-list': '../user/list.html',
             'user-referee': '../user/referee.html',
             'user-referee-logs': '../user/referee-logs.html',
@@ -605,7 +644,8 @@
         };
         
         const getContractStatusText = (status) => {
-          const texts = { 1: '生效中', 2: '即将到期', 3: '已到期' };
+          // contract_signatures.status: 0已作废/1有效/2已过期/3已续签
+          const texts = { 0: '已作废', 1: '有效', 2: '已过期', 3: '已续签' };
           return texts[status] || '未知';
         };
         

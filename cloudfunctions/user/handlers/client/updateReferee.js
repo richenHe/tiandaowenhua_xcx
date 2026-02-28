@@ -18,9 +18,18 @@ module.exports = async (event, context) => {
       return response.paramError('推荐码不能为空');
     }
 
-    // 1. 检查是否已支付订单（支付后锁定）
+    // 1. 检查是否已支付订单（支付后锁定，referee_confirmed_at 由支付回调写入）
     if (user.referee_confirmed_at) {
       return response.error('推荐人已锁定，无法修改', null, 403);
+    }
+
+    // 双重保护：即使 referee_confirmed_at 因异常未写入，
+    // 若用户已有推荐人且有已支付订单，同样拒绝修改
+    if (user.referee_id) {
+      const paidOrder = await findOne('orders', { user_id: user.id, pay_status: 1 });
+      if (paidOrder) {
+        return response.error('推荐人已锁定，无法修改（已购课）', null, 403);
+      }
     }
 
     // 2. 查询新推荐人

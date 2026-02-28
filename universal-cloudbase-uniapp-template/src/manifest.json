@@ -55,8 +55,7 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true,
-        "lazyCodeLoading" : "requiredComponents"
+        "usingComponents" : true
     },
     "mp-alipay" : {
         "usingComponents" : true

@@ -22,7 +22,7 @@ function handleMenuChange(value) {
   }
 
   const routes = {
-    'dashboard':          'index.html',
+    'dashboard':          'dashboard.html',
     'user-list':          'pages/user/list.html',
     'user-referee':       'pages/user/referee.html',
     'user-referee-logs':  'pages/user/referee-logs.html',
@@ -76,7 +76,7 @@ function handleLogout() {
 function checkAdminAuth() {
   const adminInfo = AdminAPI.getCurrentAdmin();
   if (!adminInfo) {
-    window.location.href = getPathPrefix() + 'login.html';
+    window.location.href = getPathPrefix() + 'index.html';
     return null;
   }
   return adminInfo;
