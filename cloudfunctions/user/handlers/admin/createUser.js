@@ -41,7 +41,7 @@ module.exports = async (event, context) => {
       merit_points: 0,
       cash_points_available: 0,
       cash_points_frozen: 0,
-      profile_completed: false,
+      profile_completed: 0,
       _openid: ''
     }).select().single();
 

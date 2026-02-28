@@ -46,13 +46,13 @@ module.exports = async (event, context) => {
 
     // 创建管理员
     const [newAdmin] = await insert('admin_users', {
+      _openid: '',
       username,
       password: passwordHash,
       real_name,
       role,
-      permissions, // JSON 类型无需 stringify
+      permissions: JSON.stringify(permissions),
       status: 1
-      // created_at 使用数据库默认值 CURRENT_TIMESTAMP
     });
 
     return response.success({

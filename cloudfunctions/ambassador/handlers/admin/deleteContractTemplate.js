@@ -28,7 +28,7 @@ module.exports = async (event, context) => {
     const { count } = await db
       .from('contract_signatures')
       .select('*', { count: 'exact', head: true })
-      .eq('template_id', template_id);
+      .eq('contract_template_id', template_id);
 
     if (count > 0) {
       return response.error('该协议模板已有用户签署，不能删除，只能停用');

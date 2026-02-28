@@ -377,7 +377,7 @@ const goToContractSign = () => {
 const handlePayUpgrade = () => {
   if (!paymentOption.value) return
   uni.navigateTo({
-    url: `/pages/order/confirm/index?upgradeType=${currentLevel.value + 1}&amount=${paymentOption.value.fee}`
+    url: `/pages/order/payment/index?upgradeType=${currentLevel.value + 1}&amount=${paymentOption.value.fee}`
   })
 }
 </script>

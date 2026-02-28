@@ -26,7 +26,7 @@ module.exports = async (event, context) => {
 
     // 构建更新数据
     const updateData = {};
-    if (title !== undefined) updateData.title = title;
+    if (title !== undefined) updateData.contract_name = title;
     if (contract_name !== undefined) updateData.contract_name = contract_name;
     if (content !== undefined) updateData.content = content;
     // 电子合同文件ID（cloud:// 格式）

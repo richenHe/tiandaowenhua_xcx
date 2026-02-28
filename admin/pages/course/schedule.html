@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
   <link rel="stylesheet" href="../../assets/css/tokens.css">
   <style>
-    body { margin: 0; padding: 20px; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     .page-container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .page-header { margin-bottom: 24px; }
     .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0 0 8px 0; }
     .page-desc { font-size: 14px; color: #999; margin: 0; }
     .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
   
-    /* TDesign 布局样式 - 必需！*/
+    /* TDesign 布局样式 */
     .t-layout {
       height: 100vh;
     }
@@ -38,7 +38,6 @@
     
     .t-layout__content {
       padding: 24px;
-      overflow-y: auto;
       background: #f5f5f5;
     }
 
@@ -124,8 +123,8 @@
         <t-form-item label="上课日期" name="classDate">
           <t-date-picker v-model="formData.classDate" clearable style="width: 100%;" placeholder="开课日期" />
         </t-form-item>
-        <t-form-item label="结课日期" name="classEndDate">
-          <t-date-picker v-model="formData.classEndDate" clearable style="width: 100%;" placeholder="结课日期（多天课程时填写）" />
+        <t-form-item label="结课日期" name="classEndDate" :rules="rules.classEndDate">
+          <t-date-picker v-model="formData.classEndDate" clearable style="width: 100%;" placeholder="结课日期" />
         </t-form-item>
         <t-form-item label="上课时段" name="classTime">
           <t-input v-model="formData.classTime" placeholder="如 09:00-17:00" />
@@ -283,6 +282,7 @@
         const rules = {
           courseId: [{ required: true, message: '请选择课程', type: 'error' }],
           classDate: [{ required: true, message: '请选择上课日期', type: 'error' }],
+          classEndDate: [{ required: true, message: '请选择结课日期', type: 'error' }],
           classLocation: [{ required: true, message: '请输入上课地点', type: 'error' }],
           totalQuota: [{ required: true, message: '请输入总名额', type: 'error' }]
         };

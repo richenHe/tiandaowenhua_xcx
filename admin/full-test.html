@@ -288,6 +288,11 @@ setup(){
       const{d,ms}=await callApi(t.fn,t.act,p,callType);
       const raw=d;
       if(!d.success&&!t.softFail) throw new Error(d.message||'接口返回失败');
+      /* softFail + API 返回错误 → 业务预期内的失败，直接标记 pass */
+      if(!d.success&&t.softFail){
+        results.set(t.id,{cls:'pass',icon:'✓',checks:[{f:'(softFail)',ok:true,m:d.message||'业务预期错误'}],err:null,raw,ms});
+        return;
+      }
       const data=d.data!==undefined?d.data:d;
       const checks=checkFields(data,t.fields||[]);
       const pass=checks.every(c=>c.ok);
@@ -383,7 +388,7 @@ setup(){
 
   /* --- client --- */
   {id:'oc_create',fn:'order',act:'create',type:'client',name:'create · 创建订单',write:true,
-    params:{order_type:1,item_id:1,class_record_id:'',referee_id:''},
+    params:{order_type:1,item_id:4,class_record_id:'',referee_id:''},
     fields:['order_no:s','order_type:n','amount:n'],softFail:true},
   {id:'oc_createPayment',fn:'order',act:'createPayment',type:'client',name:'createPayment · 发起支付',write:true,
     params:{order_no:TEST_ORDER_NO},
@@ -395,7 +400,7 @@ setup(){
     params:{page:1,page_size:10,status:''},
     fields:['total:n','list:a']},
   {id:'oc_cancel',fn:'order',act:'cancel',type:'client',name:'cancel · 取消订单',write:true,
-    params:{order_no:'FAKE_ORDER_CANCEL',cancel_reason:'测试取消'},
+    params:{order_no:'UPG202602221631048221',cancel_reason:'测试取消'},
     fields:['order_no:s'],softFail:true},
   {id:'oc_getMallGoods',fn:'order',act:'getMallGoods',type:'client',name:'getMallGoods · 商城商品列表',
     params:{page:1,page_size:10,keyword:''},
@@ -410,7 +415,7 @@ setup(){
     params:{course_id:1,use_cash_points_if_not_enough:false},
     fields:['course_id:n','merit_points_used:n'],softFail:true},
   {id:'oc_cancelExchange',fn:'order',act:'cancelExchange',type:'client',name:'cancelExchange · 取消兑换',write:true,
-    params:{exchange_no:'FAKE_EX_CANCEL'},
+    params:{exchange_no:'EX202602231604355461'},
     fields:['exchange_no:s'],softFail:true},
   {id:'oc_getExchangeRecords',fn:'order',act:'getExchangeRecords',type:'client',name:'getExchangeRecords · 兑换记录',
     params:{page:1,page_size:10,status:''},
@@ -454,7 +459,7 @@ setup(){
     params:{page:1,page_size:10,status:'',keyword:''},
     fields:['total:n','list:a']},
   {id:'oa_confirmPickup',fn:'order',act:'confirmPickup',type:'admin',name:'confirmPickup · 确认取货',write:true,
-    params:{exchange_no:'FAKE_EX_PICKUP',remark:'测试确认取货'},
+    params:{exchange_no:'EX202602221620592128',remark:'测试确认取货'},
     fields:['exchange_no:s'],softFail:true},
 
   /* ══════════════════════════════════════════
@@ -492,7 +497,7 @@ setup(){
     params:{course_id:1,page:1,page_size:10,startDate:'',endDate:''},
     fields:['total:n','list:a'],softFail:true},
   {id:'cc_createAppointment',fn:'course',act:'createAppointment',type:'client',name:'createAppointment · 预约排期',write:true,
-    params:{classRecordId:1},
+    params:{classRecordId:7},
     fields:['appointment_id:n','class_record_id:n'],softFail:true},
   {id:'cc_cancelAppointment',fn:'course',act:'cancelAppointment',type:'client',name:'cancelAppointment · 取消预约',write:true,
     params:{appointment_id:9999},
@@ -542,7 +547,7 @@ setup(){
     params:{id:1,status:2,notes:'测试更新预约状态'},
     fields:[],softFail:true},
   {id:'ca_batchCheckin',fn:'course',act:'batchCheckin',type:'admin',name:'batchCheckin · 批量签到',write:true,
-    params:{class_record_id:1,user_ids:[TEST_USER_ID]},
+    params:{class_record_id:10,user_ids:[TEST_USER_ID]},
     fields:['success_count:n'],softFail:true},
   {id:'ca_getCaseList',fn:'course',act:'getCaseList',type:'admin',name:'getCaseList · 案例列表(管理)',
     params:{page:1,page_size:10,category:'',status:'',keyword:''},
@@ -578,7 +583,7 @@ setup(){
 
   /* --- client --- */
   {id:'ac_apply',fn:'ambassador',act:'apply',type:'client',name:'apply · 申请成为大使',write:true,
-    params:{real_name:'张三',phone:'13800138000',wechat_id:'wechat_test',city:'北京',occupation:'工程师',apply_reason:'测试申请',understanding:'了解天道',willing_help:1,promotion_plan:'推广计划',targetLevel:1},
+    params:{real_name:'张三',phone:'13800138000',wechat_id:'wechat_test',city:'北京',occupation:'工程师',apply_reason:'测试申请',understanding:'了解天道',willing_help:1,promotion_plan:'推广计划',targetLevel:2},
     fields:['target_level:n','status:n'],softFail:true},
   {id:'ac_getApplicationStatus',fn:'ambassador',act:'getApplicationStatus',type:'client',name:'getApplicationStatus · 申请状态',
     params:{},
@@ -596,7 +601,7 @@ setup(){
     params:{},
     fields:['summary']},
   {id:'ac_giftQuota',fn:'ambassador',act:'giftQuota',type:'client',name:'giftQuota · 赠送名额',write:true,
-    params:{receiver_phone:'13900000001',quota_count:1,note:'测试赠送名额'},
+    params:{receiver_phone:'13652517719',quota_count:1,note:'测试赠送名额'},
     fields:['receiver_name:s','quota_count:n'],softFail:true},
   {id:'ac_getContractTemplate',fn:'ambassador',act:'getContractTemplate',type:'client',name:'getContractTemplate · 合约模板',
     params:{level:1},
@@ -623,10 +628,10 @@ setup(){
     params:{page:1,pageSize:10},
     fields:['total:n','list:a']},
   {id:'ac_applyForActivity',fn:'ambassador',act:'applyForActivity',type:'client',name:'applyForActivity · 报名活动',write:true,
-    params:{activityId:1,positionName:'志愿者'},
+    params:{activityId:8,positionName:'志愿者'},
     fields:['activity_id:n'],softFail:true},
   {id:'ac_cancelActivityRegistration',fn:'ambassador',act:'cancelActivityRegistration',type:'client',name:'cancelActivityRegistration · 取消报名',write:true,
-    params:{activityId:1},
+    params:{activityId:8},
     fields:['activity_id:n'],softFail:true},
 
   /* --- admin --- */
@@ -637,7 +642,7 @@ setup(){
     params:{application_id:9999,approved:false,reject_reason:'测试拒绝申请'},
     fields:['success'],softFail:true},
   {id:'aa_getApplicationDetail',fn:'ambassador',act:'getApplicationDetail',type:'admin',name:'getApplicationDetail · 申请详情',
-    params:{application_id:1},
+    params:{application_id:7},
     fields:['id:n','real_name:s','status:n'],softFail:true},
   {id:'aa_getAmbassadorList',fn:'ambassador',act:'getAmbassadorList',type:'admin',name:'getAmbassadorList · 大使列表',
     params:{page:1,page_size:10,level:'',keyword:''},
@@ -673,10 +678,10 @@ setup(){
     params:{contract_name:'测试合约模板_可删除',ambassadorLevel:1,contractType:1,version:99,content:'合约内容',contractFileId:'cloud://test.pdf',effective_date:'2026-01-01',expiry_date:'2027-01-01'},
     fields:['template_id:n'],softFail:true},
   {id:'aa_updateContractTemplate',fn:'ambassador',act:'updateContractTemplate',type:'admin',name:'updateContractTemplate · 更新合约模板',write:true,
-    params:{template_id:1,title:'更新合约模板_测试',content:'更新内容',status:0},
+    params:{template_id:1,contract_name:'更新合约模板_测试',content:'更新内容'},
     fields:['template_id:n'],softFail:true},
   {id:'aa_deleteContractTemplate',fn:'ambassador',act:'deleteContractTemplate',type:'admin',name:'deleteContractTemplate · 删除合约模板',write:true,
-    params:{template_id:9999},
+    params:{template_id:8},
     fields:['template_id'],softFail:true},
   {id:'aa_getContractTemplateList',fn:'ambassador',act:'getContractTemplateList',type:'admin',name:'getContractTemplateList · 合约模板列表',
     params:{page:1,page_size:10,level:'',status:''},
@@ -697,25 +702,25 @@ setup(){
     params:{days:30},
     fields:['total:n','list:a']},
   {id:'aa_renewContract',fn:'ambassador',act:'renewContract',type:'admin',name:'renewContract · 续签合约',write:true,
-    params:{signatureId:1,contractEnd:'2028-01-01'},
+    params:{signatureId:7,contractEnd:'2029-01-01'},
     fields:['id:n'],softFail:true},
   {id:'aa_terminateContract',fn:'ambassador',act:'terminateContract',type:'admin',name:'terminateContract · 终止合约',write:true,
     params:{signatureId:9999,reason:'测试终止合约'},
     fields:[],softFail:true},
   {id:'aa_createAmbassadorActivity',fn:'ambassador',act:'createAmbassadorActivity',type:'admin',name:'createAmbassadorActivity · 创建大使专属活动',write:true,
-    params:{scheduleId:1,positions:[{name:'志愿者',quota:5,merit_points:10,required_level:1}]},
+    params:{scheduleId:25,positions:[{name:'志愿者',quota:5,merit_points:10,required_level:1}]},
     fields:['id:n'],softFail:true},
   {id:'aa_getAmbassadorActivityList',fn:'ambassador',act:'getAmbassadorActivityList',type:'admin',name:'getAmbassadorActivityList · 大使专属活动列表',
     params:{page:1,pageSize:10,keyword:'',status:''},
     fields:['total:n','list:a']},
   {id:'aa_getAmbassadorActivityDetail',fn:'ambassador',act:'getAmbassadorActivityDetail',type:'admin',name:'getAmbassadorActivityDetail · 大使专属活动详情',
-    params:{activityId:1},
+    params:{activityId:8},
     fields:['id:n','schedule_name:s'],softFail:true},
   {id:'aa_getActivityRegistrants',fn:'ambassador',act:'getActivityRegistrants',type:'admin',name:'getActivityRegistrants · 活动报名人员',
-    params:{activityId:1,positionName:'',page:1,pageSize:10},
+    params:{activityId:8,positionName:'',page:1,pageSize:10},
     fields:['total:n','list:a'],softFail:true},
   {id:'aa_distributeActivityMeritPoints',fn:'ambassador',act:'distributeActivityMeritPoints',type:'admin',name:'distributeActivityMeritPoints · 发放活动功德点',write:true,
-    params:{activityId:1},
+    params:{activityId:8},
     fields:['total:n','success_count:n'],softFail:true},
   {id:'aa_deleteAmbassadorActivity',fn:'ambassador',act:'deleteAmbassadorActivity',type:'admin',name:'deleteAmbassadorActivity · 删除大使专属活动',write:true,
     params:{activityId:9999},

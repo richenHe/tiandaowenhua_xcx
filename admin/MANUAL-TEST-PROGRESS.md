@@ -16,7 +16,7 @@
 | MT-04 | 微信支付回调全链路 | ✅ 已通过 | 2026-02-28 支付回调BUG已修复并验证（见下方详情） |
 | MT-05 | 预约后 booked_quota 递增 | ✅ 已通过 | 2026-02-28 id=32 真机验证（appointment id=14，class_record id=5，0→1） |
 | MT-06 | 取消预约后 booked_quota 递减 | ✅ 已通过 | 2026-02-28 id=32 真机验证（status=3，booked_quota 1→0，与实际数一致） |
-| MT-07 | 后台签到 | ⏳ 待测 | 需后台操作 |
+| MT-07 | ~~后台批量签到~~ | 🚫 已取消 | 功能已移除，签到仅支持二维码扫码，见 MT-18 |
 | MT-08 | 推荐初探班奖励-解冻场景 | ⏳ 待测 | 需微信支付，推荐人frozen>0 |
 | MT-09 | 推荐初探班奖励-功德分场景 | ⏳ 待测 | 需微信支付，推荐人frozen=0 |
 | MT-10 | 推荐密训班奖励-不消耗冻结 | ⏳ 待测 | 需微信支付 |
@@ -24,6 +24,9 @@
 | MT-12 | 密训班赠课验证 | ⏳ 待测 | 需微信支付 |
 | MT-13 | 后台等级配置互斥校验 | ✅ 已通过 | 2026-02-28 统一radio+保存验证 |
 | MT-14 | 后台等级配置倍数校验 | ✅ 已通过 | 2026-02-28 冻结/解冻倍数校验 |
+| MT-17 | 后台生成签到码（generateCheckinQRCode） | ✅ 已通过 | 2026-02-28 class_record_id=26，qrcode_url=cloud://...，scene=ci=26 |
+| MT-18 | 扫码签到（scanCheckin） | ✅ 已通过 | 2026-02-28 扫 class_record_id=26 码，appointments id=19 status=1，checkin_time=13:43:43 |
+| MT-19 | 缺席自动标记定时器 | ✅ 已通过 | 2026-02-28 MCP 触发定时器，appointment id=20 从 status=0 → status=2（缺席） |
 
 ---
 
@@ -91,11 +94,117 @@
 
 ---
 
+---
+
+## MT-07 已取消（后台批量签到功能已移除）
+
+> **2026-02-28 确认**：后台批量签到功能已取消，签到方式仅保留二维码扫码签到（MT-18）。  
+> `batchCheckin.js` 可保留代码但不对外暴露入口，或可后续清理。
+
+---
+
+## MT-17 详细说明（后台生成签到码）
+
+### 业务逻辑
+- 管理员选择排期 → 调用 `generateCheckinQRCode`
+- 云函数调用 `wxacode.getUnlimited`，scene=`ci={classRecordId}`，落地页=`pages/course/checkin/index`
+- 生成的小程序码图片上传云存储，`qrcode_url` 存为 `cloud://` fileID
+- 记录写入 `checkin_qrcodes` 表（含 class_record_id、course_name、class_date、qrcode_url、scene）
+
+### 操作步骤
+1. 后台打开 `admin/pages/course/schedule.html`（排期管理）
+2. 找到一个状态为「进行中」或「未开始」的排期（class_record_id，推荐 id=5~14 中任一）
+3. 点击该行的「生成签到码」按钮
+4. 弹窗中显示二维码图片即为成功
+
+### 验证 SQL（操作完成后执行）
+```sql
+SELECT id, class_record_id, course_name, class_date, qrcode_url, scene, status, created_at
+FROM tiandao_culture.checkin_qrcodes
+ORDER BY created_at DESC LIMIT 5;
+-- 期望: 新增一条记录, qrcode_url 以 cloud:// 开头, scene=ci={classRecordId}
+```
+
+---
+
+## MT-18 详细说明（扫码签到）
+
+### 业务逻辑（scanCheckin 云函数）
+- 学生扫小程序码 → 打开 `pages/course/checkin/index`（自动签到页）
+- 页面解析 scene 参数（格式 `ci={classRecordId}`）
+- 自动调用 `course.scanCheckin`，传入 `classRecordId`
+- 云函数查找该用户对应排期的预约记录：
+  - status=1 → 报错"已签到，请勿重复签到"
+  - status=2 → 报错"已标记为缺席"
+  - status=3 → 报错"预约已取消"
+  - status=0 → 更新为 status=1，写入 checkin_time
+- 同时更新 `user_courses.attend_count +1`
+- 异步解冻推荐人冻结积分（若推荐人有冻结积分且满足解冻条件）
+
+### 前置条件
+- MT-17 已完成（checkin_qrcodes 中有该排期的签到码）
+- user_id=32 在该排期有 status=0 的预约（可在小程序预约后不取消）
+
+### 操作步骤
+1. 小程序预约一个3月1日的排期（不取消，保持 status=0）
+2. 用真机微信扫描后台「签到码管理」弹窗中显示的签到二维码
+3. 小程序打开签到页，显示「✅ 签到成功」
+
+### 验证 SQL（签到成功后执行）
+```sql
+-- 1. 验证预约状态变为1且有签到时间
+SELECT id, class_record_id, status, checkin_time
+FROM tiandao_culture.appointments
+WHERE user_id=32 AND status=1
+ORDER BY checkin_time DESC LIMIT 3;
+
+-- 2. 验证上课次数+1
+SELECT id, course_id, attend_count
+FROM tiandao_culture.user_courses
+WHERE user_id=32;
+
+-- 3. 验证推荐人积分解冻（若推荐人 id=33 有冻结积分）
+SELECT cash_points_frozen, cash_points_available
+FROM tiandao_culture.users WHERE id=33;
+SELECT type, amount, remark, created_at
+FROM tiandao_culture.cash_points_records
+WHERE user_id=33 AND type=2
+ORDER BY created_at DESC LIMIT 3;
+```
+
+### 边界测试（可选）
+- 重复扫码 → 应看到「❌ 您已签到，请勿重复签到」
+
+---
+
+## MT-19 详细说明（缺席自动标记定时器）
+
+### 业务逻辑（autoUpdateScheduleStatus.js 第四步）
+- 每日 0 点定时触发（cloudfunction.json timer trigger）
+- 第四步：查询所有 status=3（已结束）的排期 → 找其中 appointments.status=0（待上课）的预约 → 批量更新为 status=2（缺席）
+
+### 手动触发验证方案
+不需要等到零点，可以通过 MCP 直接调用云函数（or 让 AI 执行以下 SQL 验证逻辑）：
+
+```sql
+-- 查看哪些排期已结束且有待上课预约（理论上定时器应已处理）
+SELECT cr.id as 排期id, cr.class_date, cr.status as 排期状态,
+  a.id as 预约id, a.user_id, a.status as 预约状态
+FROM tiandao_culture.class_records cr
+JOIN tiandao_culture.appointments a ON a.class_record_id=cr.id
+WHERE cr.status=3 AND a.status=0;
+-- 期望：返回 0 行（说明定时器已正常运行，或无待处理记录）
+```
+
+若有返回行，说明定时器未触发或 class_record_id=1（2026-02-15的课）的缺席还未标记。
+
+---
+
 ## 下一步计划
 
-1. **修复奖励发放逻辑** — 重写 `calculateAndGrantReward`，实现冻结解冻+互斥发放
-2. **后台等级配置校验** — 添加功德分/积分互斥校验 + 冻结/解冻倍数校验
-3. **遍历所有云函数** — 确保等级配置表所有字段都动态读取（不硬编码）
-4. **重测 MT-04/MT-08~MT-10** — 奖励逻辑修复后重新验证支付全链路
-5. **完成 MT-02~MT-07, MT-11** — 其余手动测试
-6. **运行 F10** — 跨模块数据完整性终极验证
+1. **完成 MT-17** — 后台生成签到码，验证 checkin_qrcodes 入库
+2. **完成 MT-18** — 扫描 MT-17 生成的码，验证扫码签到全链路
+4. **完成 MT-19** — 验证缺席定时器（查 SQL 即可）
+5. **修复奖励发放逻辑** — 重写 `calculateAndGrantReward`，实现冻结解冻+互斥发放
+6. **重测 MT-04/MT-08~MT-10** — 奖励逻辑修复后重新验证支付全链路
+7. **运行 F10** — 跨模块数据完整性终极验证

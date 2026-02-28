@@ -1,1 +1,31 @@
+/* ========================================
+ * 全局布局修复 - 所有 admin 页面共享
+ * 解决分页数据超出视口无法滚动的问题
+ * ======================================== */
 
+/* 防止 body 自身滚动，由内层内容区接管滚动 */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* 内层 t-layout（侧边栏 + 内容区）：填充剩余高度并约束子元素 */
+.t-layout > .t-layout {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* 顶部导航栏不被压缩 */
+.t-layout > .t-layout__header {
+  flex-shrink: 0 !important;
+}
+
+/* 内容区：可滚动 */
+.t-layout__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+}
