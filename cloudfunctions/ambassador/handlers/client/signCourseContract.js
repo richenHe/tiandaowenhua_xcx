@@ -71,15 +71,85 @@ function buildInlineImageXml(relId, cx, cy, name, id) {
   );
 }
 
-function insertAfterLabelRun(xml, labelText, insertXml, fromPos) {
-  const labelIdx = xml.indexOf(labelText, fromPos);
+/**
+ * 查找 <w:r> 的开始标签位置（排除 <w:rPr> 等以 <w:r 开头的标签）
+ */
+function findRunOpenTag(xml, beforePos) {
+  let pos = beforePos;
+  while (pos >= 0) {
+    const idx = xml.lastIndexOf('<w:r', pos);
+    if (idx === -1) return -1;
+    const charAfter = xml[idx + 4];
+    if (charAfter === '>' || charAfter === ' ') return idx;
+    pos = idx - 1;
+  }
+  return -1;
+}
+
+/**
+ * 在 docx XML 中找到标签文本后的冒号位置，精确插入内容。
+ *
+ * 核心改进：当标签与其他内容共享同一个 <w:r> run 时（如"甲方：...身份证号码："在同一 run 中），
+ * 会拆分 run，确保内容插入到标签冒号之后、下一个标签之前。
+ *
+ * @param {string} xml       - document.xml 内容
+ * @param {string} labelText - 要查找的标签（如 "甲方"、"电话"）
+ * @param {string} insertXml - 要插入的 XML 内容
+ * @param {number} fromPos   - 从此位置开始搜索
+ */
+function insertAfterLabelSmart(xml, labelText, insertXml, fromPos) {
+  const labelIdx = xml.indexOf(labelText, fromPos || 0);
   if (labelIdx === -1) return xml;
-  const textTagEnd = xml.indexOf('</w:t>', labelIdx);
-  if (textTagEnd === -1) return xml;
-  const runEnd = xml.indexOf('</w:r>', textTagEnd);
-  if (runEnd === -1) return xml;
-  const insertPos = runEnd + 6;
-  return xml.slice(0, insertPos) + insertXml + xml.slice(insertPos);
+
+  const tOpenIdx = xml.lastIndexOf('<w:t', labelIdx);
+  if (tOpenIdx === -1) return xml;
+  const tContentStart = xml.indexOf('>', tOpenIdx) + 1;
+  const tCloseIdx = xml.indexOf('</w:t>', labelIdx);
+  if (tCloseIdx === -1) return xml;
+
+  const fullText = xml.slice(tContentStart, tCloseIdx);
+  const labelPosInText = labelIdx - tContentStart;
+  let splitPos = labelPosInText + labelText.length;
+
+  // 向前搜索冒号（最多 15 字符，兼容"身份证号码："等较长标签）
+  const afterLabel = fullText.slice(splitPos);
+  for (let i = 0; i < Math.min(afterLabel.length, 15); i++) {
+    if (afterLabel[i] === '：' || afterLabel[i] === ':') {
+      splitPos += i + 1;
+      break;
+    }
+  }
+
+  const textBefore = fullText.slice(0, splitPos);
+  const textAfter = fullText.slice(splitPos);
+
+  // 剩余文本是否含有实际内容（中文字符或字母数字），如有则需拆分 run
+  const hasRealContent = /[\u4e00-\u9fff\u3400-\u4dbfa-zA-Z0-9]/.test(textAfter);
+  if (!hasRealContent) {
+    const runEnd = xml.indexOf('</w:r>', tCloseIdx);
+    if (runEnd === -1) return xml;
+    return xml.slice(0, runEnd + 6) + insertXml + xml.slice(runEnd + 6);
+  }
+
+  // 拆分 run：提取 <w:rPr>，将一个 run 拆成两个，中间插入内容
+  const rOpenIdx = findRunOpenTag(xml, tOpenIdx);
+  if (rOpenIdx === -1) return xml;
+
+  const beforeT = xml.slice(rOpenIdx, tOpenIdx);
+  const rPrMatch = beforeT.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
+  const rPr = rPrMatch ? rPrMatch[0] : '';
+
+  const rCloseIdx = xml.indexOf('</w:r>', tCloseIdx);
+  if (rCloseIdx === -1) return xml;
+  const afterRClose = rCloseIdx + '</w:r>'.length;
+
+  let result = xml.slice(0, rOpenIdx);
+  result += `<w:r>${rPr}<w:t xml:space="preserve">${textBefore}</w:t></w:r>`;
+  result += insertXml;
+  result += `<w:r>${rPr}<w:t xml:space="preserve">${textAfter}</w:t></w:r>`;
+  result += xml.slice(afterRClose);
+
+  return result;
 }
 
 async function injectSignatureIntoDocx(docxBuffer, signatureBuffer, phone, dateStr, realName, idNumber) {
@@ -114,32 +184,40 @@ async function injectSignatureIntoDocx(docxBuffer, signatureBuffer, phone, dateS
   if (!docFile) throw new Error('无效 docx：缺少 word/document.xml');
   let docXml = docFile.asText();
 
+  // ── Part A：签名区域注入（文档末尾） ──────────────────────────────────
   const lastJiafangIdx = docXml.lastIndexOf('甲方');
   if (lastJiafangIdx !== -1) {
+    // 逆序注入（越靠后越先处理，保证之前位置的索引不受影响）
     if (docXml.indexOf('日期', lastJiafangIdx) !== -1) {
-      docXml = insertAfterLabelRun(docXml, '日期', dateXml, lastJiafangIdx);
+      docXml = insertAfterLabelSmart(docXml, '日期', dateXml, lastJiafangIdx);
     }
     if (docXml.indexOf('电话', lastJiafangIdx) !== -1) {
-      docXml = insertAfterLabelRun(docXml, '电话', phoneXml, lastJiafangIdx);
+      docXml = insertAfterLabelSmart(docXml, '电话', phoneXml, lastJiafangIdx);
     }
     if (docXml.indexOf('负责人', lastJiafangIdx) !== -1) {
-      docXml = insertAfterLabelRun(docXml, '负责人', sigDrawing2, lastJiafangIdx);
+      docXml = insertAfterLabelSmart(docXml, '负责人', sigDrawing2, lastJiafangIdx);
     }
-    docXml = insertAfterLabelRun(docXml, '甲方', sigDrawing1, lastJiafangIdx);
+    docXml = insertAfterLabelSmart(docXml, '甲方', sigDrawing1, lastJiafangIdx);
+    console.log('[signCourseContract] 签名区注入完成（甲方/负责人/电话/日期）');
   }
 
+  // ── Part B：文档头部注入（姓名 + 证件号） ─────────────────────────────
   const firstJiafangIdx = docXml.indexOf('甲方');
   if (firstJiafangIdx !== -1) {
     const isHeaderArea = firstJiafangIdx < lastJiafangIdx - 100;
     if (isHeaderArea) {
       const nearbyText = docXml.slice(firstJiafangIdx, Math.min(firstJiafangIdx + 800, docXml.length));
       const hasIdField = nearbyText.includes('身份证') || nearbyText.includes('证件号');
+
+      // 逆序注入头部：身份证（后面的）→ 甲方姓名（前面的）
       if (hasIdField && idXml) {
         const idLabelText = nearbyText.includes('身份证') ? '身份证' : '证件号';
-        docXml = insertAfterLabelRun(docXml, idLabelText, idXml, firstJiafangIdx);
+        docXml = insertAfterLabelSmart(docXml, idLabelText, idXml, firstJiafangIdx);
+        console.log('[signCourseContract] 头部证件号注入完成');
       }
       if (nameXml) {
-        docXml = insertAfterLabelRun(docXml, '甲方', nameXml, firstJiafangIdx);
+        docXml = insertAfterLabelSmart(docXml, '甲方', nameXml, firstJiafangIdx);
+        console.log('[signCourseContract] 头部姓名注入完成');
       }
     }
   }
@@ -208,13 +286,14 @@ module.exports = async (event, context) => {
     const userPhone = userInfo?.phone || '';
     const userRealName = userInfo?.real_name || '';
 
-    // 计算合约有效期
+    // 计算合约有效期（北京时间 UTC+8）
     const { formatBeijingDate } = require('../../common/utils');
     const signDate = new Date(Date.now() + 8 * 3600000);
     const contractStart = formatBeijingDate(new Date());
     const contractEndDate = new Date(signDate);
     contractEndDate.setUTCFullYear(contractEndDate.getUTCFullYear() + (template.validity_years || 1));
-    const contractEnd = formatBeijingDate(contractEndDate);
+    // signDate 已含 +8h 偏移，直接用 UTC 方法取北京日期，避免 formatBeijingDate 再加一次 +8h
+    const contractEnd = `${contractEndDate.getUTCFullYear()}-${String(contractEndDate.getUTCMonth() + 1).padStart(2, '0')}-${String(contractEndDate.getUTCDate()).padStart(2, '0')}`;
 
     const y = signDate.getUTCFullYear();
     const m = String(signDate.getUTCMonth() + 1).padStart(2, '0');

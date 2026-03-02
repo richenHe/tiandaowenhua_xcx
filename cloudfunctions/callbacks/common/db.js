@@ -431,10 +431,20 @@ async function upsert(table, data, options = {}) {
   }
 }
 
+/**
+ * 兼容性工厂函数：返回已初始化的 db 实例
+ * 用于兼容使用 getDb() 模式生成的代码，防止 "getDb is not a function" 反复出现
+ */
+function getDb() {
+  return db;
+}
+
 module.exports = {
   // 原始数据库客户端（Supabase 风格）
   db,
   app,
+  // 兼容性导出：允许 const { getDb } = require('../common/db'); const db = getDb();
+  getDb,
   
   // 便捷查询方法
   findOne,

@@ -60,13 +60,13 @@ module.exports = async (event, context) => {
       .eq('pay_status', 1);
     const hasUpgradePaid = (paidUpgradeOrder.count || 0) > 0;
 
-    // 查询最新的大使申请状态（针对目标等级）
+    // 查询最新的大使申请状态（针对目标等级，降序取最新，避免历史被拒记录干扰）
     const { data: applications } = await db
       .from('ambassador_applications')
       .select('id, status, reject_reason, created_at')
       .eq('user_id', user.id)
       .eq('target_level', target_level)
-      .order('id', { ascending: true })
+      .order('id', { ascending: false })
       .limit(1);
 
     const latestApplication = applications && applications[0] ? applications[0] : null;

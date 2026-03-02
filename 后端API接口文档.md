@@ -624,6 +624,11 @@ ELSE:
 > - `validityDays` 跳过正整数校验
 > - 上架(status=1)时不检查学习服务协议模板
 
+> **非沙龙课程上架校验**（2026-03 新增）：
+> - 当 `status=1` 且课程当前状态不为 1（即从下架变为上架）时，系统检查 `contract_templates` 中是否存在 `course_id=id, contract_type=4, status=1, deleted_at IS NULL` 的记录
+> - 若不存在，返回错误：`"课程上架前必须配置学习服务协议模板，请先在课程列表点击\"合同\"按钮上传协议文件"`
+> - 已上架课程（course.status=1）再次设置 status=1 跳过此校验
+
 ### 🔴 2.6 课程管理 - 删除课程
 **接口**: `DELETE /api/admin/course/delete`
 
@@ -4075,6 +4080,153 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   "status": 1
 }
 ```
+
+---
+
+## 7B. 课程学习服务协议（2026-03 新增）
+
+> 与大使合同体系并列，专用于课程首次预约前的签署拦截流程。
+
+### 🔵 7B.1 检查课程合同签署状态
+
+- **action**: `checkCourseContract`
+- **云函数**: `ambassador`
+- **调用方**: 客户端（小程序）
+- **描述**: 判断当前用户是否需要在预约前签署课程学习服务协议
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程ID |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| needSign | Boolean | 是否需要签约（true=需要，false=不需要） |
+| hasTemplate | Boolean | 是否存在合同模板 |
+| reason | String | 不需要签约的原因说明（needSign=false 时有值） |
+| template | Object\|null | 合同模板信息（needSign=true 时返回） |
+
+**业务规则**
+- `attend_count ≥ 1` → needSign=false，reason="已上过课"
+- `attend_count = 0` 且无合同模板 → needSign=false，reason="该课程未配置合同模板"
+- `attend_count = 0` 且有合同模板且 contract_signed=0 → needSign=true
+- `contract_signed = 1` → needSign=false，reason="已签约"
+
+---
+
+### 🔵 7B.2 客户端获取课程合同模板
+
+- **action**: `getContractTemplateByCourse`
+- **云函数**: `ambassador`
+- **调用方**: 客户端（小程序）
+- **描述**: 获取指定课程的学习服务协议模板，用于签约页展示协议全文
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程ID |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| template | Object | 合同模板对象（含 id, contract_name, content, contract_file_url 等） |
+
+**业务规则**
+- 若课程无有效模板（contract_type=4, status=1, deleted_at IS NULL），返回错误："该课程暂无可用学习服务协议模板"
+
+---
+
+### 🔵 7B.3 签署课程学习服务协议
+
+- **action**: `signCourseContract`
+- **云函数**: `ambassador`
+- **调用方**: 客户端（小程序）
+- **描述**: 用户完成电子签名后提交签约，签约成功后触发推荐人奖励延迟发放
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程ID |
+| signatureFileId | String | 是 | 手写签名图片的云存储 fileID |
+| agreed | Boolean | 是 | 用户是否同意协议，必须为 true |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| signature_id | Number | 签约记录ID |
+| contract_signed | Number | 签约状态（1=已签约） |
+
+**业务规则**
+- `agreed=false` → 返回参数错误："缺少必要参数或未同意协议"
+- `signatureFileId` 缺失 → 返回参数错误："缺少手写签名文件（signatureFileId）"
+- 签约成功后：写入 `contract_signatures`，更新 `user_courses.contract_signed=1`
+- **奖励延迟发放**：若 `orders.referee_id` 不为空且 `is_reward_granted=0`，签约成功触发奖励发放逻辑（`is_reward_granted=1, reward_granted_at=now()`）；无推荐人时不报错
+
+---
+
+### 🔴 7B.4 管理端按课程获取合同模板
+
+- **action**: `adminGetCourseContractTemplate`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 管理端查询某课程的学习服务协议模板，用于后台课程列表的合同弹窗
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程ID |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| template | Object\|null | 合同模板对象；无模板时为 null |
+| template.id | Number | 模板ID |
+| template.contract_name | String | 模板名称 |
+| template.contract_type | Number | 协议类型（4=课程学习服务协议） |
+| template.course_id | Number | 关联课程ID |
+| template.contract_file_url | String | 协议文件 CDN URL（由 contract_file_id 转换） |
+| template.validity_years | Number | 合同有效年限 |
+| template.status | Number | 状态（1=启用） |
+
+---
+
+### 🔴 7B.5 创建课程合同模板（createContractTemplate 课程模式）
+
+- **action**: `createContractTemplate`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 在已有大使合同模板创建接口基础上，传入 `contractType='course'` + `courseId` 即可创建课程学习服务协议模板（contract_type=4）
+
+**请求参数（课程合同模式）**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| contract_name | String | 是 | 模板名称（snake_case，兼容 title 字段） |
+| contractType | String | 是 | 固定传 `'course'` |
+| courseId | Number | 是 | 课程ID |
+| contractFileId | String | 否 | 协议文件云存储 fileID（可先不传，后续 update） |
+| validityYears | Number | 否 | 合同有效年限，默认 1 |
+
+> ⚠️ **参数命名注意**：`contract_name` 使用 snake_case（接口同时兼容 `title` 字段），其余参数使用 camelCase。
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| template_id | Number | 新建模板ID |
+| contract_name | String | 模板名称 |
+| version | String | 版本号（默认 v1.0） |
+
+---
 
 ### 🔴 7.5 协议模板管理 - CRUD
 **接口**:

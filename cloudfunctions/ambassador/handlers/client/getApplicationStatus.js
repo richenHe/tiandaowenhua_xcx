@@ -11,13 +11,13 @@ module.exports = async (event, context) => {
   try {
     console.log(`[getApplicationStatus] 查询申请状态:`, user.id);
 
-    // 查询最新的申请记录
+    // 查询最新的申请记录（降序取最新，避免历史被拒记录干扰）
     const { db } = require('../../common/db');
     const { data, error } = await db
       .from('ambassador_applications')
       .select('*')
       .eq('user_id', user.id)
-      .order('id', { ascending: true })
+      .order('id', { ascending: false })
       .limit(1)
       .single();
 

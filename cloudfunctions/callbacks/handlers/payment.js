@@ -129,8 +129,7 @@ async function handlePaymentSuccess(data) {
     successTime: success_time
   });
 
-  const { getDb } = require('../common/db');
-  const db = getDb();
+  const { db } = require('../common/db');
 
   // 查询订单
   const { data: orders, error: orderError } = await db

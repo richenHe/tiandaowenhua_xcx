@@ -296,7 +296,7 @@ const handleRetrainConfirm = () => {
           });
 
           // 跳转支付页，支付成功后回调会自动创建预约
-          uni.navigateTo({
+          uni.redirectTo({
             url: `/pages/order/payment/index?orderNo=${orderResult.order_no}&isRetrain=1`,
           });
         } catch (error: any) {
@@ -329,7 +329,7 @@ const handleCourseConfirm = () => {
             referee_id: refereeInfo.value.id || undefined
           });
 
-          uni.navigateTo({
+          uni.redirectTo({
             url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`,
           });
         } catch (error: any) {

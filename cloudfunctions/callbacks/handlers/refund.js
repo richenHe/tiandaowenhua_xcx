@@ -267,9 +267,8 @@ async function handleRefundFail(refundInfo) {
  */
 async function rollbackReferralReward(order) {
   try {
-    const { getDb } = require('../common/db');
+    const { db } = require('../common/db');
     const { formatDateTime } = require('../common/utils');
-    const db = getDb();
 
     if (!order.referee_id) {
       console.log('[Refund] 无推荐人，跳过奖励回退');

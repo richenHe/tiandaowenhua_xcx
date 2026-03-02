@@ -1,6 +1,6 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="确认支付" :showBack="true" />
+    <TdPageHeader title="确认支付" :showBack="true" :customBack="true" @back="goToPending" />
 
     <scroll-view scroll-y class="scroll-area">
       <!-- 支付内容 -->
@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { onBackPress } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi } from '@/api';
 
@@ -91,6 +92,22 @@ const selectedPayment = ref('wechat');
 
 // 加载状态
 const isLoading = ref(true);
+
+/** 返回时跳转到待支付页（订单已创建，不能回到确认页或课程详情） */
+const goToPending = () => {
+  if (orderInfo.value.orderNo) {
+    uni.redirectTo({
+      url: '/pages/order/pending/index?orderNo=' + orderInfo.value.orderNo
+    });
+  } else {
+    uni.navigateBack();
+  }
+};
+
+onBackPress(() => {
+  goToPending();
+  return true;
+});
 
 // 加载订单详情
 const loadOrderDetail = async (orderNo: string) => {
@@ -169,7 +186,6 @@ const handlePay = async () => {
       fail: (err) => {
         console.error('支付失败:', err);
         
-        // 用户取消支付，返回待支付页面
         if (err.errMsg && err.errMsg.includes('cancel')) {
           uni.showToast({
             title: '已取消支付',
@@ -177,7 +193,9 @@ const handlePay = async () => {
             duration: 1500
           });
           setTimeout(() => {
-            uni.navigateBack();
+            uni.redirectTo({
+              url: '/pages/order/pending/index?orderNo=' + orderInfo.value.orderNo
+            });
           }, 1500);
         } else {
           // 其他支付错误

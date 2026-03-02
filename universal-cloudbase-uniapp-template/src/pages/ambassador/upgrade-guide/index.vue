@@ -383,7 +383,7 @@ const handlePayUpgrade = async () => {
       item_id: targetLevel
     })
     uni.hideLoading()
-    uni.navigateTo({
+    uni.redirectTo({
       url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`
     })
   } catch (error: any) {

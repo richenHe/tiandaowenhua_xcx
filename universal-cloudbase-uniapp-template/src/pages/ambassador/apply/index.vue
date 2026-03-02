@@ -159,12 +159,15 @@ const pageTitle = computed(() =>
   targetLevelName.value ? `申请成为${targetLevelName.value}` : '申请传播大使'
 )
 
+const isSubmitted = ref(false)
+
 const scrollHeight = computed(() =>
   'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
 )
 
 /** 提交申请 */
 const handleSubmit = async () => {
+  if (isSubmitted.value) return
   if (profileIncomplete.value) {
     uni.showToast({ title: '请先完善个人资料（姓名和手机号）', icon: 'none' })
     return
@@ -203,6 +206,7 @@ const handleSubmit = async () => {
       targetLevel: targetLevelNum.value || undefined
     })
 
+    isSubmitted.value = true
     uni.hideLoading()
     uni.showToast({ title: '申请提交成功', icon: 'success', duration: 2000 })
     setTimeout(() => uni.navigateBack(), 2000)

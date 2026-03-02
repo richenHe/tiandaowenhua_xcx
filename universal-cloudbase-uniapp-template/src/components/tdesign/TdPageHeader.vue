@@ -60,6 +60,8 @@ interface Props {
   transparent?: boolean
   /** 是否显示底部边框 */
   border?: boolean
+  /** 为 true 时点击返回只触发 back 事件，不执行默认 navigateBack */
+  customBack?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,7 +75,8 @@ const props = withDefaults(defineProps<Props>(), {
   statusBar: true,
   bgColor: '',
   transparent: false,
-  border: true
+  border: true,
+  customBack: false
 })
 
 const emit = defineEmits<{
@@ -112,7 +115,7 @@ const handleLeftClick = () => {
   emit('leftClick')
   if (props.showBack) {
     emit('back')
-    // 默认返回上一页
+    if (props.customBack) return
     const pages = getCurrentPages()
     if (pages.length > 1) {
       uni.navigateBack()

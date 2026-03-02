@@ -94,6 +94,8 @@ const needRetrainFee = computed(() => {
     && courseInfo.value.retrainPrice > 0;
 });
 
+const isSubmitted = ref(false)
+
 const buttonText = computed(() => {
   if (needRetrainFee.value) {
     return `立即预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
@@ -152,8 +154,8 @@ const loadCustomerServicePhone = async () => {
 };
 
 const handleSubmit = async () => {
+  if (isSubmitted.value) return
   if (needRetrainFee.value) {
-    // 复训：弹窗确认后跳转订单页走微信支付
     uni.showModal({
       title: '预约确认',
       content: `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？费用支付后无法取消预约且不退费。`,
@@ -161,20 +163,20 @@ const handleSubmit = async () => {
       cancelText: '取消',
       success: (res) => {
         if (res.confirm) {
+          isSubmitted.value = true
           const q = [
             `courseId=${courseInfo.value.courseId}`,
             `classRecordId=${courseInfo.value.classRecordId}`,
             `userCourseId=${courseInfo.value.userCourseId}`,
             `isRetrain=1`
           ].join('&');
-          uni.navigateTo({
+          uni.redirectTo({
             url: `/pages/order/confirm/index?${q}`,
           });
         }
       },
     });
   } else {
-    // 首次预约：直接创建
     uni.showModal({
       title: '预约确认',
       content: '确定要预约该课程吗？',
@@ -182,6 +184,7 @@ const handleSubmit = async () => {
       cancelText: '取消',
       success: async (res) => {
         if (res.confirm) {
+          isSubmitted.value = true
           await requestSubscribe();
           try {
             await CourseApi.createAppointment({
@@ -190,6 +193,7 @@ const handleSubmit = async () => {
             uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 });
             setTimeout(() => { uni.navigateBack(); }, 2000);
           } catch (error) {
+            isSubmitted.value = false
             console.error('预约失败:', error);
           }
         }

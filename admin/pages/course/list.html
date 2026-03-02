@@ -232,13 +232,13 @@
           </t-form-item>
 
           <!-- courses.validity_days: 必填正整数，单位：天 -->
-          <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => val > 0, message: '有效期必须大于 0 天' }]">
+          <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => Number(val) > 0, message: '有效期必须大于 0 天' }]">
             <div style="display:flex; align-items:center; gap:8px;">
-              <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="请输入天数" />
+              <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="必填，如：365" />
               <span style="color:#666; font-size:13px;">天（例：365 = 1年，730 = 2年）</span>
             </div>
             <div style="font-size:12px; color:#999; margin-top:4px;">
-              购课/兑换后有效期 = 操作时间 + 有效期天数
+              购课后有效期 = 购课时间 + 有效期天数
             </div>
           </t-form-item>
 
@@ -327,12 +327,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260301a"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260301a"></script>
+  <script src="../../assets/js/config.js?v=20260302b"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260302b"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260301a"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260301a"></script>
+  <script src="../../assets/js/admin-api.js?v=20260302b"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260302b"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -506,7 +506,7 @@
             currentPrice: 0,
             originalPrice: 0,
             retrainPrice: 0,
-            validityDays: 365,
+            validityDays: null,
             duration: '',
             description: '',
             content: '',
@@ -532,7 +532,7 @@
             originalPrice: course.original_price,
             currentPrice: course.current_price,
             retrainPrice: course.retrain_price,
-            validityDays: vd || 365,
+            validityDays: vd,  // DB 是 null 则显示空，强制管理员填写
             duration: course.duration,
             description: course.description,
             content: course.content,
@@ -554,6 +554,11 @@
         const handleSave = async () => {
           try {
             const isSalon = editForm.type === 4;
+            // 非沙龙课程有效期为必填
+            if (!isSalon && (!editForm.validityDays || Number(editForm.validityDays) <= 0)) {
+              TDesign.MessagePlugin.error('课程有效期为必填项，请输入大于 0 的天数');
+              return;
+            }
             const params = {
               name: editForm.name,
               nickname: editForm.nickname,

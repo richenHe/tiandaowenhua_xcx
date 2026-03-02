@@ -376,6 +376,15 @@
         };
         
         const handleToggleStatus = async (row) => {
+          // 从隐藏切换为显示时，必须有封面图
+          if (row.status === 0) {
+            const hasAvatar = !!(row.student_avatar && row.student_avatar.trim());
+            const hasImages = !!(row.images && (Array.isArray(row.images) ? row.images : JSON.parse(row.images || '[]')).length > 0);
+            if (!hasAvatar && !hasImages) {
+              TDesign.MessagePlugin.warning('该案例缺少封面图（学员头像或案例图片），请先编辑并上传图片后再发布');
+              return;
+            }
+          }
           try {
             await AdminAPI.updateCase({
               id: row.id,
@@ -390,6 +399,15 @@
         
         const handleSubmit = async () => {
           try {
+            // 发布状态(status=1)必须有封面图：学员头像或至少一张案例图片二选一
+            if (formData.value.status === 1) {
+              const hasAvatar = !!(formData.value.studentAvatar && formData.value.studentAvatar.trim());
+              const hasImages = !!(formData.value.images && formData.value.images.length > 0);
+              if (!hasAvatar && !hasImages) {
+                TDesign.MessagePlugin.warning('案例发布前必须上传【学员头像】或至少一张【案例图片】，否则请先保存为隐藏状态');
+                return;
+              }
+            }
             const cleanAchievements = (formData.value.achievements || []).filter(a => a && a.trim());
             const payload = {
               ...formData.value,

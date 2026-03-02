@@ -13,7 +13,6 @@
         <view v-if="contractTemplate" class="info-card">
           <view class="card-header">
             <view class="card-title">📋 {{ contractTemplate.title }}</view>
-            <view class="status-badge warning">待签署</view>
           </view>
           <view class="card-body">
             <view class="info-row">
@@ -345,7 +344,15 @@ const handleSign = async () => {
         agreed: true
       })
       uni.showToast({ title: '签署成功', icon: 'success', duration: 1500 })
-      setTimeout(() => uni.navigateBack(), 1500)
+      setTimeout(() => {
+        if (result?.signature_id) {
+          uni.redirectTo({
+            url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
+          })
+        } else {
+          uni.navigateBack()
+        }
+      }, 1500)
     } else {
       result = await AmbassadorApi.signContract({
         templateId: contractTemplate.value.id,
@@ -355,7 +362,7 @@ const handleSign = async () => {
       })
       uni.showToast({ title: '签署成功', icon: 'success', duration: 2000 })
       setTimeout(() => {
-        uni.navigateTo({
+        uni.redirectTo({
           url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
         })
       }, 2000)
@@ -400,17 +407,6 @@ const handleSign = async () => {
   font-size: 32rpx;
   font-weight: 600;
   color: #333;
-}
-
-.status-badge {
-  padding: 8rpx 20rpx;
-  border-radius: 24rpx;
-  font-size: 22rpx;
-  
-  &.warning {
-    background: #FFF4E5;
-    color: #E37318;
-  }
 }
 
 .card-body {

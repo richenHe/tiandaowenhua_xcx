@@ -157,14 +157,17 @@ const loadContractDetail = async () => {
   }
 }
 
-// 计算剩余天数
+// 计算剩余天数（基于纯日期比较，避免时区/时间分量导致多算一天）
 const remainingDays = computed(() => {
   if (!contractDetail.value?.signature?.expiry_date) return 0
 
-  const expiryDate = new Date(contractDetail.value.signature.expiry_date)
-  const today = new Date()
-  const diff = expiryDate.getTime() - today.getTime()
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+  const expiryParts = contractDetail.value.signature.expiry_date.split(' ')[0].split('-').map(Number)
+  const expiryMs = Date.UTC(expiryParts[0], expiryParts[1] - 1, expiryParts[2])
+
+  const now = new Date()
+  const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+
+  return Math.max(0, Math.round((expiryMs - todayMs) / (1000 * 60 * 60 * 24)))
 })
 
 // 格式化日期
