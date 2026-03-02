@@ -1,18 +1,25 @@
 {
   "permissions": {
     "openapi": [
-      "wxacode.getUnlimited"
+      "wxacode.getUnlimited",
+      "subscribeMessage.send"
     ]
   },
   "envVariables": {
     "WECHAT_APPID": "wx26753b179de5c25c",
-    "WECHAT_APP_SECRET": "1cb66fd3f66540f6d003fbcb77695e7a"
+    "WECHAT_APP_SECRET": "1cb66fd3f66540f6d003fbcb77695e7a",
+    "MINIPROGRAM_STATE": "trial"
   },
   "triggers": [
     {
       "name": "auto-update-schedule-status",
       "type": "timer",
       "config": "0 0 0 * * * *"
+    },
+    {
+      "name": "send-course-reminder",
+      "type": "timer",
+      "config": "0 0 9 * * * *"
     }
   ]
 }

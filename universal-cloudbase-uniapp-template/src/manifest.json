@@ -53,7 +53,9 @@
     "mp-weixin" : {
         "appid" : "wx26753b179de5c25c",
         "setting" : {
-            "urlCheck" : false
+            "urlCheck" : false,
+            "minified" : true,
+            "ignoreDevUnusedFiles" : false
         },
         "usingComponents" : true
     },

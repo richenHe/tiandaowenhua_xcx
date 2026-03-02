@@ -12,11 +12,11 @@ module.exports = async (event, context) => {
     console.log('[admin:getRefereeChangeLogs] 获取推荐人变更日志:', userId);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 查询变更日志
     let queryBuilder = db.from('referee_change_logs').select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (userId) {
       queryBuilder = queryBuilder.eq('user_id', userId);

@@ -31,7 +31,9 @@ const clientHandlers = {
   exchangeGoods: require('./handlers/client/exchangeGoods'),
   exchangeCourse: require('./handlers/client/exchangeCourse'),
   cancelExchange: require('./handlers/client/cancelExchange'),
-  getExchangeRecords: require('./handlers/client/getExchangeRecords')
+  getExchangeRecords: require('./handlers/client/getExchangeRecords'),
+  requestRefund: require('./handlers/client/requestRefund'),
+  getRefundStatus: require('./handlers/client/getRefundStatus')
 };
 
 const adminHandlers = {
@@ -39,6 +41,8 @@ const adminHandlers = {
   getOrderDetail: require('./handlers/admin/getOrderDetail'),
   getRefundList: require('./handlers/admin/getRefundList'),
   refund: require('./handlers/admin/refund'),
+  rejectRefund: require('./handlers/admin/rejectRefund'),
+  markRefundTransferred: require('./handlers/admin/markRefundTransferred'),
   getWithdrawList: require('./handlers/admin/getWithdrawList'),
   withdrawAudit: require('./handlers/admin/withdrawAudit'),
   markWithdrawTransferred: require('./handlers/admin/markWithdrawTransferred'),

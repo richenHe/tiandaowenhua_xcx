@@ -25,7 +25,11 @@ import type {
   CancelExchangeParams,
   CancelExchangeResponse,
   GetMallCoursesParams,
-  GetMallCoursesResponse
+  GetMallCoursesResponse,
+  RequestRefundParams,
+  RequestRefundResponse,
+  GetRefundStatusParams,
+  RefundStatusInfo
 } from '../types/order'
 
 /**
@@ -228,6 +232,34 @@ export class OrderApi {
       showLoading: false
     })
   }
+
+  /**
+   * 11. 申请退款
+   * @param params 退款参数（订单号+退款原因）
+   * @returns 退款申请结果
+   */
+  static async requestRefund(params: RequestRefundParams): Promise<RequestRefundResponse> {
+    return callCloudFunction<RequestRefundResponse>({
+      name: 'order',
+      action: 'requestRefund',
+      data: params,
+      loadingText: '提交退款申请中...'
+    })
+  }
+
+  /**
+   * 12. 获取退款状态
+   * @param orderNo 订单号
+   * @returns 退款状态详情
+   */
+  static async getRefundStatus(orderNo: string): Promise<RefundStatusInfo> {
+    return callCloudFunction<RefundStatusInfo>({
+      name: 'order',
+      action: 'getRefundStatus',
+      data: { order_no: orderNo },
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -241,7 +273,9 @@ export const {
   exchangeGoods,
   cancelExchange,
   getExchangeRecords,
-  getMallCourses
+  getMallCourses,
+  requestRefund,
+  getRefundStatus
 } = OrderApi
 
 // 默认导出

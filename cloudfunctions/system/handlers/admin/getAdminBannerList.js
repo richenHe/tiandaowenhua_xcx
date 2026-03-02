@@ -8,13 +8,12 @@ module.exports = async (event, context) => {
   const { page = 1, page_size = 20, pageSize, keyword, status } = event;
 
   try {
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     let queryBuilder = db
       .from('banners')
       .select('*', { count: 'exact' })
-      .order('sort_order', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (keyword) {
       queryBuilder = queryBuilder.like('title', `%${keyword}%`);

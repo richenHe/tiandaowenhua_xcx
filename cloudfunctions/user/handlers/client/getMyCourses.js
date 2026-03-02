@@ -15,7 +15,7 @@ module.exports = async (event, context) => {
     console.log('[getMyCourses] 获取我的课程:', user.id);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（利用外键 fk_user_courses_course）
     let queryBuilder = db
@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
@@ -50,6 +50,8 @@ module.exports = async (event, context) => {
       buy_price: uc.buy_price,
       buy_time: uc.buy_time,
       attend_count: uc.attend_count,
+      expire_at: uc.expire_at,
+      contract_signed: uc.contract_signed || 0,
       status: uc.status,
       created_at: uc.created_at,
       // 课程信息

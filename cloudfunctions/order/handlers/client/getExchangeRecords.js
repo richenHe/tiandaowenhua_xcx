@@ -12,7 +12,7 @@ module.exports = async (event, context) => {
     console.log(`[getExchangeRecords] 查询兑换记录:`, { user_id: user.id, status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（包含商品信息的 JOIN）
     let queryBuilder = db
@@ -30,7 +30,7 @@ module.exports = async (event, context) => {
         goods:mall_goods!fk_mall_exchange_records_goods(goods_name, goods_image)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加状态筛选
     if (status !== undefined && status !== null && status !== '') {

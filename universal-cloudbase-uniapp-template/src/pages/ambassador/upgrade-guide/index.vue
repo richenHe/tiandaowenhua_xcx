@@ -202,7 +202,7 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import { AmbassadorApi, UserApi } from '@/api'
+import { AmbassadorApi, UserApi, OrderApi } from '@/api'
 import type { UpgradeGuide, UpgradeBenefitItem } from '@/api/types/ambassador'
 
 // ── 等级常量 ──
@@ -231,9 +231,8 @@ const scrollHeight = computed(() =>
   'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
 )
 
-// ── 路径图数据 ──
+// ── 路径图数据（从准青鸾开始，不展示普通用户） ──
 const pathSteps = [
-  { level: 0, name: '普通用户', icon: '👤' },
   { level: 1, name: '准青鸾', icon: '🥚' },
   { level: 2, name: '青鸾', icon: '🐦' },
   { level: 3, name: '鸿鹄', icon: '🦅' },
@@ -374,11 +373,23 @@ const goToContractSign = () => {
   })
 }
 
-const handlePayUpgrade = () => {
+const handlePayUpgrade = async () => {
   if (!paymentOption.value) return
-  uni.navigateTo({
-    url: `/pages/order/payment/index?upgradeType=${currentLevel.value + 1}&amount=${paymentOption.value.fee}`
-  })
+  const targetLevel = currentLevel.value + 1
+  try {
+    uni.showLoading({ title: '创建订单中…', mask: true })
+    const orderResult = await OrderApi.create({
+      order_type: 4,
+      item_id: targetLevel
+    })
+    uni.hideLoading()
+    uni.navigateTo({
+      url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`
+    })
+  } catch (error: any) {
+    uni.hideLoading()
+    uni.showToast({ title: error?.message || '创建订单失败', icon: 'none' })
+  }
 }
 </script>
 
@@ -418,10 +429,10 @@ const handlePayUpgrade = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16rpx;
+  flex-wrap: nowrap;
+  gap: 8rpx;
 }
-.path-item { text-align: center; flex: 1; min-width: 100rpx; }
+.path-item { text-align: center; flex: 1; min-width: 0; }
 .path-icon { font-size: 56rpx; margin-bottom: 8rpx; &.inactive { opacity: 0.4; } }
 .path-label { font-size: 22rpx; color: #999; &.current { color: #0052D9; font-weight: 600; } }
 .path-arrow { color: #999; font-size: 28rpx; }

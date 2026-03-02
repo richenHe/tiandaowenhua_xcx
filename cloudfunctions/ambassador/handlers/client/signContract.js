@@ -255,18 +255,17 @@ module.exports = async (event, context) => {
     const userPhone = userInfo?.phone || '';
     const userRealName = userInfo?.real_name || '';
 
-    // ── 计算合约有效期 ────────────────────────────────────────────────────────
-    const formatDate = (d) => d.toISOString().slice(0, 10);
-    const signDate = new Date();
-    const contractStart = formatDate(signDate);
+    // ── 计算合约有效期（北京时间 UTC+8）────────────────────────────────────────
+    const { formatBeijingDate } = require('../../common/utils');
+    const signDate = new Date(Date.now() + 8 * 3600000);
+    const contractStart = formatBeijingDate(new Date());
     const contractEndDate = new Date(signDate);
-    contractEndDate.setFullYear(contractEndDate.getFullYear() + (template.validity_years || 1));
-    const contractEnd = formatDate(contractEndDate);
+    contractEndDate.setUTCFullYear(contractEndDate.getUTCFullYear() + (template.validity_years || 1));
+    const contractEnd = formatBeijingDate(contractEndDate);
 
-    // 签署日期（中文格式，用于注入合同）
-    const y = signDate.getFullYear();
-    const m = String(signDate.getMonth() + 1).padStart(2, '0');
-    const d2 = String(signDate.getDate()).padStart(2, '0');
+    const y = signDate.getUTCFullYear();
+    const m = String(signDate.getUTCMonth() + 1).padStart(2, '0');
+    const d2 = String(signDate.getUTCDate()).padStart(2, '0');
     const signDateCN = `${y}年${m}月${d2}日`;
 
     // ── 尝试生成已签版 docx ───────────────────────────────────────────────────

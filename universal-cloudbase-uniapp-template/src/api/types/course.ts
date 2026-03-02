@@ -128,17 +128,17 @@ export interface Case {
   badge_theme?: string
   /** 学员姓氏（如：王） */
   student_surname?: string
-  /** 学员称呼（如：王总） */
+  /** 学员姓名 */
   student_name: string
   /** 学员描述 */
   student_desc?: string
-  /** 学员头像 */
+  /** 学员头像（CDN URL） */
   student_avatar?: string
   /** 学员头衔/职业 */
   student_title?: string
-  /** 头像主题色 */
+  /** 头像主题色 (default/success/primary) */
   avatar_theme?: string
-  /** 封面图片 */
+  /** 封面图片（派生字段，取 images[0]） */
   cover_image?: string
   /** 案例摘要 */
   summary: string
@@ -148,8 +148,20 @@ export interface Case {
   quote?: string
   /** 成果列表 */
   achievements?: string[]
-  /** 是否精选 */
-  is_featured?: boolean
+  /** 视频 URL（CDN URL） */
+  video_url?: string
+  /** 图片列表（CDN URL 数组） */
+  images?: string[]
+  /** 关联课程ID */
+  course_id?: number
+  /** 关联课程名称 */
+  course_name?: string
+  /** 浏览次数 */
+  view_count?: number
+  /** 点赞次数 */
+  like_count?: number
+  /** 是否精选 (0/1) */
+  is_featured?: number
   /** 排序权重 */
   sort_order?: number
   /** 创建时间 */

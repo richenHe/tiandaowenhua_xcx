@@ -24,7 +24,7 @@ module.exports = async (event, context) => {
       .from('contract_templates')
       .select('*')
       .eq('ambassador_level', level)
-      .order('version', { ascending: false });
+      .order('id', { ascending: true });
 
     if (error) throw error;
 

@@ -25,8 +25,7 @@ module.exports = async (event, context) => {
       .select('id, uid, real_name, phone, avatar, ambassador_level, referee_code', { count: 'exact' })
       .gte('ambassador_level', 1)
       .or(`real_name.like.%${searchKeyword}%,phone.like.%${searchKeyword}%`)
-      .order('ambassador_level', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

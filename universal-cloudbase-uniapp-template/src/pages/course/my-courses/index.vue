@@ -5,20 +5,8 @@
     <scroll-view
       scroll-y
       class="scroll-area"
-      @scroll="handleScroll"
     >
       <view class="page-content">
-        <!-- 标签页（使用CapsuleTabs组件） -->
-        <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
-          <template #tabs>
-            <CapsuleTabs
-              v-model="currentTab"
-              :options="tabs"
-              @change="onTabChange"
-            />
-          </template>
-        </StickyTabs>
-
         <!-- 课程列表 -->
         <view
           v-for="(course, index) in filteredCourses"
@@ -40,11 +28,21 @@
                 <text class="course-name">{{ course.name }}</text>
                 <text class="course-meta">购买: {{ course.purchaseDate }}</text>
                 <text class="course-meta">上课: {{ course.attendedCount }}次</text>
-                <view
-                  v-if="course.canRetrain"
-                  class="t-badge--standalone t-badge--theme-success t-badge--size-small"
-                >
-                  可复训
+                <view class="course-bottom-row">
+                  <view
+                    v-if="course.canRetrain"
+                    class="t-badge--standalone t-badge--theme-success t-badge--size-small"
+                  >
+                    可复训
+                  </view>
+                  <view v-else />
+                  <view
+                    v-if="course.expireLabel"
+                    class="expire-tag"
+                    :class="course.expireExpired ? 'expire-tag--danger' : course.expireUrgent ? 'expire-tag--warning' : 'expire-tag--success'"
+                  >
+                    {{ course.expireLabel }}
+                  </view>
                 </view>
               </view>
             </view>
@@ -86,36 +84,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import CapsuleTabs from '@/components/CapsuleTabs.vue';
-import StickyTabs from '@/components/StickyTabs.vue';
 import { UserApi } from '@/api';
-
-// 页面头部高度
-const pageHeaderHeight = ref(64);
-
-// StickyTabs 组件引用
-const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
-
-// 处理滚动事件
-const handleScroll = (e: any) => {
-  if (stickyTabsRef.value) {
-    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop);
-  }
-};
-
-// 标签页数据
-const tabs = ref([
-  { label: '全部', value: 'all' },
-  { label: '进行中', value: 'ongoing' },
-  { label: '已完成', value: 'completed' },
-]);
-
-const currentTab = ref('all');
-
-// 标签切换事件
-const onTabChange = (value: string | number) => {
-  console.log('Tab changed:', value);
-};
 
 // 课程数据
 const courses = ref<any[]>([]);
@@ -127,6 +96,31 @@ const courseStyles: Record<number, { icon: string; gradient: string }> = {
   3: { icon: '💬', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }  // 咨询服务
 };
 
+/**
+ * 根据 expire_at 计算有效期剩余文案
+ * @returns { label: 展示文案, urgent: <=30天, expired: 已过期 }
+ */
+const calcExpireInfo = (expireAt: string | null) => {
+  if (!expireAt) return { label: '永久有效', urgent: false, expired: false };
+
+  const now = Date.now();
+  const expireTime = new Date(expireAt).getTime();
+  const diffMs = expireTime - now;
+
+  if (diffMs <= 0) return { label: '已过期', urgent: true, expired: true };
+
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays > 365) {
+    const years = Math.floor(diffDays / 365);
+    const remainDays = diffDays % 365;
+    const label = remainDays > 0 ? `${years}年${remainDays}天` : `${years}年`;
+    return { label, urgent: false, expired: false };
+  }
+  if (diffDays > 30) return { label: `${diffDays}天`, urgent: false, expired: false };
+  return { label: `${diffDays}天`, urgent: true, expired: false };
+};
+
 // 加载我的课程
 const loadMyCourses = async () => {
   try {
@@ -135,6 +129,7 @@ const loadMyCourses = async () => {
 
     courses.value = result.list.map((item: any) => {
       const style = courseStyles[item.type] || courseStyles[1];
+      const expireInfo = calcExpireInfo(item.expire_at);
       return {
         id: item.course_id,
         name: item.title,
@@ -143,8 +138,11 @@ const loadMyCourses = async () => {
         gradient: style.gradient,
         purchaseDate: (item.purchase_date || item.buy_time || '').split(' ')[0],
         attendedCount: item.attend_count || 0,
-        canRetrain: item.attend_count > 0,
-        status: item.attend_count > 0 ? 'completed' : 'ongoing'
+        canRetrain: item.attend_count >= 1,
+        expireLabel: expireInfo.label,
+        expireUrgent: expireInfo.urgent,
+        expireExpired: expireInfo.expired,
+        status: item.attend_count >= 1 ? 'completed' : 'ongoing'
       };
     });
     uni.hideLoading();
@@ -155,13 +153,6 @@ const loadMyCourses = async () => {
 };
 
 onMounted(() => {
-  // 计算页面头部高度
-  const systemInfo = uni.getSystemInfoSync();
-  const statusBarHeight = systemInfo.statusBarHeight || 20;
-  const navbarHeight = 44;
-  pageHeaderHeight.value = statusBarHeight + navbarHeight;
-
-  // 加载课程列表
   loadMyCourses();
 });
 
@@ -169,13 +160,7 @@ onShow(() => {
   loadMyCourses();
 });
 
-// 根据选中的标签页筛选课程
-const filteredCourses = computed(() => {
-  if (currentTab.value === 'all') {
-    return courses.value;
-  }
-  return courses.value.filter((course) => course.status === currentTab.value);
-});
+const filteredCourses = computed(() => courses.value);
 
 // 跳转到课程详情
 const goToCourseDetail = (courseId: string) => {
@@ -210,11 +195,6 @@ const goToCourseSchedule = (courseId: string) => {
 .page-content {
   padding: 32rpx;
   padding-bottom: 120rpx; // 底部留白，方便滚动查看
-}
-
-// 标签切换容器
-.tabs-wrapper {
-  margin-bottom: 32rpx;
 }
 
 // 课程卡片样式
@@ -263,6 +243,13 @@ const goToCourseSchedule = (courseId: string) => {
   color: $td-text-color-secondary;
 }
 
+.course-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4rpx;
+}
+
 .course-actions {
   display: flex;
   gap: 16rpx;
@@ -271,6 +258,30 @@ const goToCourseSchedule = (courseId: string) => {
 
 .action-button {
   flex: 1;
+}
+
+.expire-tag {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  line-height: 1.4;
+  white-space: nowrap;
+
+  &--success {
+    color: #00a870;
+    background-color: #e3f9e9;
+  }
+
+  &--warning {
+    color: #e37318;
+    background-color: #fef3e6;
+  }
+
+  &--danger {
+    color: #d54941;
+    background-color: #fdecee;
+  }
 }
 
 // 空状态样式

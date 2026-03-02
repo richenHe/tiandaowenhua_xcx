@@ -66,7 +66,7 @@ module.exports = async (event, context) => {
       .select('id, status, reject_reason, created_at')
       .eq('user_id', user.id)
       .eq('target_level', target_level)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(1);
 
     const latestApplication = applications && applications[0] ? applications[0] : null;

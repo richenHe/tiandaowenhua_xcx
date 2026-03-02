@@ -12,14 +12,13 @@ module.exports = async (event, context) => {
     console.log(`[getContractTemplateList] 查询协议模板列表:`, { level, status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('contract_templates')
       .select('*', { count: 'exact' })
-      .order('ambassador_level', { ascending: true })
-      .order('version', { ascending: false });
+      .order('id', { ascending: true });
 
     // 等级筛选
     if (level != null && level !== '') {

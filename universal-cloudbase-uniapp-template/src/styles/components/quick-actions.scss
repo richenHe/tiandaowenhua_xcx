@@ -1,0 +1,102 @@
+/**
+ * TDesign QuickActions 快捷操作按钮组样式
+ * 水平可滚动的功能集按钮，适用于聊天底部、搜索建议等场景
+ *
+ * 用法：
+ * <scroll-view scroll-x class="t-quick-actions">
+ *   <view class="t-quick-actions__inner">
+ *     <view class="t-quick-actions__item" @click="...">
+ *       <text class="t-quick-actions__icon">📝</text>
+ *       <text class="t-quick-actions__text">意见反馈</text>
+ *     </view>
+ *   </view>
+ * </scroll-view>
+ */
+
+@import '../tdesign-vars.scss';
+
+// ==================== 容器：可水平滚动 ====================
+
+.t-quick-actions {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.t-quick-actions__inner {
+  display: inline-flex;
+  gap: 20rpx;
+  padding: 0 32rpx;
+}
+
+// ==================== 单个按钮项 ====================
+
+.t-quick-actions__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 72rpx;
+  padding: 0 28rpx;
+  background-color: $td-bg-color-container;
+  border: 2rpx solid $td-border-level-1;
+  border-radius: $td-radius-round;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: all $td-transition-duration-base $td-transition-timing-function;
+
+  &:active {
+    background-color: $td-bg-color-container-active;
+    border-color: $td-brand-color;
+  }
+}
+
+.t-quick-actions__icon {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.t-quick-actions__text {
+  font-size: $td-font-size-s;
+  font-weight: $td-font-weight-medium;
+  color: $td-text-color-primary;
+}
+
+// ==================== 主题变体 ====================
+
+.t-quick-actions__item--primary {
+  background-color: $td-info-color-light;
+  border-color: transparent;
+  
+  .t-quick-actions__text {
+    color: $td-brand-color;
+  }
+
+  &:active {
+    background-color: rgba(0, 82, 217, 0.15);
+  }
+}
+
+.t-quick-actions__item--success {
+  background-color: $td-success-color-light;
+  border-color: transparent;
+  
+  .t-quick-actions__text {
+    color: $td-success-color;
+  }
+}
+
+.t-quick-actions__item--warning {
+  background-color: $td-warning-color-light;
+  border-color: transparent;
+  
+  .t-quick-actions__text {
+    color: $td-warning-color;
+  }
+}
+
+// ==================== 无内边距容器（用于自定义 padding） ====================
+
+.t-quick-actions--flush {
+  .t-quick-actions__inner {
+    padding: 0;
+  }
+}

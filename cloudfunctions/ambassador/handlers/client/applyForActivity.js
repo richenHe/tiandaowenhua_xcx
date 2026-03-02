@@ -4,7 +4,7 @@
  *
  * 入参（camelCase）：activityId、positionName
  */
-const { db, response, formatDateTime } = require('../../common');
+const { db, response, formatDateTime, formatBeijingDate } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
@@ -29,9 +29,9 @@ module.exports = async (event, context) => {
 
     // 服务端兜底校验：开课前一天（class_date - 1）起截止报名
     if (activity.schedule_date) {
-      const todayStr = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+      const todayStr = formatBeijingDate(new Date());
       const classDate = new Date(activity.schedule_date + 'T00:00:00+08:00');
-      const deadlineStr = new Date(classDate.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+      const deadlineStr = formatBeijingDate(new Date(classDate.getTime() - 24 * 3600 * 1000));
       if (todayStr >= deadlineStr) {
         return response.error('活动报名已截止（开课前一天为最后报名日）');
       }

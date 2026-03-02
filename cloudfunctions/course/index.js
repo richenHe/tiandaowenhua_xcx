@@ -1,9 +1,11 @@
 /**
  * Course 云函数入口
- * 课程模块 - 39个action + 1个定时任务
+ * 课程模块 - 39个action + 2个定时任务
  *
  * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
- * 定时任务：每日 0 点自动更新过期排期状态（通过 cloudfunction.json timer trigger 触发）
+ * 定时任务：
+ *   - auto-update-schedule-status：每日 0 点自动更新过期排期状态
+ *   - send-course-reminder：每日 9 点发送上课前一天订阅消息提醒
  */
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -44,6 +46,7 @@ const clientHandlers = {
 
 // 导入处理器 - 定时任务（由 cloudfunction.json timer trigger 触发）
 const autoUpdateScheduleStatus = require('./handlers/admin/autoUpdateScheduleStatus');
+const sendCourseReminder = require('./handlers/admin/sendCourseReminder');
 
 // 导入处理器 - 管理端接口（23个）
 const adminHandlers = {
@@ -96,7 +99,13 @@ function wrapHttpResponse(data) {
 exports.main = async (event, context) => {
   // 检测是否是定时触发（timer trigger：event 含 Time 字段，且无 action）
   if (event.Time && !event.action) {
-    console.log('[Course] 定时触发：自动更新过期排期状态', event.Time);
+    const triggerName = event.TriggerName || '';
+    console.log(`[Course] 定时触发: TriggerName=${triggerName}, Time=${event.Time}`);
+
+    if (triggerName === 'send-course-reminder') {
+      return sendCourseReminder(event, context);
+    }
+    // 默认走排期状态更新（兼容旧的单 trigger 配置）
     return autoUpdateScheduleStatus(event, context);
   }
 

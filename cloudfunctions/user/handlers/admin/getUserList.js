@@ -12,12 +12,12 @@ module.exports = async (event, context) => {
     console.log('[admin:getUserList] 获取学员列表');
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db.from('users')
       .select('id, _openid, real_name, phone, city, avatar, referee_code, referee_id, ambassador_level, merit_points, cash_points_available, cash_points_frozen, profile_completed, created_at', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 关键词搜索
     if (keyword) {

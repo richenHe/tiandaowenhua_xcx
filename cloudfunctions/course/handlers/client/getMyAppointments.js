@@ -11,7 +11,7 @@ module.exports = async (event, context) => {
     console.log(`[Course/getMyAppointments] 收到请求:`, { user_id: user.id, status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建基础查询 - 使用外键 JOIN
     let queryBuilder = db
@@ -38,7 +38,7 @@ module.exports = async (event, context) => {
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {

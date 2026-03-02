@@ -8,7 +8,7 @@ module.exports = async (event, context) => {
 
   try {
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（使用外键 JOIN）
     let queryBuilder = db
@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
           type
         )
       `, { count: 'exact' })
-      .order('class_date', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加课程过滤
     if (course_id) {

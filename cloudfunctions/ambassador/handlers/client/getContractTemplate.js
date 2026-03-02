@@ -27,7 +27,7 @@ module.exports = async (event, context) => {
       .select('id, contract_name, ambassador_level, version, contract_file_id, validity_years, effective_time')
       .eq('ambassador_level', level)
       .eq('status', 1)  // 启用状态
-      .order('version', { ascending: false })
+      .order('id', { ascending: true })
       .limit(1)
       .single();
 

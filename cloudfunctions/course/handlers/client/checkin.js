@@ -83,7 +83,7 @@ async function unfreezeRefereePoints(userId, orderNo) {
     referee_user_id: userId,
     referee_user_name: refereeUser?.real_name || '',
     remark: '推荐学员首次上课，解冻积分',
-    created_at: new Date().toISOString()
+    created_at: formatDateTime(new Date())
   });
 
   // 7. 青鸾大使首次推荐标记

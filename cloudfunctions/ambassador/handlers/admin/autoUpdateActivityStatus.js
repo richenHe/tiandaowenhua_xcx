@@ -5,17 +5,17 @@
  *
  * 转换规则（两步，基于关联的 class_records 时间字段）：
  *   第一步：status=1 → status=2（报名截止）
- *     条件：today > class_date - 2（即 today >= class_date - 1，开课前一天截止报名）
+ *     条件：today >= class_date - 1（开课前一天截止报名）
  *   第二步：status=2 → status=0（已结束）+ 自动发放功德分
  *     条件：class_end_date < today（结课日期已过）
  *
  * 触发方式：cloudfunction.json 的 timer trigger，event 无 action 字段
  */
-const { db, response, formatDateTime } = require('../../common');
+const { db, response, formatDateTime, formatBeijingDate } = require('../../common');
 
 module.exports = async (event, context) => {
   try {
-    const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    const today = formatBeijingDate(new Date());
     const now = formatDateTime(new Date());
 
     console.log(`[autoUpdateActivityStatus] 开始执行，日期: ${today}`);
@@ -44,12 +44,11 @@ module.exports = async (event, context) => {
         const sch = scheduleMap[activity.schedule_id];
         if (!sch || !sch.class_date) continue;
 
-        // today >= class_date - 1 等价于 today > class_date - 2 天
         const classDate = new Date(sch.class_date + 'T00:00:00+08:00');
         const deadlineDate = new Date(classDate.getTime() - 1 * 24 * 3600 * 1000);
-        const deadlineStr = deadlineDate.toISOString().slice(0, 10);
+        const deadlineStr = formatBeijingDate(deadlineDate);
 
-        if (today > deadlineStr) {
+        if (today >= deadlineStr) {
           await db
             .from('ambassador_activities')
             .update({ status: 2, updated_at: now })

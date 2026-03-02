@@ -63,6 +63,10 @@ module.exports = async (event, context) => {
 
   } catch (error) {
     console.error('[admin:createNotificationConfig] 失败:', error);
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('duplicate') || msg.includes('uk_name') || msg.includes('uk_config_code')) {
+      return response.error('配置名称或编码已存在，请更换');
+    }
     return response.error('创建通知配置失败', error);
   }
 };

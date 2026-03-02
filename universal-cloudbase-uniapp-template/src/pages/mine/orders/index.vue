@@ -29,8 +29,13 @@
           >
             <view class="t-card__body">
               <view class="order-content">
-                <view class="order-icon" :style="{ background: order.iconBg }">
-                  <text>{{ order.icon }}</text>
+                <view class="order-cover" :style="order.coverUrl ? {} : { background: order.fallbackBg }">
+                  <image
+                    v-if="order.coverUrl"
+                    :src="order.coverUrl"
+                    class="order-cover-img"
+                    mode="aspectFill"
+                  />
                 </view>
                 <view class="order-info">
                   <view class="order-title">{{ order.title }}</view>
@@ -68,6 +73,7 @@ import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 import { formatPrice } from '@/utils'
+import { cloudFileIDToURL } from '@/api/modules/storage'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)
@@ -95,11 +101,11 @@ const tabOptions = [
 // 订单数据
 const orders = ref<any[]>([])
 
-// 课程图标和渐变色映射
-const courseStyles: Record<number, { icon: string; iconBg: string }> = {
-  1: { icon: '📚', iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 初探班
-  2: { icon: '🎓', iconBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 密训班
-  3: { icon: '💬', iconBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }  // 咨询服务
+// 订单类型对应的兜底渐变色（无封面图时使用）
+const fallbackBgMap: Record<number, string> = {
+  1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // 课程
+  2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // 复训
+  4: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'  // 大使升级
 }
 
 // 订单状态映射（与数据库 orders.pay_status 一致：0待支付/1已支付/2已取消/3已关闭/4已退款）
@@ -124,8 +130,8 @@ const loadOrders = async (tabValue?: number) => {
     const result = await UserApi.getMyOrders(params)
 
     orders.value = result.list.map((item: any) => {
-      const style = courseStyles[item.order_type] || courseStyles[1]
       const statusInfo = statusMap[item.pay_status] || statusMap[0]
+      const coverUrl = item.cover_image ? cloudFileIDToURL(item.cover_image) : ''
 
       const orderData = {
         id: item.order_no,
@@ -134,16 +140,16 @@ const loadOrders = async (tabValue?: number) => {
         price: item.final_amount,
         status: statusInfo.text,
         statusType: statusInfo.type,
-        icon: style.icon,
-        iconBg: style.iconBg,
+        coverUrl,
+        fallbackBg: fallbackBgMap[item.order_type] || fallbackBgMap[1],
         orderStatus: statusInfo.orderStatus,
         payStatus: item.pay_status
       }
       
-      console.log('🔍 [订单映射] 订单号:', item.order_no, 
-                  '| pay_status:', item.pay_status, 
+      console.log('🔍 [订单映射] 订单号:', item.order_no,
+                  '| pay_status:', item.pay_status,
                   '| 显示状态:', statusInfo.text,
-                  '| orderStatus:', orderData.orderStatus)
+                  '| coverUrl:', coverUrl)
       
       return orderData
     })
@@ -280,15 +286,17 @@ const goBack = () => {
   gap: 24rpx;
 }
 
-.order-icon {
+.order-cover {
   width: 120rpx;
   height: 120rpx;
   border-radius: $td-radius-default;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48rpx;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.order-cover-img {
+  width: 100%;
+  height: 100%;
 }
 
 .order-info {

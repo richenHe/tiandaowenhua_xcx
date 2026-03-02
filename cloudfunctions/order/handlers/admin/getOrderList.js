@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
     console.log(`[getOrderList] 管理员查询订单:`, { admin_id: admin.id, pay_status, keyword });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询（使用 CloudBase Query Builder 外键语法）
     let queryBuilder = db
@@ -27,7 +27,7 @@ module.exports = async (event, context) => {
         user:users!fk_orders_user(id, real_name, phone),
         referee:users!fk_orders_referee(id, real_name, phone, referee_code)
       `, { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 支付状态筛选
     if (pay_status != null && pay_status !== '') {
@@ -61,15 +61,12 @@ module.exports = async (event, context) => {
     };
 
     const formatPayStatus = (status) => {
-      switch (status) {
-        case 0: return '未支付';
-        case 1: return '已支付';
-        case 2: return '已退款';
-        default: return '未知';
-      }
+      const map = { 0: '未支付', 1: '已支付', 2: '已取消', 3: '已关闭', 4: '已退款' };
+      return map[status] ?? '未知';
     };
 
     const list = (result.list || []).map(order => ({
+      id: order.id,
       order_no: order.order_no,
       order_type: order.order_type,
       order_type_text: formatOrderType(order.order_type),
@@ -82,7 +79,9 @@ module.exports = async (event, context) => {
       pay_status_text: formatPayStatus(order.pay_status),
       pay_time: order.pay_time,
       is_reward_granted: order.is_reward_granted,
+      pay_method: order.pay_method || '',
       created_at: order.created_at,
+      updated_at: order.updated_at,
       user_name: order.user?.real_name || '',
       user_nickname: order.user?.nickname || order.user?.real_name || '',
       user_phone: order.user?.phone || '',

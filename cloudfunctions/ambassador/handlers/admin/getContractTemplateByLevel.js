@@ -23,7 +23,7 @@ module.exports = async (event, context) => {
       .select('id, contract_name, contract_type, ambassador_level, version, contract_file_id, validity_years, status, created_at')
       .eq('ambassador_level', Number(level))
       .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(1);
 
     if (error) throw error;

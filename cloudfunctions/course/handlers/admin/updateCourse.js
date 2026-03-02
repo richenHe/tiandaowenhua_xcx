@@ -16,6 +16,7 @@
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
  * @param {number}  event.retrainPrice  - 重训价，对应 DB 字段 retrain_price
  * @param {number}  event.allowRetrain  - 是否允许重训，对应 DB 字段 allow_retrain
+ * @param {number} event.validityDays - 课程有效期（天），必填正整数，对应 DB 字段 validity_days
  * @param {string}  event.duration      - 课程时长
  * @param {string}  event.description   - 简介
  * @param {string}  event.content       - 详情
@@ -24,7 +25,7 @@
  * @param {number}  event.sortOrder     - 排序，对应 DB 字段 sort_order
  * @param {number}  event.status        - 状态
  */
-const { findOne, update } = require('../../common/db');
+const { db, findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -40,6 +41,7 @@ module.exports = async (event, context) => {
     originalPrice,
     retrainPrice,
     allowRetrain,
+    validityDays,
     duration,
     description,
     content,
@@ -73,6 +75,14 @@ module.exports = async (event, context) => {
     if (originalPrice !== undefined) fieldsToUpdate.original_price = originalPrice;
     if (retrainPrice !== undefined) fieldsToUpdate.retrain_price = retrainPrice;
     if (allowRetrain !== undefined) fieldsToUpdate.allow_retrain = allowRetrain ? 1 : 0;
+    // validityDays 必须为正整数，不允许 null
+    if (validityDays !== undefined) {
+      const vd = parseInt(validityDays);
+      if (!vd || vd <= 0) {
+        return response.paramError('课程有效期为必填项，请输入大于 0 的天数');
+      }
+      fieldsToUpdate.validity_days = vd;
+    }
     if (duration !== undefined) fieldsToUpdate.duration = duration;
     if (description !== undefined) fieldsToUpdate.description = description;
     if (content !== undefined) fieldsToUpdate.content = content;
@@ -80,6 +90,22 @@ module.exports = async (event, context) => {
     if (teacher !== undefined) fieldsToUpdate.teacher = teacher;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     if (status !== undefined) fieldsToUpdate.status = status;
+
+    // 上架前检查是否已配置学习服务协议模板
+    if (status === 1 && course.status !== 1) {
+      const { data: templates } = await db
+        .from('contract_templates')
+        .select('id')
+        .eq('course_id', id)
+        .eq('contract_type', 4)
+        .eq('status', 1)
+        .is('deleted_at', null)
+        .limit(1);
+
+      if (!templates || templates.length === 0) {
+        return response.error('课程上架前必须配置学习服务协议模板，请先在课程列表点击"合同"按钮上传协议文件');
+      }
+    }
 
     if (Object.keys(fieldsToUpdate).length === 0) {
       return response.paramError('没有需要更新的字段');

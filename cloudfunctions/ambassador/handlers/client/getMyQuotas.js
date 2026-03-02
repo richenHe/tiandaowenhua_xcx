@@ -23,7 +23,7 @@ module.exports = async (event, context) => {
       .from('ambassador_quotas')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (error) throw error;
 
@@ -41,7 +41,7 @@ module.exports = async (event, context) => {
       .from('quota_usage_records')
       .select('*')
       .eq('ambassador_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(20);
 
     if (usageError) throw usageError;

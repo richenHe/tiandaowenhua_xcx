@@ -15,7 +15,7 @@ module.exports = async (event, context) => {
     console.log('[getMyOrders] 获取我的订单:', user.id, { page, page_size, pageSize, status });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 100;
+    const finalPageSize = pageSize || page_size || 100;
 
     // 构建查询（使用外键 fk_orders_referee）
     let queryBuilder = db
@@ -25,7 +25,7 @@ module.exports = async (event, context) => {
         referee:users!fk_orders_referee(id, real_name, nickname)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {
@@ -97,10 +97,26 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 格式化数据
+    // 批量查询课程封面（order_type=1/2 时 related_id 为课程ID）
+    const courseOrderIds = (result.list || [])
+      .filter(o => o.order_type === 1 || o.order_type === 2)
+      .map(o => o.related_id)
+      .filter(id => id != null);
+
+    const courseCovers = {};
+    if (courseOrderIds.length > 0) {
+      const { data: courses } = await db
+        .from('courses')
+        .select('id, cover_image')
+        .in('id', [...new Set(courseOrderIds)]);
+      (courses || []).forEach(c => { courseCovers[c.id] = c.cover_image || ''; });
+    }
+
+    // 格式化数据，附加课程封面
     const list = (result.list || []).map(order => ({
       ...order,
-      referee_name: order.referee?.real_name || order.referee?.nickname || null
+      referee_name: order.referee?.real_name || order.referee?.nickname || null,
+      cover_image: courseCovers[order.related_id] || ''
     }));
 
     console.log('[getMyOrders] 查询成功，共', result.total, '条，超时订单:', timeoutOrders.length);

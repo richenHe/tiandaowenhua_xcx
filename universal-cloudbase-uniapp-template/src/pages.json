@@ -1,4 +1,5 @@
 {
+	"lazyCodeLoading": "requiredComponents",
 	"pages": [
 		{
 			"path": "pages/index/index",
@@ -78,6 +79,13 @@
 			}
 		},
 		{
+			"path": "pages/mine/ai-service/index",
+			"style": {
+				"navigationBarTitleText": "智能客服",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/mine/consultation/index",
 			"style": {
 				"navigationBarTitleText": "在线咨询",
@@ -102,6 +110,13 @@
 			"path": "pages/academy/cases/index",
 			"style": {
 				"navigationBarTitleText": "学员案例",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/academy/cases/detail",
+			"style": {
+				"navigationBarTitleText": "案例详情",
 				"navigationStyle": "custom"
 			}
 		},
@@ -199,15 +214,29 @@
 						"navigationStyle": "custom"
 					}
 				},
-				{
-					"path": "detail/index",
-					"style": {
-						"navigationBarTitleText": "订单详情",
-						"navigationStyle": "custom"
-					}
+			{
+				"path": "detail/index",
+				"style": {
+					"navigationBarTitleText": "订单详情",
+					"navigationStyle": "custom"
 				}
-			]
-		},
+			},
+			{
+				"path": "refund-apply/index",
+				"style": {
+					"navigationBarTitleText": "申请退款",
+					"navigationStyle": "custom"
+				}
+			},
+			{
+				"path": "refund-status/index",
+				"style": {
+					"navigationBarTitleText": "退款详情",
+					"navigationStyle": "custom"
+				}
+			}
+		]
+	},
 		{
 			"root": "pages/ambassador",
 			"pages": [

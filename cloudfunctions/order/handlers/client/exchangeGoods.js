@@ -124,15 +124,15 @@ module.exports = async (event, context) => {
         });
       }
 
-      // 7.5 插入积分明细记录（使用数据库实际列名）
+      // 7.5 插入积分明细记录（type=6 系统调整，表示商城兑换扣减）
       if (cash_points_used > 0) {
         await insert('cash_points_records', {
           user_id: user.id,
           _openid: OPENID || '',
-          type: 2,                                              // 消费
+          type: 6,
           amount: -cash_points_used,
           available_after: Math.round(parseFloat(user.cash_points_available) - cash_points_used),
-          remark: `兑换商品：${goods.goods_name}`              // 实际列名（非 description）
+          remark: `商城兑换商品：${goods.goods_name}`
         });
       }
 

@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
         `*, user:users!fk_mall_exchange_records_user(id, real_name, phone)`,
         { count: 'exact' }
       )
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态过滤（同时检查 null/undefined/空字符串，避免 parseInt(null) → NaN）
     if (status != null && status !== '') {

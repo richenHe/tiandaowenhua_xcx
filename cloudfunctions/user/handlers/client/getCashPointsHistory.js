@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
   try {
     console.log('[getCashPointsHistory] 获取积分明细:', user.id);
 
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     let queryBuilder = db
       .from('cash_points_records')
@@ -28,7 +28,7 @@ module.exports = async (event, context) => {
         { count: 'exact' }
       )
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 支持按 type 过滤（如仅查提现相关：type=3/4/5）
     if (type !== undefined && type !== null) {

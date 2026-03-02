@@ -11,13 +11,12 @@ module.exports = async (event, context) => {
   try {
     console.log(`[getMallGoodsList] 管理员查询商城商品:`, { admin_id: admin.id, keyword, status });
 
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     let queryBuilder = db
       .from('mall_goods')
       .select('*', { count: 'exact' })
-      .order('sort_order', { ascending: true })
-      .order('id', { ascending: false });
+      .order('id', { ascending: true });
 
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));

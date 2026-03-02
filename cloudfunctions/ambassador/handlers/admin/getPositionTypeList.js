@@ -13,7 +13,7 @@ module.exports = async (event, context) => {
     let query = db
       .from('ambassador_position_types')
       .select('*')
-      .order('sort_order', { ascending: true });
+      .order('id', { ascending: true });
 
     if (!includeDisabled) {
       query = query.eq('status', 1);

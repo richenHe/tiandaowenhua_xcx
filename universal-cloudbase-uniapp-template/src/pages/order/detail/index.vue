@@ -196,7 +196,8 @@ const loadOrderDetail = async (orderNo: string) => {
     orderDetail.value.amount.discount = order.discount_amount || 0;
     orderDetail.value.amount.totalAmount = order.final_amount || 0;
 
-    orderDetail.value.course.name = order.order_name || '';
+    orderDetail.value.course.id = order.course_id || 0;
+    orderDetail.value.course.name = order.course_name || order.order_name || '';
     uni.hideLoading();
   } catch (error) {
     console.error('加载订单详情失败:', error);
@@ -236,6 +237,10 @@ onShow(() => {
 
 // 跳转到课程详情
 const goToCourseDetail = () => {
+  if (!orderDetail.value.course.id) {
+    uni.showToast({ title: '课程信息尚未加载', icon: 'none' });
+    return;
+  }
   uni.navigateTo({
     url: '/pages/course/detail/index?courseId=' + orderDetail.value.course.id,
   });

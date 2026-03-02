@@ -38,20 +38,33 @@ function getPagination(page = 1, pageSize = 20) {
 }
 
 /**
- * 格式化日期时间
+ * 格式化日期时间（北京时间 UTC+8）
  * @param {Date|string|number} date - 日期对象或时间戳
  * @returns {string} YYYY-MM-DD HH:mm:ss
  */
 function formatDateTime(date) {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hour = String(d.getHours()).padStart(2, '0');
-  const minute = String(d.getMinutes()).padStart(2, '0');
-  const second = String(d.getSeconds()).padStart(2, '0');
+  const d = new Date(new Date(date).getTime() + 8 * 3600000);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hour = String(d.getUTCHours()).padStart(2, '0');
+  const minute = String(d.getUTCMinutes()).padStart(2, '0');
+  const second = String(d.getUTCSeconds()).padStart(2, '0');
   
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+/**
+ * 获取北京时间的日期字符串 YYYY-MM-DD
+ * @param {Date|string|number} [date] - 日期对象，默认当前时间
+ * @returns {string} YYYY-MM-DD
+ */
+function formatBeijingDate(date) {
+  const d = new Date(new Date(date || Date.now()).getTime() + 8 * 3600000);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -93,10 +106,10 @@ function validatePhone(phone) {
  * @returns {string} 唯一订单号，格式 {prefix}{YYYYMMDD}{随机数}
  */
 function generateOrderNo(prefix = 'ORD') {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+  const now = new Date(Date.now() + 8 * 3600000);
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(now.getUTCDate()).padStart(2, '0');
   const date = `${year}${month}${day}`;
   const random = String(Math.floor(Math.random() * 10000000000)).padStart(10, '0');
   return `${prefix}${date}${random}`;
@@ -200,6 +213,7 @@ module.exports = {
   validateRequired,
   getPagination,
   formatDateTime,
+  formatBeijingDate,
   randomString,
   maskPhone,
   validatePhone,

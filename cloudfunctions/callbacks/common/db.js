@@ -2,42 +2,26 @@
  * CloudBase 数据库统一访问层
  * 
  * 使用 @cloudbase/node-sdk 原生 Relational Database API
- * 支持 Supabase 风格的 Query Builder 和原始 SQL 查询
+ * 支持 Supabase 风格的 Query Builder
+ * 
+ * ⚠️ 注意：本模块已完全移除 rawQuery 支持
+ * ⚠️ 所有查询必须使用 Query Builder（db.from()）
  * 
  * @see https://docs.cloudbase.net/database/relational-database
  */
 
 const cloudbase = require('@cloudbase/node-sdk');
 
-// 延迟初始化：避免在模块加载时就初始化（HTTP 云函数环境问题）
-let app = null;
-let db = null;
+// 初始化 CloudBase
+const app = cloudbase.init({
+  env: cloudbase.SYMBOL_CURRENT_ENV
+});
 
-/**
- * 获取 CloudBase 实例（延迟初始化）
- */
-function getApp() {
-  if (!app) {
-    app = cloudbase.init({
-      env: 'cloud1-0gnn3mn17b581124'  // 显式指定环境 ID
-    });
-  }
-  return app;
-}
-
-/**
- * 获取关系型数据库实例（延迟初始化）
- */
-function getDb() {
-  if (!db) {
-    const appInstance = getApp();
-    db = appInstance.rdb({
-      instanceId: process.env.DB_INSTANCE_ID || 'tnt-e300s320g',
-      database: process.env.DB_NAME || 'tiandao_culture'
-    });
-  }
-  return db;
-}
+// 获取关系型数据库实例（Supabase 风格）
+const db = app.rdb({
+  instanceId: process.env.DB_INSTANCE_ID || 'tnt-e300s320g',
+  database: process.env.DB_NAME || 'tiandao_culture'
+});
 
 /**
  * ==================== Supabase 风格 Query Builder ====================
@@ -67,8 +51,18 @@ function getDb() {
  * 
  * 7. 关联查询（需要外键）：
  *    const { data } = await db.from('orders')
- *      .select('*, users(*)')
+ *      .select('*, users:users!fk_orders_user(id, name, email)')
  *      .eq('user_id', 1);
+ * 
+ * 8. 多表关联查询：
+ *    const { data } = await db.from('appointments')
+ *      .select(`
+ *        *,
+ *        user:users!fk_appointments_user(id, real_name, phone),
+ *        course:courses!fk_appointments_course(name, type),
+ *        class_record:class_records!fk_appointments_class_record(class_date, class_time)
+ *      `)
+ *      .eq('status', 1);
  */
 
 /**
@@ -89,8 +83,7 @@ function getDb() {
  */
 async function rpc(functionName, params = {}) {
   try {
-    const dbInstance = getDb();
-    const { data, error } = await dbInstance.rpc(functionName, params);
+    const { data, error } = await db.rpc(functionName, params);
     
     if (error) {
       throw error;
@@ -120,8 +113,7 @@ async function rpc(functionName, params = {}) {
  */
 async function findOne(table, where) {
   try {
-    const dbInstance = getDb();
-    let query = dbInstance.from(table).select('*');
+    let query = db.from(table).select('*');
     
     // 添加查询条件
     for (const [key, value] of Object.entries(where)) {
@@ -167,9 +159,8 @@ async function findOne(table, where) {
 async function query(table, options = {}) {
   try {
     const { where = {}, columns = '*', orderBy, limit, offset } = options;
-    const dbInstance = getDb();
     
-    let queryBuilder = dbInstance.from(table).select(columns);
+    let queryBuilder = db.from(table).select(columns);
     
     // 添加查询条件
     for (const [key, value] of Object.entries(where)) {
@@ -220,8 +211,7 @@ async function query(table, options = {}) {
  */
 async function insert(table, data) {
   try {
-    const dbInstance = getDb();
-    const { data: result, error } = await dbInstance
+    const { data: result, error } = await db
       .from(table)
       .insert(data)
       .select();
@@ -313,7 +303,8 @@ async function deleteRecord(table, where) {
  */
 async function softDelete(table, where) {
   try {
-    return await update(table, { deleted_at: new Date().toISOString() }, where);
+    const { formatDateTime } = require('./utils');
+    return await update(table, { deleted_at: formatDateTime(new Date()) }, where);
   } catch (error) {
     console.error('[DB] softDelete error:', error);
     throw error;
@@ -441,13 +432,9 @@ async function upsert(table, data, options = {}) {
 }
 
 module.exports = {
-  // 延迟初始化方法
-  getDb,
-  getApp,
-  
-  // 原始数据库客户端（向后兼容，但不推荐直接使用）
-  get db() { return getDb(); },
-  get app() { return getApp(); },
+  // 原始数据库客户端（Supabase 风格）
+  db,
+  app,
   
   // 便捷查询方法
   findOne,
@@ -466,4 +453,3 @@ module.exports = {
   rpc,
   transaction
 };
-

@@ -21,7 +21,7 @@ module.exports = async (event, context) => {
   const finalCourseId = courseId || course_id;
   const finalStartDate = startDate || start_date;
   const finalEndDate = endDate || end_date;
-  const finalPageSize = page_size || pageSize || 10;
+  const finalPageSize = pageSize || page_size || 10;
   const { user } = context;
 
   try {
@@ -59,8 +59,8 @@ module.exports = async (event, context) => {
         booked_quota
       `, { count: 'exact' })
       .eq('course_id', finalCourseId)
-      .in('status', [1, 2])
-      .order('class_date', { ascending: true });
+      .eq('status', 1)
+      .order('id', { ascending: true });
 
     // 日期过滤
     if (finalStartDate) {

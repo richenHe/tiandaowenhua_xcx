@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
     console.log(`[admin:getNotificationLogs] 管理员 ${admin.id} 获取通知日志`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询（使用外键名进行 JOIN）
     let queryBuilder = db
@@ -42,7 +42,7 @@ module.exports = async (event, context) => {
         created_at,
         user:users!fk_notification_logs_user(real_name, phone)
       `, { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 筛选条件
     if (user_id) {

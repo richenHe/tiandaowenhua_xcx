@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     console.log(`[admin:getWithdrawList] 管理员 ${admin.id} 获取提现列表`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询（使用外键名进行 JOIN）
     let queryBuilder = db
@@ -40,9 +40,9 @@ module.exports = async (event, context) => {
         transfer_time,
         transfer_no,
         created_at,
-        user:users!fk_withdrawals_user(real_name, phone, ambassador_level)
+        user:users!fk_withdrawals_user(real_name, phone, ambassador_level, bank_name, bank_account_name, bank_account_number)
       `, { count: 'exact' })
-      .order('apply_time', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态筛选
     if (status != null && status !== '') {
@@ -92,12 +92,13 @@ module.exports = async (event, context) => {
 
       return {
         ...withdrawal,
-        // 用户手机号（从 JOIN 的 user 对象取）
+        // 用户手机号和大使等级（从 JOIN 的 user 对象取）
         user_phone: withdrawal.user?.phone || '',
-        // 银行卡信息（展平 account_info 到顶层，方便前端直接访问）
-        bank_name: accountInfo?.bank_name || accountInfo?.bankName || '',
-        bank_account_name: accountInfo?.account_name || accountInfo?.realName || accountInfo?.bank_account_name || '',
-        bank_account_number: accountInfo?.account_number || accountInfo?.cardNumber || accountInfo?.bank_account_number || '',
+        ambassador_level: withdrawal.user?.ambassador_level || 0,
+        // 银行卡信息：优先 account_info，如果是纯数字则回退到 users 表字段
+        bank_name: resolveBankName(accountInfo, withdrawal.user),
+        bank_account_name: accountInfo?.account_name || accountInfo?.realName || accountInfo?.bank_account_name || withdrawal.user?.bank_account_name || '',
+        bank_account_number: accountInfo?.account_number || accountInfo?.cardNumber || accountInfo?.bank_account_number || withdrawal.user?.bank_account_number || '',
         wechat_account: accountInfo?.wechat || accountInfo?.account || '',
         alipay_account: accountInfo?.alipay || accountInfo?.account || '',
         account_info: accountInfo,
@@ -111,23 +112,25 @@ module.exports = async (event, context) => {
     });
 
     // 查询各状态统计数据
+    // status: 0=待审核 1=审核通过待转账 2=已打款 3=已拒绝
     const [
       { count: pendingCount },
-      { count: approvedCount },
+      { count: transferredCount },
       { count: rejectedCount },
       { data: pendingAmountData }
     ] = await Promise.all([
       db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 0),
-      db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 1),
+      db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 2),
       db.from('withdrawals').select('id', { count: 'exact', head: true }).eq('status', 3),
-      db.from('withdrawals').select('amount').eq('status', 1)
+      // 待打款金额 = 待审核(0) + 审核通过待转账(1) 的合计
+      db.from('withdrawals').select('amount').in('status', [0, 1])
     ]);
 
     const pendingAmount = (pendingAmountData || []).reduce((sum, row) => sum + (row.amount || 0), 0);
 
     const statistics = {
       pending: pendingCount || 0,
-      approved: approvedCount || 0,
+      transferred: transferredCount || 0,
       rejected: rejectedCount || 0,
       pendingAmount
     };
@@ -163,5 +166,15 @@ function getAccountTypeText(type) {
     3: '银行卡'
   };
   return typeMap[type] || '未知';
+}
+
+/**
+ * 解析银行名称：account_info 中的 bank_name 可能是纯数字 ID，
+ * 此时回退到 users 表的 bank_name 字段
+ */
+function resolveBankName(accountInfo, user) {
+  const name = accountInfo?.bank_name || accountInfo?.bankName || '';
+  if (name && !/^\d+$/.test(String(name))) return name;
+  return user?.bank_name || name || '';
 }
 

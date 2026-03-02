@@ -17,15 +17,19 @@ module.exports = async (event, context) => {
       return response.paramError('缺少必要参数: user_id');
     }
 
-    // 查询大使基本信息（users 表没有 deleted_at 字段）
-    const { data: user, error } = await db
+    const { data: userList, error } = await db
       .from('users')
       .select('*')
       .eq('id', user_id)
       .gt('ambassador_level', 0)
-      .single();
+      .limit(1);
 
-    if (error || !user) {
+    if (error) {
+      console.error('[getAmbassadorDetail] 查询用户失败:', error);
+      return response.error('用户不存在或不是大使');
+    }
+    const user = userList?.[0];
+    if (!user) {
       return response.error('用户不存在或不是大使');
     }
 
@@ -40,7 +44,7 @@ module.exports = async (event, context) => {
       .from('users')
       .select('id, real_name, phone, ambassador_level, created_at')
       .eq('referee_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(10);
 
     // 查询订单统计
@@ -62,29 +66,34 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    // 查询合约信息（最新有效合约）
-    const { data: contract } = await db
-      .from('contract_signatures')
-      .select('id, contract_name, sign_time, contract_end, status')
-      .eq('user_id', user.id)
-      .eq('status', 1)
-      .order('sign_time', { ascending: false })
-      .limit(1)
-      .single()
-      .catch(() => ({ data: null }));
+    let contractList = [];
+    try {
+      const { data: _contractList } = await db
+        .from('contract_signatures')
+        .select('id, contract_name, sign_time, contract_end, status')
+        .eq('user_id', user.id)
+        .eq('status', 1)
+        .order('id', { ascending: false })
+        .limit(1);
+      contractList = _contractList || [];
+    } catch (e) { contractList = []; }
+    const contract = contractList[0] || null;
 
     // 查询大使赠课名额（所有有效名额按类型汇总）
-    const { data: quotas } = await db
-      .from('ambassador_quotas')
-      .select('quota_type, total_quantity, used_quantity, remaining_quantity, expire_date, status')
-      .eq('user_id', user.id)
-      .eq('status', 1)
-      .order('expire_date', { ascending: true })
-      .catch(() => ({ data: [] }));
+    let quotas = [];
+    try {
+      const { data: _quotas } = await db
+        .from('ambassador_quotas')
+        .select('quota_type, total_quantity, used_quantity, remaining_quantity, expire_date, status')
+        .eq('user_id', user.id)
+        .eq('status', 1)
+        .order('id', { ascending: true });
+      quotas = _quotas || [];
+    } catch (e) { quotas = []; }
 
     // 按类型汇总：初探班(type=1) / 密训班(type=2)
     const quotaSummary = { basic: { total: 0, used: 0, remaining: 0 }, advanced: { total: 0, used: 0, remaining: 0 } };
-    (quotas || []).forEach(q => {
+    quotas.forEach(q => {
       const key = q.quota_type === 2 ? 'advanced' : 'basic';
       quotaSummary[key].total += q.total_quantity || 0;
       quotaSummary[key].used += q.used_quantity || 0;
@@ -120,7 +129,7 @@ module.exports = async (event, context) => {
       } : null,
       // 赠课名额汇总
       quota_summary: quotaSummary,
-      quota_list: quotas || [],
+      quota_list: quotas,
       // 推荐人列表
       referees: referees || [],
       // 统计对象（保留向后兼容）

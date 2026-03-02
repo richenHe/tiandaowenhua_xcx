@@ -7,7 +7,7 @@
  * @param {number} event.id           - 排期 ID（必填）
  * @param {number} event.courseId     - 课程 ID
  * @param {string} event.classDate    - 开课日期（如 "2026-03-01"）
- * @param {string} event.classEndDate - 结课日期（如 "2026-03-05"），可选
+ * @param {string} event.classEndDate - 结课日期（如 "2026-03-05"），单天课与 classDate 相同
  * @param {string} event.classTime    - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
  * @param {string} event.classLocation- 上课地点，对应 DB 字段 class_location
  * @param {number} event.totalQuota   - 总名额，对应 DB 字段 total_quota
@@ -51,7 +51,15 @@ module.exports = async (event, context) => {
     const fieldsToUpdate = {};
     if (courseId !== undefined) fieldsToUpdate.course_id = courseId;
     if (classDate !== undefined) fieldsToUpdate.class_date = classDate;
-    if (classEndDate !== undefined) fieldsToUpdate.class_end_date = classEndDate || null;
+    // 未传 classEndDate 但传了 classDate 时，同步更新结课日期为开课日期（单天课保持同步）
+    if (classEndDate !== undefined) {
+      fieldsToUpdate.class_end_date = classEndDate || classDate || record.class_date;
+    } else if (classDate !== undefined) {
+      // 只改了开课日期但没传结课日期：若原结课日期=原开课日期（单天课），同步跟随
+      if (record.class_end_date === record.class_date) {
+        fieldsToUpdate.class_end_date = classDate;
+      }
+    }
     if (classTime !== undefined) fieldsToUpdate.class_time = classTime || null;
     if (classLocation !== undefined) fieldsToUpdate.class_location = classLocation;
     if (totalQuota !== undefined) fieldsToUpdate.total_quota = totalQuota;

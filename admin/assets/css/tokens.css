@@ -1,31 +1,91 @@
 /* ========================================
- * 全局布局修复 - 所有 admin 页面共享
- * 解决分页数据超出视口无法滚动的问题
+ * Admin 后台全局公共样式
+ * 所有页面通过 <link> 引入，不要在各页面重复定义
  * ======================================== */
 
-/* 防止 body 自身滚动，由内层内容区接管滚动 */
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  height: 100% !important;
-  overflow: hidden !important;
+/* ---------- Reset ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* 内层 t-layout（侧边栏 + 内容区）：填充剩余高度并约束子元素 */
+html, body {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f5f5f5;
+}
+
+/* ---------- TDesign Layout 骨架 ---------- */
+.t-layout {
+  height: 100vh;
+}
+
 .t-layout > .t-layout {
   flex: 1 !important;
   min-height: 0 !important;
   overflow: hidden !important;
 }
 
-/* 顶部导航栏不被压缩 */
+.t-layout__header,
 .t-layout > .t-layout__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #dcdcdc;
   flex-shrink: 0 !important;
 }
 
-/* 内容区：可滚动 */
+.t-layout__sider {
+  background: #fff;
+  border-right: 1px solid #dcdcdc;
+  width: 240px !important;
+  flex-shrink: 0;
+}
+
 .t-layout__content {
   flex: 1;
   min-height: 0;
+  padding: 24px;
   overflow-y: auto !important;
+  background: #f5f5f5;
+}
+
+/* ---------- 页面通用组件 ---------- */
+.page-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.page-desc {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
+}
+
+.search-form {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.table-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
 }

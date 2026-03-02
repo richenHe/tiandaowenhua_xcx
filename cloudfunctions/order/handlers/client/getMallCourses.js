@@ -13,7 +13,7 @@ module.exports = async (event, context) => {
 
   try {
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询
     let queryBuilder = db
@@ -21,8 +21,7 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact' })
       .eq('status', 1)  // 只查询上架课程
       .in('type', [1, 2])  // 只查询初探班和密训班
-      .order('sort_order', { ascending: false })  // 按排序权重倒序
-      .order('id', { ascending: true });  // 相同权重按ID正序
+      .order('id', { ascending: true });
 
     // 如果指定了课程类型
     if (type) {

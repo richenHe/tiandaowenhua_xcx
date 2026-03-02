@@ -22,7 +22,6 @@ module.exports = async (event, context) => {
       .from('system_configs')
       .select('*')
       .eq('status', 1)
-      .order('config_group', { ascending: true })
       .order('id', { ascending: true });
 
     // 可选的分类过滤

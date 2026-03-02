@@ -27,7 +27,7 @@ module.exports = async (event, context) => {
         const { data: configs, count, error } = await db
           .from('notification_configs')
           .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false });
+          .order('id', { ascending: true });
 
         if (error) throw error;
 

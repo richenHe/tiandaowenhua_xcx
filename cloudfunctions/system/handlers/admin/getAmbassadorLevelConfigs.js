@@ -15,7 +15,7 @@ module.exports = async (event, context) => {
     const { data: configs, error } = await db
       .from('ambassador_level_configs')
       .select('*')
-      .order('level', { ascending: true });
+      .order('id', { ascending: true });
 
     if (error) {
       throw error;

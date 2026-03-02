@@ -12,7 +12,7 @@ module.exports = async (event, context) => {
     console.log(`[getSignatureList] 查询签署列表:`, { template_id, level, status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
@@ -22,7 +22,7 @@ module.exports = async (event, context) => {
         user:users!fk_contract_signatures_user(id, real_name, phone, avatar),
         template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `, { count: 'exact' })
-      .order('sign_time', { ascending: false });
+      .order('id', { ascending: true });
 
     // 模板筛选
     if (template_id) {

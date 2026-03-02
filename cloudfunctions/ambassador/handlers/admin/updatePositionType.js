@@ -2,7 +2,7 @@
  * 管理端接口：更新活动岗位类型
  * Action: updatePositionType
  */
-const { db, response } = require('../../common');
+const { db, response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { id, name, requiredLevel, meritPointsDefault, description, status, sortOrder } = event;
@@ -58,7 +58,7 @@ module.exports = async (event, context) => {
     if (description !== undefined) updateData.description = description || null;
     if (status != null) updateData.status = Number(status);
     if (sortOrder != null) updateData.sort_order = Number(sortOrder);
-    updateData.updated_at = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    updateData.updated_at = formatDateTime(new Date());
 
     await db.from('ambassador_position_types').update(updateData).eq('id', id);
 

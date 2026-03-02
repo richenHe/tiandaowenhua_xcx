@@ -20,7 +20,7 @@ module.exports = async (event, context) => {
       .select('*', { count: 'exact' })
       .eq('activity_id', activityId)
       .neq('status', 0)  // 排除已取消
-      .order('created_at', { ascending: true });
+      .order('id', { ascending: true });
 
     if (positionName) {
       queryBuilder = queryBuilder.eq('position_name', positionName);

@@ -8,7 +8,7 @@
  * - status: 状态（可选，默认2-已处理）
  */
 const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -31,7 +31,7 @@ module.exports = async (event, context) => {
     // 更新反馈
     await update('feedbacks', {
       reply,
-      reply_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      reply_time: formatDateTime(new Date()),
       reply_admin_id: admin.id,
       status
     }, { id: feedback_id });

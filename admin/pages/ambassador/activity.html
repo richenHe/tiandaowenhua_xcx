@@ -1,15 +1,15 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.t-layout{height:100vh}.t-layout__header{display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc}.t-layout__sider{background:#fff;border-right:1px solid #dcdcdc;width:240px!important;flex-shrink:0}.t-layout__content{padding:24px;overflow-y:auto;background:#f5f5f5}.container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}.title{font-size:20px;font-weight:600;margin-bottom:8px}.desc{color:#999;margin-bottom:24px}.bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-    /* 岗位编辑器 */
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>
+    .container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;}
+    .title{font-size:20px;font-weight:600;margin-bottom:8px;}
+    .desc{color:#999;margin-bottom:24px;}
+    .bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
     .position-editor{border:1px solid #dcdcdc;border-radius:6px;padding:12px;background:#fafafa;}
     .position-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
     .pos-header{display:flex;gap:8px;margin-bottom:6px;font-size:12px;color:#666;font-weight:500;}
-    /* 报名情况 */
     .quota-bar{font-size:12px;color:#666;}
     .quota-full{color:#e34d59;}
-    /* 弹窗内滚动 */
-    .modal-scroll{max-height:480px;overflow-y:auto;}
-    /* 门槛等级徽章 */
+    .modal-scroll{max-height:480px;overflow-y:auto;overflow-x:hidden;}
     .level-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;}
     .level-badge.none{background:#f5f5f5;color:#999;border-color:#ddd;}
   </style></head><body>
@@ -60,7 +60,7 @@
 
             <!-- 列表 -->
             <t-table :data="list" :columns="cols" :loading="loading"
-              :pagination="page" @page-change="changePage" bordered stripe>
+              :pagination="page" @page-change="changePage" row-key="id" bordered stripe>
               <template #status="{row}">
                 <t-tag v-if="row.status===1" theme="success">报名中</t-tag>
                 <t-tag v-else-if="row.status===2" theme="warning">报名截止</t-tag>
@@ -91,7 +91,7 @@
             <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
               <t-button theme="primary" size="small" @click="openAddPositionType">+ 新增岗位</t-button>
             </div>
-            <t-table :data="positionTypeList" :columns="ptCols" :loading="ptLoading" bordered size="small">
+            <t-table :data="positionTypeList" :columns="ptCols" :loading="ptLoading" row-key="id" bordered size="small">
               <template #required_level="{row}">
                 <span v-if="row.required_level!=null" class="level-badge">{{ row.required_level_name || `等级${row.required_level}` }}</span>
                 <span v-else class="level-badge none">无限制</span>
@@ -196,7 +196,7 @@
                 <span style="margin-left:16px;color:#999;">{{ detailData.schedule_date }}</span>
                 <span v-if="detailData.schedule_location" style="margin-left:16px;color:#999;">📍{{ detailData.schedule_location }}</span>
               </div>
-              <t-table :data="detailData.positions" :columns="detailCols" bordered size="small">
+              <t-table :data="detailData.positions" :columns="detailCols" row-key="name" bordered size="small">
                 <template #required_level="{row}">
                   <span v-if="row.required_level!=null" class="level-badge">{{ getLevelName(row.required_level) }}</span>
                   <span v-else class="level-badge none">无限制</span>
@@ -211,7 +211,7 @@
 
           <!-- 报名人员弹窗（分页） -->
           <t-dialog v-model:visible="showRegistrants" :header="`报名人员 - ${registrantsActivity?.schedule_name||''}`"
-            width="720px" :footer="false" cancel-btn="关闭">
+            width="920px" :footer="false" cancel-btn="关闭">
             <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
               <t-select v-model="regFilter.positionName" placeholder="按岗位筛选" clearable style="width:160px;"
                 @change="loadRegistrants(1)">
@@ -220,7 +220,7 @@
               </t-select>
             </div>
             <div class="modal-scroll">
-              <t-table :data="regList" :columns="regCols" :loading="regLoading" bordered size="small">
+              <t-table :data="regList" :columns="regCols" :loading="regLoading" row-key="id" bordered size="small">
                 <template #reg_op="{row}">
                   <t-button v-if="row.status===1 && registrantsActivity?.status!==0"
                     size="small" variant="text" theme="danger" @click="removeRegistrant(row)">移除</t-button>

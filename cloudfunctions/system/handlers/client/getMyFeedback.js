@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
     console.log(`[getMyFeedback] 用户 ${user.id} 获取反馈列表`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（包含课程信息）
     let queryBuilder = db
@@ -36,7 +36,7 @@ module.exports = async (event, context) => {
         course:courses(name, cover_image)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

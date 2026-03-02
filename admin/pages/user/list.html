@@ -8,71 +8,9 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
   
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-    
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
-    
-    .page-header {
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .page-title {
-      font-size: 20px;
-      font-weight: 600;
-    }
-    
-    .search-form {
-      background: white;
-      padding: 24px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .table-card {
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-    }
   </style>
 </head>
 <body>
@@ -146,26 +84,6 @@
       >
         <template #avatar="{ row }">
           <t-avatar :image="row.avatar" size="40px"></t-avatar>
-        </template>
-        
-        <!-- 大使等级（与数据库 users.ambassador_level 一致：0普通用户/1准青鸾大使/2青鸾大使/3鸿鹄大使） -->
-        <template #ambassadorLevel="{ row }">
-          <t-tag v-if="row.ambassador_level === 0" theme="default">普通用户</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 2" theme="success">青鸾大使</t-tag>
-          <t-tag v-else-if="row.ambassador_level === 3" theme="warning">鸿鹄大使</t-tag>
-        </template>
-        
-        <template #meritPoints="{ row }">
-          {{ row.merit_points || 0 }}
-        </template>
-        
-        <template #cashPoints="{ row }">
-          {{ Math.floor(row.cash_points_available || 0) }}
-        </template>
-        
-        <template #createdAt="{ row }">
-          {{ formatDateTime(row.created_at) }}
         </template>
         
         <template #action="{ row }">
@@ -340,15 +258,17 @@
           ambassadorLevel: '',
         });
         
+        const levelMap = { 0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使' };
+        const levelTheme = { 0: 'default', 1: 'primary', 2: 'success', 3: 'warning' };
         const columns = [
           { colKey: 'id', title: '用户ID', width: 80, ellipsis: true },
           { colKey: 'avatar', title: '头像', width: 80 },
           { colKey: 'real_name', title: '姓名', width: 100 },
           { colKey: 'phone', title: '手机号', width: 130 },
-          { colKey: 'ambassadorLevel', title: '大使等级', width: 120 },
-          { colKey: 'meritPoints', title: '功德积分', width: 100 },
-          { colKey: 'cashPoints', title: '现金积分', width: 100 },
-          { colKey: 'createdAt', title: '注册时间', width: 160 },
+          { colKey: 'ambassador_level', title: '大使等级', width: 120, cell: (h, { row }) => h(TDesign.Tag, { theme: levelTheme[row.ambassador_level] || 'default' }, () => levelMap[row.ambassador_level] || '-') },
+          { colKey: 'merit_points', title: '功德积分', width: 100, cell: (h, { row }) => row.merit_points || 0 },
+          { colKey: 'cash_points_available', title: '现金积分', width: 100, cell: (h, { row }) => Math.floor(row.cash_points_available || 0) },
+          { colKey: 'created_at', title: '注册时间', width: 160, cell: (h, { row }) => formatDateTime(row.created_at) },
           { colKey: 'action', title: '操作', width: 180, fixed: 'right' },
         ];
         

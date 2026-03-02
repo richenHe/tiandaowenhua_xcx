@@ -35,8 +35,7 @@ module.exports = async (event, context) => {
       .gte('class_date', startDate)
       .lte('class_date', endDate)
       .in('status', [1, 2,3])  // 未开始 + 进行中
-      .order('class_date', { ascending: true })
-      .order('course_id', { ascending: true });  // 按课程ID正序，确保同一天取ID最小的课程
+      .order('id', { ascending: true });
 
     if (error) throw error;
 

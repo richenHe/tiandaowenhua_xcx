@@ -20,14 +20,13 @@ module.exports = async (event, context) => {
     console.log(`[admin:getAnnouncementList] 管理员 ${admin.id} 获取公告列表`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('announcements')
       .select('*', { count: 'exact' })
-      .order('sort_order', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 筛选条件
     if (keyword) {

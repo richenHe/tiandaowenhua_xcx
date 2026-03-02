@@ -9,8 +9,6 @@
       @scroll="handleScroll"
     >
       <view class="page-content">
-
-        <!-- Tab切换 -->
         <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
           <template #tabs>
             <CapsuleTabs
@@ -21,92 +19,101 @@
           </template>
         </StickyTabs>
 
-        <!-- 案例列表 -->
-        <view class="t-section-title t-section-title--simple">⭐ 优秀学员</view>
+        <view v-if="caseList.length > 0" class="case-list">
+          <view
+            v-for="caseItem in caseList"
+            :key="caseItem.id"
+            class="case-card"
+          >
+            <!-- 精选标记 -->
+            <view v-if="caseItem.is_featured" class="featured-badge">精选</view>
 
-        <!-- 动态渲染案例列表 -->
-        <view v-for="caseItem in caseList" :key="caseItem.id" class="case-card">
-          <view class="case-header">
-            <view 
-              class="case-avatar" 
-              :class="caseItem.avatar_theme || 'default'"
-            >
-              {{ caseItem.student_surname || caseItem.student_name?.[0] || '学' }}
-            </view>
-            <view class="case-info">
-              <view class="case-name">{{ caseItem.student_name }}</view>
-              <view class="case-desc">{{ caseItem.student_desc || caseItem.student_title }}</view>
-            </view>
-            <view 
-              class="case-badge" 
-              :class="caseItem.badge_theme || 'primary'"
-            >
-              {{ caseItem.category_label || '学员' }}
-            </view>
-          </view>
-
-          <view class="divider"></view>
-
-      <!-- 视频见证 - 动态显示 -->
-      <view class="case-section" v-if="caseItem.video_url">
-        <view class="section-label">🎬 视频见证</view>
-        <video 
-          :src="caseItem.video_url" 
-          class="case-video"
-          controls
-          :poster="caseItem.cover_image || ''"
-          :show-center-play-btn="true"
-          :enable-progress-gesture="true"
-        ></video>
-      </view>
-
-      <view class="case-section" v-if="caseItem.quote">
-        <view class="section-label">💡 学习感悟</view>
-        <view class="quote-box">
-          "{{ caseItem.quote }}"
-        </view>
-      </view>
-
-      <view class="case-section" v-if="caseItem.achievements && caseItem.achievements.length > 0">
-            <view class="section-label">📈 成长成果</view>
-            <view class="achievement-list">
-              <view 
-                v-for="(achievement, index) in caseItem.achievements" 
-                :key="index" 
-                class="achievement-item"
+            <!-- header/body/footer 点击跳详情；视频区域不参与，单独在线播放 -->
+            <view class="card-header" @tap="goToDetail(caseItem.id)">
+              <!-- 头像：优先真实图片，否则姓氏首字 -->
+              <image
+                v-if="caseItem.student_avatar"
+                :src="caseItem.student_avatar"
+                class="avatar-img"
+                mode="aspectFill"
+              />
+              <view
+                v-else
+                class="avatar-text"
+                :class="'theme-' + (caseItem.avatar_theme || 'default')"
               >
-                <text class="check-icon">✓</text>
-                <text class="achievement-text">{{ achievement }}</text>
+                {{ caseItem.student_surname || caseItem.student_name?.[0] || '学' }}
+              </view>
+
+              <view class="header-info">
+                <view class="student-name">{{ caseItem.student_name }}</view>
+                <view class="student-title">{{ caseItem.student_desc || caseItem.student_title || '' }}</view>
+              </view>
+
+              <view
+                v-if="caseItem.category_label"
+                class="category-badge"
+                :class="'badge-' + (caseItem.badge_theme || 'primary')"
+              >
+                {{ caseItem.category_label }}
+              </view>
+            </view>
+
+            <!-- 案例标题 + 摘要 -->
+            <view class="card-body" @tap="goToDetail(caseItem.id)">
+              <view class="case-title">{{ caseItem.title }}</view>
+              <view v-if="caseItem.summary" class="case-summary">{{ caseItem.summary }}</view>
+            </view>
+
+            <!-- 媒体区域：有视频展示视频（可内嵌播放，@tap.stop 阻止冒泡，不触发跳转）
+                         无视频展示封面图（点击跳详情）
+                         两者完全互斥，不重叠 -->
+            <view v-if="caseItem.video_url" class="card-cover">
+              <video
+                :src="caseItem.video_url"
+                class="cover-video"
+                controls
+                :show-center-play-btn="true"
+                :enable-progress-gesture="true"
+                object-fit="cover"
+                @tap.stop
+              />
+            </view>
+            <view v-else-if="caseItem.cover_image" class="card-cover" @tap="goToDetail(caseItem.id)">
+              <image :src="caseItem.cover_image" class="cover-img" mode="aspectFill" />
+            </view>
+
+            <!-- 底部信息 -->
+            <view class="card-footer" @tap="goToDetail(caseItem.id)">
+              <view class="footer-left">
+                <text v-if="caseItem.course_name" class="course-tag">{{ caseItem.course_name }}</text>
+              </view>
+              <view class="footer-right">
+                <text class="view-count">{{ caseItem.view_count || 0 }} 次浏览</text>
               </view>
             </view>
           </view>
         </view>
 
-        <!-- 空状态 -->
-        <view v-if="caseList.length === 0" class="empty-state">
+        <view v-else-if="!loading" class="empty-state">
           <view class="empty-icon">📋</view>
           <view class="empty-text">暂无案例</view>
         </view>
 
-        <!-- 行动号召 -->
-        <view class="alert-box success">
-          <view class="alert-icon">🎯</view>
-          <view class="alert-content">
-            <view class="alert-title">你也可以成为下一个成功案例</view>
-            <view class="alert-message">
-              天道文化已经帮助5000+学员改变人生。无论你是企业家、创业者还是职场人，都能在这里找到适合自己的成长路径。
+        <view class="cta-section">
+          <view class="cta-box">
+            <view class="cta-title">你也可以成为下一个成功案例</view>
+            <view class="cta-desc">
+              天道文化已经帮助众多学员实现蜕变。无论你是企业家、创业者还是职场人，都能找到适合自己的成长路径。
             </view>
+          </view>
+          <view @tap="goToMall">
+            <button class="t-button t-button--theme-default t-button--variant-base t-button--block t-button--size-large">
+              <span class="t-button__text">立即开始学习</span>
+            </button>
           </view>
         </view>
 
-        <!-- CTA按钮 -->
-        <view @tap="goToCourseDetail">
-          <button class="t-button t-button--theme-default t-button--variant-base t-button--block t-button--size-large">
-            <span class="t-button__text">🚀 立即开始学习</span>
-          </button>
-        </view>
-
-        <!-- 底部留白 -->
         <view style="height: 120rpx;"></view>
       </view>
     </scroll-view>
@@ -121,17 +128,11 @@ import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import { CourseApi } from '@/api'
 
-const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--window-top))'
-})
-
-// 页面头部高度
+const scrollHeight = computed(() => 'calc(100vh - var(--window-top))')
 const pageHeaderHeight = ref(64)
-
-// StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
+const loading = ref(false)
 
-// 处理滚动事件
 const handleScroll = (e: any) => {
   if (stickyTabsRef.value) {
     stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
@@ -146,29 +147,22 @@ const tabs = ref([
 ])
 
 const activeTab = ref('all')
-
-// 案例列表
 const caseList = ref<any[]>([])
 
-// 加载案例列表
 const loadCaseList = async (category?: string) => {
   try {
-    uni.showLoading({ title: '加载中...' })
+    loading.value = true
     const params: any = { page: 1, page_size: 100 }
     if (category && category !== 'all') {
       params.category = category
     }
-
     const result = await CourseApi.getCaseList(params)
     caseList.value = result.list || []
-    uni.hideLoading()
   } catch (error) {
     console.error('加载案例列表失败:', error)
-    uni.hideLoading()
-    uni.showToast({
-      title: '加载失败，请重试',
-      icon: 'none'
-    })
+    uni.showToast({ title: '加载失败，请重试', icon: 'none' })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -177,25 +171,23 @@ const onTabChange = (value: string) => {
   loadCaseList(value)
 }
 
-const goToCourseDetail = () => {
-  uni.switchTab({
-    url: '/pages/mall/index'
-  })
+const goToDetail = (id: number) => {
+  uni.navigateTo({ url: `/pages/academy/cases/detail?id=${id}` })
+}
+
+const goToMall = () => {
+  uni.switchTab({ url: '/pages/mall/index' })
 }
 
 onMounted(() => {
-  // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
-  const navbarHeight = 44
-  pageHeaderHeight.value = statusBarHeight + navbarHeight
-
-  // 加载案例列表
+  pageHeaderHeight.value = statusBarHeight + 44
   loadCaseList()
 })
 
 onShow(() => {
-  loadCaseList()
+  loadCaseList(activeTab.value)
 })
 </script>
 
@@ -214,187 +206,207 @@ onShow(() => {
   padding: 32rpx;
 }
 
-.tabs-wrapper {
-  margin-bottom: 32rpx;
+.case-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
 }
 
 .case-card {
+  position: relative;
   background: #fff;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   padding: 32rpx;
-  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
-.case-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 24rpx;
-  margin-bottom: 24rpx;
-}
-
-.case-avatar {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: #0052D9;
+.featured-badge {
+  position: absolute;
+  top: 0;
+  right: 32rpx;
+  background: linear-gradient(135deg, #FF9500, #FF6B00);
   color: #fff;
+  font-size: 20rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 0 0 8rpx 8rpx;
+  font-weight: 500;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.avatar-img {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatar-text {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40rpx;
+  font-size: 36rpx;
   font-weight: 600;
+  color: #fff;
   flex-shrink: 0;
-  
-  &.success {
-    background: #00A870;
-  }
-  
-  &.primary {
-    background: #E37318;
-  }
+
+  &.theme-default { background: #0052D9; }
+  &.theme-success { background: #00A870; }
+  &.theme-primary { background: #E37318; }
 }
 
-.case-info {
+.header-info {
   flex: 1;
   min-width: 0;
 }
 
-.case-name {
-  font-size: 32rpx;
+.student-name {
+  font-size: 30rpx;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 8rpx;
+  color: #1A1A1A;
+  margin-bottom: 6rpx;
 }
 
-.case-desc {
+.student-title {
   font-size: 24rpx;
   color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.case-badge {
-  padding: 8rpx 20rpx;
-  border-radius: 24rpx;
+.category-badge {
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
   font-size: 22rpx;
   flex-shrink: 0;
-  
-  &.warning {
-    background: #FFF4E5;
-    color: #E37318;
-  }
-  
-  &.success {
-    background: #E8F8F2;
-    color: #00A870;
-  }
-  
-  &.primary {
+  font-weight: 500;
+
+  &.badge-primary {
     background: #E6F4FF;
     color: #0052D9;
   }
-}
-
-.divider {
-  height: 2rpx;
-  background: #F5F5F5;
-  margin: 24rpx 0;
-}
-
-.case-section {
-  margin-bottom: 24rpx;
-  
-  &:last-child {
-    margin-bottom: 0;
+  &.badge-warning {
+    background: #FFF4E5;
+    color: #E37318;
+  }
+  &.badge-success {
+    background: #E8F8F2;
+    color: #00A870;
   }
 }
 
-.section-label {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
+.card-body {
+  margin-bottom: 20rpx;
+}
+
+.case-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 12rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.case-summary {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-cover {
+  position: relative;
+  margin-bottom: 20rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.cover-img {
+  width: 100%;
+  height: 320rpx;
+  display: block;
+}
+
+.cover-video {
+  width: 100%;
+  height: 320rpx;
+  display: block;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F0F0F0;
+}
+
+.course-tag {
+  font-size: 22rpx;
+  color: #0052D9;
+  background: #E6F4FF;
+  padding: 4rpx 14rpx;
+  border-radius: 6rpx;
+}
+
+.view-count {
+  font-size: 22rpx;
+  color: #BBB;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx;
   margin-bottom: 16rpx;
 }
 
-.quote-box {
-  font-size: 26rpx;
-  line-height: 1.8;
-  color: #666;
-  background: #F5F5F5;
-  padding: 24rpx;
-  border-radius: 12rpx;
-}
-
-.achievement-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.achievement-item {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  font-size: 24rpx;
-}
-
-.check-icon {
-  color: #00A870;
+.empty-text {
   font-size: 28rpx;
-  flex-shrink: 0;
+  color: #999;
 }
 
-.achievement-text {
-  color: #666;
-  flex: 1;
+.cta-section {
+  margin-top: 48rpx;
 }
 
-.alert-box {
+.cta-box {
+  background: #E8F8F2;
   border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 48rpx;
-  display: flex;
-  gap: 16rpx;
-  
-  &.success {
-    background: #E8F8F2;
-  }
+  padding: 32rpx;
+  margin-bottom: 32rpx;
 }
 
-.alert-icon {
-  font-size: 32rpx;
-  flex-shrink: 0;
-}
-
-.alert-content {
-  flex: 1;
-}
-
-.alert-title {
+.cta-title {
   font-size: 28rpx;
   font-weight: 500;
-  color: #333;
+  color: #1A1A1A;
   margin-bottom: 12rpx;
 }
 
-.alert-message {
+.cta-desc {
   font-size: 24rpx;
   color: #666;
   line-height: 1.6;
 }
-
-/* 动态视频播放器样式 */
-.case-video {
-  width: 100%;
-  height: 400rpx;
-  border-radius: 12rpx;
-  background-color: #000;
-  margin-top: 16rpx;
-}
-
 </style>
-
-
-
-
-
-
-

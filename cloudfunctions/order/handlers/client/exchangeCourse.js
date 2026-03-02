@@ -4,20 +4,22 @@
  *
  * 使用功德分（或积分）兑换商城课程，直接写入 user_courses，无需线下领取。
  * 兑换价格 = courses.current_price（1元=1功德分/积分）
- * 首次兑换：新建 user_courses，expire_at = 兑换时间 +1年
- * 重复兑换：在原 expire_at 基础上顺延 +1年
+ * 首次兑换：新建 user_courses，expire_at = 兑换时间 + courses.validity_days（NULL则永久）
+ * 重复兑换：在原 expire_at 基础上顺延 + courses.validity_days 天（NULL则不变或设永久）
  */
 
 /**
- * 将日期字符串或 Date 对象加一年，返回 UTC+8 格式字符串
- * @param {string|Date} base - 起始时间，为空则用当前时间
- * @returns {string} YYYY-MM-DD HH:mm:ss
+ * 按课程有效期天数计算截止时间
+ * @param {string|Date} base       - 起始时间（当前有效期截止 或 兑换时间）
+ * @param {number|null} validityDays - 有效期天数，null 表示永久
+ * @returns {string|null}
  */
-function addOneYear(base) {
+function calcExpireAt(base, validityDays) {
+  if (validityDays == null) return null; // 永久有效
   const d = base ? new Date(base) : new Date();
-  d.setFullYear(d.getFullYear() + 1);
+  const expire = new Date(d.getTime() + parseInt(validityDays) * 24 * 60 * 60 * 1000);
   // 转换为 UTC+8 时间字符串
-  const d8 = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const d8 = new Date(expire.getTime() + 8 * 60 * 60 * 1000);
   const pad = n => String(n).padStart(2, '0');
   return `${d8.getUTCFullYear()}-${pad(d8.getUTCMonth() + 1)}-${pad(d8.getUTCDate())} ${pad(d8.getUTCHours())}:${pad(d8.getUTCMinutes())}:${pad(d8.getUTCSeconds())}`;
 }
@@ -29,7 +31,7 @@ module.exports = async (event, context) => {
   const { course_id, use_cash_points_if_not_enough = false } = event;
 
   try {
-    console.log(`[exchangeCourse] 兑换课程（有效期+1年）:`, { user_id: user.id, course_id });
+    console.log(`[exchangeCourse] 兑换课程:`, { user_id: user.id, course_id });
 
     // 1. 权限验证 - 检查资料是否完善
     if (!user.profile_completed) {
@@ -107,23 +109,30 @@ module.exports = async (event, context) => {
         .eq('user_id', user.id)
         .eq('course_id', course.id)
         .eq('status', 1)
-        .order('id', { ascending: false })
+        .order('id', { ascending: true })
         .limit(1);
 
       let userCourseId = null;
       if (existingList && existingList.length > 0) {
-        // 已有记录：在当前有效期基础上顺延 1 年
+        // 已有记录：validity_days 有值才续期；为 null（永久有效）时不覆盖已有 expire_at
         const existing = existingList[0];
-        const newExpireAt = addOneYear(existing.expire_at);
-        await update('user_courses',
-          { expire_at: newExpireAt },
-          { id: existing.id }
-        );
+        if (course.validity_days != null) {
+          // 续期基准：原截止时间（若已过期则从现在起算）
+          const base = existing.expire_at && new Date(existing.expire_at) > new Date() ? existing.expire_at : nowStr;
+          const newExpireAt = calcExpireAt(base, course.validity_days);
+          await update('user_courses',
+            { expire_at: newExpireAt },
+            { id: existing.id }
+          );
+          console.log(`[exchangeCourse] 续期成功，新有效期：${newExpireAt}`);
+        } else {
+          // validity_days 为 null：课程无固定有效期，保留已有 expire_at，不覆盖
+          console.log(`[exchangeCourse] 课程无固定有效期，保留原 expire_at：${existing.expire_at || '永久'}`);
+        }
         userCourseId = existing.id;
-        console.log(`[exchangeCourse] 续期成功，新有效期：${newExpireAt}`);
       } else {
-        // 首次兑换：新建记录，有效期 1 年
-        const expireAt = addOneYear(nowStr);
+        // 首次兑换：新建记录
+        const expireAt = calcExpireAt(nowStr, course.validity_days);
         const insertResult = await insert('user_courses', {
           user_id: user.id,
           _openid: OPENID || '',
@@ -139,7 +148,7 @@ module.exports = async (event, context) => {
           status: 1
         });
         userCourseId = insertResult?.id || null;
-        console.log(`[exchangeCourse] 首次兑换，有效期至：${expireAt}`);
+        console.log(`[exchangeCourse] 首次兑换，有效期至：${expireAt || '永久'}`);
       }
 
       // 7.3 更新课程销量（有限库存同步扣减库存）
@@ -171,15 +180,15 @@ module.exports = async (event, context) => {
         });
       }
 
-      // 7.5 写入积分消耗明细
+      // 7.5 写入积分消耗明细（type=6 系统调整，表示商城兑换扣减）
       if (cash_points_used > 0) {
         await insert('cash_points_records', {
           user_id: user.id,
           _openid: OPENID || '',
-          type: 2,                // 消费
+          type: 6,
           amount: -cash_points_used,
           available_after: Math.round(parseFloat(user.cash_points_available) - cash_points_used),
-          remark: `兑换课程：${course.name}`
+          remark: `商城兑换课程：${course.name}`
         });
       }
 

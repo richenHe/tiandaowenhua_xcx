@@ -26,7 +26,7 @@ async function getAllLevelConfigs() {
     .from('ambassador_level_configs')
     .select('*')
     .eq('status', 1)
-    .order('level', { ascending: true });
+    .order('id', { ascending: true });
 
   if (error) throw error;
 

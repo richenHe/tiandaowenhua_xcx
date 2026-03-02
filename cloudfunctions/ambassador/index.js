@@ -34,7 +34,10 @@ const clientHandlers = {
   getLevelSystem: require('./handlers/client/getLevelSystem'),
   getAvailableActivities: require('./handlers/client/getAvailableActivities'),
   applyForActivity: require('./handlers/client/applyForActivity'),
-  cancelActivityRegistration: require('./handlers/client/cancelActivityRegistration')
+  cancelActivityRegistration: require('./handlers/client/cancelActivityRegistration'),
+  checkCourseContract: require('./handlers/client/checkCourseContract'),
+  getContractTemplateByCourse: require('./handlers/client/getContractTemplateByCourse'),
+  signCourseContract: require('./handlers/client/signCourseContract')
 };
 
 const adminHandlers = {
@@ -73,7 +76,8 @@ const adminHandlers = {
   getPositionTypeList: require('./handlers/admin/getPositionTypeList'),
   createPositionType: require('./handlers/admin/createPositionType'),
   updatePositionType: require('./handlers/admin/updatePositionType'),
-  deletePositionType: require('./handlers/admin/deletePositionType')
+  deletePositionType: require('./handlers/admin/deletePositionType'),
+  adminGetCourseContractTemplate: require('./handlers/admin/getContractTemplateByCourse')
 };
 
 // 路由配置

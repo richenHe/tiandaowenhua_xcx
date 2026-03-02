@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询
     let queryBuilder = db
@@ -39,7 +39,7 @@ module.exports = async (event, context) => {
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .eq('status', 1)
-      .order('start_time', { ascending: false });
+      .order('id', { ascending: true });
 
     // 如果指定了活动类型，添加类型筛选
     if (activityType > 0) {

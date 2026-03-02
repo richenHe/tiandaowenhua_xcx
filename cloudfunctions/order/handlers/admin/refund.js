@@ -2,7 +2,7 @@
  * 管理端接口：订单退款
  * Action: refund
  */
-const { findOne, update, insert, query, db } = require('../../common/db');
+const { findOne, update, db } = require('../../common/db');
 const { response, utils } = require('../../common');
 const business = require('../../business-logic');
 
@@ -30,6 +30,11 @@ module.exports = async (event, context) => {
     // 3. 验证订单状态
     if (order.pay_status !== 1) {
       return response.error('只能退款已支付订单');
+    }
+
+    // 大使升级订单不支持退款
+    if (order.order_type === 4) {
+      return response.error('大使升级订单不支持退款');
     }
 
     // 4. 调用 business-logic 层处理退款
@@ -77,9 +82,6 @@ async function rollbackOrderBusiness(order) {
       case 2: // 复训费退款
         await rollbackRetrain(order);
         break;
-      case 4: // 大使升级退款
-        await rollbackUpgrade(order);
-        break;
     }
 
     console.log(`[rollbackOrderBusiness] 业务回退完成:`, order.order_no);
@@ -102,11 +104,6 @@ async function rollbackCoursePurchase(order) {
     user_id: order.user_id,
     course_id: order.related_id
   });
-
-  // 2. 回退推荐人奖励（如果已发放）
-  if (order.is_reward_granted && order.referee_id) {
-    await rollbackRefereeReward(order);
-  }
 
   console.log(`[rollbackCoursePurchase] 课程购买回退完成`);
 }
@@ -134,55 +131,4 @@ async function rollbackRetrain(order) {
   }
 
   console.log(`[rollbackRetrain] 复训预约回退完成`);
-}
-
-/**
- * 回退大使升级
- */
-async function rollbackUpgrade(order) {
-  // 1. 降级用户等级
-  const user = await findOne('users', { id: order.user_id });
-  if (user) {
-    // 查询上一个等级
-    const previousLevel = user.ambassador_level - 1;
-    await update('users', {
-      ambassador_level: previousLevel >= 0 ? previousLevel : 0
-    }, {
-      id: user.id
-    });
-  }
-
-  console.log(`[rollbackUpgrade] 大使升级回退完成`);
-}
-
-/**
- * 回退推荐人奖励
- */
-async function rollbackRefereeReward(order) {
-  try {
-    // 1. 查询已发放的奖励记录
-    const rewardRecords = await query(
-      `SELECT * FROM cash_points_records
-       WHERE user_id = ? AND source_type = 'referral' AND source_id = ?`,
-      [order.referee_id, order.id]
-    );
-
-    // 2. 扣除推荐人的积分
-    for (const record of rewardRecords) {
-      await insert('cash_points_records', {
-        user_id: order.referee_id,
-        points_change: -record.points_change,
-        balance_after: 0, // 会在触发器中计算
-        source_type: 'refund',
-        source_id: order.id,
-        description: `订单退款回退奖励 - ${order.order_no}`
-      });
-    }
-
-    console.log(`[rollbackRefereeReward] 推荐人奖励回退完成`);
-
-  } catch (error) {
-    console.error(`[rollbackRefereeReward] 失败:`, error);
-    throw error;
-  }
 }

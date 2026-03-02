@@ -8,7 +8,7 @@ const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { template_id, title, content, contract_name, contractFileId, effective_date, expiry_date, status } = event;
+  const { template_id, title, content, contract_name, contractFileId, validityYears, effective_date, expiry_date, status, courseId } = event;
 
   try {
     console.log(`[updateContractTemplate] 更新协议模板:`, template_id);
@@ -31,9 +31,11 @@ module.exports = async (event, context) => {
     if (content !== undefined) updateData.content = content;
     // 电子合同文件ID（cloud:// 格式）
     if (contractFileId !== undefined) updateData.contract_file_id = contractFileId;
+    if (validityYears !== undefined) updateData.validity_years = parseInt(validityYears);
     if (effective_date !== undefined) updateData.effective_date = effective_date;
     if (expiry_date !== undefined) updateData.expiry_date = expiry_date;
     if (status !== undefined) updateData.status = status;
+    if (courseId !== undefined) updateData.course_id = Number(courseId);
 
     if (Object.keys(updateData).length === 0) {
       return response.paramError('没有需要更新的字段');

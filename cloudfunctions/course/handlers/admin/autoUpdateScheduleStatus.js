@@ -7,8 +7,8 @@
  * 转换规则：
  *   1. class_records: status=1 且 class_date <= today    → status=2（未开始 → 进行中）
  *   2. class_records: status=2 且 class_end_date < today → status=3（进行中 → 已结束）
- *   3. class_records: status=2 且 class_end_date IS NULL 且 class_date < today → status=3（单天课程）
- *   4. appointments: 已结束排期(status=3)中 status=0(待上课) → status=2（缺席）
+ *      注：单天课 class_end_date 与 class_date 相同，无需单独处理
+ *   3. appointments: 已结束排期(status=3)中 status=0(待上课) → status=2（缺席）
  *
  * 触发方式：cloudfunction.json 的 timer trigger，event 无 action 字段
  */
@@ -17,10 +17,8 @@ const { response } = require('../../common');
 
 module.exports = async (event, context) => {
   try {
-    const now = new Date();
-    const today = new Date(now.getTime() + 8 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const { formatBeijingDate } = require('../../common/utils');
+    const today = formatBeijingDate(new Date());
 
     // 第一步：未开始(1) → 进行中(2)，class_date <= today
     const { data: data1, error: error1 } = await db
@@ -31,31 +29,19 @@ module.exports = async (event, context) => {
 
     if (error1) throw error1;
 
-    // 第二步：进行中(2) → 已结束(3)，有 class_end_date 且 class_end_date < today
+    // 第二步：进行中(2) → 已结束(3)，class_end_date < today（单天课 class_end_date = class_date）
     const { data: data2, error: error2 } = await db
       .from('class_records')
       .update({ status: 3 })
       .eq('status', 2)
-      .not('class_end_date', 'is', null)
       .lt('class_end_date', today);
 
     if (error2) throw error2;
 
-    // 第三步：进行中(2) → 已结束(3)，无 class_end_date（单天课程）且 class_date < today
-    const { data: data3, error: error3 } = await db
-      .from('class_records')
-      .update({ status: 3 })
-      .eq('status', 2)
-      .is('class_end_date', null)
-      .lt('class_date', today);
-
-    if (error3) throw error3;
-
     const toOngoing = Array.isArray(data1) ? data1.length : 0;
-    const toEndedWithEnd = Array.isArray(data2) ? data2.length : 0;
-    const toEndedNoEnd = Array.isArray(data3) ? data3.length : 0;
+    const toEnded = Array.isArray(data2) ? data2.length : 0;
 
-    // 第四步：标记缺席 - 已结束排期中仍为待上课(0)的预约 → 缺席(2)
+    // 第三步：标记缺席 - 已结束排期中仍为待上课(0)的预约 → 缺席(2)
     let toAbsent = 0;
     const { data: endedRecords, error: error4a } = await db
       .from('class_records')
@@ -76,18 +62,17 @@ module.exports = async (event, context) => {
       toAbsent = Array.isArray(data4) ? data4.length : 0;
     }
 
-    const total = toOngoing + toEndedWithEnd + toEndedNoEnd + toAbsent;
+    const total = toOngoing + toEnded + toAbsent;
 
-    console.log(`[autoUpdateScheduleStatus] 日期: ${today}, 未开始→进行中: ${toOngoing}, 进行中→已结束(有结课日期): ${toEndedWithEnd}, 进行中→已结束(单天): ${toEndedNoEnd}, 待上课→缺席: ${toAbsent}`);
+    console.log(`[autoUpdateScheduleStatus] 日期: ${today}, 未开始→进行中: ${toOngoing}, 进行中→已结束: ${toEnded}, 待上课→缺席: ${toAbsent}`);
 
     return response.success({
       date: today,
       affectedRows: total,
       toOngoing,
-      toEndedWithEndDate: toEndedWithEnd,
-      toEndedSingleDay: toEndedNoEnd,
+      toEnded,
       toAbsent,
-      message: `更新 ${total} 条记录（排期状态 ${toOngoing + toEndedWithEnd + toEndedNoEnd} + 缺席 ${toAbsent}）`
+      message: `更新 ${total} 条记录（排期状态 ${toOngoing + toEnded} + 缺席 ${toAbsent}）`
     });
   } catch (error) {
     console.error('[autoUpdateScheduleStatus] 更新失败:', error);

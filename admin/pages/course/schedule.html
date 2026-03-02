@@ -6,55 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>排期管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <!-- 页面专属样式（布局由 tokens.css 统一管理）-->
   <style>
-    body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .page-container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .page-header { margin-bottom: 24px; }
-    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0 0 8px 0; }
-    .page-desc { font-size: 14px; color: #999; margin: 0; }
-    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-  
-    /* TDesign 布局样式 */
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      background: #f5f5f5;
-    }
-
   </style>
 </head>
 <body>
   <div id="app">
-    <t-layout style="height: 100vh;">
-      <!-- 顶部导航 -->
-      <t-header height="64px" style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 24px;
-        background: #fff;
-        border-bottom: 1px solid #dcdcdc;
-      ">
+    <t-layout>
+      <t-header height="64px">
         <div style="display: flex; align-items: center; gap: 16px;">
           <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
         </div>
@@ -63,38 +23,40 @@
           <t-button size="small" @click="handleLogout">退出</t-button>
         </div>
       </t-header>
-      
+
       <t-layout>
-        <!-- 侧边菜单 -->
         <sidebar-menu active-key="schedule-list"></sidebar-menu>
-        
-        <!-- 主内容区 -->
-        <t-content class="page-content">
-    <div class="page-container">
+
+        <t-content>
       <div class="page-header">
-        <h1 class="page-title">排期管理</h1>
-        <p class="page-desc">管理课程排期，设置上课时间和地点</p>
+        <div>
+          <h1 class="page-title">排期管理</h1>
+          <p class="page-desc">管理课程排期，设置上课时间和地点</p>
+        </div>
       </div>
 
-      <t-form layout="inline" style="margin-bottom: 20px; background: white; padding: 16px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-        <t-form-item label="选择课程">
-          <t-select v-model="filters.courseId" :options="courseOptions" placeholder="全部课程" clearable style="width: 200px;" />
-        </t-form-item>
-        <t-form-item label="上课时间">
-          <t-date-range-picker v-model="filters.dateRange" clearable placeholder="选择日期范围" style="width: 280px;" />
-        </t-form-item>
-        <t-form-item label="状态">
-          <t-select v-model="filters.status" :options="statusOptions" placeholder="全部" clearable style="width: 150px;" />
-        </t-form-item>
-        <t-form-item>
-          <t-space>
-            <t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search" /></template>查询</t-button>
-            <t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh" /></template>重置</t-button>
-            <t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add" /></template>新增排期</t-button>
-          </t-space>
-        </t-form-item>
-      </t-form>
+      <div class="search-form">
+        <t-form layout="inline" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+          <t-form-item label="选择课程">
+            <t-select v-model="filters.courseId" :options="courseOptions" placeholder="全部课程" clearable style="width: 200px;" />
+          </t-form-item>
+          <t-form-item label="上课时间">
+            <t-date-range-picker v-model="filters.dateRange" clearable placeholder="选择日期范围" style="width: 280px;" />
+          </t-form-item>
+          <t-form-item label="状态">
+            <t-select v-model="filters.status" :options="statusOptions" placeholder="全部" clearable style="width: 150px;" />
+          </t-form-item>
+          <t-form-item>
+            <t-space>
+              <t-button theme="primary" @click="handleSearch"><template #icon><t-icon name="search" /></template>查询</t-button>
+              <t-button theme="default" @click="handleReset"><template #icon><t-icon name="refresh" /></template>重置</t-button>
+              <t-button theme="success" @click="handleAdd"><template #icon><t-icon name="add" /></template>新增排期</t-button>
+            </t-space>
+          </t-form-item>
+        </t-form>
+      </div>
 
+      <div class="table-card">
       <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
         <template #status="{ row }">
           <t-tag v-if="row.status === 1" theme="success">未开始</t-tag>
@@ -112,13 +74,19 @@
           </t-space>
         </template>
       </t-table>
-    </div>
+      </div>
 
     <t-dialog v-model:visible="formVisible" :header="formMode === 'add' ? '新增排期' : '编辑排期'" width="600px" @confirm="handleSubmit">
       <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
         <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
         <t-form-item label="课程" name="courseId">
           <t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程" />
+        </t-form-item>
+        <t-form-item label="课程标题">
+          <t-input :value="courseTitle" disabled placeholder="选择课程后自动填入" />
+        </t-form-item>
+        <t-form-item label="主讲老师" name="teacher">
+          <t-input v-model="formData.teacher" placeholder="请输入主讲老师姓名" />
         </t-form-item>
         <t-form-item label="上课日期" name="classDate">
           <t-date-picker v-model="formData.classDate" clearable style="width: 100%;" placeholder="开课日期" />
@@ -183,19 +151,19 @@
         <img :src="qrImagePreviewUrl" alt="签到二维码" style="max-width: 360px; max-height: 360px;" />
       </div>
     </t-dialog>
-          </t-content>
+        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260228"></script>
-  <script src="../../assets/js/admin-api.js?v=20260228"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260228"></script>
+  <script src="../../assets/js/config.js?v=20260301"></script>
+  <script src="../../assets/js/admin-api.js?v=20260301"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260301"></script>
 
   <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
       setup() {
@@ -281,8 +249,10 @@
         // 表单验证规则，name 与表单字段 camelCase 保持一致
         const rules = {
           courseId: [{ required: true, message: '请选择课程', type: 'error' }],
+          teacher: [{ required: true, message: '请输入主讲老师', type: 'error' }],
           classDate: [{ required: true, message: '请选择上课日期', type: 'error' }],
           classEndDate: [{ required: true, message: '请选择结课日期', type: 'error' }],
+          classTime: [{ required: true, message: '请输入上课时段', type: 'error' }],
           classLocation: [{ required: true, message: '请输入上课地点', type: 'error' }],
           totalQuota: [{ required: true, message: '请输入总名额', type: 'error' }]
         };
@@ -300,6 +270,11 @@
             loading.value = false;
           }
         };
+
+        const courseTitle = computed(() => {
+          const found = courseOptions.value.find(c => c.value === formData.value.courseId);
+          return found ? found.label : '';
+        });
 
         const fetchCourses = async () => {
           try {
@@ -439,7 +414,7 @@
         return {
           activeMenuKey: 'schedule-list', adminInfo,
           handleLogout, handleMenuChange,
-          loading, tableData, formVisible, formMode, formData, filters, courseOptions, statusOptions, pagination, columns, rules,
+          loading, tableData, formVisible, formMode, formData, filters, courseOptions, courseTitle, statusOptions, pagination, columns, rules,
           handleSearch, handleReset, handlePageChange, handleAdd, handleEdit, handleCancel, handleSubmit,
           qrPreviewVisible, qrGenerating, qrPreviewUrl, qrPreviewInfo,
           qrListVisible, qrListLoading, qrListData, qrListInfo, qrListColumns,

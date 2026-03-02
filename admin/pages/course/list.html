@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -8,73 +8,28 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
   
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-    
-    .page-content {
-      height: 100%;
-      overflow-y: auto;
-      background: #f5f5f5;
-      padding: 24px;
-    }
-    
-    .page-header {
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .page-title {
-      font-size: 20px;
-      font-weight: 600;
-    }
-    
-    .search-form {
-      background: white;
-      padding: 24px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .table-card {
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-    }
-    
     .type-tag {
       display: inline-block;
       padding: 2px 8px;
       border-radius: 3px;
       font-size: 12px;
     }
-    
     .type-initial { background: #e3f2fd; color: #1976d2; }
     .type-intensive { background: #fce4ec; color: #c2185b; }
     .type-consultation { background: #f3e5f5; color: #7b1fa2; }
-    
+
     .status-tag {
       display: inline-block;
       padding: 2px 8px;
       border-radius: 3px;
       font-size: 12px;
     }
-    
     .status-active { background: #e8f5e9; color: #388e3c; }
     .status-inactive { background: #cfd8dc; color: #546e7a; }
-    
+
     .course-image {
       width: 60px;
       height: 60px;
@@ -82,7 +37,6 @@
       border-radius: 4px;
     }
 
-    /* 云存储上传组件样式 */
     .upload-container { margin-bottom: 8px; }
     .upload-placeholder {
       width: 200px; height: 200px;
@@ -95,34 +49,6 @@
     .image-preview img { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #dcdcdc; }
     .image-actions { margin-top: 8px; display: flex; gap: 8px; }
     .upload-tips { margin-top: 6px; font-size: 12px; color: #999; }
-
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
-
   </style>
 </head>
 <body>
@@ -221,6 +147,12 @@
           </span>
         </template>
         
+        <!-- 有效期 -->
+        <template #validity_days="{ row }">
+          <span v-if="row.validity_days">{{ row.validity_days }}天</span>
+          <span v-else style="color:#999;">永久</span>
+        </template>
+
         <!-- 状态 -->
         <template #status="{ row }">
           <span :class="['status-tag', row.status === 1 ? 'status-active' : 'status-inactive']">
@@ -232,6 +164,7 @@
         <template #operation="{ row }">
           <t-space>
             <t-link theme="primary" @click="editCourse(row)">编辑</t-link>
+            <t-link theme="primary" @click="openCourseContract(row)">合同</t-link>
             <t-link 
               :theme="row.status === 1 ? 'warning' : 'success'" 
               @click="toggleStatus(row)"
@@ -254,6 +187,10 @@
       <t-form :data="editForm" ref="editFormRef" label-width="120px">
         <t-form-item label="课程名称" name="name" :rules="[{ required: true, message: '请输入课程名称' }]">
           <t-input v-model="editForm.name" placeholder="请输入课程名称" />
+        </t-form-item>
+
+        <t-form-item label="课程昵称" name="nickname">
+          <t-input v-model="editForm.nickname" placeholder="选填，课程简称（如：初探班）" />
         </t-form-item>
         
         <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
@@ -291,7 +228,18 @@
         <t-form-item label="重训价（元）" name="retrainPrice">
           <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" />
         </t-form-item>
-        
+
+        <!-- courses.validity_days: 必填正整数，单位：天 -->
+        <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => val > 0, message: '有效期必须大于 0 天' }]">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="请输入天数" />
+            <span style="color:#666; font-size:13px;">天（例：365 = 1年，730 = 2年）</span>
+          </div>
+          <div style="font-size:12px; color:#999; margin-top:4px;">
+            购课/兑换后有效期 = 操作时间 + 有效期天数
+          </div>
+        </t-form-item>
+
         <t-form-item label="课程时长" name="duration">
           <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
         </t-form-item>
@@ -318,6 +266,55 @@
         </t-form-item>
       </t-form>
     </t-dialog>
+
+    <!-- 课程学习服务协议弹窗 -->
+    <t-dialog
+      v-model:visible="contractDialogVisible"
+      :header="`${contractCourseRow?.name || ''} — 学习服务协议`"
+      width="600px"
+      :footer="false"
+      @close="contractDialogVisible=false"
+    >
+      <div v-if="contractCourseRow">
+        <div v-if="contractLoading" style="text-align:center;padding:32px;color:#999;">加载中…</div>
+        <template v-else>
+          <div style="margin-bottom:12px;">
+            <div style="font-weight:600;margin-bottom:4px;">协议名称</div>
+            <t-input v-model="contractForm.contract_name" placeholder="请输入协议名称，如：初探班学习服务协议"/>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="font-weight:600;margin-bottom:4px;">合同期限</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <t-input-number v-model="contractForm.validity_years" :min="1" :max="99" style="width:120px;"/>
+              <span style="font-size:13px;color:#666;">年</span>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">电子合同文件（PDF / Word）</div>
+            <div style="font-size:12px;color:#999;margin-bottom:8px;">上传 PDF 或 Word 格式文件，用户签约时会在此文件上附加手写签名。</div>
+            <input type="file" ref="contractFileInput" accept=".pdf,.doc,.docx" style="display:none;" @change="handleContractFileChange"/>
+            <div style="border:2px dashed #0052d9;border-radius:12px;padding:24px;text-align:center;cursor:pointer;background:#f8faff;transition:all 0.2s;"
+                 @click="triggerContractFileInput">
+              <div v-if="contractUploading" style="color:#999;">⏳ 正在上传，请稍候…</div>
+              <div v-else>
+                <div style="font-size:28px;margin-bottom:4px;">📤</div>
+                <div style="color:#0052d9;font-weight:500;">{{ contractForm.contract_file_id ? '重新选择文件' : '点击选择文件' }}</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">支持 .pdf / .doc / .docx 格式</div>
+              </div>
+            </div>
+            <div v-if="contractForm.contract_file_id" style="margin-top:12px;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f5f5f5;border-radius:6px;">
+              <span>📄</span>
+              <div style="flex:1;font-size:13px;">{{ contractForm.contract_file_name || '已上传电子合同' }}</div>
+              <t-button size="small" @click="previewContractFile">预览</t-button>
+            </div>
+          </div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;display:flex;gap:10px;justify-content:flex-end;">
+            <t-button theme="default" @click="contractDialogVisible=false">取消</t-button>
+            <t-button theme="primary" :loading="contractSaving" @click="saveContract">保存协议</t-button>
+          </div>
+        </template>
+      </div>
+    </t-dialog>
   </div>
 
   <!-- Vue 3 -->
@@ -327,12 +324,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
+  <script src="../../assets/js/config.js?v=20260301a"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260301a"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/admin-api.js?v=20260301a"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260301a"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -412,12 +409,15 @@
         const editForm = reactive({
           id: null,
           name: '',
+          nickname: '',
           type: null,
           coverImage: '',      // 云存储 fileID，提交给云函数
           coverImageURL: '',   // 临时 URL，仅用于显示预览
           currentPrice: 0,
           originalPrice: 0,
           retrainPrice: 0,
+          // courses.validity_days：必填正整数，单位：天
+          validityDays: 365,
           duration: '',
           description: '',
           content: '',
@@ -438,11 +438,12 @@
           { colKey: 'current_price', title: '现价（元）', width: 100 },
           { colKey: 'original_price', title: '原价（元）', width: 100 },
           { colKey: 'duration', title: '课程时长', width: 100 },
+          { colKey: 'validity_days', title: '有效期', width: 100 },
           { colKey: 'sold_count', title: '已售', width: 80 },
           { colKey: 'sort_order', title: '排序', width: 80 },
           { colKey: 'status', title: '状态', width: 80 },
           { colKey: 'created_at', title: '创建时间', width: 160 },
-          { colKey: 'operation', title: '操作', width: 200, fixed: 'right' }
+          { colKey: 'operation', title: '操作', width: 250, fixed: 'right' }
         ];
 
         // 获取课程列表
@@ -495,12 +496,14 @@
           Object.assign(editForm, {
             id: null,
             name: '',
+            nickname: '',
             type: null,
             coverImage: '',
             coverImageURL: '',
             currentPrice: 0,
             originalPrice: 0,
             retrainPrice: 0,
+            validityDays: 365,
             duration: '',
             description: '',
             content: '',
@@ -515,6 +518,7 @@
         // 编辑课程
         const editCourse = async (course) => {
           editMode.value = 'edit';
+          const vd = course.validity_days != null ? parseInt(course.validity_days) : null;
           Object.assign(editForm, {
             id: course.id,
             name: course.name,
@@ -525,6 +529,7 @@
             originalPrice: course.original_price,
             currentPrice: course.current_price,
             retrainPrice: course.retrain_price,
+            validityDays: vd || 365,
             duration: course.duration,
             description: course.description,
             content: course.content,
@@ -547,11 +552,13 @@
           try {
             const params = {
               name: editForm.name,
+              nickname: editForm.nickname,
               type: editForm.type,
               coverImage: editForm.coverImage,
               currentPrice: editForm.currentPrice,
               originalPrice: editForm.originalPrice,
               retrainPrice: editForm.retrainPrice,
+              validityDays: editForm.validityDays,
               duration: editForm.duration,
               description: editForm.description,
               content: editForm.content,
@@ -615,8 +622,131 @@
           return classMap[type] || '';
         };
 
-        // 返回上一页
-        
+        // ── 课程学习服务协议弹窗逻辑 ──
+        const contractDialogVisible = ref(false);
+        const contractLoading = ref(false);
+        const contractSaving = ref(false);
+        const contractUploading = ref(false);
+        const contractCourseRow = ref(null);
+        const contractForm = ref({
+          contract_name: '',
+          contract_file_id: null,
+          contract_file_url: null,
+          contract_file_name: null,
+          validity_years: 1,
+          template_id: null,
+          isNew: false
+        });
+        const contractFileInput = ref(null);
+
+        const openCourseContract = async (row) => {
+          contractCourseRow.value = row;
+          contractDialogVisible.value = true;
+          contractLoading.value = true;
+          try {
+            const res = await AdminAPI.getContractTemplateByCourse(row.id);
+            if (res.template) {
+              contractForm.value = {
+                contract_name: res.template.contract_name || '',
+                contract_file_id: res.template.contract_file_id || null,
+                contract_file_url: res.template.contract_file_url || null,
+                contract_file_name: res.template.contract_file_id
+                  ? res.template.contract_file_id.split('/').pop()
+                  : null,
+                validity_years: res.template.validity_years || 1,
+                template_id: res.template.id,
+                isNew: false
+              };
+            } else {
+              contractForm.value = {
+                contract_name: `${row.name}学习服务协议`,
+                contract_file_id: null,
+                contract_file_url: null,
+                contract_file_name: null,
+                validity_years: 1,
+                template_id: null,
+                isNew: true
+              };
+            }
+          } catch (e) {
+            TDesign.MessagePlugin.error('加载协议失败: ' + e.message);
+          } finally {
+            contractLoading.value = false;
+          }
+        };
+
+        const triggerContractFileInput = () => contractFileInput.value && contractFileInput.value.click();
+
+        const handleContractFileChange = async (e) => {
+          const file = e.target.files[0];
+          e.target.value = '';
+          if (!file) return;
+          const ext = file.name.split('.').pop().toLowerCase();
+          if (!['pdf', 'doc', 'docx'].includes(ext)) {
+            TDesign.MessagePlugin.warning('仅支持 PDF / Word 格式文件');
+            return;
+          }
+          contractUploading.value = true;
+          TDesign.MessagePlugin.loading('电子合同上传中，请稍候…', 0);
+          try {
+            const courseId = contractCourseRow.value ? contractCourseRow.value.id : 'unknown';
+            const cloudPath = `contracts/courses/${courseId}/${Date.now()}.${ext}`;
+            const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            contractForm.value.contract_file_id = result.fileID;
+            contractForm.value.contract_file_name = file.name;
+            contractForm.value.contract_file_url = result.tempFileURL || result.fileID;
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('文件上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('文件上传失败：' + (err.message || '未知错误'));
+          } finally {
+            contractUploading.value = false;
+          }
+        };
+
+        const previewContractFile = () => {
+          if (contractForm.value.contract_file_url) {
+            window.open(contractForm.value.contract_file_url, '_blank');
+          }
+        };
+
+        const saveContract = async () => {
+          if (!contractForm.value.contract_name) {
+            TDesign.MessagePlugin.warning('请输入协议名称');
+            return;
+          }
+          if (contractForm.value.isNew && !contractForm.value.contract_file_id) {
+            TDesign.MessagePlugin.warning('请先选择并上传电子合同文件（PDF 或 Word）');
+            return;
+          }
+          contractSaving.value = true;
+          try {
+            const fileId = contractForm.value.contract_file_id;
+            if (contractForm.value.isNew) {
+              await AdminAPI.createCourseContractTemplate({
+                contract_name: contractForm.value.contract_name,
+                courseId: contractCourseRow.value.id,
+                contractFileId: fileId,
+                validityYears: contractForm.value.validity_years || 1
+              });
+              contractForm.value.isNew = false;
+            } else {
+              await AdminAPI.updateCourseContractTemplate({
+                template_id: contractForm.value.template_id,
+                contract_name: contractForm.value.contract_name,
+                contractFileId: fileId,
+                validityYears: contractForm.value.validity_years || 1
+              });
+            }
+            TDesign.MessagePlugin.success('协议保存成功');
+            contractDialogVisible.value = false;
+          } catch (e) {
+            TDesign.MessagePlugin.error('保存失败: ' + e.message);
+          } finally {
+            contractSaving.value = false;
+          }
+        };
 
         onMounted(() => {
           if (checkAuth()) {
@@ -647,6 +777,18 @@
           deleteCourse,
           getTypeText,
           getTypeClass,
+          contractDialogVisible,
+          contractLoading,
+          contractSaving,
+          contractUploading,
+          contractCourseRow,
+          contractForm,
+          contractFileInput,
+          openCourseContract,
+          triggerContractFileInput,
+          handleContractFileChange,
+          previewContractFile,
+          saveContract,
           };
       }
     }).use(TDesign)

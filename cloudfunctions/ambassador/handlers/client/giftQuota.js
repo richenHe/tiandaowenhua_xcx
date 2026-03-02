@@ -3,7 +3,7 @@
  * Action: giftQuota
  */
 const { findOne, insert, update } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatBeijingDate } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -118,9 +118,9 @@ module.exports = async (event, context) => {
         { id: receiverQuota.id }
       );
     } else {
-      const expireDate = new Date();
-      expireDate.setFullYear(expireDate.getFullYear() + 1);
-      const expireDateStr = expireDate.toISOString().slice(0, 10);
+      const expireDate = new Date(Date.now() + 8 * 3600000);
+      expireDate.setUTCFullYear(expireDate.getUTCFullYear() + 1);
+      const expireDateStr = formatBeijingDate(expireDate);
 
       await insert('ambassador_quotas', {
         user_id: receiver.id,

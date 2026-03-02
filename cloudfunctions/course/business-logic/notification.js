@@ -1,6 +1,8 @@
 /**
  * 消息通知封装模块
- * 基于 wx-server-sdk 的 cloud.openapi.subscribeMessage.send 实现订阅消息发送
+ *
+ * 实现方式：通过 HTTP API 直接调用微信接口，避免 wx-server-sdk openapi
+ * 权限配置问题（-501001 invalid wx openapi access_token）。
  * 
  * 注意事项：
  *   1. 用户需要在小程序端授权订阅消息后才能接收
@@ -9,7 +11,9 @@
  *   4. 数据字段的 key 须与模板配置一致（如 thing1, time2 等）
  */
 
-// cloud 实例由初始化时注入
+const https = require('https');
+
+// cloud 实例由初始化时注入（保留兼容性，实际不再使用）
 let _cloud = null;
 
 /**
@@ -18,6 +22,59 @@ let _cloud = null;
  */
 function initNotification(cloud) {
   _cloud = cloud;
+}
+
+/**
+ * 发送 HTTPS GET/POST 请求（Promise 封装）
+ */
+function httpsRequest(url, method = 'GET', body = null) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const bodyBuffer = body ? Buffer.from(JSON.stringify(body), 'utf8') : null;
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method,
+      headers: bodyBuffer ? {
+        'Content-Type': 'application/json',
+        'Content-Length': bodyBuffer.length
+      } : {}
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (!data) {
+          reject(new Error(`HTTP ${res.statusCode} 响应为空，url=${url.split('?')[0]}`));
+          return;
+        }
+        try { resolve(JSON.parse(data)); } catch (e) {
+          reject(new Error(`JSON解析失败(${res.statusCode}): ${data.slice(0, 200)}`));
+        }
+      });
+    });
+    req.on('error', (err) => reject(new Error(`HTTP请求失败: ${err.message}`)));
+    if (bodyBuffer) req.write(bodyBuffer);
+    req.end();
+  });
+}
+
+/**
+ * 获取微信 access_token（使用 APPID + AppSecret）
+ * @returns {Promise<string>} access_token
+ */
+async function getAccessToken() {
+  const appid = process.env.WECHAT_APPID;
+  const secret = process.env.WECHAT_APP_SECRET;
+  if (!appid || !secret) {
+    throw new Error('未配置 WECHAT_APPID 或 WECHAT_APP_SECRET 环境变量');
+  }
+  const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`;
+  const result = await httpsRequest(url);
+  if (!result.access_token) {
+    throw new Error(`获取 access_token 失败: ${JSON.stringify(result)}`);
+  }
+  return result.access_token;
 }
 
 /**
@@ -30,62 +87,66 @@ function initNotification(cloud) {
  * @returns {Promise<Object>} 发送结果 { errcode, errmsg }
  * 
  * @example
- * // 发送上课提醒
  * await sendSubscribeMessage(
  *   user.openid,
  *   'TEMPLATE_ID_001',
  *   {
- *     thing1: { value: '初探班第10期' },       // 课程名称
- *     time2: { value: '2024-01-20 09:00' },    // 上课时间
- *     thing3: { value: '深圳市南山区xxx' },     // 上课地点
- *     thing4: { value: '请准时参加' }           // 备注
+ *     thing1: { value: '初探班第10期' },
+ *     time2: { value: '2024-01-20 09:00' },
+ *     thing3: { value: '深圳市南山区xxx' },
+ *     thing4: { value: '请准时参加' }
  *   },
  *   'pages/appointment/detail/index?id=123'
  * );
  */
-async function sendSubscribeMessage(openid, templateId, data, page = '') {
-  if (!_cloud) {
-    throw new Error('消息通知模块未初始化，请先调用 initNotification(cloud)');
+/**
+ * 发送微信订阅消息（内部实现，支持复用已有 access_token）
+ * @param {string} openid
+ * @param {string} templateId
+ * @param {Object} data
+ * @param {string} page
+ * @param {string|null} cachedToken - 已有 access_token，传入可避免重复获取
+ */
+async function sendSubscribeMessageImpl(openid, templateId, data, page = '', cachedToken = null) {
+  const accessToken = cachedToken || await getAccessToken();
+
+  const body = {
+    touser: openid,
+    template_id: templateId,
+    data: data
+  };
+
+  if (page) {
+    body.page = page;
   }
 
+  const mpState = process.env.MINIPROGRAM_STATE || 'formal';
+  if (mpState !== 'formal') {
+    body.miniprogram_state = mpState;
+  }
+
+  const url = `https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${accessToken}`;
+  const result = await httpsRequest(url, 'POST', body);
+
+  if (result.errcode !== 0) {
+    console.warn('订阅消息发送失败:', { openid, templateId, errcode: result.errcode, errmsg: result.errmsg });
+  }
+
+  return {
+    errcode: result.errcode || 0,
+    errmsg: result.errmsg || 'ok'
+  };
+}
+
+async function sendSubscribeMessage(openid, templateId, data, page = '') {
   if (!openid || !templateId || !data) {
     throw new Error('缺少必要的消息参数：openid, templateId, data');
   }
-
   try {
-    const params = {
-      touser: openid,
-      templateId: templateId,
-      data: data
-    };
-
-    // 仅在有页面路径时添加 page 参数
-    if (page) {
-      params.page = page;
-    }
-
-    const result = await _cloud.openapi.subscribeMessage.send(params);
-
-    if (result.errCode !== 0 && result.errcode !== 0) {
-      console.warn('订阅消息发送失败:', {
-        openid,
-        templateId,
-        errCode: result.errCode || result.errcode,
-        errMsg: result.errMsg || result.errmsg
-      });
-    }
-
-    return {
-      errcode: result.errCode || result.errcode || 0,
-      errmsg: result.errMsg || result.errmsg || 'ok'
-    };
+    return await sendSubscribeMessageImpl(openid, templateId, data, page);
   } catch (error) {
     console.error('发送订阅消息失败:', error);
-    // 消息发送失败不应影响主业务流程，返回错误信息但不抛出异常
-    return {
-      errcode: -1,
-      errmsg: error.message
-    };
+    return { errcode: -1, errmsg: error.message };
   }
 }
 
@@ -104,17 +165,32 @@ async function batchSendSubscribeMessage(messages) {
     return { total: 0, success: 0, failed: 0, results: [] };
   }
 
+  // 批量发送前只获取一次 access_token，避免频繁调用 token 接口（限额 2000次/天）
+  let sharedToken;
+  try {
+    sharedToken = await getAccessToken();
+  } catch (err) {
+    console.error('batchSendSubscribeMessage 获取 access_token 失败:', err);
+    return {
+      total: messages.length,
+      success: 0,
+      failed: messages.length,
+      results: messages.map(m => ({ openid: m.openid, success: false, errcode: -1, errmsg: err.message }))
+    };
+  }
+
   const results = [];
   let success = 0;
   let failed = 0;
 
   for (const msg of messages) {
     try {
-      const result = await sendSubscribeMessage(
+      const result = await sendSubscribeMessageImpl(
         msg.openid,
         msg.templateId,
         msg.data,
-        msg.page || ''
+        msg.page || '',
+        sharedToken  // 复用同一个 token
       );
 
       const isSuccess = result.errcode === 0;

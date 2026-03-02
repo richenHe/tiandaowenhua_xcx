@@ -5,10 +5,10 @@
  * 参数：
  * - page: 页码（默认1）
  * - page_size: 每页数量（默认20）
- * - refund_status: 退款状态筛选（可选）
+ * - refund_status: 退款状态筛选（可选，1=申请退款/3=已退款/4=已驳回）
  * - keyword: 搜索关键词（订单号/用户姓名/手机号）
  */
-const { db, response, executePaginatedQuery } = require('../../common');
+const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -17,10 +17,8 @@ module.exports = async (event, context) => {
   try {
     console.log(`[admin:getRefundList] 管理员 ${admin.id} 获取退款列表`);
 
-    // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
-    // 构建查询（使用外键名进行 JOIN）
     let queryBuilder = db
       .from('orders')
       .select(`
@@ -42,75 +40,87 @@ module.exports = async (event, context) => {
         refund_amount,
         refund_time,
         refund_reason,
+        refund_reject_reason,
+        refund_audit_admin_id,
+        refund_audit_time,
+        refund_invoice_file_id,
+        refund_transfer_no,
         admin_remark,
         created_at,
         user:users!fk_orders_user(real_name, phone)
       `, { count: 'exact' })
       .gt('refund_status', 0)
-      .order('refund_time', { ascending: false });
+      .order('id', { ascending: true });
 
-    // 退款状态筛选
     if (refund_status != null && refund_status !== '') {
       queryBuilder = queryBuilder.eq('refund_status', parseInt(refund_status));
     }
 
-    // 关键词搜索
     if (keyword) {
       queryBuilder = queryBuilder.or(`order_no.like.%${keyword}%,user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
-    // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 统计数据
+    // 独立统计查询（不受搜索/筛选条件影响，对标 getWithdrawList）
+    const [
+      { count: pendingCount },
+      { count: transferredCount },
+      { count: rejectedCount },
+      { data: pendingAmountData }
+    ] = await Promise.all([
+      db.from('orders').select('id', { count: 'exact', head: true }).eq('refund_status', 1),
+      db.from('orders').select('id', { count: 'exact', head: true }).eq('refund_status', 3),
+      db.from('orders').select('id', { count: 'exact', head: true }).eq('refund_status', 4),
+      db.from('orders').select('refund_amount, final_amount').eq('refund_status', 1)
+    ]);
+
+    const pendingAmount = (pendingAmountData || []).reduce(
+      (sum, row) => sum + parseFloat(row.refund_amount || row.final_amount || 0), 0
+    );
+
     const statistics = {
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-      totalAmount: 0
+      pending: pendingCount || 0,
+      transferred: transferredCount || 0,
+      rejected: rejectedCount || 0,
+      pendingAmount
     };
 
-    // 计算统计数据（基于当前筛选条件）
-    let statsQuery = db
-      .from('orders')
-      .select('refund_status, refund_amount')
-      .gt('refund_status', 0);
-
-    if (refund_status != null && refund_status !== '') {
-      statsQuery = statsQuery.eq('refund_status', parseInt(refund_status));
+    // 获取审核管理员信息
+    const adminIds = [...new Set((result.list || []).map(o => o.refund_audit_admin_id).filter(id => id))];
+    let adminMap = {};
+    if (adminIds.length > 0) {
+      const { data: admins } = await db
+        .from('admin_users')
+        .select('id, username, real_name')
+        .in('id', adminIds);
+      if (admins) {
+        admins.forEach(a => { adminMap[a.id] = a; });
+      }
     }
 
-    if (keyword) {
-      statsQuery = statsQuery.or(`order_no.like.%${keyword}%,user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
-    }
-
-    const { data: statsData } = await statsQuery;
-
-    if (statsData) {
-      statsData.forEach(order => {
-        if (order.refund_status === 1) statistics.pending++;
-        else if (order.refund_status === 3) statistics.approved++;
-        else if (order.refund_status === 4) statistics.rejected++;
-        statistics.totalAmount += parseFloat(order.refund_amount || 0);
-      });
-    }
-
-    // 处理数据 - 映射字段名称
     const list = (result.list || []).map(order => ({
       id: order.id,
       order_no: order.order_no,
       order_type: order.order_type,
       order_name: order.order_name,
-      user_name: order.user?.real_name || '',
-      user_phone: order.user?.phone || '',
+      user_name: order.user?.real_name || order.user_name || '',
+      user_phone: order.user?.phone || order.user_phone || '',
       amount: order.refund_amount || order.final_amount,
+      final_amount: order.final_amount,
       refund_reason: order.refund_reason,
       refund_status: order.refund_status,
       refund_time: order.refund_time,
+      refund_reject_reason: order.refund_reject_reason,
+      refund_audit_time: order.refund_audit_time,
+      refund_transfer_no: order.refund_transfer_no,
+      refund_invoice_file_id: order.refund_invoice_file_id,
+      invoice_url: order.refund_invoice_file_id ? (cloudFileIDToURL ? cloudFileIDToURL(order.refund_invoice_file_id) : order.refund_invoice_file_id) : '',
       created_at: order.created_at,
       refund_status_text: getRefundStatusText(order.refund_status),
       pay_status_text: getPayStatusText(order.pay_status),
-      order_type_text: getOrderTypeText(order.order_type)
+      order_type_text: getOrderTypeText(order.order_type),
+      audit_admin: order.refund_audit_admin_id ? adminMap[order.refund_audit_admin_id] : null
     }));
 
     return response.success({
@@ -125,19 +135,17 @@ module.exports = async (event, context) => {
   }
 };
 
-// 获取退款状态文本
 function getRefundStatusText(status) {
   const statusMap = {
     0: '无退款',
     1: '申请退款',
     2: '退款处理中',
-    3: '退款成功',
-    4: '退款失败'
+    3: '已退款',
+    4: '已驳回'
   };
   return statusMap[status] || '未知';
 }
 
-// 获取支付状态文本
 function getPayStatusText(status) {
   const statusMap = {
     0: '待支付',
@@ -148,7 +156,6 @@ function getPayStatusText(status) {
   return statusMap[status] || '未知';
 }
 
-// 获取订单类型文本
 function getOrderTypeText(type) {
   const typeMap = {
     1: '课程订单',
@@ -159,4 +166,3 @@ function getOrderTypeText(type) {
   };
   return typeMap[type] || '未知';
 }
-

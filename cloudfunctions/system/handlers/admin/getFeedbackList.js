@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     console.log(`[admin:getFeedbackList] 管理员 ${admin.id} 获取反馈列表`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询（使用外键名进行 JOIN）
     let queryBuilder = db
@@ -39,7 +39,7 @@ module.exports = async (event, context) => {
         user:users!fk_feedbacks_user(real_name, phone),
         course:courses!fk_feedbacks_course(name)
       `, { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态筛选
     if (status !== undefined && status !== null && status !== '') {

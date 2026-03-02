@@ -15,14 +15,15 @@ module.exports = async (event, context) => {
 
     console.log(`[getAnnouncementDetail] 获取公告详情，ID: ${id}`);
 
-    const { data, error } = await db
+    const { data: list, error } = await db
       .from('announcements')
       .select('*')
       .eq('id', id)
       .eq('status', 1)
-      .single();
+      .limit(1);
 
     if (error) throw error;
+    const data = list?.[0];
     if (!data) return response.error('公告不存在或已下架');
 
     // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL

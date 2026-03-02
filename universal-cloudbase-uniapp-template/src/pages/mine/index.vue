@@ -301,7 +301,7 @@ const settingsMenu = computed(() => [
 
 // 帮助与反馈菜单
 const helpMenu = ref([
-  // { type: 'consultation', icon: '💬', label: '在线咨询' }, // 暂时隐藏在线咨询功能
+  { type: 'ai-service', icon: '🤖', label: '智能客服', badge: undefined },
   { type: 'feedback', icon: '📝', label: '意见反馈', badge: undefined },
   { type: 'announcement', icon: '📢', label: '平台公告', badge: undefined }
 ]);
@@ -335,8 +335,7 @@ const handleMenuClick = (type: string) => {
     'referee-manage': '/pages/mine/referee-manage/index',
     'ambassador': '/pages/ambassador/level/index',
     'profile': '/pages/mine/profile/index',
-    // TODO: 下个版本开发 - 在线客服功能（通过WebSocket实现，不需要数据库）
-    // 'consultation': '/pages/mine/consultation/index',
+    'ai-service': '/pages/mine/ai-service/index',
     'feedback': '/pages/mine/feedback/index',
     'announcement': '/pages/common/announcement/index'
   };

@@ -566,6 +566,7 @@ ELSE:
 ```
 
 **字段说明**:
+- `expire_at`: 课程有效期截止时间（`buy_time + courses.validity_days`），NULL 表示永久有效
 - `is_gift`: 是否为赠送课程
 - `gift_source`: 赠送来源说明（如"购买密训班赠送"）
 - `status`: 课程状态（1有效/0失效，退款后失效）
@@ -588,12 +589,15 @@ ELSE:
   "current_price": 1688.00,
   "retrain_price": 500.00,
   "allow_retrain": true,
+  "validityDays": 365,
   "included_course_ids": [2],
   "stock": 100,
   "sort": 1,
   "status": 1
 }
 ```
+
+> `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。购课时写入 `user_courses.expire_at = buy_time + validityDays 天`。
 
 ### 🔴 2.5 课程管理 - 更新课程
 **接口**: `PUT /api/admin/course/update`
@@ -603,10 +607,12 @@ ELSE:
 {
   "id": 1,
   "name": "新名称",
-  "current_price": 1500.00
-  // 其他可更新字段
+  "current_price": 1500.00,
+  "validityDays": 365
 }
 ```
+
+> `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。
 
 ### 🔴 2.6 课程管理 - 删除课程
 **接口**: `DELETE /api/admin/course/delete`
@@ -628,6 +634,52 @@ ELSE:
   "status": 0  // 0下架/1上架
 }
 ```
+
+### ⏰ 2.8 定时任务 - 上课前一天订阅消息提醒（2026-03 新增）
+
+- **触发方式**: cloudfunction.json timer trigger `send-course-reminder`，每日 9:00 自动执行
+- **云函数**: `course`
+- **处理器**: `handlers/admin/sendCourseReminder.js`
+- **调用方**: 定时任务（无需手动调用）
+
+**执行逻辑**:
+1. 计算明天日期（北京时间）
+2. 查询 `class_records` 表中 `class_date = 明天` 且 `status IN (1, 2)` 的排期
+3. 查询这些排期下 `appointments.status = 0`（待上课）的预约记录
+4. 通过 `user_id` 获取用户 `openid`
+5. 使用 APPID + AppSecret 获取微信 access_token（HTTP API）
+6. 调用微信 `subscribeMessage.send` HTTP API 发送订阅消息
+
+> **实现说明**：通过 HTTP API 直接调用微信接口，不使用 `cloud.openapi.subscribeMessage.send`，避免 MCP 部署时 openapi 权限未激活导致的 `-501001` 错误。
+
+**模板字段映射**:
+
+| 变量 | 标签 | 来源 | 限制 |
+|------|------|------|------|
+| `date5` | 时间 | `class_records.class_date` + `class_time`，格式: "2026年3月15日 09:00" | date 类型 |
+| `thing10` | 上课地址 | `class_records.class_location` | 最多 20 字，超长截断 |
+| `thing15` | 主讲老师 | `class_records.teacher` | 最多 20 字 |
+| `thing2` | 课程标题 | `class_records.course_name` | 最多 20 字，超长截断 |
+| `short_thing35` | 学习天数 | `class_end_date - class_date + 1` | 最多 5 字，如 "7天" |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| date | String | 查询的目标日期（明天） |
+| total | Number | 待发送总数 |
+| sent | Number | 成功发送数 |
+| failed | Number | 失败/跳过数 |
+| message | String | 汇总信息 |
+
+**错误码处理**:
+- `43101`: 用户未授权订阅消息，属正常情况，静默跳过
+- 其他错误码: 记录日志但不中断其他用户的发送
+
+**前端配合**:
+- 预约确认页（`pages/course/appointment-confirm/index`）在用户点击"确认预约"后调用 `uni.requestSubscribeMessage` 请求授权
+- 模板 ID: `SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc`
+- 授权结果不影响预约流程（无论用户是否允许都继续预约）
 
 ---
 
@@ -1014,45 +1066,260 @@ ELSE:
 }
 ```
 
-### 🔴 3.8 订单管理 - 退款
-**接口**: `POST /api/admin/order/refund`
+### 🔵 3.8 客户端 - 申请退款
+**云函数**: `order`，**Action**: `requestRefund`
+
+> ⚠️ 退款流程为纯人工财务转账，不调用微信退款 API，所有退款由公司财务线下处理后在后台标记已转账。
 
 **请求参数**:
 ```json
 {
   "order_no": "ORD202401150001",
-  "refund_reason": "用户申请退款"
+  "refund_reason": "课程不适合，申请退款"
 }
 ```
 
+**参数说明**:
+- `order_no`：必填，要退款的订单号
+- `refund_reason`：必填，退款原因
+
 **业务逻辑**:
 ```
-1. 执行微信退款
-2. 回退功德分/积分
-3. 更新订单状态
-
-4. 如果是密训班退款:
-   a. 标记主课程(密训班) user_courses 记录失效:
-      UPDATE user_courses SET status = 0
-      WHERE order_id = {退款订单ID} AND is_gift = 0
-
-   b. 标记赠送课程(初探班) user_courses 记录失效:
-      UPDATE user_courses SET status = 0
-      WHERE source_order_id = {退款订单ID}
-
-5. 通知用户
+1. 验证用户身份
+2. 查询订单：必须属于当前用户 + pay_status=1（已支付）+ refund_status=0（无退款）
+3. 若订单类型=1（课程订单）：查询 user_courses.contract_signed
+   - contract_signed=1：返回错误"已签署学习合同，无法退款"
+4. 更新 orders 表：
+   - refund_status = 1（申请退款）
+   - refund_amount = final_amount
+   - refund_reason = 用户填写的原因
+5. 返回申请成功
 ```
 
 **响应数据**:
 ```json
 {
   "success": true,
-  "refund_no": "RF202401150001",
-  "refund_amount": 1688.00,
-  "affected_courses": [
-    {"course_name": "密训班", "is_gift": false},
-    {"course_name": "初探班", "is_gift": true}
-  ]
+  "data": {
+    "order_no": "ORD202401150001",
+    "refund_status": 1,
+    "refund_amount": 1688.00
+  },
+  "message": "退款申请已提交，请等待审核"
+}
+```
+
+**错误情况**:
+- `pay_status !== 1`：只能对已支付订单申请退款
+- `refund_status !== 0`：该订单已有退款记录
+- `contract_signed = 1`：已签署学习合同，无法退款
+
+---
+
+### 🔵 3.9 客户端 - 获取退款状态
+**云函数**: `order`，**Action**: `getRefundStatus`
+
+**请求参数**:
+```json
+{
+  "order_no": "ORD202401150001"
+}
+```
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "order_no": "ORD202401150001",
+    "order_name": "天道初探班",
+    "order_type": 1,
+    "final_amount": 1688.00,
+    "refund_status": 1,
+    "refund_amount": 1688.00,
+    "refund_reason": "课程不适合，申请退款",
+    "refund_reject_reason": "",
+    "refund_time": null,
+    "refund_transfer_no": null,
+    "refund_audit_time": null,
+    "invoice_url": "",
+    "pay_time": "2026-01-15 10:30:00",
+    "created_at": "2026-01-15 10:00:00"
+  }
+}
+```
+
+**refund_status 枚举说明**:
+| 值 | 含义 |
+|----|------|
+| 0 | 无退款 |
+| 1 | 申请退款（待审核） |
+| 3 | 已退款（财务已转账） |
+| 4 | 已驳回 |
+
+---
+
+### 🔴 3.10 订单管理 - 退款列表
+**云函数**: `order`，**Action**: `getRefundList`
+
+**请求参数**:
+```json
+{
+  "page": 1,
+  "page_size": 20,
+  "keyword": "张三",
+  "refund_status": 1,
+  "start_date": "2026-01-01",
+  "end_date": "2026-12-31"
+}
+```
+
+**参数说明**:
+- `keyword`：可选，按订单号/用户手机号模糊搜索
+- `refund_status`：可选，1=申请退款 / 3=已退款 / 4=已驳回；不传返回全部
+- `start_date` / `end_date`：可选，按申请时间范围筛选
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 10,
+    "page": 1,
+    "page_size": 20,
+    "stats": {
+      "pending_count": 3,
+      "transferred_count": 5,
+      "rejected_count": 2,
+      "pending_amount": 5064.00
+    },
+    "list": [
+      {
+        "id": 101,
+        "order_no": "ORD202401150001",
+        "user_id": 30,
+        "user_name": "张三",
+        "user_phone": "138****8888",
+        "order_name": "天道初探班",
+        "final_amount": 1688.00,
+        "refund_amount": 1688.00,
+        "refund_status": 1,
+        "refund_reason": "课程不适合",
+        "refund_reject_reason": "",
+        "refund_audit_admin_id": null,
+        "refund_audit_time": null,
+        "refund_time": null,
+        "refund_transfer_no": "",
+        "invoice_url": "",
+        "created_at": "2026-01-15 10:00:00",
+        "pay_time": "2026-01-15 10:30:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 🔴 3.11 订单管理 - 驳回退款
+**云函数**: `order`，**Action**: `rejectRefund`
+
+**请求参数**:
+```json
+{
+  "order_id": 101,
+  "reject_reason": "退款申请不符合退款政策"
+}
+```
+
+**参数说明**:
+- `order_id`：必填，订单ID
+- `reject_reason`：必填，驳回原因
+
+**业务逻辑**:
+```
+1. 验证管理员身份
+2. 查询订单：refund_status=1（申请退款）
+3. 更新 orders 表：
+   - refund_status = 4（已驳回）
+   - refund_reject_reason = reject_reason
+   - refund_audit_admin_id = 当前管理员ID
+   - refund_audit_time = NOW()
+4. 返回驳回成功（不涉及积分/功德分回退）
+```
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 101,
+    "refund_status": 4,
+    "status_name": "已驳回",
+    "reject_reason": "退款申请不符合退款政策"
+  },
+  "message": "退款申请已驳回"
+}
+```
+
+---
+
+### 🔴 3.12 订单管理 - 标记已转账（完成退款）
+**云函数**: `order`，**Action**: `markRefundTransferred`
+
+> ⚠️ 上传发票为必填，流水号选填。完成后自动回滚订单业务（失效课程、取消预约等）。
+
+**请求参数**:
+```json
+{
+  "order_id": 101,
+  "invoice_file_id": "cloud://env.bucket/invoices/2026/01/refund_101.pdf",
+  "transfer_no": "202601150001"
+}
+```
+
+**参数说明**:
+- `order_id`：必填，订单ID
+- `invoice_file_id`：必填，退款发票 cloud:// fileID（财务转账凭证）
+- `transfer_no`：选填，银行转账流水号
+
+**业务逻辑**:
+```
+1. 验证管理员身份
+2. 查询订单：refund_status=1（申请退款）
+3. invoice_file_id 必填校验
+4. 更新 orders 表：
+   - refund_status = 3（已退款）
+   - pay_status = 4（已退款）
+   - refund_time = NOW()
+   - refund_transfer_no = transfer_no
+   - refund_invoice_file_id = invoice_file_id
+   - refund_audit_admin_id = 当前管理员ID
+   - refund_audit_time = NOW()
+5. 调用 rollbackOrderBusiness 回滚业务：
+   a. 课程订单（order_type=1）：
+      - UPDATE user_courses SET status=2 WHERE order_id=orders.id AND is_gift=0
+      - UPDATE user_courses SET status=2 WHERE source_order_id=orders.id（赠送课程）
+      - 取消所有待上课预约（appointments.status=4）
+   b. 复训订单（order_type=2）：
+      - 取消对应预约
+   c. 升级订单（order_type=4）：
+      - 降回上一个大使等级
+   d. 推荐人奖励回退（若 is_reward_granted=1）
+6. 返回标记成功
+```
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 101,
+    "refund_status": 3,
+    "status_name": "已退款",
+    "invoice_url": "https://bucket.tcb.qcloud.la/invoices/2026/01/refund_101.pdf"
+  },
+  "message": "已标记为退款转账完成"
 }
 ```
 
@@ -1414,24 +1681,69 @@ ELSE:
 ```
 
 ### 🔵 5.3 学员案例列表
-**接口**: `GET /api/academy/cases`
+- **action**: `getCaseList`
+- **调用方**: 客户端（公开接口）
+- **描述**: 获取已上架的学员案例列表，支持分类筛选
 
-**响应数据**:
-```json
-{
-  "list": [
-    {
-      "id": 1,
-      "student_name": "学员姓名",
-      "student_avatar": "头像URL",
-      "title": "案例标题",
-      "content": "学习心得",
-      "video_url": "视频URL",
-      "images": ["图片URL1", "图片URL2"]
-    }
-  ]
-}
-```
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| category | String | 否 | 分类筛选：entrepreneur/startup/workplace |
+| keyword | String | 否 | 关键词搜索（标题/摘要/学员姓名） |
+| page | Number | 否 | 页码，默认 1 |
+| page_size | Number | 否 | 每页条数，默认 10 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| id | Number | 案例ID |
+| title | String | 案例标题 |
+| student_name | String | 学员姓名 |
+| student_surname | String | 学员姓氏 |
+| student_avatar | String | 学员头像（CDN URL） |
+| student_title | String | 学员头衔/职业 |
+| student_desc | String | 学员描述 |
+| category | String | 分类 |
+| category_label | String | 分类标签名称 |
+| avatar_theme | String | 头像主题色 |
+| badge_theme | String | 徽章主题色 |
+| summary | String | 案例摘要 |
+| content | String | 案例详情内容 |
+| quote | String | 学习感悟 |
+| achievements | Array | 成果列表（字符串数组） |
+| video_url | String | 视频URL（CDN URL） |
+| images | Array | 图片URL数组（CDN URL） |
+| cover_image | String | 封面图（派生：images[0] 或 student_avatar） |
+| course_id | Number | 关联课程ID |
+| course_name | String | 关联课程名称 |
+| view_count | Number | 浏览次数 |
+| like_count | Number | 点赞次数 |
+| is_featured | Number | 是否精选 0/1 |
+| sort_order | Number | 排序权重 |
+| created_at | String | 创建时间 |
+
+**业务规则**
+- 仅返回 status=1 的案例
+- 排序：精选优先 → 排序权重降序 → ID 降序
+
+### 🔵 5.3.1 学员案例详情
+- **action**: `getCaseDetail`
+- **调用方**: 客户端（公开接口）
+- **描述**: 获取单个案例的完整详情，自动增加浏览次数
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| id | Number | 是 | 案例ID |
+
+**返回字段**：同 5.3 列表字段（含全部字段）
+
+**业务规则**
+- 自动递增 view_count
+- 仅返回 status=1 的案例，已下架返回 404
 
 ### 🔴 5.4 素材管理 - CRUD
 **接口**:
@@ -1441,71 +1753,80 @@ ELSE:
 - `GET /api/admin/material/list`
 
 ### 🔴 5.5 学员案例管理 - 创建
-**接口**: `POST /api/admin/case/create`
+- **action**: `createCase`
+- **调用方**: 管理后台
+- **描述**: 创建学员案例
 
-**请求参数**:
-```json
-{
-  "student_name": "学员姓名",
-  "student_avatar": "头像URL",
-  "title": "案例标题",
-  "content": "学习心得",
-  "video_url": "视频URL",
-  "images": ["图片URL1", "图片URL2"],
-  "sort": 1,
-  "status": 1
-}
-```
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | String | 是 | 案例标题 |
+| studentName | String | 是 | 学员姓名 |
+| studentSurname | String | 否 | 学员姓氏（用于头像文字） |
+| studentAvatar | String | 否 | 学员头像 fileID |
+| studentTitle | String | 否 | 学员头衔/职业 |
+| studentDesc | String | 否 | 学员描述 |
+| category | String | 否 | 分类：entrepreneur/startup/workplace |
+| categoryLabel | String | 否 | 分类标签名称 |
+| avatarTheme | String | 否 | 头像主题色：default/success/primary |
+| badgeTheme | String | 否 | 徽章主题色：warning/success/primary |
+| summary | String | 否 | 案例摘要 |
+| content | String | 否 | 案例详情 |
+| quote | String | 否 | 学习感悟 |
+| achievements | Array | 否 | 成果列表（字符串数组） |
+| videoUrl | String | 否 | 视频 fileID |
+| images | Array | 否 | 图片 fileID 数组 |
+| courseId | Number | 否 | 关联课程ID |
+| courseName | String | 否 | 课程名称（可自动查询） |
+| sortOrder | Number | 否 | 排序，默认 0 |
+| isFeatured | Number | 否 | 是否精选 0/1 |
+| status | Number | 否 | 状态：0隐藏/1显示，默认 1 |
 
 ### 🔴 5.6 学员案例管理 - 更新
-**接口**: `PUT /api/admin/case/update`
+- **action**: `updateCase`
+- **调用方**: 管理后台
+- **描述**: 更新学员案例（仅更新传入的字段）
 
-**请求参数**:
-```json
-{
-  "id": 1,
-  "title": "新标题",
-  "content": "新内容",
-  "sort": 2,
-  "status": 1
-}
-```
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| id | Number | 是 | 案例ID |
+| 其他字段 | - | 否 | 同 createCase，仅传入需要更新的字段 |
 
 ### 🔴 5.7 学员案例管理 - 删除
-**接口**: `DELETE /api/admin/case/delete`
+- **action**: `deleteCase`
+- **调用方**: 管理后台
+- **描述**: 软删除案例（status 置为 0）
 
-**请求参数**:
-```json
-{
-  "id": 1
-}
-```
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| caseId | Number | 是 | 案例ID |
 
 ### 🔴 5.8 学员案例管理 - 列表
-**接口**: `GET /api/admin/case/list`
+- **action**: `getCaseList`（管理端）
+- **调用方**: 管理后台
+- **描述**: 获取全部案例列表（含隐藏），支持课程筛选
 
-**请求参数**:
-```
-?status=1&keyword=学员&page=1&page_size=20
-```
+**请求参数**
 
-**响应数据**:
-```json
-{
-  "total": 20,
-  "list": [
-    {
-      "id": 1,
-      "student_name": "学员姓名",
-      "student_avatar": "头像URL",
-      "title": "案例标题",
-      "content": "学习心得",
-      "video_url": "视频URL",
-      "images": ["图片URL1", "图片URL2"],
-      "sort": 1,
-      "status": 1,
-      "created_at": "2024-01-15 10:00:00"
-    }
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| status | Number | 否 | 状态筛选 |
+| courseId | Number | 否 | 关联课程ID筛选 |
+| keyword | String | 否 | 关键词搜索 |
+| page | Number | 否 | 页码 |
+| pageSize | Number | 否 | 每页条数 |
+
+**返回字段**：同 5.3 公开接口字段，额外含 updated_at
+
+**备注（V2 变更）**
+- 新增 courseId 过滤支持
+- SELECT 补全全部字段（category, student_surname, student_desc, avatar_theme, badge_theme, quote, achievements, is_featured）
+- achievements 字段已在返回时从 JSON 字符串解析为数组
   ]
 }
 ```

@@ -22,16 +22,18 @@ module.exports = async (event, context) => {
 
     console.log(`[admin:createUser] 管理员 ${admin.id} 创建学员: ${realName}, ${phone}`);
 
-    // 检查手机号是否已存在
-    const { data: existing } = await db.from('users').select('id').eq('phone', phone).single();
-    if (existing) {
+    const { data: existingList } = await db.from('users').select('id').eq('phone', phone).limit(1);
+    if (existingList && existingList.length > 0) {
       return response.error('该手机号已存在');
     }
 
+    // 生成唯一 UID（格式与小程序注册保持一致：大写字母+数字，19位）
+    const uid = Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 9).toUpperCase();
     // 生成推荐码
     const refereeCode = 'TD' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
     const { data: newUser, error } = await db.from('users').insert({
+      uid,
       real_name: realName,
       phone,
       city,

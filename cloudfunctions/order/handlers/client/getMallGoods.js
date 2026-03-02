@@ -12,14 +12,14 @@ module.exports = async (event, context) => {
     console.log(`[getMallGoods] 查询商城商品:`, { keyword, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建基础查询
     let queryBuilder = db
       .from('mall_goods')
       .select('*', { count: 'exact' })
       .eq('status', 1) // 只查询上架商品
-      .order('sort_order', { ascending: true });
+      .order('id', { ascending: true });
 
     // 关键词过滤
     if (keyword && keyword.trim()) {

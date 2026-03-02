@@ -4,44 +4,10 @@
   <meta charset="UTF-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>退款审核</title>
+  <title>退款管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
   <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      background: #f5f5f5;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    .page-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .page-header {
-      margin-bottom: 24px;
-    }
-    .page-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: #333;
-      margin: 0 0 8px 0;
-    }
-    .page-desc {
-      font-size: 14px;
-      color: #999;
-      margin: 0;
-    }
-    .search-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
     .stats-cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -73,34 +39,14 @@
       font-size: 14px;
       opacity: 0.9;
     }
-  
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
+    .order-info {
       background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
     }
-
   </style>
 </head>
 <body>
@@ -133,27 +79,27 @@
     <div class="page-container">
       <!-- 页面头部 -->
       <div class="page-header">
-        <h1 class="page-title">退款审核</h1>
-        <p class="page-desc">处理用户退款申请，支持批量审核和驳回</p>
+        <h1 class="page-title">退款管理</h1>
+        <p class="page-desc">处理用户退款申请，支持审核、转账和发票上传</p>
       </div>
 
       <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-label">申请退款</div>
+          <div class="stat-label">待审核</div>
           <div class="stat-value">{{ statistics.pending || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">退款成功</div>
-          <div class="stat-value">{{ statistics.approved || 0 }}</div>
+          <div class="stat-label">已退款</div>
+          <div class="stat-value">{{ statistics.transferred || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">退款失败</div>
+          <div class="stat-label">已驳回</div>
           <div class="stat-value">{{ statistics.rejected || 0 }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">总金额（元）</div>
-          <div class="stat-value">{{ (statistics.totalAmount / 100).toFixed(2) || '0.00' }}</div>
+          <div class="stat-label">待退款金额（元）</div>
+          <div class="stat-value">{{ Number(statistics.pendingAmount || 0).toFixed(2) }}</div>
         </div>
       </div>
 
@@ -194,11 +140,12 @@
             <t-button theme="default" @click="handleReset">
               <template #icon><t-icon name="refresh" /></template>重置
             </t-button>
-            <t-button theme="success" @click="handleBatchApprove" :disabled="selectedRowKeys.length === 0">
-              <template #icon><t-icon name="check-circle" /></template>批量通过
-            </t-button>
             <t-button theme="danger" @click="handleBatchReject" :disabled="selectedRowKeys.length === 0">
               <template #icon><t-icon name="close-circle" /></template>批量驳回
+            </t-button>
+            <t-button theme="warning" variant="outline" @click="handleExportRefundList"
+              :disabled="!tableData.find(item => item.refund_status === 1)">
+              <template #icon><t-icon name="download" /></template>导出待退款列表
             </t-button>
           </t-space>
         </t-form-item>
@@ -218,16 +165,19 @@
         stripe
         hover
       >
+        <!-- 退款状态：refund_status 1申请退款/3已退款/4已驳回 -->
         <template #status="{ row }">
           <t-tag v-if="row.refund_status === 1" theme="warning">申请退款</t-tag>
           <t-tag v-else-if="row.refund_status === 2" theme="primary">退款处理中</t-tag>
-          <t-tag v-else-if="row.refund_status === 3" theme="success">退款成功</t-tag>
-          <t-tag v-else-if="row.refund_status === 4" theme="danger">退款失败</t-tag>
-          <t-tag v-else theme="default">无退款</t-tag>
+          <t-tag v-else-if="row.refund_status === 3" theme="success">已退款</t-tag>
+          <t-tag v-else-if="row.refund_status === 4" theme="danger">已驳回</t-tag>
         </template>
 
         <template #amount="{ row }">
-          <span style="color: #e37318; font-weight: 600;">¥{{ (row.amount / 100).toFixed(2) }}</span>
+          <div>
+            <div style="color: #e37318; font-weight: 600;">¥{{ Number(row.amount).toFixed(2) }}</div>
+            <div v-if="row.final_amount && row.amount != row.final_amount" style="font-size: 12px; color: #999;">原价: ¥{{ Number(row.final_amount).toFixed(2) }}</div>
+          </div>
         </template>
 
         <template #operation="{ row }">
@@ -241,22 +191,31 @@
               查看详情
             </t-button>
             <t-button 
-              v-if="row.refund_status === 0"
-              theme="success" 
+              v-if="row.refund_status === 1"
+              theme="warning" 
               size="small" 
               variant="text"
-              @click="handleApprove(row)"
+              @click="handleMarkTransferred(row)"
             >
-              通过
+              标记已转账
             </t-button>
             <t-button 
-              v-if="row.refund_status === 0"
+              v-if="row.refund_status === 1"
               theme="danger" 
               size="small" 
               variant="text"
               @click="handleReject(row)"
             >
               驳回
+            </t-button>
+            <t-button 
+              v-if="row.refund_status === 3 && row.invoice_url"
+              theme="success" 
+              size="small" 
+              variant="text"
+              @click="handleViewInvoice(row)"
+            >
+              查看发票
             </t-button>
           </t-space>
         </template>
@@ -267,31 +226,49 @@
     <t-dialog
       v-model:visible="detailVisible"
       header="退款详情"
-      width="600px"
+      width="650px"
       :footer="false"
     >
       <div v-if="currentRecord" style="padding: 16px 0;">
         <t-descriptions bordered :column="2">
-          <t-descriptions-item label="订单号">{{ currentRecord.order_no }}</t-descriptions-item>
-          <t-descriptions-item label="退款金额">
-            <span style="color: #e37318; font-weight: 600;">¥{{ (currentRecord.amount / 100).toFixed(2) }}</span>
-          </t-descriptions-item>
+          <t-descriptions-item label="订单号" :span="2">{{ currentRecord.order_no }}</t-descriptions-item>
+          <t-descriptions-item label="课程/商品">{{ currentRecord.order_name }}</t-descriptions-item>
+          <t-descriptions-item label="订单类型">{{ currentRecord.order_type_text }}</t-descriptions-item>
           <t-descriptions-item label="用户姓名">{{ currentRecord.user_name }}</t-descriptions-item>
           <t-descriptions-item label="用户手机">{{ currentRecord.user_phone }}</t-descriptions-item>
-          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
+          <t-descriptions-item label="退款金额">
+            <span style="color: #e37318; font-weight: 600;">¥{{ Number(currentRecord.amount).toFixed(2) }}</span>
+          </t-descriptions-item>
+          <t-descriptions-item label="订单金额">¥{{ Number(currentRecord.final_amount || currentRecord.amount).toFixed(2) }}</t-descriptions-item>
           <t-descriptions-item label="退款原因" :span="2">{{ currentRecord.refund_reason || '无' }}</t-descriptions-item>
+          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
             <t-tag v-if="currentRecord.refund_status === 1" theme="warning">申请退款</t-tag>
             <t-tag v-else-if="currentRecord.refund_status === 2" theme="primary">退款处理中</t-tag>
-            <t-tag v-else-if="currentRecord.refund_status === 3" theme="success">退款成功</t-tag>
-            <t-tag v-else-if="currentRecord.refund_status === 4" theme="danger">退款失败</t-tag>
-            <t-tag v-else theme="default">无退款</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 3" theme="success">已退款</t-tag>
+            <t-tag v-else-if="currentRecord.refund_status === 4" theme="danger">已驳回</t-tag>
           </t-descriptions-item>
-          <t-descriptions-item v-if="currentRecord.reject_reason" label="驳回原因" :span="2">
-            {{ currentRecord.reject_reason }}
+          <t-descriptions-item v-if="currentRecord.refund_reject_reason" label="驳回原因" :span="2">
+            {{ currentRecord.refund_reject_reason }}
           </t-descriptions-item>
-          <t-descriptions-item v-if="currentRecord.approved_at" label="审核时间" :span="2">
-            {{ currentRecord.approved_at }}
+          <t-descriptions-item v-if="currentRecord.refund_audit_time" label="审核时间" :span="2">
+            {{ currentRecord.refund_audit_time }}
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.refund_time" label="转账时间" :span="2">
+            {{ currentRecord.refund_time }}
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.refund_transfer_no" label="转账流水号" :span="2">
+            {{ currentRecord.refund_transfer_no }}
+          </t-descriptions-item>
+          <t-descriptions-item v-if="currentRecord.invoice_url" label="电子发票" :span="2">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img
+                :src="currentRecord.invoice_url"
+                style="max-width: 200px; max-height: 120px; border-radius: 4px; border: 1px solid #dcdcdc; cursor: pointer;"
+                @click="handleViewInvoice(currentRecord)"
+              />
+              <t-button size="small" theme="primary" variant="outline" @click="handleViewInvoice(currentRecord)">查看原图</t-button>
+            </div>
           </t-descriptions-item>
         </t-descriptions>
       </div>
@@ -312,6 +289,102 @@
         :autosize="{ minRows: 4, maxRows: 8 }"
       />
     </t-dialog>
+
+    <!-- 标记已转账对话框（含发票上传） -->
+    <t-dialog
+      v-model:visible="transferVisible"
+      header="标记已转账"
+      width="560px"
+      :confirm-btn="{ content: invoiceFileId ? '确认已转账' : '请先上传电子发票', disabled: !invoiceFileId || transferLoading }"
+      :cancel-btn="{ content: '取消' }"
+      @confirm="confirmTransfer"
+      @close="resetTransferDialog"
+    >
+      <div v-if="transferTarget" style="padding: 8px 0;">
+        <!-- 订单信息预览 -->
+        <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px;">订单信息</div>
+          <div style="font-size: 13px; color: #555; line-height: 2;">
+            <div><strong>订单编号：</strong>{{ transferTarget.order_no }}</div>
+            <div><strong>课程/商品：</strong>{{ transferTarget.order_name }}</div>
+            <div><strong>用户姓名：</strong>{{ transferTarget.user_name }}</div>
+            <div><strong>用户手机：</strong>{{ transferTarget.user_phone }}</div>
+            <div><strong>退款金额：</strong><span style="color: #e37318; font-weight: 600;">¥{{ Number(transferTarget.amount).toFixed(2) }}</span></div>
+            <div><strong>退款原因：</strong>{{ transferTarget.refund_reason || '无' }}</div>
+          </div>
+        </div>
+
+        <!-- 发票上传区域 -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;">
+            上传电子发票 <span style="color: #e34d59; font-size: 12px;">*必填，无发票不可标记</span>
+          </div>
+          <div style="font-size: 12px; color: #999; margin-bottom: 12px;">
+            支持 JPG / PNG / PDF，文件不超过 10MB
+          </div>
+
+          <!-- 未上传时：点击上传区 -->
+          <div
+            v-if="!invoicePreviewUrl"
+            style="border: 2px dashed #dcdcdc; border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;"
+            :style="invoiceUploading ? 'opacity:0.6;pointer-events:none;' : ''"
+            @click="openInvoicePicker"
+            @mouseenter="$event.currentTarget.style.borderColor='#0052d9'"
+            @mouseleave="$event.currentTarget.style.borderColor='#dcdcdc'"
+          >
+            <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
+            <div style="color: #999; font-size: 13px;">{{ invoiceUploading ? '上传中...' : '点击上传电子发票' }}</div>
+          </div>
+
+          <!-- 已上传：显示预览 -->
+          <div v-else style="position: relative; display: inline-block;">
+            <img
+              v-if="invoicePreviewUrl && !invoicePreviewUrl.endsWith('.pdf')"
+              :src="invoicePreviewUrl"
+              style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #dcdcdc; display: block;"
+            />
+            <div
+              v-else
+              style="background: #f0f4ff; border: 1px solid #0052d9; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 12px;"
+            >
+              <span style="font-size: 32px;">📄</span>
+              <span style="font-size: 13px; color: #0052d9;">PDF 文件已上传</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <t-button size="small" theme="default" variant="outline" @click="openInvoicePicker" :disabled="invoiceUploading">重新上传</t-button>
+              <t-button size="small" theme="danger" variant="outline" @click="clearInvoice">删除</t-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 转账流水号（可选） -->
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;">转账流水号（可选）</div>
+          <t-input v-model="transferNo" placeholder="输入银行转账流水号（选填）" clearable />
+        </div>
+      </div>
+    </t-dialog>
+
+    <!-- 发票预览对话框 -->
+    <t-dialog
+      v-model:visible="invoiceViewVisible"
+      header="查看电子发票"
+      width="700px"
+      :footer="false"
+    >
+      <div style="text-align: center; padding: 16px 0;">
+        <img
+          v-if="invoiceViewUrl && !invoiceViewUrl.includes('.pdf')"
+          :src="invoiceViewUrl"
+          style="max-width: 100%; border-radius: 8px;"
+        />
+        <div v-else-if="invoiceViewUrl" style="padding: 32px;">
+          <p style="font-size: 15px; color: #333; margin-bottom: 16px;">📄 PDF 格式发票</p>
+          <t-button theme="primary" @click="() => window.open(invoiceViewUrl, '_blank')">在新窗口打开 PDF</t-button>
+        </div>
+        <div v-else style="color: #999;">暂无发票</div>
+      </div>
+    </t-dialog>
           </t-content>
       </t-layout>
     </t-layout>
@@ -319,19 +392,20 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js?v=20260301"></script>
+  <script src="../../assets/js/admin-api.js?v=20260301"></script>
   <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260301"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260301"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
 
     const app = createApp({
       setup() {
-        // 管理员信息
         const adminInfo = ref(null);
         
-        // 检查登录状态
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
           if (!adminInfo.value) {
@@ -341,45 +415,10 @@
           return true;
         };
         
-        // 退出登录
         const handleLogout = () => {
           AdminAPI.logout();
         };
-        
-        // 菜单切换
-        const handleMenuChange = (value) => {
-          const routes = {
-            'dashboard': '../../dashboard.html',
-            'user-list': '../user/list.html',
-            'user-referee': '../user/referee.html',
-            'user-referee-logs': '../user/referee-logs.html',
-            'order-list': '../order/list.html',
-            'order-refund': '../order/refund.html',
-            'withdraw-audit': '../order/withdraw-audit.html',
-            'mall-goods': '../order/mall-goods.html',
-            'course-list': '../course/list.html',
-            'schedule-list': '../course/schedule.html',
-            'appointment-list': '../course/appointment.html',
-            'case-list': '../course/case.html',
-            'material-list': '../course/material.html',
-            'ambassador-list': '../ambassador/list.html',
-            'application-audit': '../ambassador/application-audit.html',
-            'activity-list': '../ambassador/activity.html',
-            'contract-list': '../ambassador/contract.html',
-            'admin-list': '../system/admin.html',
-            'config': '../system/config.html',
-            'announcement-list': '../system/announcement.html',
-            'feedback-list': '../system/feedback.html',
-            'notification-list': '../system/notification.html',
-            'level-config': '../system/level-config.html',
-          };
-          
-          if (routes[value]) {
-            window.location.href = routes[value];
-          }
-        };
-        
-        
+
         const loading = ref(false);
         const tableData = ref([]);
         const selectedRowKeys = ref([]);
@@ -387,13 +426,26 @@
         const rejectVisible = ref(false);
         const currentRecord = ref(null);
         const rejectReason = ref('');
-        const rejectTarget = ref(null); // 单个或批量
+        const rejectTarget = ref(null);
+
+        // 标记已转账对话框状态
+        const transferVisible = ref(false);
+        const transferTarget = ref(null);
+        const transferNo = ref('');
+        const transferLoading = ref(false);
+        const invoiceFileId = ref('');
+        const invoicePreviewUrl = ref('');
+        const invoiceUploading = ref(false);
+
+        // 发票预览对话框
+        const invoiceViewVisible = ref(false);
+        const invoiceViewUrl = ref('');
 
         const statistics = ref({
           pending: 0,
-          approved: 0,
+          transferred: 0,
           rejected: 0,
-          totalAmount: 0
+          pendingAmount: 0
         });
 
         const filters = ref({
@@ -402,13 +454,12 @@
           dateRange: []
         });
 
-        // 实际云函数 refund_status: 0无退款/1申请退款/2退款处理中/3退款成功/4退款失败
+        // refund_status: 1申请退款/3已退款/4已驳回
         const statusOptions = [
           { label: '全部', value: null },
           { label: '申请退款', value: 1 },
-          { label: '退款处理中', value: 2 },
-          { label: '退款成功', value: 3 },
-          { label: '退款失败', value: 4 }
+          { label: '已退款', value: 3 },
+          { label: '已驳回', value: 4 }
         ];
 
         const pagination = ref({
@@ -422,11 +473,11 @@
           { colKey: 'order_no', title: '订单号', width: 180 },
           { colKey: 'user_name', title: '用户姓名', width: 120 },
           { colKey: 'user_phone', title: '手机号', width: 130 },
-          { colKey: 'amount', title: '退款金额', width: 120, cell: 'amount' },
+          { colKey: 'amount', title: '退款金额', width: 140, cell: 'amount' },
           { colKey: 'refund_reason', title: '退款原因', ellipsis: true },
           { colKey: 'created_at', title: '申请时间', width: 160 },
-          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
-          { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
+          { colKey: 'status', title: '状态', width: 140, cell: 'status' },
+          { colKey: 'operation', title: '操作', width: 240, fixed: 'right', cell: 'operation' }
         ];
 
         const fetchData = async () => {
@@ -442,7 +493,12 @@
             
             tableData.value = data.list;
             pagination.value.total = data.total;
-            statistics.value = data.statistics;
+            statistics.value = data.statistics || {
+              pending: 0,
+              transferred: 0,
+              rejected: 0,
+              pendingAmount: 0
+            };
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '获取数据失败');
           } finally {
@@ -479,36 +535,9 @@
           detailVisible.value = true;
         };
 
-        const handleApprove = async (row) => {
-          try {
-            // 使用 refund action，需要 order_no
-            await AdminAPI.refund(row.order_no, row.amount, row.refund_reason || '管理员审核通过退款');
-            TDesign.MessagePlugin.success('退款已处理');
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '操作失败');
-          }
-        };
-
         const handleReject = (row) => {
           rejectTarget.value = [row.id];
           rejectVisible.value = true;
-        };
-
-        const handleBatchApprove = async () => {
-          try {
-            // 批量退款：根据选中 ID 找到对应 order_no 逐条处理
-            const ids = new Set(selectedRowKeys.value);
-            const rows = tableData.value.filter(r => ids.has(r.id));
-            for (const r of rows) {
-              await AdminAPI.refund(r.order_no, r.amount, r.refund_reason || '管理员批量审核通过退款');
-            }
-            TDesign.MessagePlugin.success(`批量退款处理完成 ${rows.length} 条`);
-            selectedRowKeys.value = [];
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '操作失败');
-          }
         };
 
         const handleBatchReject = () => {
@@ -523,26 +552,167 @@
           }
 
           try {
-            // 注意：后端暂无独立"拒绝退款"接口，此操作不会修改数据库状态
-            // 如需拒绝退款，请联系技术团队添加 rejectRefund action
-            TDesign.MessagePlugin.warning('驳回功能暂未上线，请联系技术团队处理');
+            const ids = rejectTarget.value.slice();
+            for (const oid of ids) {
+              await AdminAPI.rejectRefund(oid, rejectReason.value);
+            }
+            TDesign.MessagePlugin.success('已驳回');
             rejectVisible.value = false;
             rejectReason.value = '';
+            selectedRowKeys.value = [];
+            fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
           }
         };
 
+        // 打开"标记已转账"对话框
+        const handleMarkTransferred = (row) => {
+          transferTarget.value = row;
+          transferNo.value = '';
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+          transferVisible.value = true;
+        };
+
+        const resetTransferDialog = () => {
+          transferTarget.value = null;
+          transferNo.value = '';
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+          invoiceUploading.value = false;
+        };
+
+        // 打开发票文件选择器
+        const openInvoicePicker = () => {
+          if (invoiceUploading.value) return;
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/jpeg,image/png,image/jpg,application/pdf';
+          input.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+          document.body.appendChild(input);
+          input.addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (file) {
+              await doUploadInvoice(file);
+            }
+            document.body.removeChild(input);
+          });
+          input.addEventListener('cancel', function () {
+            document.body.removeChild(input);
+          });
+          input.click();
+        };
+
+        const doUploadInvoice = async (file) => {
+          if (file.size > 10 * 1024 * 1024) {
+            TDesign.MessagePlugin.error('文件不能超过 10MB');
+            return;
+          }
+          try {
+            invoiceUploading.value = true;
+            TDesign.MessagePlugin.loading('上传中...', 0);
+            const orderId = transferTarget.value?.id || 'tmp';
+            const cloudPath = CloudStorageHelper.generateCloudPath('refunds/invoices', orderId, file.name);
+            const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('发票上传成功');
+            invoiceFileId.value = result.fileID;
+            invoicePreviewUrl.value = result.tempFileURL || result.fileID;
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败：' + err.message);
+          } finally {
+            invoiceUploading.value = false;
+          }
+        };
+
+        const clearInvoice = () => {
+          invoiceFileId.value = '';
+          invoicePreviewUrl.value = '';
+        };
+
+        // 确认标记已转账
+        const confirmTransfer = async () => {
+          if (!invoiceFileId.value) {
+            TDesign.MessagePlugin.warning('请先上传电子发票');
+            return;
+          }
+          try {
+            transferLoading.value = true;
+            await AdminAPI.markRefundTransferred(
+              transferTarget.value.id,
+              invoiceFileId.value,
+              transferNo.value
+            );
+            TDesign.MessagePlugin.success('已标记为转账完成，电子发票已保存');
+            transferVisible.value = false;
+            resetTransferDialog();
+            fetchData();
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '操作失败');
+          } finally {
+            transferLoading.value = false;
+          }
+        };
+
+        // 查看发票
+        const handleViewInvoice = async (row) => {
+          let url = row.invoice_url || '';
+          if (!url && row.refund_invoice_file_id) {
+            url = await CloudStorageHelper.getSingleTempURL(row.refund_invoice_file_id);
+          }
+          if (!url) {
+            TDesign.MessagePlugin.warning('暂无发票');
+            return;
+          }
+          invoiceViewUrl.value = url;
+          invoiceViewVisible.value = true;
+        };
+
+        const handleExportRefundList = async () => {
+          try {
+            const pendingList = tableData.value.filter(r => r.refund_status === 1);
+            if (pendingList.length === 0) {
+              TDesign.MessagePlugin.warning('当前没有待退款记录');
+              return;
+            }
+            const csv = convertToCSV(pendingList);
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `待退款列表_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+            TDesign.MessagePlugin.success(`导出成功，共 ${pendingList.length} 条`);
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '导出失败');
+          }
+        };
+
+        const convertToCSV = (data) => {
+          const headers = ['订单号', '用户姓名', '手机号', '退款金额', '退款原因', '课程/商品', '申请时间'];
+          const rows = data.map(item => [
+            item.order_no,
+            item.user_name,
+            item.user_phone,
+            Number(item.amount).toFixed(2),
+            (item.refund_reason || '').replace(/,/g, '，'),
+            (item.order_name || '').replace(/,/g, '，'),
+            item.created_at
+          ]);
+          
+          return [headers, ...rows].map(row => row.join(',')).join('\n');
+        };
+
         onMounted(() => {
           if (checkAuth()) {
-          fetchData();
-        }
+            fetchData();
+          }
         });
 
         return {
-          activeMenuKey: 'order-refund',adminInfo,
+          activeMenuKey: 'order-refund', adminInfo,
           handleLogout,
-          handleMenuChange,
           loading,
           tableData,
           selectedRowKeys,
@@ -555,16 +725,32 @@
           statusOptions,
           pagination,
           columns,
+          // 转账对话框
+          transferVisible,
+          transferTarget,
+          transferNo,
+          transferLoading,
+          invoiceFileId,
+          invoicePreviewUrl,
+          invoiceUploading,
+          invoiceViewVisible,
+          invoiceViewUrl,
           handleSearch,
           handleReset,
           handleSelectChange,
           handlePageChange,
           handleViewDetail,
-          handleApprove,
           handleReject,
-          handleBatchApprove,
           handleBatchReject,
-          confirmReject
+          confirmReject,
+          handleMarkTransferred,
+          resetTransferDialog,
+          openInvoicePicker,
+          clearInvoice,
+          confirmTransfer,
+          handleViewInvoice,
+          handleExportRefundList,
+          window
         };
       }
     });
@@ -575,11 +761,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-

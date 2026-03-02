@@ -41,7 +41,7 @@ module.exports = async (event, context) => {
         .select('id, course_id, lesson_id, progress_percent, watch_duration, last_position, completed, completed_at, updated_at')
         .eq('user_id', user.id)
         .eq('course_id', parseInt(finalCourseId))
-        .order('updated_at', { ascending: false });
+        .order('id', { ascending: true });
 
       if (error) {
         throw error;
@@ -55,7 +55,7 @@ module.exports = async (event, context) => {
         .from('academy_progress')
         .select('id, course_id, lesson_id, progress_percent, watch_duration, completed, updated_at')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .order('id', { ascending: true });
 
       if (error) {
         throw error;

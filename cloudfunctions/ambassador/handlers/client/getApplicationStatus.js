@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
       .from('ambassador_applications')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(1)
       .single();
 

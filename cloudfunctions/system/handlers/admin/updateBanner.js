@@ -23,7 +23,8 @@ module.exports = async (event, context) => {
     const { data, error } = await db.from('banners').update(updateData).eq('id', id).select();
     if (error) throw error;
 
-    return response.success(data?.[0] || null, '更新成功');
+    const result = data?.[0] || {};
+    return response.success({ ...result, id: result.id ?? parseInt(id, 10) }, '更新成功');
   } catch (error) {
     console.error('[admin:updateBanner] 失败:', error);
     return response.error('更新轮播图失败', error);

@@ -8,14 +8,13 @@ module.exports = async (event, context) => {
 
   try {
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询
     let queryBuilder = db.from('academy_materials')
       .select('id, title, category, image_url, video_url, content, tags, view_count, download_count, share_count, sort_order, created_at', { count: 'exact' })
       .eq('status', 1)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加分类筛选
     if (category) {

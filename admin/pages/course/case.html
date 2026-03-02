@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>案例管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.page-container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.page-header{margin-bottom:24px}.page-title{font-size:20px;font-weight:600;color:#333;margin:0 0 8px 0}.page-desc{font-size:14px;color:#999;margin:0}.search-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-    /* 云存储上传组件样式 */
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>案例管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>
     .upload-placeholder{width:200px;height:200px;border:2px dashed #dcdcdc;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;}
     .upload-placeholder:hover{border-color:#0052d9;background:#f3f3f3;}
     .small-placeholder{width:100px;height:100px;}
@@ -19,33 +18,6 @@
     .thumb-item img{width:100%;height:100%;object-fit:cover;border-radius:4px;border:1px solid #dcdcdc;}
     .thumb-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#f00;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1;}
     .thumb-add{width:80px;height:80px;}
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
-
   </style></head>
 <body>
   <div id="app">
@@ -73,11 +45,16 @@
         <sidebar-menu active-key="case-list"></sidebar-menu>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">案例管理</h1><p class="page-desc">管理课程案例，展示学员成果</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="案例标题" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">新增案例</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #cover="{ row }"><t-image v-if="row.student_avatar" :src="row.student_avatar" style="width:80px;height:60px;border-radius:4px;" fit="cover"></t-image><span v-else style="color:#999;font-size:12px;">无图片</span></template><template #status="{ row }"><t-tag v-if="row.status===1" theme="success">显示</t-tag><t-tag v-else theme="default">隐藏</t-tag></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button :theme="row.status===1?'warning':'success'" size="small" variant="text" @click="handleToggleStatus(row)">{{row.status===1?'隐藏':'显示'}}</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增案例':'编辑案例'" width="700px" @confirm="handleSubmit">
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">案例管理</h1><p class="page-desc">管理课程案例，展示学员成果</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="案例标题" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.courseId" :options="courseOptions" placeholder="关联课程" clearable style="width:200px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">新增案例</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #cover="{ row }"><t-image v-if="row.student_avatar" :src="row.student_avatar" style="width:80px;height:60px;border-radius:4px;" fit="cover"></t-image><span v-else style="color:#999;font-size:12px;">无图片</span></template><template #featured="{ row }"><t-tag v-if="row.is_featured===1" theme="warning" variant="light" size="small">⭐</t-tag><span v-else style="color:#ccc;">-</span></template><template #status="{ row }"><t-tag v-if="row.status===1" theme="success">显示</t-tag><t-tag v-else theme="default">隐藏</t-tag></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button :theme="row.status===1?'warning':'success'" size="small" variant="text" @click="handleToggleStatus(row)">{{row.status===1?'隐藏':'显示'}}</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增案例':'编辑案例'" width="700px" @confirm="handleSubmit">
   <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
     <t-form-item label="案例标题" name="title"><t-input v-model="formData.title" placeholder="请输入案例标题"/></t-form-item>
     <t-form-item label="学员姓名" name="studentName"><t-input v-model="formData.studentName" placeholder="请输入学员姓名"/></t-form-item>
+    <t-form-item label="学员姓氏" name="studentSurname"><t-input v-model="formData.studentSurname" placeholder="如：王（用于头像文字显示，不填则取姓名首字）" style="width:200px;"/></t-form-item>
     <t-form-item label="学员头衔" name="studentTitle"><t-input v-model="formData.studentTitle" placeholder="请输入学员头衔/职业"/></t-form-item>
+    <t-form-item label="学员描述" name="studentDesc"><t-input v-model="formData.studentDesc" placeholder="更详细的学员描述，如：初探班+密训班学员"/></t-form-item>
+    <t-form-item label="学员分类" name="category">
+      <t-select v-model="formData.category" :options="categoryOptions" placeholder="选择分类" clearable style="width:200px;" @change="onCategoryChange"/>
+    </t-form-item>
 
     <!-- 学员头像 - 云存储单图上传 -->
     <t-form-item label="学员头像" name="studentAvatar">
@@ -91,6 +68,12 @@
         :width="160"
         :height="160"
       />
+    </t-form-item>
+    <t-form-item label="头像主题色" name="avatarTheme">
+      <t-select v-model="formData.avatarTheme" :options="avatarThemeOptions" placeholder="头像背景色（无真实头像时生效）" style="width:200px;"/>
+    </t-form-item>
+    <t-form-item label="徽章主题色" name="badgeTheme">
+      <t-select v-model="formData.badgeTheme" :options="badgeThemeOptions" placeholder="分类徽章颜色" style="width:200px;"/>
     </t-form-item>
 
     <!-- 案例视频 - 云存储视频上传 -->
@@ -130,6 +113,19 @@
     <t-form-item label="关联课程" name="courseId"><t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程"/></t-form-item>
     <t-form-item label="案例摘要" name="summary"><t-textarea v-model="formData.summary" placeholder="请输入案例摘要" :maxlength="500" :autosize="{minRows:4,maxRows:8}"/></t-form-item>
     <t-form-item label="案例内容" name="content"><t-textarea v-model="formData.content" placeholder="请输入详细内容" :maxlength="5000" :autosize="{minRows:6,maxRows:12}"/></t-form-item>
+    <t-form-item label="学习感悟" name="quote"><t-textarea v-model="formData.quote" placeholder="学员的学习感悟/引用话语" :maxlength="500" :autosize="{minRows:2,maxRows:4}"/></t-form-item>
+    <t-form-item label="成果列表" name="achievements">
+      <div style="width:100%;">
+        <div v-for="(item, idx) in formData.achievements" :key="idx" style="display:flex;gap:8px;margin-bottom:8px;">
+          <t-input v-model="formData.achievements[idx]" placeholder="成果描述"/>
+          <t-button theme="danger" variant="outline" size="small" @click="removeAchievement(idx)">删除</t-button>
+        </div>
+        <t-button variant="dashed" size="small" @click="addAchievement" style="width:100%;">+ 添加成果</t-button>
+      </div>
+    </t-form-item>
+    <t-form-item label="是否精选" name="isFeatured">
+      <t-switch v-model="formData.isFeatured" :custom-value="[1, 0]"/>
+    </t-form-item>
     <t-form-item label="排序" name="sortOrder"><t-input-number v-model="formData.sortOrder" :min="0" style="width:100%;"/></t-form-item>
     <t-form-item label="显示状态" name="status">
       <t-radio-group v-model="formData.status"><t-radio :value="1">显示</t-radio><t-radio :value="0">隐藏</t-radio></t-radio-group>
@@ -161,23 +157,52 @@
         const tableData = ref([]);
         const formVisible = ref(false);
         const formMode = ref('add');
-        const formData = ref({
+        const defaultFormData = () => ({
           status: 1,
           studentAvatar: '', studentAvatarURL: '',
           videoUrl: '', videoUrlDisplay: '',
-          images: [], imagesDisplay: []
+          images: [], imagesDisplay: [],
+          category: null, categoryLabel: '',
+          studentSurname: '', studentDesc: '',
+          avatarTheme: 'default', badgeTheme: 'primary',
+          quote: '', achievements: [],
+          isFeatured: 0
         });
+        const formData = ref(defaultFormData());
         const filters = ref({ keyword: '', courseId: null });
         const courseOptions = ref([]);
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
+
+        const categoryOptions = ref([
+          { label: '企业家', value: 'entrepreneur' },
+          { label: '创业者', value: 'startup' },
+          { label: '职场人', value: 'workplace' }
+        ]);
+        const categoryLabelMap = { entrepreneur: '企业家', startup: '创业者', workplace: '职场人' };
+        const avatarThemeOptions = ref([
+          { label: '蓝色（默认）', value: 'default' },
+          { label: '绿色', value: 'success' },
+          { label: '橙色', value: 'primary' }
+        ]);
+        const badgeThemeOptions = ref([
+          { label: '蓝色', value: 'primary' },
+          { label: '橙色', value: 'warning' },
+          { label: '绿色', value: 'success' }
+        ]);
+        const onCategoryChange = (val) => {
+          formData.value.categoryLabel = categoryLabelMap[val] || '';
+        };
+        const addAchievement = () => { formData.value.achievements.push(''); };
+        const removeAchievement = (idx) => { formData.value.achievements.splice(idx, 1); };
         
         const columns = [
-          // DB 返回 student_avatar 字段，表格 slot 名沿用 'cover' 方便模板识别
           { colKey: 'student_avatar', title: '头像', width: 100, cell: 'cover' },
           { colKey: 'title', title: '案例标题', width: 200 },
           { colKey: 'student_name', title: '学员姓名', width: 120 },
+          { colKey: 'category_label', title: '分类', width: 80 },
           { colKey: 'course_name', title: '关联课程', width: 150 },
           { colKey: 'summary', title: '摘要', ellipsis: true },
+          { colKey: 'is_featured', title: '精选', width: 60, cell: 'featured' },
           { colKey: 'created_at', title: '创建时间', width: 160 },
           { colKey: 'status', title: '状态', width: 80, cell: 'status' },
           { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
@@ -288,25 +313,28 @@
 
         const handleAdd = () => {
           formMode.value = 'add';
-          formData.value = {
-            status: 1,
-            studentAvatar: '', studentAvatarURL: '',
-            videoUrl: '', videoUrlDisplay: '',
-            images: [], imagesDisplay: []
-          };
+          formData.value = defaultFormData();
           formVisible.value = true;
         };
         
         const handleEdit = async (row) => {
           formMode.value = 'edit';
           const imagesArr = Array.isArray(row.images) ? row.images : (row.images ? JSON.parse(row.images) : []);
+          let achievementsArr = [];
+          try { achievementsArr = row.achievements ? (typeof row.achievements === 'string' ? JSON.parse(row.achievements) : row.achievements) : []; } catch (e) {}
           formData.value = {
             id: row.id,
             title: row.title,
             studentName: row.student_name,
-            studentTitle: row.student_title,
+            studentSurname: row.student_surname || '',
+            studentTitle: row.student_title || '',
+            studentDesc: row.student_desc || '',
             studentAvatar: row.student_avatar || '',
             studentAvatarURL: '',
+            category: row.category || null,
+            categoryLabel: row.category_label || '',
+            avatarTheme: row.avatar_theme || 'default',
+            badgeTheme: row.badge_theme || 'primary',
             videoUrl: row.video_url || '',
             videoUrlDisplay: '',
             images: [...imagesArr],
@@ -314,10 +342,12 @@
             courseId: row.course_id,
             summary: row.summary,
             content: row.content,
+            quote: row.quote || '',
+            achievements: [...achievementsArr],
+            isFeatured: row.is_featured || 0,
             sortOrder: row.sort_order,
             status: row.status
           };
-          // 转换云存储 fileID 为临时 URL
           if (row.student_avatar) {
             try { formData.value.studentAvatarURL = await window.CloudStorageHelper.getSingleTempURL(row.student_avatar); }
             catch (e) { console.warn('获取头像URL失败', e); }
@@ -360,12 +390,12 @@
         
         const handleSubmit = async () => {
           try {
-            // 提交时 images 字段传 fileID 数组（JSON），云函数存入 DB
+            const cleanAchievements = (formData.value.achievements || []).filter(a => a && a.trim());
             const payload = {
               ...formData.value,
-              images: formData.value.images
+              images: formData.value.images,
+              achievements: cleanAchievements
             };
-            // 删除仅用于显示的字段
             delete payload.studentAvatarURL;
             delete payload.videoUrlDisplay;
             delete payload.imagesDisplay;
@@ -388,14 +418,14 @@
         });
         
         return {
-          activeMenuKey: 'case-list',// 侧边栏导航
+          activeMenuKey: 'case-list',
           adminInfo, handleMenuChange, handleLogout,
-          // 页面功能
           loading, tableData, formVisible, formMode, formData,
           filters, courseOptions, pagination, columns, rules,
+          categoryOptions, avatarThemeOptions, badgeThemeOptions,
+          onCategoryChange, addAchievement, removeAchievement,
           handleSearch, handleReset, handlePageChange,
           handleAdd, handleEdit, handleDelete, handleToggleStatus, handleSubmit,
-          // 云存储上传（视频、多图）
           videoFileInput, imagesFileInput,
           videoUploading, imagesUploading,
           triggerVideoUpload, handleVideoChange, removeVideo,

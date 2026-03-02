@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
     let query = db
       .from('notification_configs')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态筛选
     if (status !== undefined && status !== null && status !== '') {

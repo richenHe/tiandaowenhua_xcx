@@ -14,7 +14,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('ambassador_activities')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);

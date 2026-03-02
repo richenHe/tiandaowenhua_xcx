@@ -12,8 +12,7 @@ module.exports = async (event, context) => {
       .from('banners')
       .select('id, title, subtitle, image_url, link_url, sort_order')
       .eq('status', 1)
-      .order('sort_order', { ascending: false })
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(10);
 
     if (error) throw error;

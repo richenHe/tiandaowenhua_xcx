@@ -250,6 +250,12 @@ async function handleCoursePurchase(order, db) {
     return;
   }
 
+  // 计算课程有效期截止时间：validity_days 不为空时 = 购课时间 + validity_days 天
+  const buyTime = new Date();
+  const expireAt = course.validity_days != null
+    ? formatDateTime(new Date(buyTime.getTime() + parseInt(course.validity_days) * 24 * 60 * 60 * 1000))
+    : null;
+
   // 插入主课程
   await db.from('user_courses').insert({
     user_id: order.user_id,
@@ -260,15 +266,16 @@ async function handleCoursePurchase(order, db) {
     order_no: order.order_no,
     source_order_id: order.id,
     buy_price: order.final_amount,
-    buy_time: formatDateTime(new Date()),
+    buy_time: formatDateTime(buyTime),
+    expire_at: expireAt,
     is_gift: 0,
-    attend_count: 1,
+    attend_count: 0,
     status: 1,
-    created_at: formatDateTime(new Date()),
-    updated_at: formatDateTime(new Date())
+    created_at: formatDateTime(buyTime),
+    updated_at: formatDateTime(buyTime)
   });
 
-  console.log('[Payment] 主课程记录已创建');
+  console.log('[Payment] 主课程记录已创建，有效期截止:', expireAt || '永久');
 
   // 密训班赠送初探班
   if (course.included_course_ids && course.included_course_ids.length > 0) {
@@ -283,11 +290,16 @@ async function handleCoursePurchase(order, db) {
       if (!existingCourse || existingCourse.length === 0) {
         const { data: giftCourse } = await db
           .from('courses')
-          .select('name, type')
+          .select('name, type, validity_days')
           .eq('id', giftCourseId)
           .single();
 
         if (giftCourse) {
+          // 赠送课程有效期：按赠送课程自身配置计算（如无配置则永久）
+          const giftExpireAt = giftCourse.validity_days != null
+            ? formatDateTime(new Date(buyTime.getTime() + parseInt(giftCourse.validity_days) * 24 * 60 * 60 * 1000))
+            : null;
+
           await db.from('user_courses').insert({
             user_id: order.user_id,
             _openid: order._openid || '',
@@ -298,15 +310,16 @@ async function handleCoursePurchase(order, db) {
             source_order_id: order.id,
             source_course_id: course.id,
             buy_price: 0,
-            buy_time: formatDateTime(new Date()),
+            buy_time: formatDateTime(buyTime),
+            expire_at: giftExpireAt,
             is_gift: 1,
             gift_source: `购买${course.name}赠送`,
-            attend_count: 1,
+            attend_count: 0,
             status: 1,
-            created_at: formatDateTime(new Date()),
-            updated_at: formatDateTime(new Date())
+            created_at: formatDateTime(buyTime),
+            updated_at: formatDateTime(buyTime)
           });
-          console.log('[Payment] 赠送课程已创建:', giftCourse.name);
+          console.log('[Payment] 赠送课程已创建:', giftCourse.name, '有效期截止:', giftExpireAt || '永久');
         }
       } else {
         console.log('[Payment] 用户已有赠送课程，跳过:', giftCourseId);
@@ -330,9 +343,9 @@ async function handleCoursePurchase(order, db) {
     console.log('[Payment] 首购锁定推荐人');
   }
 
-  // 发放推荐人奖励
+  // 推荐人奖励延迟至用户签署课程学习合同后发放（signCourseContract 触发）
   if (order.referee_id) {
-    await calculateAndGrantReward(order, course, db);
+    console.log('[Payment] 推荐人奖励暂不发放，将在用户签署课程学习合同后触发, referee_id:', order.referee_id);
   }
 }
 
@@ -451,30 +464,8 @@ async function handleAmbassadorUpgrade(order, db) {
     console.log('[Payment] 密训班名额已发放:', config.gift_quota_advanced);
   }
 
-  // 发放冻结积分
-  if (config.frozen_points > 0) {
-    const { data: currentUser } = await db
-      .from('users')
-      .select('cash_points_frozen')
-      .eq('id', order.user_id)
-      .single();
-
-    await db.from('users').update({
-      cash_points_frozen: (parseFloat(currentUser?.cash_points_frozen) || 0) + config.frozen_points
-    }).eq('id', order.user_id);
-
-    await db.from('cash_points_records').insert({
-      user_id: order.user_id,
-      _openid: openid,
-      type: 1,
-      amount: config.frozen_points,
-      order_no: order.order_no,
-      remark: `升级为${config.level_name}，发放冻结积分`,
-      created_at: formatDateTime(new Date())
-    });
-
-    console.log('[Payment] 冻结积分已发放:', config.frozen_points);
-  }
+  // 冻结积分在用户完成全部升级步骤（签署大使协议）后统一发放，此处不发放
+  console.log('[Payment] 大使升级支付处理完成，冻结积分将在签约完成后发放');
 }
 
 /**

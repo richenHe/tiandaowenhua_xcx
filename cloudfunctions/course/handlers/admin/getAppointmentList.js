@@ -9,7 +9,7 @@ module.exports = async (event, context) => {
   console.log('[getAppointmentList] 接收参数:', JSON.stringify({ course_id, class_record_id, status, keyword, page }));
 
   try {
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 联表查询：JOIN users、courses、class_records
     let queryBuilder = db
@@ -40,7 +40,7 @@ module.exports = async (event, context) => {
           teacher
         )
       `, { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (course_id) {
       queryBuilder = queryBuilder.eq('course_id', parseInt(course_id));

@@ -15,7 +15,7 @@ module.exports = async (event, context) => {
     console.log(`[getList] 查询订单列表:`, { user_id: user.id, status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（一次查询获取所有数据，包括推荐人信息）
     let queryBuilder = db
@@ -24,8 +24,10 @@ module.exports = async (event, context) => {
         order_no,
         order_type,
         order_name,
+        related_id,
         final_amount,
         pay_status,
+        refund_status,
         pay_time,
         is_reward_granted,
         created_at,
@@ -33,7 +35,7 @@ module.exports = async (event, context) => {
         referee:users!fk_orders_referee(real_name)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {
@@ -86,8 +88,10 @@ module.exports = async (event, context) => {
       order_no: order.order_no,
       order_type: order.order_type,
       order_name: order.order_name,
+      related_id: order.related_id,
       final_amount: order.final_amount,
       pay_status: order.pay_status,
+      refund_status: order.refund_status || 0,
       pay_status_name: getPayStatusName(order.pay_status),
       pay_time: order.pay_time,
       referee_name: order.referee?.real_name || null,

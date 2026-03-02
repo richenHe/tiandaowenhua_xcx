@@ -25,17 +25,24 @@ module.exports = async (event, context) => {
       return response.paramError('缺少必要参数: name（活动名称）');
     }
 
-    // 创建活动记录，使用正确的 DB 字段名
+    if (!start_time) {
+      return response.paramError('缺少必要参数: start_time（活动开始时间）');
+    }
+
+    const safeJson = (v) => typeof v === 'string' ? v : (v ? JSON.stringify(v) : null);
+
     const [activity] = await insert('ambassador_activity_records', {
+      user_id: event.user_id || admin.id || 0,
+      _openid: '',
       activity_name: name,
       activity_desc: description || '',
       activity_type: activity_type || 1,
       location: location || '',
-      start_time: start_time || null,
-      end_time: end_time || null,
-      images: images ? JSON.stringify(images) : null,
+      start_time: formatDateTime(new Date(start_time)),
+      end_time: end_time ? formatDateTime(new Date(end_time)) : null,
+      images: safeJson(images),
       target_level: target_level || null,
-      reward_config: reward_config ? JSON.stringify(reward_config) : null,
+      reward_config: safeJson(reward_config),
       participant_count: 0,
       status: 1,
       created_at: formatDateTime(new Date())

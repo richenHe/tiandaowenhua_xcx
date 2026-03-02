@@ -15,6 +15,7 @@
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
  * @param {number}  event.retrainPrice  - 重训价，对应 DB 字段 retrain_price
  * @param {number}  event.allowRetrain  - 是否允许重训，对应 DB 字段 allow_retrain
+ * @param {number} event.validityDays - 课程有效期（天），必填正整数，对应 DB 字段 validity_days
  * @param {string}  event.duration      - 课程时长
  * @param {string}  event.description   - 简介
  * @param {string}  event.content       - 详情
@@ -37,6 +38,7 @@ module.exports = async (event, context) => {
   const originalPrice = event.originalPrice || event.original_price;
   const retrainPrice = event.retrainPrice || event.retrain_price;
   const allowRetrain = event.allowRetrain !== undefined ? event.allowRetrain : event.allow_retrain;
+  const validityDays = event.validityDays !== undefined ? event.validityDays : event.validity_days;
   const duration = event.duration;
   const description = event.description;
   const content = event.content;
@@ -55,6 +57,12 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
+    // 有效期必填，且必须为正整数
+    const validityDaysParsed = validityDays != null ? parseInt(validityDays) : null;
+    if (!validityDaysParsed || validityDaysParsed <= 0) {
+      return response.paramError('课程有效期为必填项，请输入大于 0 的天数');
+    }
+
     // camelCase → snake_case，写入 DB
     const [result] = await insert('courses', {
       name,
@@ -70,6 +78,7 @@ module.exports = async (event, context) => {
       original_price: originalPrice || currentPrice,
       retrain_price: retrainPrice || 0,
       allow_retrain: allowRetrain ? 1 : 0,
+      validity_days: validityDaysParsed,
       sort_order: sortOrder || 0,
       status: status !== undefined ? status : 1
     });

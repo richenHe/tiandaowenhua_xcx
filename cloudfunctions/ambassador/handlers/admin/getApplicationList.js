@@ -12,13 +12,13 @@ module.exports = async (event, context) => {
     console.log(`[getApplicationList] 查询申请列表:`, { status, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('ambassador_applications')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态筛选
     if (status != null && status !== '') {

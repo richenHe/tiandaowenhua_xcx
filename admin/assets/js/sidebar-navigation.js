@@ -25,7 +25,6 @@ function handleMenuChange(value) {
     'dashboard':          'dashboard.html',
     'user-list':          'pages/user/list.html',
     'user-referee':       'pages/user/referee.html',
-    'user-referee-logs':  'pages/user/referee-logs.html',
     'order-list':         'pages/order/list.html',
     'order-refund':       'pages/order/refund.html',
     'withdraw-audit':     'pages/order/withdraw-audit.html',
@@ -127,7 +126,6 @@ const SidebarMenu = {
           <template #title>用户管理</template>
           <t-menu-item value="user-list">学员列表</t-menu-item>
           <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-          <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
         </t-submenu>
 
         <t-submenu value="order">

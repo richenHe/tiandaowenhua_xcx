@@ -12,15 +12,14 @@ module.exports = async (event, context) => {
     console.log(`[getAmbassadorList] 查询大使列表:`, { level, keyword, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('users')
       .select('*', { count: 'exact' })
       .gt('ambassador_level', 0)
-      .order('ambassador_level', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 等级筛选
     if (level != null && level !== '') {

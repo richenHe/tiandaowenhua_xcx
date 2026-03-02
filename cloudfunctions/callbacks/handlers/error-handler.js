@@ -21,7 +21,7 @@ async function logError(errorInfo) {
       order_no: errorInfo.order_no,
       error_message: errorInfo.message,
       error_details: JSON.stringify(errorInfo.details || {}),
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 19).replace('T', ' ')
     });
 
     console.log('[ErrorHandler] 错误日志已记录:', errorInfo.type);

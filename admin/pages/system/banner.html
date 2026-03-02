@@ -5,20 +5,8 @@
   <link rel="icon" href="data:,">
   <title>轮播图管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f5f5f5;
-    }
-
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
-
     .page-card {
       background: white;
       border-radius: 8px;
@@ -110,20 +98,6 @@
               <template #link="{ row }">
                 <span v-if="row.link_url" style="color:#0052d9; font-size:12px; word-break:break-all;">{{ row.link_url }}</span>
                 <span v-else style="color:#ccc;">—</span>
-              </template>
-
-              <!-- 展示时间 -->
-              <template #timeRange="{ row }">
-                <div v-if="row.start_time || row.end_time" style="font-size:12px; line-height:1.6;">
-                  <div v-if="row.start_time">开始：{{ row.start_time }}</div>
-                  <div v-if="row.end_time">结束：{{ row.end_time }}</div>
-                </div>
-                <span v-else style="color:#ccc;">长期展示</span>
-              </template>
-
-              <!-- 排序 -->
-              <template #sortOrder="{ row }">
-                <t-tag theme="default" size="small">{{ row.sort_order || 0 }}</t-tag>
               </template>
 
               <!-- 状态 -->
@@ -238,13 +212,12 @@
 
         // 表格列
         const columns = [
-          { colKey: 'thumb',      title: '图片',     width: 150, cell: 'thumb' },
-          { colKey: 'title',      title: '标题',     width: 160 },
-          { colKey: 'link',       title: '跳转链接', width: 200, cell: 'link' },
-          { colKey: 'sortOrder',  title: '排序',     width: 80,  cell: 'sortOrder' },
-          { colKey: 'timeRange',  title: '展示时间', width: 180, cell: 'timeRange' },
-          { colKey: 'status',     title: '状态',     width: 90,  cell: 'status' },
-          { colKey: 'op',         title: '操作',     width: 160, cell: 'op' }
+          { colKey: 'thumb',       title: '图片',     width: 150, cell: 'thumb' },
+          { colKey: 'title',       title: '标题',     width: 160 },
+          { colKey: 'link',        title: '跳转链接', width: 200, cell: 'link' },
+          { colKey: 'sort_order',  title: '排序',     width: 80,  cell: (h, { row }) => h(TDesign.Tag, { theme: 'default', size: 'small' }, () => row.sort_order || 0) },
+          { colKey: 'status',      title: '状态',     width: 90,  cell: 'status' },
+          { colKey: 'op',          title: '操作',     width: 160, cell: 'op' }
         ];
 
         // 加载轮播图数据（使用独立的 banner API，与公告完全分离）

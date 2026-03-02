@@ -8,50 +8,65 @@ const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  // 兼容 level-config 弹窗（ambassadorLevel/contract_name）和合约管理页（title/level/version）
+  // 兼容 level-config 弹窗（ambassadorLevel/contract_name）、合约管理页（title/level/version）和课程合同（courseId）
   const {
     contract_name, title,
     ambassadorLevel, level,
     contractType,
+    courseId,
     version,
     content,
     contractFileId,
+    validityYears,
     effective_date, expiry_date
   } = event;
 
   try {
     const resolvedName = contract_name || title;
-    const resolvedLevel = ambassadorLevel != null ? Number(ambassadorLevel) : (level != null ? Number(level) : null);
+    const isCourseContract = contractType === 'course' || Number(courseId) > 0;
+    const resolvedLevel = isCourseContract ? 0 : (ambassadorLevel != null ? Number(ambassadorLevel) : (level != null ? Number(level) : null));
     const resolvedVersion = version || 'v1.0';
 
-    console.log(`[createContractTemplate] 创建协议模板:`, { resolvedName, resolvedLevel, resolvedVersion });
+    console.log(`[createContractTemplate] 创建协议模板:`, { resolvedName, resolvedLevel, resolvedVersion, courseId, isCourseContract });
 
-    if (!resolvedName || resolvedLevel == null) {
-      return response.paramError('缺少必要参数: contract_name/title, ambassadorLevel/level');
+    if (!resolvedName) {
+      return response.paramError('缺少必要参数: contract_name/title');
+    }
+    if (!isCourseContract && resolvedLevel == null) {
+      return response.paramError('缺少必要参数: ambassadorLevel/level');
+    }
+    if (isCourseContract && !courseId) {
+      return response.paramError('课程协议缺少必要参数: courseId');
     }
 
-    // 判断协议类型：1=传播大使协议 / 2=青鸾大使协议 / 3=鸿鹄大使补充协议
-    let contractTypeValue = 1;
-    if (resolvedLevel === 2) contractTypeValue = 2;
-    else if (resolvedLevel === 3) contractTypeValue = 3;
+    // 协议类型：1=传播大使 / 2=青鸾大使 / 3=鸿鹄大使 / 4=课程学习服务协议
+    let contractTypeValue = isCourseContract ? 4 : 1;
+    if (!isCourseContract) {
+      if (resolvedLevel === 2) contractTypeValue = 2;
+      else if (resolvedLevel === 3) contractTypeValue = 3;
+    }
 
-    // 插入协议模板
+    const insertData = {
+      contract_name: resolvedName,
+      contract_type: contractTypeValue,
+      ambassador_level: resolvedLevel,
+      version: resolvedVersion,
+      content: content || '',
+      contract_file_id: contractFileId || null,
+      validity_years: validityYears != null ? parseInt(validityYears) : 1,
+      effective_time: effective_date || formatDateTime(new Date()),
+      status: 1,
+      created_by: admin?.id || null
+    };
+
+    if (isCourseContract) {
+      insertData.course_id = Number(courseId);
+    }
+
     const { data: inserted, error } = await db
       .from('contract_templates')
-      .insert({
-        contract_name: resolvedName,
-        contract_type: contractTypeValue,
-        ambassador_level: resolvedLevel,
-        version: resolvedVersion,
-        content: content || '',
-        // 电子合同文件ID（cloud:// 格式）
-        contract_file_id: contractFileId || null,
-        validity_years: 1,
-        effective_time: effective_date || formatDateTime(new Date()),
-        status: 1,
-        created_by: admin?.id || null
-      })
-      .select('id, contract_name, ambassador_level, version')
+      .insert(insertData)
+      .select('id, contract_name, ambassador_level, course_id, version')
       .single();
 
     if (error) throw error;

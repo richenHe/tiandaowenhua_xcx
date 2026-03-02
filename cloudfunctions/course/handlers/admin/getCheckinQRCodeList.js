@@ -14,7 +14,7 @@ module.exports = async (event, context) => {
     let query = db
       .from('checkin_qrcodes')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (classRecordId) {
       query = query.eq('class_record_id', parseInt(classRecordId));

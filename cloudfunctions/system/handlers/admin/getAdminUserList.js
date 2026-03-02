@@ -18,13 +18,13 @@ module.exports = async (event, context) => {
     console.log(`[admin:getAdminUserList] 管理员 ${admin.id} 获取管理员列表`);
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('admin_users')
       .select('id, username, real_name, role, permissions, status, last_login_time, created_at', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 状态筛选
     if (status !== undefined && status !== null && status !== '') {

@@ -89,7 +89,7 @@
               <view class="record-right">
                 <view
                   class="record-amount"
-                  :class="getAmountClass(record.change_type)"
+                  :class="getAmountClass(record.change_type, record.change_amount)"
                 >
                   <template v-if="record.change_type === 4">已打款</template>
                   <template v-else>{{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}</template>
@@ -135,14 +135,6 @@
       </view>
     </scroll-view>
 
-    <!-- 底部提现按钮 -->
-    <view class="fixed-bottom">
-      <view @tap="goToWithdraw">
-        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block t-button--size-large">
-          <span class="t-button__text">💰 申请提现</span>
-        </button>
-      </view>
-    </view>
   </view>
 </template>
 
@@ -156,7 +148,7 @@ import { UserApi } from '@/api'
 import type { CashPointsInfo, CashPointsRecord } from '@/api/types/user'
 
 const scrollHeight = computed(() => {
-  return 'calc(100vh - var(--window-top) - 120rpx)'
+  return 'calc(100vh - var(--window-top))'
 })
 
 // 页面头部高度
@@ -264,7 +256,7 @@ onMounted(() => {
 
 onShow(() => {
   loadCashPoints()
-  loadRecords()
+  loadRecords(true)  // reset=true 强制清空并重新加载，避免 finished=true 导致数据不刷新
 })
 
 // 处理滚动事件
@@ -307,6 +299,7 @@ const getRecordStyle = (changeType: number | string) => {
     '3': { icon: '💸', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
     '4': { icon: '✅', gradient: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' }, // 提现成功
     '5': { icon: '↩️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' }, // 提现失败退回
+    '6': { icon: '🛒', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 商城兑换消费
     // 旧的字符串 key 兼容
     'upgrade': { icon: '🎖️', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
     'unfreeze': { icon: '🔓', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
@@ -317,15 +310,11 @@ const getRecordStyle = (changeType: number | string) => {
   return styleMap[type] || { icon: '💰', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }
 }
 
-// 按 type 返回金额颜色 class
-const getAmountClass = (changeType: number | string) => {
+// 按金额正负返回颜色 class：+ 绿色，- 红色，已打款保持蓝色
+const getAmountClass = (changeType: number | string, changeAmount?: number) => {
   const t = Number(changeType)
-  if (t === 4) return 'transfer'   // 已打款 - 蓝色
-  if (t === 1) return 'warning'    // 获得冻结 - 橙色（冻结，不可立即用）
-  if (t === 5) return 'warning'    // 提现失败退回 - 橙色
-  if (t === 2) return 'success'    // 解冻 - 绿色
-  if (t === 3) return 'error'      // 提现申请 - 红色
-  return 'success'
+  if (t === 4) return 'transfer'                      // 已打款 - 蓝色（展示文字非数字）
+  return (changeAmount ?? 0) >= 0 ? 'success' : 'error'  // + 绿色，- 红色
 }
 
 // 按 type 返回状态文字
@@ -336,6 +325,7 @@ const getStatusText = (changeType: number | string) => {
     3: '提现申请',
     4: '银行汇款',
     5: '已退回',
+    6: '积分消费',
   }
   return map[Number(changeType)] || '积分变动'
 }
@@ -345,6 +335,7 @@ const getStatusClass = (changeType: number | string) => {
   const t = Number(changeType)
   if (t === 2 || t === 4) return 'available'  // 绿色（解冻/已打款）
   if (t === 5) return 'warning'               // 橙色（退回，与金额色保持一致）
+  if (t === 6) return 'frozen'                // 灰色（商城兑换消费）
   return 'frozen'                             // 灰色（冻结/提现申请）
 }
 
@@ -671,16 +662,6 @@ const viewInvoice = (url: string) => {
   color: #999;
 }
 
-.fixed-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
-}
 
 </style>
 

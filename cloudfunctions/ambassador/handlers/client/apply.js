@@ -7,7 +7,7 @@
  *   - 现有大使传对应下一级，表示升级申请
  */
 const { findOne, insert } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -60,8 +60,7 @@ module.exports = async (event, context) => {
       return response.error('您已有待审核的申请，请耐心等待');
     }
 
-    // 创建申请记录（DB DATETIME 列要求 'YYYY-MM-DD HH:MM:SS' 格式）
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = formatDateTime(new Date());
     const [application] = await insert('ambassador_applications', {
       user_id: user.id,
       user_uid: user.user_uid || null,

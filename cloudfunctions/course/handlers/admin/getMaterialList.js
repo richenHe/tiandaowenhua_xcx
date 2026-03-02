@@ -8,7 +8,7 @@ module.exports = async (event, context) => {
 
   try {
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 10;
+    const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询
     let queryBuilder = db
@@ -29,8 +29,7 @@ module.exports = async (event, context) => {
         created_at,
         updated_at
       `, { count: 'exact' })
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 添加分类过滤
     if (category) {

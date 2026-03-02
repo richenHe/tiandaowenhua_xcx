@@ -1,31 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><title>反馈管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css"><style>body{margin:0;padding:20px;background:#f5f5f5}.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
-    /* TDesign 布局样式 - 必需！*/
-    .t-layout {
-      height: 100vh;
-    }
-    
-    .t-layout__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      background: #fff;
-      border-bottom: 1px solid #dcdcdc;
-    }
-    
-    .t-layout__sider {
-      background: #fff;
-      border-right: 1px solid #dcdcdc;
-      width: 240px !important;
-      flex-shrink: 0;
-    }
-    
-    .t-layout__content {
-      padding: 24px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
+  <link rel="icon" href="data:,"><title>反馈管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
     .feedback-images{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
     .feedback-img-item{width:100px;height:100px;object-fit:cover;border-radius:4px;border:1px solid #dcdcdc;cursor:pointer;}
     .feedback-img-item:hover{opacity:0.85;}
@@ -55,14 +29,14 @@
         <sidebar-menu active-key="feedback-list"></sidebar-menu>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="c"><h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">反馈管理</h1><div style="display:flex;gap:12px;margin-bottom:20px;"><t-select v-model="st" :options="stOpts" placeholder="状态" clearable style="width:150px;"/><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" bordered stripe><template #userName="{row}"><span>{{(row.user&&row.user.real_name)||row.contact||'-'}}</span></template><template #userPhone="{row}"><span>{{(row.user&&row.user.phone)||'-'}}</span></template><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待处理</t-tag><t-tag v-else-if="row.status===1" theme="success">已回复</t-tag><t-tag v-else-if="row.status===2" theme="default">已关闭</t-tag></template><template #op="{row}"><t-button size="small" variant="text" @click="view(row)">查看</t-button><t-button v-if="row.status===0" size="small" variant="text" theme="success" @click="handle(row)">标记已处理</t-button></template></t-table></div><t-dialog v-model:visible="v" header="反馈详情" width="640px" :footer="false">
+        <t-content class="page-content"><div class="c"><h1 style="font-size:20px;font-weight:600;margin-bottom:24px;">反馈管理</h1><div style="display:flex;gap:12px;margin-bottom:20px;"><t-select v-model="st" :options="stOpts" placeholder="状态" clearable style="width:150px;"/><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" row-key="id" bordered stripe><template #status="{row}"><t-tag v-if="row.status===0" theme="warning">待处理</t-tag><t-tag v-else-if="row.status===1" theme="success">已回复</t-tag><t-tag v-else-if="row.status===2" theme="default">已关闭</t-tag></template><template #op="{row}"><t-button size="small" variant="text" @click="view(row)">查看</t-button><t-button v-if="row.status===0" size="small" variant="text" theme="success" @click="handle(row)">标记已处理</t-button></template></t-table></div><t-dialog v-model:visible="v" header="反馈详情" width="640px" :footer="false">
   <t-descriptions v-if="cr" bordered>
     <t-descriptions-item label="用户姓名">{{(cr.user&&cr.user.real_name)||cr.contact||'-'}}</t-descriptions-item>
     <t-descriptions-item label="手机号">{{(cr.user&&cr.user.phone)||'-'}}</t-descriptions-item>
     <t-descriptions-item label="反馈内容" :span="2">{{cr.content}}</t-descriptions-item>
     <t-descriptions-item label="反馈图片" :span="2">
       <div v-if="crImages && crImages.length > 0" class="feedback-images">
-        <img v-for="(img, idx) in crImages" :key="idx" :src="img" class="feedback-img-item" alt="反馈图片" @click="window.open(img, '_blank')">
+        <img v-for="(img, idx) in crImages" :key="idx" :src="img" class="feedback-img-item" alt="反馈图片" @click="openImage(img)">
       </div>
       <span v-else style="color:#999;">无图片</span>
     </t-descriptions-item>
@@ -72,7 +46,17 @@
       <t-tag v-else-if="cr.status===1" theme="success">已回复</t-tag>
       <t-tag v-else-if="cr.status===2" theme="default">已关闭</t-tag>
     </t-descriptions-item>
+    <t-descriptions-item v-if="cr.reply" label="回复内容" :span="2">{{cr.reply}}</t-descriptions-item>
+    <t-descriptions-item v-if="cr.reply_time" label="回复时间" :span="2">{{cr.reply_time}}</t-descriptions-item>
   </t-descriptions>
+  <div v-if="cr && cr.status===0" style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:16px;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:8px;">回复反馈</div>
+    <t-textarea v-model="replyContent" placeholder="请输入回复内容" :maxlength="500" :autosize="{minRows:3,maxRows:6}" style="margin-bottom:12px;" />
+    <t-space>
+      <t-button theme="primary" :loading="replyLoading" @click="submitReply">提交回复</t-button>
+      <t-button theme="default" @click="handleClose">标记已处理</t-button>
+    </t-space>
+  </div>
 </t-dialog>        </t-content>
       </t-layout>
     </t-layout>
@@ -99,8 +83,8 @@
         // 云函数 getStatusText: 0待处理/1已回复/2已关闭
         const stOpts = [{ label: '待处理', value: 0 }, { label: '已回复', value: 1 }, { label: '已关闭', value: 2 }];
         const cols = [
-          { colKey: 'user_name', title: '用户姓名', width: 120, cell: 'userName' },
-          { colKey: 'phone', title: '手机号', width: 130, cell: 'userPhone' },
+          { colKey: 'user_name', title: '用户姓名', width: 120, cell: (h, { row }) => (row.user && row.user.real_name) || row.user_name || row.contact || '-' },
+          { colKey: 'user_phone', title: '手机号', width: 130, cell: (h, { row }) => (row.user && row.user.phone) || row.user_phone || '-' },
           { colKey: 'content', title: '反馈内容', ellipsis: true },
           { colKey: 'created_at', title: '提交时间', width: 160 },
           { colKey: 'status', title: '状态', width: 100, cell: 'status' },
@@ -141,11 +125,34 @@
           catch (e) { TDesign.MessagePlugin.error(e.message); }
         };
 
+        const replyContent = ref('');
+        const replyLoading = ref(false);
+        const submitReply = async () => {
+          if (!replyContent.value.trim()) { TDesign.MessagePlugin.warning('请输入回复内容'); return; }
+          replyLoading.value = true;
+          try {
+            await AdminAPI.handleFeedback({ feedbackId: cr.value.id, reply: replyContent.value, status: 1 });
+            TDesign.MessagePlugin.success('回复成功');
+            v.value = false;
+            replyContent.value = '';
+            ld();
+          } catch (e) { TDesign.MessagePlugin.error(e.message); }
+          finally { replyLoading.value = false; }
+        };
+        const handleClose = async () => {
+          try { await AdminAPI.handleFeedback({ feedbackId: cr.value.id, status: 2 }); TDesign.MessagePlugin.success('已关闭'); v.value = false; ld(); }
+          catch (e) { TDesign.MessagePlugin.error(e.message); }
+        };
+
+        const openImage = (url) => { window.open(url, '_blank'); };
+
         onMounted(ld);
         return {
           activeMenuKey: 'feedback-list',adminInfo, handleMenuChange, handleLogout,
           lg, d, v, cr, crImages, st, pg, stOpts, cols,
-          ld, rs, chg, view, handle
+          ld, rs, chg, view, handle,
+          replyContent, replyLoading, submitReply, handleClose,
+          openImage
         };}}).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');</script></body></html>
 
 

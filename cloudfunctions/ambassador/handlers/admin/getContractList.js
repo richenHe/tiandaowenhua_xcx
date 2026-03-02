@@ -12,13 +12,13 @@ module.exports = async (event, context) => {
     console.log(`[getContractList] 查询合约列表:`, { level, status, keyword, page });
 
     // 兼容 pageSize 参数
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询
     let queryBuilder = db
       .from('contract_signatures')
       .select('*', { count: 'exact' })
-      .order('sign_time', { ascending: false });
+      .order('id', { ascending: true });
 
     // 等级筛选
     if (level != null && level !== '') {

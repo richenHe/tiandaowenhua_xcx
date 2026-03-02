@@ -9,7 +9,7 @@
  * @param {Object} event
  * @param {number} event.courseId      - 课程 ID（必填）
  * @param {string} event.classDate     - 开课日期（如 "2026-03-01"）（必填）
- * @param {string} event.classEndDate  - 结课日期（如 "2026-03-05"），可选，单天课程时留空
+ * @param {string} event.classEndDate  - 结课日期（如 "2026-03-05"），单天课与 classDate 相同
  * @param {string} event.classTime     - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
  * @param {string} event.classLocation - 上课地点，对应 DB 字段 class_location
  * @param {string} event.teacher       - 讲师
@@ -23,7 +23,8 @@ const { validateRequired } = require('../../common/utils');
 module.exports = async (event, context) => {
   const courseId = event.courseId || event.course_id;
   const classDate = event.classDate || event.class_date;
-  const classEndDate = event.classEndDate || event.class_end_date || null;
+  // 单天课与 classDate 相同，未传则默认等于 classDate
+  const classEndDate = event.classEndDate || event.class_end_date || classDate;
   const classTime = event.classTime || event.class_time || null;
   const classLocation = event.classLocation || event.class_location;
   const teacher = event.teacher;
@@ -46,7 +47,7 @@ module.exports = async (event, context) => {
     const [result] = await insert('class_records', {
       course_id: courseId,
       class_date: classDate,
-      class_end_date: classEndDate || null,
+      class_end_date: classEndDate,
       class_time: classTime || null,
       class_location: classLocation || null,
       teacher: teacher || null,

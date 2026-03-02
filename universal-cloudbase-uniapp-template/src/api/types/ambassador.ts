@@ -236,6 +236,8 @@ export interface ContractTemplate {
   level: number
   /** 等级名称 */
   level_name: string
+  /** 关联课程ID（课程学习协议时使用） */
+  course_id?: number
   /** 有效期（年） */
   validity_years?: number
   /** 生效日期 */
@@ -648,4 +650,25 @@ export interface AvailableActivitiesResult {
   total: number
   /** 用户当前全局有效报名（null 表示无有效报名） */
   my_active_registration: MyActiveRegistration | null
+}
+
+/**
+ * 检查课程合同签署状态的返回结果
+ */
+export interface CheckCourseContractResult {
+  needSign: boolean
+  hasTemplate: boolean
+  templateId?: number
+  reason?: string
+}
+
+/**
+ * 签署课程学习服务协议的参数
+ */
+export interface SignCourseContractParams {
+  courseId: number
+  templateId: number
+  signatureFileId: string
+  agreed: boolean
+  idNumber?: string
 }

@@ -15,7 +15,7 @@
  * - scene: 场景
  * - data: 模板数据
  */
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 const business = require('../../business-logic');
 const { insert } = require('../../common/db');
 
@@ -44,7 +44,7 @@ module.exports = async (event, context) => {
             title,
             content,
             status: 1, // 1-已发送
-            send_time: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            send_time: formatDateTime(new Date())
           });
           results.push({ user_id, success: true, id: log.id });
         } catch (error) {

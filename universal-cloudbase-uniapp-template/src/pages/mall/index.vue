@@ -85,22 +85,6 @@
             </view>
           </view>
 
-          <!-- 加载更多 -->
-          <view v-if="hasMore" class="load-more">
-            <button 
-              class="load-more-btn" 
-              :disabled="isLoading"
-              :loading="isLoading"
-              @click="handleLoadMore"
-            >
-              <text class="btn-text">加载更多</text>
-            </button>
-          </view>
-          
-          <!-- 加载完毕提示 -->
-          <view v-else-if="products.length > 0" class="load-more">
-            <text class="no-more-text">已加载全部商品</text>
-          </view>
         </view>
 
         <!-- 兑换课程内容 -->
@@ -137,19 +121,17 @@
                     {{ course.badge }}
                   </view>
                 </view>
-                <text class="course-desc">{{ course.desc }}</text>
                 <view class="course-footer">
                   <view class="course-price">
                     <text class="course-points">{{ course.points }}积分</text>
-                    <text class="course-original">原价¥{{ course.originalPrice }}</text>
                   </view>
                   <button 
                     class="course-btn"
-                    :class="{ 'course-btn--disabled': !canAfford(course.points) }"
-                    :disabled="!canAfford(course.points)"
+                    :class="{ 'course-btn--disabled': !canAffordCourse(course.points) }"
+                    :disabled="!canAffordCourse(course.points)"
                     @click.stop="handleExchangeCourse(course)"
                   >
-                    <text class="btn-text">{{ canAfford(course.points) ? '立即兑换' : '积分不足' }}</text>
+                    <text class="btn-text">{{ canAffordCourse(course.points) ? '立即兑换' : '积分不足' }}</text>
                   </button>
                 </view>
               </view>
@@ -214,10 +196,15 @@ const handleScroll = (e: any) => {
   }
 };
 
-// 判断是否有足够的功德分和积分兑换
+// 判断功德分是否足够兑换商品（商品优先用功德分，不足时才用积分）
 const canAfford = (requiredPoints: number) => {
   const totalAvailable = userMeritPoints.value + userCashPoints.value;
   return totalAvailable >= requiredPoints;
+};
+
+// 判断积分是否足够兑换课程（课程只能用积分兑换）
+const canAffordCourse = (requiredPoints: number) => {
+  return userCashPoints.value >= requiredPoints;
 };
 
 // 商品分类
@@ -353,8 +340,7 @@ const loadMallCourses = async () => {
       icon: getCourseIcon(item.type),
       gradient: getCourseGradient(item.type),
       coverImage: item.coverImage || '',
-      desc: `${item.nickname || item.name} - 课程`,
-      points: item.currentPrice * 100,
+      points: item.currentPrice,
       originalPrice: item.originalPrice,
       badge: item.soldCount > 100 ? '热门' : '',
       badgeType: item.soldCount > 100 ? 'success' : ''
@@ -483,59 +469,33 @@ const handleCourseClick = (course: any) => {
   })
 }
 
-// 兑换课程
+// 兑换课程（课程只能用积分兑换，不使用功德分）
 const handleExchangeCourse = (course: any) => {
   const coursePoints = course.points;
-  const meritPoints = userMeritPoints.value;
   const cashPoints = userCashPoints.value;
 
-  // 情况1：功德分和积分都不足
-  if (meritPoints < coursePoints && cashPoints < coursePoints) {
+  if (cashPoints < coursePoints) {
     uni.showModal({
       title: '提示',
-      content: '功德分或积分不够',
+      content: '积分不足，无法兑换该课程',
       showCancel: false,
     });
     return;
   }
 
-  // 情况2：功德分不足，但积分足够 - 只用积分支付
-  if (meritPoints < coursePoints && cashPoints >= coursePoints) {
-    uni.showModal({
-      title: '提示',
-      content: '功德分不足，需要用积分兑换课程吗？',
-      confirmText: '确定',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) {
-          const paymentPlan = {
-            meritPointsToUse: 0,
-            cashPointsToUse: coursePoints,
-            needsCashPayment: false,
-            remainingMeritPoints: meritPoints,
-            remainingCashPoints: cashPoints - coursePoints
-          };
-          performExchange('course', course.id, paymentPlan);
-        }
-      },
-    });
-    return;
-  }
-
-  // 情况3：功德分充足 - 只用功德分支付
   uni.showModal({
     title: '提示',
-    content: '确定用功德分兑换课程吗？',
+    content: `确定用 ${coursePoints} 积分兑换课程吗？`,
     confirmText: '确定',
     cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
         const paymentPlan = {
-          meritPointsToUse: coursePoints,
-          cashPointsToUse: 0,
+          meritPointsToUse: 0,
+          cashPointsToUse: coursePoints,
           needsCashPayment: false,
-          remainingMeritPoints: meritPoints - coursePoints,
-          remainingCashPoints: cashPoints
+          remainingMeritPoints: userMeritPoints.value,
+          remainingCashPoints: cashPoints - coursePoints
         };
         performExchange('course', course.id, paymentPlan);
       }

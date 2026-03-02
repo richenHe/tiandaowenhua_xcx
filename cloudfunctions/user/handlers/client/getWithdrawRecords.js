@@ -13,7 +13,7 @@ module.exports = async (event, context) => {
   try {
     console.log('[getWithdrawRecords] 获取提现记录:', user.id);
 
-    const finalPageSize = page_size || pageSize || 20;
+    const finalPageSize = pageSize || page_size || 20;
 
     // 构建查询，新增 invoice_file_id、transfer_time 字段
     let queryBuilder = db
@@ -23,7 +23,7 @@ module.exports = async (event, context) => {
         { count: 'exact' }
       )
       .eq('user_id', user.id)
-      .order('apply_time', { ascending: false });
+      .order('id', { ascending: true });
 
     if (status !== undefined) {
       queryBuilder = queryBuilder.eq('status', status);

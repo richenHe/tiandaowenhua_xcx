@@ -2,7 +2,7 @@
  * 管理端接口：创建活动岗位类型
  * Action: createPositionType
  */
-const { db, response } = require('../../common');
+const { db, insert, response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { name, requiredLevel, meritPointsDefault, description, sortOrder } = event;
@@ -35,8 +35,8 @@ module.exports = async (event, context) => {
       }
     }
 
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    await db.from('ambassador_position_types').insert({
+    const now = formatDateTime(new Date());
+    const [newRow] = await insert('ambassador_position_types', {
       _openid: '',
       name: name.trim(),
       required_level: (requiredLevel != null && requiredLevel !== '') ? Number(requiredLevel) : null,
@@ -48,7 +48,7 @@ module.exports = async (event, context) => {
       updated_at: now
     });
 
-    return response.success(null, '岗位类型创建成功');
+    return response.success({ id: newRow.id }, '岗位类型创建成功');
 
   } catch (error) {
     console.error('[createPositionType] 失败:', error);

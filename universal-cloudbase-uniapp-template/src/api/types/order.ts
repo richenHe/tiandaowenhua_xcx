@@ -58,6 +58,18 @@ export interface Order {
   course_name?: string
   /** 课程类型 */
   course_type?: number
+  /** 退款状态（0-无退款，1-申请退款，3-已退款，4-已驳回） */
+  refund_status?: number
+  /** 退款金额 */
+  refund_amount?: number
+  /** 退款原因 */
+  refund_reason?: string
+  /** 退款驳回原因 */
+  refund_reject_reason?: string
+  /** 退款时间 */
+  refund_time?: string | null
+  /** 退款转账单号 */
+  refund_transfer_no?: string | null
 }
 
 /**
@@ -329,3 +341,51 @@ export interface GetMallCoursesParams extends PaginationParams {
  * 获取商城课程列表响应数据
  */
 export interface GetMallCoursesResponse extends PaginationResponse<MallCourse> {}
+
+/**
+ * 申请退款请求参数
+ */
+export interface RequestRefundParams {
+  /** 订单号 */
+  order_no: string
+  /** 退款原因 */
+  refund_reason: string
+}
+
+/**
+ * 申请退款响应数据
+ */
+export interface RequestRefundResponse {
+  order_no: string
+  refund_status: number
+  refund_amount: number
+}
+
+/**
+ * 获取退款状态请求参数
+ */
+export interface GetRefundStatusParams {
+  /** 订单号 */
+  order_no: string
+}
+
+/**
+ * 退款状态详情
+ */
+export interface RefundStatusInfo {
+  order_no: string
+  order_name: string
+  order_type: number
+  final_amount: number
+  /** 退款状态（0-无退款，1-申请退款，3-已退款，4-已驳回） */
+  refund_status: number
+  refund_amount: number
+  refund_reason: string
+  refund_reject_reason: string
+  refund_time: string | null
+  refund_transfer_no: string | null
+  refund_audit_time: string | null
+  invoice_url: string
+  pay_time: string | null
+  created_at: string
+}

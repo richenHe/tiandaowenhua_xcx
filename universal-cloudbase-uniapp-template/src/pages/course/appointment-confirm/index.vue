@@ -49,6 +49,23 @@ import { onLoad } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi, SystemApi } from '@/api';
 
+const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
+
+/** 请求订阅消息授权（仅微信小程序环境，无论结果如何都不阻塞预约流程） */
+const requestSubscribe = (): Promise<void> => {
+  return new Promise((resolve) => {
+    // #ifdef MP-WEIXIN
+    uni.requestSubscribeMessage({
+      tmplIds: [COURSE_REMINDER_TMPL_ID],
+      complete: () => resolve()
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    resolve()
+    // #endif
+  })
+}
+
 // 客服电话
 const customerServicePhone = ref('');
 
@@ -160,13 +177,14 @@ const handleSubmit = async () => {
     cancelText: '取消',
     success: async (res) => {
       if (res.confirm) {
+        // 先弹出订阅消息授权（不阻塞后续流程）
+        await requestSubscribe()
+
         if (isRetrain) {
-          // 需要支付复训费，跳转到订单确认页
           uni.navigateTo({
             url: `/pages/order/confirm/index?classRecordId=${courseInfo.value.classRecordId}&isRetrain=1`,
           });
         } else {
-          // 首次预约，直接调用预约接口
           try {
             await CourseApi.createAppointment({
               class_record_id: courseInfo.value.classRecordId

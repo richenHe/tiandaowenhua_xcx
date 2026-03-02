@@ -303,7 +303,8 @@ async function deleteRecord(table, where) {
  */
 async function softDelete(table, where) {
   try {
-    return await update(table, { deleted_at: new Date().toISOString() }, where);
+    const { formatDateTime } = require('./utils');
+    return await update(table, { deleted_at: formatDateTime(new Date()) }, where);
   } catch (error) {
     console.error('[DB] softDelete error:', error);
     throw error;

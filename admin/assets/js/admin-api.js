@@ -258,12 +258,12 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'getRefundList', transformed);
   }
 
-  static async approveRefund(data) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'approveRefund', data);
+  static async rejectRefund(order_id, reject_reason) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'rejectRefund', { order_id, reject_reason });
   }
 
-  static async rejectRefund(data) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'rejectRefund', data);
+  static async markRefundTransferred(order_id, invoice_file_id, transfer_no = '') {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.ORDER, 'markRefundTransferred', { order_id, invoice_file_id, transfer_no });
   }
 
   // 提现管理
@@ -574,6 +574,21 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getExpiringContracts', { days });
   }
 
+  // 课程学习服务协议
+  static async getContractTemplateByCourse(courseId) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminGetCourseContractTemplate', { courseId });
+  }
+
+  static async createCourseContractTemplate(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'createContractTemplate', {
+      ...data, contractType: 'course'
+    });
+  }
+
+  static async updateCourseContractTemplate(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updateContractTemplate', data);
+  }
+
   // 大使模块别名方法（向后兼容）
   static async getAmbassadorApplicationList(params = {}) {
     return this.getApplicationList(params);
@@ -673,9 +688,9 @@ class AdminAPI {
 
   // ==================== 预约管理别名方法 ====================
 
-  /** 单次签到 — 别名，签到状态 = 2 */
+  /** 单次签到 — 别名，签到状态 = 1 */
   static async checkInAppointment({ appointmentId }) {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateAppointmentStatus', { id: appointmentId, status: 2 });
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateAppointmentStatus', { id: appointmentId, status: 1 });
   }
 
   /** 取消预约 — 别名，取消状态 = 3 */

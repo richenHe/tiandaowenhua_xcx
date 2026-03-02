@@ -22,9 +22,7 @@ module.exports = async (event, context) => {
       .from('announcements')
       .select('id, title, content, summary, cover_image, category, target_type, is_top, start_time, end_time, view_count, sort_order, published_at, created_at', { count: 'exact' })
       .eq('status', 1)
-      .order('is_top', { ascending: false })
-      .order('sort_order', { ascending: false })
-      .order('published_at', { ascending: false });
+      .order('id', { ascending: true });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

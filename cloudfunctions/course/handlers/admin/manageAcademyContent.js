@@ -46,10 +46,10 @@ async function createAcademyIntro(data) {
     return response.paramError(validation.message);
   }
 
-  // 创建介绍
   const [result] = await insert('academy_intro', {
+    _openid: '',
     title,
-    cover_image,
+    cover_image: cover_image || null,
     summary,
     content,
     sort_order: sort_order || 0,

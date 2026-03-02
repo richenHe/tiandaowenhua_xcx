@@ -50,7 +50,7 @@
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi } from '@/api';
+import { CourseApi, AmbassadorApi } from '@/api';
 
 // 课程排期数据
 const schedules = ref<any[]>([]);
@@ -94,8 +94,8 @@ const loadSchedules = async () => {
   }
 };
 
-// 处理预约
-const handleAppointment = (schedule: any) => {
+// 跳转到预约确认页
+const goToAppointmentConfirm = (schedule: any) => {
   const q = [
     `classRecordId=${schedule.id}`,
     `courseId=${courseId.value}`,
@@ -107,6 +107,35 @@ const handleAppointment = (schedule: any) => {
   uni.navigateTo({
     url: `/pages/course/appointment-confirm/index?${q}`,
   });
+};
+
+// 处理预约（含合同签署检查）
+const handleAppointment = async (schedule: any) => {
+  try {
+    uni.showLoading({ title: '检查中...' })
+    const checkResult = await AmbassadorApi.checkCourseContract(courseId.value)
+    uni.hideLoading()
+
+    if (checkResult.needSign) {
+      uni.showModal({
+        title: '签署学习合同',
+        content: '您需要签署学习服务协议后才能参加学习，是否立即签署？',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({
+              url: `/pages/ambassador/contract-sign/index?courseId=${courseId.value}&templateId=${checkResult.templateId}`
+            })
+          }
+        }
+      })
+      return
+    }
+  } catch (e) {
+    uni.hideLoading()
+    console.error('检查合同状态失败:', e)
+  }
+
+  goToAppointmentConfirm(schedule)
 };
 
 onLoad((options: any) => {

@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
       .from('ambassador_level_configs')
       .select('*')
       .eq('status', 1) // 只查询启用的配置
-      .order('level', { ascending: true });
+      .order('id', { ascending: true });
 
     if (error) {
       console.error('[getLevelSystem] 查询失败:', error);

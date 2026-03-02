@@ -8,7 +8,7 @@
  * - order_type=4: 需支付的大使升级
  */
 const { findOne, insert, query, db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, formatDateTime } = require('../../common');
 const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
@@ -63,9 +63,7 @@ module.exports = async (event, context) => {
     const order_no = business.generateOrderNo('ORD');
 
     // 5. 插入订单记录
-    // 格式化过期时间为 MySQL datetime 格式
-    const expireDate = new Date(Date.now() + 30 * 60 * 1000);
-    const expire_at = expireDate.toISOString().slice(0, 19).replace('T', ' '); // 'YYYY-MM-DD HH:MM:SS'
+    const expire_at = formatDateTime(new Date(Date.now() + 30 * 60 * 1000));
     
     const order = await insert('orders', {
       user_id: user.id,
@@ -94,7 +92,7 @@ module.exports = async (event, context) => {
       order_no,
       order_type,
       order_name: orderData.order_name,
-      amount: orderData.amount,
+      amount: parseFloat(orderData.amount),
       referee_id: orderData.referee_id,
       referee_uid: orderData.referee_uid,
       referee_name: orderData.referee_name,
@@ -168,7 +166,7 @@ async function handleCourseOrder(user, course_id, referee_id) {
 
   return {
     order_name: course.name,
-    amount: course.current_price,
+    amount: parseFloat(course.current_price),
     ...refereeData,
     metadata
   };
