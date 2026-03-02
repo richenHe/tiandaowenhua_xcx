@@ -29,7 +29,7 @@ module.exports = async (event, context) => {
         created_at,
         updated_at
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 添加分类过滤
     if (category) {

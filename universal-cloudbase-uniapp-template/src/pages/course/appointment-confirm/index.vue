@@ -12,11 +12,15 @@
             <view class="info-details">
               <view class="info-item">📅 {{ courseInfo.startDate }}{{ courseInfo.startTime ? ' ' + courseInfo.startTime : '' }}</view>
               <view class="info-item">📍 {{ courseInfo.location }}</view>
-              <view v-if="courseInfo.userAttendCount > 1" class="info-item price-item">
-                💰 复训费用: ¥{{ courseInfo.retrainPrice }}
-              </view>
             </view>
           </view>
+        </view>
+
+        <!-- 复训费提示（attend_count >= 1 且非沙龙时显示） -->
+        <view v-if="needRetrainFee" class="retrain-card">
+          <view class="retrain-title">💰 复训费用</view>
+          <view class="retrain-price">¥{{ courseInfo.retrainPrice }}</view>
+          <view class="retrain-notice">上过一次课后，课程有效期内每次上课需缴纳复训费，费用支付后无法取消预约且费用不退，请确定好来上课再预约</view>
         </view>
 
         <!-- 温馨提示 -->
@@ -47,7 +51,7 @@
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi, SystemApi } from '@/api';
+import { CourseApi, UserApi, SystemApi } from '@/api';
 
 const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
 
@@ -66,157 +70,146 @@ const requestSubscribe = (): Promise<void> => {
   })
 }
 
-// 客服电话
 const customerServicePhone = ref('');
 
-// 课程信息
 const courseInfo = ref({
   classRecordId: 0,
   courseId: 0,
+  courseType: 0,
   courseName: '',
-  period: '',
   startDate: '',
   startTime: '',
-  endDate: '',
   location: '',
   userAttendCount: 0,
-  retrainPrice: 500,
+  retrainPrice: 0,
+  userCourseId: 0,
 });
 
-// 加载状态
 const loading = ref(true);
 
-// 按钮文本
-const buttonText = computed(() => {
-  if (courseInfo.value.userAttendCount === 0) {
-    return '确认预约';
-  } else if (courseInfo.value.userAttendCount > 0) {
-    return `确认预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
-  }
-  return '确认预约';
+// 是否需要支付复训费（非沙龙 + attend_count >= 1）
+const needRetrainFee = computed(() => {
+  return courseInfo.value.courseType !== 4
+    && courseInfo.value.userAttendCount >= 1
+    && courseInfo.value.retrainPrice > 0;
 });
 
-// 加载排期详情
+const buttonText = computed(() => {
+  if (needRetrainFee.value) {
+    return `立即预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
+  }
+  return '立即预约';
+});
+
+// 加载排期详情（URL 未直传展示数据时回退使用）
 const loadClassRecordDetail = async (classRecordId: number) => {
   try {
-    uni.showLoading({ title: '加载中...' })
-    loading.value = true;
     const result = await CourseApi.getClassRecords({
       course_id: courseInfo.value.courseId,
       page: 1,
       page_size: 100
     });
-
     const record = result.list.find((item: any) => item.id === classRecordId);
     if (record) {
       courseInfo.value.courseName = record.course_name;
-      courseInfo.value.period = record.period || '';
-      // start_time 格式: "HH:mm-HH:mm"，class_date 格式: "YYYY-MM-DD"
       courseInfo.value.startDate = record.class_date || '';
       courseInfo.value.startTime = record.start_time || '';
-      courseInfo.value.endDate = record.class_date || '';
       courseInfo.value.location = record.location;
     }
-    uni.hideLoading()
   } catch (error) {
     console.error('加载排期详情失败:', error);
-    uni.hideLoading()
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none'
-    });
-  } finally {
-    loading.value = false;
+    uni.showToast({ title: '加载失败', icon: 'none' });
   }
 };
 
-// 加载用户上课次数
-const loadUserAttendCount = async (userCourseId: number) => {
+/**
+ * 通过 getMyCourses 获取用户在指定课程的 attend_count、retrain_price
+ * 沙龙课程（type=4）不需要查询
+ */
+const loadUserCourseInfo = async (courseId: number) => {
+  if (courseInfo.value.courseType === 4) return;
   try {
-    uni.showLoading({ title: '加载中...' })
-    const result = await CourseApi.getAcademyProgress();
-    const userCourse = result.find((item: any) => item.id === userCourseId);
-    if (userCourse) {
-      courseInfo.value.userAttendCount = userCourse.attend_count || 0;
+    const result = await UserApi.getMyCourses({ page: 1, page_size: 100 });
+    const list = result?.list || result || [];
+    const matched = list.find((item: any) => item.course_id === courseId);
+    if (matched) {
+      courseInfo.value.userAttendCount = matched.attend_count || 0;
+      courseInfo.value.retrainPrice = parseFloat(matched.retrain_price) || 0;
+      courseInfo.value.userCourseId = matched.id;
     }
-    uni.hideLoading()
   } catch (error) {
-    console.error('加载用户上课次数失败:', error);
-    uni.hideLoading()
-    uni.showToast({
-      title: '加载失败，请重试',
-      icon: 'none'
-    })
+    console.error('加载用户课程信息失败:', error);
   }
 };
 
-// 加载客服电话
 const loadCustomerServicePhone = async () => {
   try {
-    uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getSystemConfig({ key: 'customer_service_phone' });
     customerServicePhone.value = result.value;
-    uni.hideLoading()
   } catch (error) {
     console.error('加载客服电话失败:', error);
-    uni.hideLoading()
   }
 };
 
-// 提交预约
 const handleSubmit = async () => {
-  const isRetrain = courseInfo.value.userAttendCount > 0;
-  const modalContent = isRetrain
-    ? `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`
-    : '确定要预约该课程吗？';
-
-  uni.showModal({
-    title: '预约确认',
-    content: modalContent,
-    confirmText: '确定',
-    cancelText: '取消',
-    success: async (res) => {
-      if (res.confirm) {
-        // 先弹出订阅消息授权（不阻塞后续流程）
-        await requestSubscribe()
-
-        if (isRetrain) {
+  if (needRetrainFee.value) {
+    // 复训：弹窗确认后跳转订单页走微信支付
+    uni.showModal({
+      title: '预约确认',
+      content: `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？费用支付后无法取消预约且不退费。`,
+      confirmText: '确定',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          const q = [
+            `courseId=${courseInfo.value.courseId}`,
+            `classRecordId=${courseInfo.value.classRecordId}`,
+            `userCourseId=${courseInfo.value.userCourseId}`,
+            `isRetrain=1`
+          ].join('&');
           uni.navigateTo({
-            url: `/pages/order/confirm/index?classRecordId=${courseInfo.value.classRecordId}&isRetrain=1`,
+            url: `/pages/order/confirm/index?${q}`,
           });
-        } else {
+        }
+      },
+    });
+  } else {
+    // 首次预约：直接创建
+    uni.showModal({
+      title: '预约确认',
+      content: '确定要预约该课程吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      success: async (res) => {
+        if (res.confirm) {
+          await requestSubscribe();
           try {
             await CourseApi.createAppointment({
               class_record_id: courseInfo.value.classRecordId
             });
-
-            uni.showToast({
-              title: '预约成功',
-              icon: 'success',
-              duration: 2000,
-            });
-
-            setTimeout(() => {
-              uni.navigateBack();
-            }, 2000);
+            uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 });
+            setTimeout(() => { uni.navigateBack(); }, 2000);
           } catch (error) {
             console.error('预约失败:', error);
           }
         }
-      }
-    },
-  });
+      },
+    });
+  }
 };
 
-onLoad((options: any) => {
+onLoad(async (options: any) => {
   if (options?.classRecordId) {
     courseInfo.value.classRecordId = Number(options.classRecordId);
   }
   if (options?.courseId) {
     courseInfo.value.courseId = Number(options.courseId);
   }
+  if (options?.courseType) {
+    courseInfo.value.courseType = Number(options.courseType);
+  }
 
-  // 优先使用 URL 直传的展示数据（避免二次 API 请求）
+  // 优先使用 URL 直传的展示数据
   if (options?.courseName) {
     courseInfo.value.courseName = decodeURIComponent(options.courseName);
   }
@@ -230,16 +223,18 @@ onLoad((options: any) => {
     courseInfo.value.location = decodeURIComponent(options.location);
   }
 
-  // 如果 URL 没有直传数据，才通过 API 加载
+  // URL 没有展示数据时通过 API 加载
   if (!courseInfo.value.courseName && courseInfo.value.classRecordId && courseInfo.value.courseId) {
     loadClassRecordDetail(courseInfo.value.classRecordId);
   } else {
     loading.value = false;
   }
 
-  const userCourseId = options?.userCourseId ? Number(options.userCourseId) : 0;
-  if (userCourseId) {
-    loadUserAttendCount(userCourseId);
+  // 加载用户课程信息（attend_count + retrain_price）
+  if (courseInfo.value.courseId) {
+    uni.showLoading({ title: '加载中...' });
+    await loadUserCourseInfo(courseInfo.value.courseId);
+    uni.hideLoading();
   }
 
   loadCustomerServicePhone();
@@ -289,6 +284,34 @@ onLoad((options: any) => {
     color: $td-error-color;
     font-weight: 600;
   }
+}
+
+// 复训费提示卡片
+.retrain-card {
+  margin-top: 32rpx;
+  background-color: #FFF3F0;
+  border-radius: var(--td-radius-default);
+  padding: 32rpx;
+}
+
+.retrain-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $td-error-color;
+  margin-bottom: 12rpx;
+}
+
+.retrain-price {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: $td-error-color;
+  margin-bottom: 16rpx;
+}
+
+.retrain-notice {
+  font-size: 24rpx;
+  color: $td-text-color-secondary;
+  line-height: 1.6;
 }
 
 // 温馨提示样式

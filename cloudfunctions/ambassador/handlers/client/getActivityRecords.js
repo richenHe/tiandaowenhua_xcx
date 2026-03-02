@@ -39,7 +39,7 @@ module.exports = async (event, context) => {
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('start_time', { ascending: false });
 
     // 如果指定了活动类型，添加类型筛选
     if (activityType > 0) {

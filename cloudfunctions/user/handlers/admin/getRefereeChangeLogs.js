@@ -16,7 +16,7 @@ module.exports = async (event, context) => {
 
     // 查询变更日志
     let queryBuilder = db.from('referee_change_logs').select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     if (userId) {
       queryBuilder = queryBuilder.eq('user_id', userId);

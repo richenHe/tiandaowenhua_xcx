@@ -23,7 +23,7 @@ module.exports = async (event, context) => {
         { count: 'exact' }
       )
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('apply_time', { ascending: false });
 
     if (status !== undefined) {
       queryBuilder = queryBuilder.eq('status', status);

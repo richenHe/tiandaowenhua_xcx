@@ -14,7 +14,8 @@ module.exports = async (event, context) => {
     let queryBuilder = db.from('academy_materials')
       .select('id, title, category, image_url, video_url, content, tags, view_count, download_count, share_count, sort_order, created_at', { count: 'exact' })
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: false })
+      .order('id', { ascending: false });
 
     // 添加分类筛选
     if (category) {

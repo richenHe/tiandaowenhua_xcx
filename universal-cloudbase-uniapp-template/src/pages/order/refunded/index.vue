@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 状态卡片 -->
         <view class="status-card">
-          <view class="status-icon">💰</view>
+          <view class="status-icon"><icon type="success_no_circle" size="48" color="white"/></view>
           <view class="status-title">退款成功</view>
           <view class="status-desc">退款已原路返回，预计1-7个工作日到账</view>
         </view>

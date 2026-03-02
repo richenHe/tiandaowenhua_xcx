@@ -18,7 +18,8 @@ module.exports = async (event, context) => {
       .from('courses')
       .select('*', { count: 'exact' })
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: false })
+      .order('id', { ascending: false });
 
     // 添加类型过滤
     if (type) {

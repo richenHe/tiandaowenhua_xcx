@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
           type
         )
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('class_date', { ascending: false });
 
     // 添加课程过滤
     if (course_id) {

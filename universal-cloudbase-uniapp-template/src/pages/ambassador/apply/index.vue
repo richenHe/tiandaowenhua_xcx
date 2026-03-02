@@ -17,7 +17,7 @@
 
         <!-- 用户信息不完整提示 -->
         <view v-if="profileIncomplete" class="alert-box warning">
-          <view class="alert-icon">⚠️</view>
+          <view class="alert-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="alert-content">
             <view class="alert-title">请先完善个人资料</view>
             <view class="alert-message">申请大使需要姓名和手机号，请前往个人中心完善资料后再提交申请。</view>

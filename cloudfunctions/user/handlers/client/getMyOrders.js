@@ -25,7 +25,7 @@ module.exports = async (event, context) => {
         referee:users!fk_orders_referee(id, real_name, nickname)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {

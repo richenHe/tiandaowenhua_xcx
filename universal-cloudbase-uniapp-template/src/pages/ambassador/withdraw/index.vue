@@ -90,7 +90,7 @@
 
         <!-- 提现说明 -->
         <view class="alert-box info">
-          <view class="alert-icon">ℹ️</view>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <view class="alert-title">提现说明</view>
             <view class="alert-message">
@@ -128,7 +128,7 @@
         </view>
 
         <view v-if="withdrawRecords.length === 0 && !recordsLoading" class="empty-state">
-          <text class="empty-icon">📝</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无提现记录</text>
         </view>
 

@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 状态卡片 -->
         <view :class="['status-card', statusConfig.cardClass]">
-          <view class="status-icon">{{ statusConfig.icon }}</view>
+          <view class="status-icon"><icon :type="statusConfig.iconType" size="48" :color="statusConfig.iconColor"/></view>
           <view class="status-title">{{ statusConfig.title }}</view>
           <view class="status-desc">{{ statusConfig.desc }}</view>
         </view>
@@ -128,6 +128,8 @@ const refundInfo = ref<RefundStatusInfo>({
 interface StatusConfig {
   cardClass: string
   icon: string
+  iconType: string
+  iconColor: string
   title: string
   desc: string
 }
@@ -138,6 +140,8 @@ const statusConfig = computed<StatusConfig>(() => {
       return {
         cardClass: 'status-pending',
         icon: '🕐',
+        iconType: 'waiting',
+        iconColor: '#D4AF37',
         title: '退款审核中',
         desc: '您的退款申请已提交，请耐心等待审核'
       }
@@ -145,6 +149,8 @@ const statusConfig = computed<StatusConfig>(() => {
       return {
         cardClass: 'status-success',
         icon: '💰',
+        iconType: 'success_no_circle',
+        iconColor: 'white',
         title: '退款成功',
         desc: '退款已转账，请查收'
       }
@@ -152,6 +158,8 @@ const statusConfig = computed<StatusConfig>(() => {
       return {
         cardClass: 'status-rejected',
         icon: '❌',
+        iconType: 'cancel',
+        iconColor: 'white',
         title: '退款被驳回',
         desc: '您的退款申请已被驳回，请查看驳回原因'
       }
@@ -159,6 +167,8 @@ const statusConfig = computed<StatusConfig>(() => {
       return {
         cardClass: 'status-pending',
         icon: '📋',
+        iconType: 'info',
+        iconColor: '#666',
         title: '退款详情',
         desc: '查看退款信息'
       }

@@ -42,7 +42,7 @@ module.exports = async (event, context) => {
         created_at,
         user:users!fk_withdrawals_user(real_name, phone, ambassador_level, bank_name, bank_account_name, bank_account_number)
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('apply_time', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {

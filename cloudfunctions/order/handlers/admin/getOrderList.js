@@ -27,7 +27,7 @@ module.exports = async (event, context) => {
         user:users!fk_orders_user(id, real_name, phone),
         referee:users!fk_orders_referee(id, real_name, phone, referee_code)
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 支付状态筛选
     if (pay_status != null && pay_status !== '') {

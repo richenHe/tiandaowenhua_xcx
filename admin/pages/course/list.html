@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -20,6 +20,7 @@
     .type-initial { background: #e3f2fd; color: #1976d2; }
     .type-intensive { background: #fce4ec; color: #c2185b; }
     .type-consultation { background: #f3e5f5; color: #7b1fa2; }
+    .type-salon { background: #fff3e0; color: #e65100; }
 
     .status-tag {
       display: inline-block;
@@ -160,11 +161,11 @@
           </span>
         </template>
         
-        <!-- 操作列 -->
+        <!-- 操作列；咨询服务（type=3）暂停编辑 -->
         <template #operation="{ row }">
           <t-space>
-            <t-link theme="primary" @click="editCourse(row)">编辑</t-link>
-            <t-link theme="primary" @click="openCourseContract(row)">合同</t-link>
+            <t-link theme="primary" :disabled="row.type === 3" @click="row.type !== 3 && editCourse(row)">编辑</t-link>
+            <t-link v-if="row.type !== 4" theme="primary" @click="openCourseContract(row)">合同</t-link>
             <t-link 
               :theme="row.status === 1 ? 'warning' : 'success'" 
               @click="toggleStatus(row)"
@@ -194,12 +195,11 @@
         </t-form-item>
         
         <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
-        <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙 -->
+        <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙；咨询服务暂停新增/编辑 -->
         <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
           <t-select v-model="editForm.type" placeholder="请选择课程类型">
             <t-option :value="1" label="初探班"></t-option>
             <t-option :value="2" label="密训班"></t-option>
-            <t-option :value="3" label="咨询服务"></t-option>
             <t-option :value="4" label="沙龙"></t-option>
           </t-select>
         </t-form-item>
@@ -217,32 +217,35 @@
           />
         </t-form-item>
         
-        <t-form-item label="现价（元）" name="currentPrice" :rules="[{ required: true, message: '请输入课程现价' }]">
-          <t-input-number v-model="editForm.currentPrice" :min="0" :step="0.01" style="width:100%;" />
-        </t-form-item>
-        
-        <t-form-item label="原价（元）" name="originalPrice">
-          <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" />
-        </t-form-item>
-        
-        <t-form-item label="重训价（元）" name="retrainPrice">
-          <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" />
-        </t-form-item>
+        <!-- 沙龙课程(type=4)免费，隐藏价格/有效期/时长字段 -->
+        <template v-if="editForm.type !== 4">
+          <t-form-item label="现价（元）" name="currentPrice" :rules="[{ required: true, message: '请输入课程现价' }]">
+            <t-input-number v-model="editForm.currentPrice" :min="0" :step="0.01" style="width:100%;" />
+          </t-form-item>
+          
+          <t-form-item label="原价（元）" name="originalPrice">
+            <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" />
+          </t-form-item>
+          
+          <t-form-item label="重训价（元）" name="retrainPrice">
+            <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" />
+          </t-form-item>
 
-        <!-- courses.validity_days: 必填正整数，单位：天 -->
-        <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => val > 0, message: '有效期必须大于 0 天' }]">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="请输入天数" />
-            <span style="color:#666; font-size:13px;">天（例：365 = 1年，730 = 2年）</span>
-          </div>
-          <div style="font-size:12px; color:#999; margin-top:4px;">
-            购课/兑换后有效期 = 操作时间 + 有效期天数
-          </div>
-        </t-form-item>
+          <!-- courses.validity_days: 必填正整数，单位：天 -->
+          <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => val > 0, message: '有效期必须大于 0 天' }]">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="请输入天数" />
+              <span style="color:#666; font-size:13px;">天（例：365 = 1年，730 = 2年）</span>
+            </div>
+            <div style="font-size:12px; color:#999; margin-top:4px;">
+              购课/兑换后有效期 = 操作时间 + 有效期天数
+            </div>
+          </t-form-item>
 
-        <t-form-item label="课程时长" name="duration">
-          <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
-        </t-form-item>
+          <t-form-item label="课程时长" name="duration">
+            <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
+          </t-form-item>
+        </template>
         
         <t-form-item label="课程简介" name="description">
           <t-textarea v-model="editForm.description" placeholder="请输入课程简介" :maxlength="500" />
@@ -550,16 +553,17 @@
         // 保存课程，所有参数使用 camelCase，云函数负责转换
         const handleSave = async () => {
           try {
+            const isSalon = editForm.type === 4;
             const params = {
               name: editForm.name,
               nickname: editForm.nickname,
               type: editForm.type,
               coverImage: editForm.coverImage,
-              currentPrice: editForm.currentPrice,
-              originalPrice: editForm.originalPrice,
-              retrainPrice: editForm.retrainPrice,
-              validityDays: editForm.validityDays,
-              duration: editForm.duration,
+              currentPrice: isSalon ? 0 : editForm.currentPrice,
+              originalPrice: isSalon ? 0 : editForm.originalPrice,
+              retrainPrice: isSalon ? 0 : editForm.retrainPrice,
+              validityDays: isSalon ? null : editForm.validityDays,
+              duration: isSalon ? null : editForm.duration,
               description: editForm.description,
               content: editForm.content,
               outline: editForm.outline,
@@ -618,7 +622,7 @@
 
         // 获取类型样式类（DB type 为整数）
         const getTypeClass = (type) => {
-          const classMap = { 1: 'type-initial', 2: 'type-intensive', 3: 'type-consultation' };
+          const classMap = { 1: 'type-initial', 2: 'type-intensive', 3: 'type-consultation', 4: 'type-salon' };
           return classMap[type] || '';
         };
 

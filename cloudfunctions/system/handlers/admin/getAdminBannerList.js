@@ -13,7 +13,8 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('banners')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: false });
 
     if (keyword) {
       queryBuilder = queryBuilder.like('title', `%${keyword}%`);

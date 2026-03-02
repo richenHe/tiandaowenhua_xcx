@@ -12,7 +12,7 @@
 
         <!-- 使用说明 -->
         <view class="alert-box info">
-          <view class="alert-icon">💡</view>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <view class="alert-message">
               为传播大使提供精美海报和宣传文案，可一键保存或复制，用于朋友圈推广
@@ -108,7 +108,7 @@
 
         <!-- 使用技巧 -->
         <view class="alert-box warning">
-          <view class="alert-icon">💡</view>
+          <view class="alert-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="alert-content">
             <view class="alert-title">使用技巧</view>
             <view class="alert-message">

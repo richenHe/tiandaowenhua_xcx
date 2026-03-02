@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 订单状态 -->
         <view class="status-card status-card--pending">
-          <view class="status-icon">⏰</view>
+          <view class="status-icon"><icon type="waiting" size="48" color="#F57C00"/></view>
           <view class="status-title">等待支付</view>
           <view class="status-desc">请在15分钟内完成支付，超时订单将自动取消</view>
           <view v-if="countdown > 0" class="countdown">
@@ -57,7 +57,7 @@
 
         <!-- 温馨提示 -->
         <view class="t-alert t-alert--theme-warning">
-          <view class="t-alert__icon">💡</view>
+          <view class="t-alert__icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="t-alert__content">
             <view class="t-alert__message">支付成功后，您可以在"我的课程"中查看课程详情</view>
           </view>

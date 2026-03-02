@@ -43,7 +43,7 @@
 
         <!-- 活动说明 -->
         <view class="alert-box info">
-          <view class="alert-icon">ℹ️</view>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <view class="alert-message">
               <text style="font-weight: 500;">活动类型：</text>辅导员、会务义工、沙龙组织、其他<br/>
@@ -122,7 +122,7 @@
 
         <!-- 空状态 -->
         <view v-if="!loading && activityRecords.length === 0" class="empty-state">
-          <text class="empty-icon">📦</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无活动记录</text>
           <view style="margin-top: 32rpx;" @tap="goToApply">
             <button class="t-button t-button--theme-primary t-button--variant-outline">

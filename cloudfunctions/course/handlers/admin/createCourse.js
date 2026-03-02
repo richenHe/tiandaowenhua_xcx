@@ -4,7 +4,8 @@
  * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
  *
  * DB 表：courses
- * type 字段为整数：1=初探班, 2=密训班, 3=咨询服务
+ * type 字段为整数：1=初探班, 2=密训班, 3=咨询服务, 4=沙龙
+ * type=4（沙龙）时：免费课程，跳过价格/有效期校验，写入 price=0, validity_days=NULL
  *
  * @param {Object} event
  * @param {string}  event.name          - 课程名称（必填）
@@ -48,19 +49,23 @@ module.exports = async (event, context) => {
   const status = event.status;
 
   try {
-    // 参数验证（camelCase key）
-    const validation = validateRequired(
-      { name, type, currentPrice },
-      ['name', 'type', 'currentPrice']
-    );
+    const isSalon = parseInt(type) === 4;
+
+    // 参数验证：沙龙课程无需价格，其余类型 currentPrice 必填
+    const requiredFields = isSalon ? ['name', 'type'] : ['name', 'type', 'currentPrice'];
+    const requiredObj = isSalon ? { name, type } : { name, type, currentPrice };
+    const validation = validateRequired(requiredObj, requiredFields);
     if (!validation.valid) {
       return response.paramError(validation.message);
     }
 
-    // 有效期必填，且必须为正整数
-    const validityDaysParsed = validityDays != null ? parseInt(validityDays) : null;
-    if (!validityDaysParsed || validityDaysParsed <= 0) {
-      return response.paramError('课程有效期为必填项，请输入大于 0 的天数');
+    // 非沙龙课程：有效期必填且为正整数；沙龙课程：跳过，写入 NULL
+    let validityDaysParsed = null;
+    if (!isSalon) {
+      validityDaysParsed = validityDays != null ? parseInt(validityDays) : null;
+      if (!validityDaysParsed || validityDaysParsed <= 0) {
+        return response.paramError('课程有效期为必填项，请输入大于 0 的天数');
+      }
     }
 
     // camelCase → snake_case，写入 DB
@@ -73,11 +78,11 @@ module.exports = async (event, context) => {
       content: content || null,
       outline: outline || null,
       teacher: teacher || null,
-      duration: duration || null,
-      current_price: currentPrice,
-      original_price: originalPrice || currentPrice,
-      retrain_price: retrainPrice || 0,
-      allow_retrain: allowRetrain ? 1 : 0,
+      duration: isSalon ? null : (duration || null),
+      current_price: isSalon ? 0 : currentPrice,
+      original_price: isSalon ? 0 : (originalPrice || currentPrice),
+      retrain_price: isSalon ? 0 : (retrainPrice || 0),
+      allow_retrain: isSalon ? 0 : (allowRetrain ? 1 : 0),
       validity_days: validityDaysParsed,
       sort_order: sortOrder || 0,
       status: status !== undefined ? status : 1

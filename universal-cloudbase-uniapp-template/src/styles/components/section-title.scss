@@ -36,3 +36,12 @@
   display: none;
 }
 
+/* Section 标题前缀色块指示器（替代 emoji） */
+.section-icon {
+  width: 8rpx;
+  height: 32rpx;
+  border-radius: 4rpx;
+  background-color: $td-brand-color;
+  flex-shrink: 0;
+}
+

@@ -1,12 +1,11 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="确认订单" :showBack="true" />
+    <TdPageHeader :title="isRetrain ? '复训费支付' : '确认订单'" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
-      <!-- 订单内容 -->
       <view v-if="!isLoading" class="page-content">
         <!-- 课程信息 -->
-        <view class="t-section-title t-section-title--simple">📦 课程信息</view>
+        <view class="t-section-title t-section-title--simple">📦 {{ isRetrain ? '复训课程' : '课程信息' }}</view>
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="course-info">
@@ -21,7 +20,7 @@
               </view>
               <view class="course-details">
                 <view class="course-name">{{ courseInfo.name }}</view>
-                <view class="course-desc">{{ courseInfo.description }}</view>
+                <view class="course-desc">{{ isRetrain ? '复训费用' : courseInfo.description }}</view>
                 <view class="course-price">¥{{ formatPrice(courseInfo.price) }}</view>
               </view>
             </view>
@@ -43,36 +42,42 @@
           </view>
         </view>
 
-        <!-- 推荐人信息 -->
-        <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
-        <view
-          class="t-card t-card--bordered mb-l"
-          :class="refereeLocked ? 'referee-card--locked' : 't-card--hoverable'"
-          @click="goToSelectReferee"
-        >
-          <view class="t-card__body">
-            <view class="referee-info">
-              <view class="referee-left">
-                <view class="t-avatar" :class="refereeLocked ? 't-avatar--theme-locked' : 't-avatar--theme-primary'">
-                  <text class="t-avatar__text">{{ refereeInfo.name.charAt(0) }}</text>
-                </view>
-                <view class="referee-details">
-                  <view class="referee-name" :class="{ 'referee-name--locked': refereeLocked }">
-                    {{ refereeInfo.name }}
+        <!-- 推荐人信息（复训订单不显示） -->
+        <template v-if="!isRetrain">
+          <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
+          <view
+            class="t-card t-card--bordered mb-l"
+            :class="refereeLocked ? 'referee-card--locked' : 't-card--hoverable'"
+            @click="goToSelectReferee"
+          >
+            <view class="t-card__body">
+              <view class="referee-info">
+                <view class="referee-left">
+                  <view class="t-avatar" :class="refereeLocked ? 't-avatar--theme-locked' : 't-avatar--theme-primary'">
+                    <text class="t-avatar__text">{{ refereeInfo.name.charAt(0) }}</text>
                   </view>
-                  <view class="t-badge--standalone t-badge--theme-warning t-badge--size-small">
-                    {{ refereeInfo.level }}
+                  <view class="referee-details">
+                    <view class="referee-name" :class="{ 'referee-name--locked': refereeLocked }">
+                      {{ refereeInfo.name }}
+                    </view>
+                    <view class="t-badge--standalone t-badge--theme-warning t-badge--size-small">
+                      {{ refereeInfo.level }}
+                    </view>
                   </view>
                 </view>
+                <view v-if="refereeLocked" class="locked-indicator">
+                  <text class="locked-icon">🔒</text>
+                  <text class="locked-text">无法修改</text>
+                </view>
+                <text v-else class="arrow-icon">›</text>
               </view>
-              <!-- 锁定状态显示锁图标+提示文字；未锁定显示右箭头 -->
-              <view v-if="refereeLocked" class="locked-indicator">
-                <text class="locked-icon">🔒</text>
-                <text class="locked-text">无法修改</text>
-              </view>
-              <text v-else class="arrow-icon">›</text>
             </view>
           </view>
+        </template>
+
+        <!-- 复训提示（复训订单时显示） -->
+        <view v-if="isRetrain" class="retrain-notice-card">
+          <view class="retrain-notice-text">费用支付后无法取消预约且不退费，请确定好来上课再支付</view>
         </view>
 
         <!-- 订单金额 -->
@@ -80,10 +85,10 @@
         <view class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
             <view class="amount-row">
-              <text class="amount-label">课程价格</text>
+              <text class="amount-label">{{ isRetrain ? '复训费' : '课程价格' }}</text>
               <text class="amount-value">¥{{ formatPrice(courseInfo.price) }}</text>
             </view>
-            <view class="amount-row">
+            <view v-if="!isRetrain" class="amount-row">
               <text class="amount-label">优惠</text>
               <text class="amount-value">-¥{{ formatPrice(discount) }}</text>
             </view>
@@ -119,7 +124,29 @@ import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi, CourseApi, OrderApi } from '@/api';
 import { formatPrice } from '@/utils';
 
-// 课程信息
+const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
+
+/** 请求订阅消息授权 */
+const requestSubscribe = (): Promise<void> => {
+  return new Promise((resolve) => {
+    // #ifdef MP-WEIXIN
+    uni.requestSubscribeMessage({
+      tmplIds: [COURSE_REMINDER_TMPL_ID],
+      complete: () => resolve()
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    resolve()
+    // #endif
+  })
+}
+
+// 是否为复训订单
+const isRetrain = ref(false);
+// 复训相关参数
+const classRecordId = ref(0);
+const userCourseId = ref(0);
+
 const courseInfo = ref({
   id: 0,
   name: '',
@@ -130,106 +157,86 @@ const courseInfo = ref({
   gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
 });
 
-// 用户信息
-const userInfo = ref({
-  name: '',
-  phone: '',
-});
+const userInfo = ref({ name: '', phone: '' });
 
-// 推荐人信息
-const refereeInfo = ref({
-  id: 0,
-  name: '',
-  level: '',
-});
-
-// 推荐人是否已锁定（首次支付成功后锁定）
+const refereeInfo = ref({ id: 0, name: '', level: '' });
 const refereeLocked = ref(false);
 
-// 加载状态
 const isLoading = ref(true);
 
-// 加载页面数据
 const loadPageData = async () => {
   try {
     uni.showLoading({ title: '加载中...' });
     isLoading.value = true;
-    // 从URL参数获取课程ID
+
     const pages = getCurrentPages();
     const currentPage = pages[pages.length - 1];
     const options = currentPage.options as any;
     const courseId = parseInt(options.courseId || '0');
 
+    // 解析复训参数
+    if (options.isRetrain === '1') {
+      isRetrain.value = true;
+      classRecordId.value = parseInt(options.classRecordId || '0');
+      userCourseId.value = parseInt(options.userCourseId || '0');
+    }
+
     if (!courseId) {
       isLoading.value = false;
       uni.hideLoading();
-      uni.showToast({
-        title: '课程ID不存在',
-        icon: 'none'
-      });
+      uni.showToast({ title: '课程ID不存在', icon: 'none' });
       return;
     }
 
-    // 并行加载用户信息和课程信息
     const [profile, course] = await Promise.all([
       UserApi.getProfile(),
       CourseApi.getDetail(courseId)
     ]);
 
-    // 更新用户信息
     userInfo.value = {
       name: profile.real_name || '未设置',
       phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''
     };
 
-    // 更新课程信息
+    // 复训订单使用 retrain_price，普通订单使用 current_price
+    const price = isRetrain.value
+      ? (parseFloat(course.retrain_price) || 0)
+      : (course.current_price || 0);
+
     courseInfo.value = {
       id: course.id,
       name: course.name,
       description: course.description || '',
-      price: course.current_price || 0,
+      price,
       coverImage: course.cover_image || '',
       icon: getCourseIcon(course.type),
       gradient: getCourseGradient(course.type)
     };
 
-    // 如果有推荐人，直接使用返回的推荐人信息
-    if (profile.referee_id && profile.referee_name) {
+    // 推荐人信息（仅普通订单需要）
+    if (!isRetrain.value && profile.referee_id && profile.referee_name) {
       refereeInfo.value = {
         id: profile.referee_id,
         name: profile.referee_name,
         level: getAmbassadorLevelName(profile.referee_level || 0)
       };
-      // referee_confirmed_at 不为空表示首次支付已完成，推荐人永久锁定
       refereeLocked.value = !!profile.referee_confirmed_at;
-      console.log('📌 已设置推荐人:', refereeInfo.value, '锁定状态:', refereeLocked.value);
-    } else {
-      console.log('📌 未设置推荐人');
     }
     uni.hideLoading();
   } catch (error) {
     console.error('加载页面数据失败:', error);
     uni.hideLoading();
-    uni.showToast({
-      title: '加载失败，请重试',
-      icon: 'none'
-    });
+    uni.showToast({ title: '加载失败，请重试', icon: 'none' });
   } finally {
     isLoading.value = false;
   }
 };
 
-// 获取课程图标
 const getCourseIcon = (type: number): string => {
-  const iconMap: Record<number, string> = {
-    1: '📚',
-    2: '🎓',
-    3: '🔄'
-  };
+  const iconMap: Record<number, string> = { 1: '📚', 2: '🎓', 3: '🔄' };
   return iconMap[type] || '📚';
 };
 
-// 获取课程渐变色
 const getCourseGradient = (type: number): string => {
   const gradientMap: Record<number, string> = {
     1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -239,55 +246,72 @@ const getCourseGradient = (type: number): string => {
   return gradientMap[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
 };
 
-// 获取大使等级名称
 const getAmbassadorLevelName = (level: number): string => {
   const levelMap: Record<number, string> = {
-    0: '普通用户',
-    1: '准青鸾大使',
-    2: '青鸾大使',
-    3: '鸿鹄大使',
-    4: '金凤大使'
+    0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使', 4: '金凤大使'
   };
   return levelMap[level] || '普通用户';
 };
 
-// 页面加载时获取数据
 onMounted(() => {
   loadPageData();
 });
 
-// 优惠金额
 const discount = ref(0);
 
-// 实付金额
 const totalAmount = computed(() => {
-  return courseInfo.value.price - discount.value;
+  return isRetrain.value ? courseInfo.value.price : courseInfo.value.price - discount.value;
 });
 
-// 跳转到选择推荐人页面（推荐人锁定时提示无法修改）
 const goToSelectReferee = () => {
   if (refereeLocked.value) {
-    uni.showToast({
-      title: '推荐人已锁定，无法修改',
-      icon: 'none',
-      duration: 2000
-    });
+    uni.showToast({ title: '推荐人已锁定，无法修改', icon: 'none', duration: 2000 });
     return;
   }
-  uni.navigateTo({
-    url: '/pages/order/select-referee/index',
+  uni.navigateTo({ url: '/pages/order/select-referee/index' });
+};
+
+const handleConfirm = () => {
+  if (isRetrain.value) {
+    handleRetrainConfirm();
+  } else {
+    handleCourseConfirm();
+  }
+};
+
+/** 复训订单确认 */
+const handleRetrainConfirm = () => {
+  uni.showModal({
+    title: '复训费支付',
+    content: `确认支付复训费 ¥${formatPrice(totalAmount.value)} 吗？\n支付后无法取消预约且不退费。`,
+    confirmText: '确定',
+    cancelText: '取消',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          const orderResult = await OrderApi.create({
+            order_type: 2,
+            item_id: userCourseId.value,
+            class_record_id: classRecordId.value
+          });
+
+          // 跳转支付页，支付成功后回调会自动创建预约
+          uni.navigateTo({
+            url: `/pages/order/payment/index?orderNo=${orderResult.order_no}&isRetrain=1`,
+          });
+        } catch (error: any) {
+          console.error('创建复训订单失败:', error);
+          uni.showToast({ title: error.message || '创建订单失败', icon: 'none' });
+        }
+      }
+    }
   });
 };
 
-// 点击确认支付按钮 - 显示原生确认弹窗
-const handleConfirm = () => {
-  // 检查推荐人是否已设置
+/** 普通课程订单确认 */
+const handleCourseConfirm = () => {
   if (refereeInfo.value.id === 0 || refereeInfo.value.name === '未设置') {
-    uni.showToast({
-      title: '请选择推荐人',
-      icon: 'none',
-      duration: 2000
-    });
+    uni.showToast({ title: '请选择推荐人', icon: 'none', duration: 2000 });
     return;
   }
 
@@ -298,28 +322,20 @@ const handleConfirm = () => {
     cancelText: '取消',
     success: async (res) => {
       if (res.confirm) {
-        // 用户点击确定，创建订单
         try {
           const orderResult = await OrderApi.create({
-            order_type: 1, // 课程订单
+            order_type: 1,
             item_id: courseInfo.value.id,
             referee_id: refereeInfo.value.id || undefined
           });
 
-          // 创建订单成功，跳转到支付页面
           uni.navigateTo({
             url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`,
           });
         } catch (error: any) {
           console.error('创建订单失败:', error);
-          uni.showToast({
-            title: error.message || '创建订单失败',
-            icon: 'none'
-          });
+          uni.showToast({ title: error.message || '创建订单失败', icon: 'none' });
         }
-      } else if (res.cancel) {
-        // 用户点击取消
-        console.log('用户取消了支付');
       }
     }
   });
@@ -501,6 +517,20 @@ const handleConfirm = () => {
 .locked-text {
   font-size: 20rpx;
   color: $td-text-color-placeholder;
+}
+
+// 复训提示卡片
+.retrain-notice-card {
+  margin-bottom: 32rpx;
+  background-color: #FFF3F0;
+  border-radius: $td-radius-default;
+  padding: 24rpx 32rpx;
+}
+
+.retrain-notice-text {
+  font-size: 24rpx;
+  color: $td-error-color;
+  line-height: 1.6;
 }
 
 // 金额行

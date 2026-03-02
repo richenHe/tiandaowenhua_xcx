@@ -22,7 +22,7 @@ module.exports = async (event, context) => {
         user:users!fk_contract_signatures_user(id, real_name, phone, avatar),
         template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 模板筛选
     if (template_id) {

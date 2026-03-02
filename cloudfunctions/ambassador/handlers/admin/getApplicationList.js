@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('ambassador_applications')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {

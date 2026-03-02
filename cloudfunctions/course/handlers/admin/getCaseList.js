@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
         view_count, like_count, sort_order, is_featured, status,
         created_at, updated_at
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));

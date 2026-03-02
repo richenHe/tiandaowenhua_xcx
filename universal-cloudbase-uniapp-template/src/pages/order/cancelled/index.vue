@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 订单状态卡片 -->
         <view :class="['status-card', statusClass]">
-          <view class="status-icon">{{ statusIcon }}</view>
+          <view class="status-icon"><icon type="cancel" size="48" color="#666"/></view>
           <view class="status-title">{{ statusTitle }}</view>
           <view class="status-desc">{{ statusDesc }}</view>
           <view v-if="orderInfo.cancelTime" class="cancel-time">

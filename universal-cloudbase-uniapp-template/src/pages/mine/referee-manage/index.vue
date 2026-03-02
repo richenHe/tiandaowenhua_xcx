@@ -61,7 +61,7 @@
 
         <!-- 修改规则说明 -->
         <view class="t-alert t-alert--info">
-          <text class="alert-icon">ℹ️</text>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <text class="alert-title">推荐人修改规则</text>
             <view class="alert-message">
@@ -75,7 +75,7 @@
 
         <!-- 推荐人资格说明 -->
         <view class="t-alert t-alert--warning">
-          <text class="alert-icon">⚠️</text>
+          <view class="alert-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="alert-content">
             <text class="alert-title">推荐人资格说明</text>
             <view class="alert-message">
@@ -88,7 +88,7 @@
 
         <!-- 已确认状态提示（条件显示） -->
         <view v-if="refereeInfo.confirmed" class="t-alert t-alert--success">
-          <text class="alert-icon">✅</text>
+          <view class="alert-icon"><icon type="success_no_circle" size="16" color="#00A870"/></view>
           <view class="alert-content">
             <text class="alert-message">
               推荐人已永久确认，不可再修改。确认时间：{{ refereeInfo.confirmDate }}

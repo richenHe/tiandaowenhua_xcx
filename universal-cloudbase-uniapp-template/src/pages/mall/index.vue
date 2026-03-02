@@ -91,7 +91,7 @@
         <view v-if="activeMainTab === 1">
           <!-- 课程说明 -->
           <view class="t-alert t-alert--success">
-            <text class="alert-icon">🎁</text>
+            <view class="alert-icon"><icon type="info" size="20" color="#E6A23C"/></view>
             <view class="alert-content">
               <text class="alert-message">使用积分兑换课程，开启智慧之旅！兑换后可在"我的课程"中查看。</text>
             </view>
@@ -140,7 +140,7 @@
 
           <!-- 兑换说明 -->
           <view class="t-alert t-alert--info">
-            <text class="alert-icon">ℹ️</text>
+            <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
             <view class="alert-content">
               <text class="alert-title">兑换说明</text>
               <view class="alert-message">

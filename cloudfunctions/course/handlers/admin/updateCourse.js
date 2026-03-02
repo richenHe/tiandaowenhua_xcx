@@ -4,7 +4,8 @@
  * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
  *
  * DB 表：courses
- * type 字段为整数：1=初探班, 2=密训班, 3=咨询服务
+ * type 字段为整数：1=初探班, 2=密训班, 3=咨询服务, 4=沙龙
+ * type=4（沙龙）时：跳过有效期校验和上架合同检查
  *
  * @param {Object} event
  * @param {number}  event.id            - 课程 ID（必填）
@@ -75,8 +76,10 @@ module.exports = async (event, context) => {
     if (originalPrice !== undefined) fieldsToUpdate.original_price = originalPrice;
     if (retrainPrice !== undefined) fieldsToUpdate.retrain_price = retrainPrice;
     if (allowRetrain !== undefined) fieldsToUpdate.allow_retrain = allowRetrain ? 1 : 0;
-    // validityDays 必须为正整数，不允许 null
-    if (validityDays !== undefined) {
+    // 沙龙课程(type=4)跳过有效期校验，其余类型必须为正整数
+    const effectiveType = type !== undefined ? parseInt(type) : course.type;
+    const isSalon = effectiveType === 4;
+    if (validityDays !== undefined && !isSalon) {
       const vd = parseInt(validityDays);
       if (!vd || vd <= 0) {
         return response.paramError('课程有效期为必填项，请输入大于 0 的天数');
@@ -91,8 +94,8 @@ module.exports = async (event, context) => {
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     if (status !== undefined) fieldsToUpdate.status = status;
 
-    // 上架前检查是否已配置学习服务协议模板
-    if (status === 1 && course.status !== 1) {
+    // 上架前检查是否已配置学习服务协议模板（沙龙课程无需合同，跳过检查）
+    if (status === 1 && course.status !== 1 && !isSalon) {
       const { data: templates } = await db
         .from('contract_templates')
         .select('id')

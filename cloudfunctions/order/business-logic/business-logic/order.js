@@ -81,7 +81,7 @@ async function generateUserCourseRecord({ user_id, order_id, course_id, _openid 
     buy_time: nowStr,
     expire_at: expireAt,
     is_gift: 0,
-    attend_count: 1,
+    attend_count: 0,
     status: 1
   });
 

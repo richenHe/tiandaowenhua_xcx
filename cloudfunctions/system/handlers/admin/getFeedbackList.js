@@ -39,7 +39,8 @@ module.exports = async (event, context) => {
         user:users!fk_feedbacks_user(real_name, phone),
         course:courses!fk_feedbacks_course(name)
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('priority', { ascending: false })
+      .order('id', { ascending: false });
 
     // 状态筛选
     if (status !== undefined && status !== null && status !== '') {

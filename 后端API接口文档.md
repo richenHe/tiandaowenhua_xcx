@@ -599,6 +599,12 @@ ELSE:
 
 > `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。购课时写入 `user_courses.expire_at = buy_time + validityDays 天`。
 
+> **沙龙课程（type=4）特殊处理**（2026-03 新增）：
+> - `currentPrice` 不再必填，服务端自动设为 0
+> - `validityDays` 不再必填，服务端自动设为 NULL
+> - `original_price`、`retrain_price`、`allow_retrain` 均自动设为 0
+> - `duration` 自动设为 NULL
+
 ### 🔴 2.5 课程管理 - 更新课程
 **接口**: `PUT /api/admin/course/update`
 
@@ -613,6 +619,10 @@ ELSE:
 ```
 
 > `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。
+
+> **沙龙课程（type=4）特殊处理**（2026-03 新增）：
+> - `validityDays` 跳过正整数校验
+> - 上架(status=1)时不检查学习服务协议模板
 
 ### 🔴 2.6 课程管理 - 删除课程
 **接口**: `DELETE /api/admin/course/delete`
@@ -1361,148 +1371,71 @@ ELSE:
 ```
 
 ### 🔵 4.2 创建预约
-**接口**: `POST /api/appointment/create`
+**接口**: `POST /api/appointment/create`  
+**action**: `createAppointment`（course 云函数）
 
-**接口概述**: 创建课程预约,根据上课次数判断是否需要支付复训费
+**接口概述**: 创建课程预约（仅用于首次预约/沙龙预约；复训预约由支付回调自动创建）
 
 **请求参数**:
 ```json
 {
-  "class_record_id": 1,
-  "user_course_id": 10
+  "class_record_id": 1
 }
 ```
 
-**业务逻辑**:
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| class_record_id | Number | 是 | 上课排期ID（支持 classRecordId 或 class_record_id） |
+
+**业务逻辑**（2026-03-02 更新）:
 ```
-1. 验证用户已购买该课程(查询 user_courses)
-2. 获取用户该课程已上课次数(attend_count)
-3. 判断是否需要支付复训费:
-   
-   IF attend_count = 1:
-       首次预约,无需支付
-       检查预约截止时间
-       检查名额
-       创建预约记录(appointments 表)
-       返回:
-       {
-         "need_pay": false,
-         "appointment_id": 100,
-         "class_date": "2024-02-01"
-       }
-   
-   ELSE IF attend_count > 1:
-       需要支付复训费
-       检查复训截止时间(开课前3天)
-       调用"创建订单接口"(order_type=2)
-       返回:
-       {
-         "need_pay": true,
-         "order_no": "ORD202401150001",
-         "retrain_price": 500.00,
-         "payment_url": "/pages/order/payment/index?order_no=xxx"
-       }
+1. 查询 class_records 确认排期存在且 status=1
+2. 查询 courses.type 判断是否沙龙(type=4)
+3. 沙龙课程：自动创建 user_courses（若不存在）
+4. 非沙龙课程：
+   a. 验证 user_courses 存在（已购买）
+   b. 复训校验：attend_count >= 1 时，查询 orders 表
+      是否有已支付(pay_status=1)的复训订单(order_type=2)
+      关联此 class_record_id，未支付则拒绝
+5. 检查重复预约（status IN [0,1]）
+6. 检查名额
+7. 创建预约记录 → 更新 booked_quota
 ```
 
-**特别说明**:
-- `attend_count = 1` 表示首次上课(初始化值)
-- 首次上课后,签到时 `attend_count` 更新为 2
-- 第二次预约时(`attend_count > 1`)才需要复训费
+**特别说明（2026-03-02 更新）**:
+- `attend_count` 初始值为 **0**（购课时写入），签到后 +1
+- `attend_count = 0` 表示首次上课，直接预约无需支付
+- `attend_count >= 1` 且非沙龙 → 必须先通过订单确认页支付复训费（order_type=2），支付回调自动创建预约
+- 沙龙课程（type=4）免复训费
 
 **响应数据**:
-
-首次预约(无需支付):
 ```json
 {
-  "need_pay": false,
   "appointment_id": 100,
   "class_record_id": 1,
-  "class_date": "2024-02-01",
-  "class_location": "深圳市南山区",
-  "need_subscribe_message": true
-}
-```
-
-复训预约(需支付):
-```json
-{
-  "need_pay": true,
-  "order_no": "ORD202401150001",
-  "retrain_price": 500.00,
-  "class_record_id": 1,
-  "class_date": "2024-02-01",
-  "payment_url": "/pages/order/payment/index?order_no=ORD202401150001"
+  "class_date": "2026-03-01",
+  "start_time": "09:00-17:00"
 }
 ```
 
 **数据库设计注意点**:
 - appointments 表:
-  - `is_retrain`: BOOLEAN,是否复训
+  - `is_retrain`: 0首次/1复训
   - `order_no`: VARCHAR(32),关联订单号(复训专用)
+  - `user_course_id`: INT, NOT NULL
 - 建议添加索引: (user_id, class_record_id)
 
-### 🔵 4.3 取消预约
-**接口**: `DELETE /api/appointment/cancel`
+> **沙龙课程（type=4）特殊处理**（2026-03 新增）：
+> - 跳过 user_courses 存在性校验，改为自动创建 user_courses 记录（buy_price=0, order_no=null, status=1, attend_count=0）
+> - 其余逻辑不变：名额检查、重复预约检查、booked_quota+1
 
-**请求参数**:
-```json
-{
-  "appointment_id": 100,
-  "cancel_reason": "时间冲突"
-}
-```
+### 🔵 4.3 取消预约（已废弃）
+**接口**: `DELETE /api/appointment/cancel`  
+**action**: `cancelAppointment`（course 云函数）
 
-**业务规则**:
-- 复训：开课前3天可取消并退款
-- 超过3天不可取消
-
-**业务逻辑**:
-```
-1. 查询预约信息:
-   SELECT a.*, cr.class_date, cr.course_id
-   FROM appointments a
-   JOIN class_records cr ON a.class_record_id = cr.id
-   WHERE a.id = ? AND a.user_id = ?
-2. 验证预约状态:
-   IF status = 1:  // 已签到
-       返回错误: "已签到的预约无法取消"
-   IF status = 3:  // 已取消
-       返回错误: "该预约已取消"
-3. 检查取消时限:
-   距离开课天数 = DATEDIFF(class_date, NOW())
-   
-   IF is_retrain = 1:  // 复训预约
-       IF 距离开课天数 < 3:
-           返回错误: "开课前3天内无法取消复训预约"
-       can_refund = true
-   ELSE:  // 首次预约
-       IF 距离开课天数 < 1:
-           返回错误: "开课前1天内无法取消预约"
-       can_refund = false
-4. 开启事务:
-   a. 更新预约状态:
-      UPDATE appointments SET
-        status = 3,  // 已取消
-        cancel_reason = ?,
-        cancel_time = NOW()
-      WHERE id = ?
-   
-   b. 释放课程名额:
-      UPDATE class_records SET
-        booked_quota = booked_quota - 1
-      WHERE id = ?
-   
-   c. 如果是复训且需要退款:
-      IF is_retrain = 1 AND can_refund:
-         查询订单: SELECT * FROM orders WHERE order_no = appointment.order_no
-         IF order.pay_status = 1:
-            - 调用微信退款接口
-            - 更新订单状态: pay_status = 4 (已退款)
-            - 记录退款时间: refund_time = NOW()
-5. 提交事务
-6. 发送取消通知给用户
-7. 返回取消成功及退款信息(如有)
-```
+> **⚠️ 2026-03-02 废弃**：复训费支付后不可取消，统一禁止所有预约的取消操作。
+> 接口仍存在但始终返回错误 `"当前不支持取消预约"`。
+> 前端已移除取消预约按钮和"已取消"Tab。
 
 ### 🔵 4.4 我的预约
 **接口**: `GET /api/appointment/my`
@@ -3820,6 +3753,17 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ```
 
 **新增（2026-02-28）**：第四步 - 标记缺席。已结束排期（status=3）中仍为待上课（appointments.status=0）的预约 → 更新为缺席（appointments.status=2）。
+
+**新增（2026-03-02）沙龙课程(type=4)专项逻辑**：
+- **第二步（排期变为进行中后）**：沙龙自动签到 — 查询 courses.type=4 的进行中排期，将其 appointments.status=0 更新为 status=1（已签到），同时写入 checkin_time
+- **第五步（标记缺席后）**：沙龙结束清理 — 查询 courses.type=4 的已结束排期，硬删除 class_records + user_courses + courses 记录，appointments 保留
+
+**响应数据新增字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| salonAutoCheckin | Number | 沙龙自动签到预约数 |
+| salonCleanedCourses | Number | 沙龙清理课程数 |
+| salonCleanedRecords | Number | 沙龙清理排期数 |
 
 ---
 

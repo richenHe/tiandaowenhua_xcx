@@ -27,6 +27,14 @@
 | MT-17 | 后台生成签到码（generateCheckinQRCode） | ✅ 已通过 | 2026-02-28 class_record_id=26，qrcode_url=cloud://...，scene=ci=26 |
 | MT-18 | 扫码签到（scanCheckin） | ✅ 已通过 | 2026-02-28 扫 class_record_id=26 码，appointments id=19 status=1，checkin_time=13:43:43 |
 | MT-19 | 缺席自动标记定时器 | ✅ 已通过 | 2026-02-28 MCP 触发定时器，appointment id=20 从 status=0 → status=2（缺席） |
+| MT-22 | 排课状态自动更新（定时任务全流转） | ⚠️ 部分通过 | 缺席自动标记（第四步）已通过（见MT-19）；排期 status 1→2→3 状态流转待补充验证 |
+| MT-23 | 订单级推荐人修改（支付前） | ⏳ 待测 | 依赖有 pay_status=0 待支付订单 + 两个 level≥1 大使账号 |
+| MT-24 | 推荐人资格验证失败（准青鸾推荐密训班） | ⏳ 待测 | 需将 user_id=34 升至 level=1 后设为 user_id=30 的推荐人 |
+| MT-25 | 课程续期兑换（exchangeCourse） | ✅ 已通过 | S3.6b 自动化测试已覆盖 exchangeCourse 全链路（quota_exchange_records + merit_points 变化） |
+| MT-26 | 签到二维码生成与扫码签到全链路 | ✅ 已通过 | MT-17（生成二维码）+ MT-18（扫码签到 + attend_count+1）均已验证通过 |
+| MT-27 | 复训预约流程（attend_count≥1后再次预约） | ⏳ 待测 | 需 user_id=30 对某课程 attend_count≥1，且课程 retrain_price>0 |
+| MT-28 | 预览模式功能拦截验证（profile_completed=0） | ⏳ 待测 | 需准备 profile_completed=0 的测试账号 |
+| MT-29 | 协议到期与续约（管理员手动续签） | ⏳ 待测 | 需存在 contract_end 在 30 天内的 contract_signatures 记录 |
 
 ---
 
@@ -91,6 +99,8 @@
 | F9 系统公共 | ✅ | 2026-02-28 |
 | F10 跨模块验证 | ⏳ 待测 | — |
 | F11 志愿活动 | ✅ | 2026-02-28 |
+| F12 课程学习合同 | ⏳ 待测 | 已加入 integration-test.html（不含 signCourseContract，见 MT-26） |
+| F13 退款申请流程 | ⏳ 待测 | 已加入 integration-test.html（不含 markRefundTransferred，见 MT-20） |
 
 ---
 
@@ -202,9 +212,13 @@ WHERE cr.status=3 AND a.status=0;
 
 ## 下一步计划
 
-1. **完成 MT-17** — 后台生成签到码，验证 checkin_qrcodes 入库
-2. **完成 MT-18** — 扫描 MT-17 生成的码，验证扫码签到全链路
-4. **完成 MT-19** — 验证缺席定时器（查 SQL 即可）
-5. **修复奖励发放逻辑** — 重写 `calculateAndGrantReward`，实现冻结解冻+互斥发放
-6. **重测 MT-04/MT-08~MT-10** — 奖励逻辑修复后重新验证支付全链路
-7. **运行 F10** — 跨模块数据完整性终极验证
+1. **修复奖励发放逻辑** — 重写 `calculateAndGrantReward`，实现冻结解冻+互斥发放（blocking MT-08~10）
+2. **重测 MT-04/MT-08~MT-10** — 奖励逻辑修复后重新验证微信支付全链路
+3. **运行 F12** — 课程学习合同自动化测试（createContractTemplate + checkCourseContract + 边界验证）
+4. **运行 F13** — 退款申请自动化测试（requestRefund → getRefundList → rejectRefund 清理闭环）
+5. **完成 MT-26(signcourse)** — 用真机扫码签署课程学习合同（需真实 docx 模板文件）
+6. **完成 MT-15/MT-16** — 大使申请写操作 + 驳回还原
+7. **完成 MT-17~MT-21** — 退款全链路手动测试（MT-17申请→MT-19驳回→MT-20标记已转账→MT-21回滚验证）
+8. **运行 F10** — 跨模块数据完整性终极验证
+9. **完成 MT-22（补充）** — 验证排期 status 1→2→3 状态流转（当前仅验证了缺席自动标记）
+10. **完成 MT-27~MT-29** — 复训预约、预览模式拦截、协议续签验证

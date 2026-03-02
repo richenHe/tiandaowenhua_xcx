@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
       .from('users')
       .select('id, real_name, phone, avatar, ambassador_level, created_at', { count: 'exact' })
       .eq('referee_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

@@ -1,6 +1,6 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="初探班详情" :showBack="true" />
+    <TdPageHeader title="课程详情" :showBack="true" />
 
     <scroll-view scroll-y class="scroll-area">
       <!-- 课程内容 -->
@@ -22,8 +22,8 @@
             <view class="t-card__body">
               <view class="course-title">{{ courseInfo.name || '课程名称' }}</view>
               <view class="course-meta">
-                <text class="course-price">¥{{ formatPrice(courseInfo.price) }}</text>
-                <view class="t-badge--standalone t-badge--theme-success">
+                <text class="course-price">{{ courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price) }}</text>
+                <view v-if="courseInfo.type !== 4" class="t-badge--standalone t-badge--theme-success">
                   已有{{ courseInfo.soldCount }}人购买
                 </view>
               </view>
@@ -88,7 +88,7 @@
 
     <!-- 固定底部 -->
     <view class="fixed-bottom">
-      <text class="bottom-price">¥{{ formatPrice(courseInfo.price) }}</text>
+      <text class="bottom-price">{{ courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price) }}</text>
       <button
         class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
         @click="handleBuy"
@@ -133,7 +133,7 @@ const courseInfo = ref({
 });
 
 const getCourseEmoji = (type: number): string => {
-  const map: Record<number, string> = { 1: '📚', 2: '🎓', 3: '🔄' };
+  const map: Record<number, string> = { 1: '📚', 2: '🎓', 3: '🔄', 4: '🎤' };
   return map[type] || '📚';
 };
 
@@ -141,7 +141,8 @@ const getCourseGradient = (type: number): string => {
   const map: Record<number, string> = {
     1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    3: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+    3: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    4: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)'
   };
   return map[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
 };
@@ -218,11 +219,10 @@ onShow(() => {
   }
 });
 
-// 按钮文本(根据购买状态)
+// 按钮文本：沙龙课程(type=4)始终显示"立即预约"
 const buttonText = computed(() => {
-  if (courseInfo.value.is_purchased) {
-    return '立即预约';
-  }
+  if (courseInfo.value.type === 4) return '立即预约';
+  if (courseInfo.value.is_purchased) return '立即预约';
   return '立即购买';
 });
 
@@ -239,13 +239,13 @@ const handleBuy = () => {
     return;
   }
 
-  if (courseInfo.value.is_purchased) {
-    // 已购买：先进入课程计划页选择排期，再进入预约确认
+  if (courseInfo.value.type === 4 || courseInfo.value.is_purchased) {
+    // 沙龙课程(免费)或已购买：进入课程计划页选择排期
     uni.navigateTo({
-      url: `/pages/course/schedule/index?course_id=${courseInfo.value.id}`,
+      url: `/pages/course/schedule/index?course_id=${courseInfo.value.id}&course_type=${courseInfo.value.type}`,
     });
   } else {
-    // 未购买,跳转到订单确认页
+    // 未购买：跳转到订单确认页
     uni.navigateTo({
       url: `/pages/order/confirm/index?courseId=${courseInfo.value.id}`,
     });

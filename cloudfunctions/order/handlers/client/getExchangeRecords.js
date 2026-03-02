@@ -30,7 +30,7 @@ module.exports = async (event, context) => {
         goods:mall_goods!fk_mall_exchange_records_goods(goods_name, goods_image)
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 添加状态筛选
     if (status !== undefined && status !== null && status !== '') {

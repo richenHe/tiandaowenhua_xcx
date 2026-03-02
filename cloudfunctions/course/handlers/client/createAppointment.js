@@ -1,7 +1,7 @@
 /**
  * 创建预约（客户端接口�? */
-const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { db, findOne, insert } = require('../../common/db');
+const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
   const { classRecordId, class_record_id } = event;
@@ -34,16 +34,64 @@ module.exports = async (event, context) => {
 
     const classRecord = classRecords;
 
-    // 验证用户是否已购买该课程
-    const { data: userCourses, error: courseError } = await db
-      .from('user_courses')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('course_id', classRecord.course_id)
-      .single();
+    // 查询课程类型，用于沙龙课程特殊处理
+    const course = await findOne('courses', { id: classRecord.course_id });
+    const isSalon = course && course.type === 4;
 
-    if (courseError || !userCourses) {
-      return response.forbidden('您还未购买该课程');
+    let userCourseId;
+    if (isSalon) {
+      // 沙龙课程(type=4)：免费，若无 user_courses 记录则自动创建
+      const { data: existingUc } = await db
+        .from('user_courses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('course_id', classRecord.course_id)
+        .single();
+      if (existingUc) {
+        userCourseId = existingUc.id;
+      } else {
+        const now = formatDateTime(new Date());
+        const [newUc] = await insert('user_courses', {
+          user_id: user.id,
+          course_id: classRecord.course_id,
+          course_type: 4,
+          buy_price: 0,
+          order_no: null,
+          status: 1,
+          attend_count: 0,
+          created_at: now,
+          updated_at: now
+        });
+        userCourseId = newUc.id;
+      }
+    } else {
+      // 非沙龙课程：验证用户是否已购买
+      const { data: userCourses, error: courseError } = await db
+        .from('user_courses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('course_id', classRecord.course_id)
+        .single();
+      if (courseError || !userCourses) {
+        return response.forbidden('您还未购买该课程');
+      }
+      userCourseId = userCourses.id;
+
+      // 复训校验：attend_count >= 1 时必须已支付复训费
+      if ((userCourses.attend_count || 0) >= 1) {
+        const { data: retrainOrder } = await db
+          .from('orders')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('order_type', 2)
+          .eq('class_record_id', finalClassRecordId)
+          .eq('pay_status', 1)
+          .single();
+
+        if (!retrainOrder) {
+          return response.error('复训课程需先支付复训费');
+        }
+      }
     }
 
     // 检查是否已预约（0待上课/1已签到 均算已预约）
@@ -72,7 +120,7 @@ module.exports = async (event, context) => {
         _openid: user._openid || user.openid || '',
         course_id: classRecord.course_id,
         class_record_id: finalClassRecordId,
-        user_course_id: userCourses.id,
+        user_course_id: userCourseId,
         status: 0
       })
       .select()

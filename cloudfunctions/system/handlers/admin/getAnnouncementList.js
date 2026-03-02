@@ -26,7 +26,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('announcements')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 筛选条件
     if (keyword) {

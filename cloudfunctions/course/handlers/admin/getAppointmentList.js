@@ -40,7 +40,7 @@ module.exports = async (event, context) => {
           teacher
         )
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     if (course_id) {
       queryBuilder = queryBuilder.eq('course_id', parseInt(course_id));

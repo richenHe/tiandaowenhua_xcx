@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="./assets/css/tokens.css">
   <style>
     *{box-sizing:border-box}
+    /* 覆盖 tokens.css 为 admin 布局设置的 overflow:hidden，此页面是独立测试页，不用 t-layout 骨架 */
+    html,body{height:auto!important;overflow-y:auto!important}
     body{margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .app{max-width:1440px;margin:0 auto;padding:20px}
     .hdr{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -309,6 +311,21 @@ setup(){
         biz:[(d,raw)=>({r:'推荐统计接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
         sql:(C)=>`-- 交叉验证: 推荐人数
 SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = ${C.userId||U.id}`
+      },
+      // ── S1.6: 边界 — updateReferee 应返回错误（已锁定或参数校验） ──
+      {name:'S1.6 [边界] updateReferee 应返回错误（已锁定或参数校验拦截）',fn:'user',act:'updateReferee',
+        params:{referralCode:'TEST01'},
+        expectFail:true,
+        // 接受两类合法错误: "已锁定/锁定/不可修改"（推荐人已确认锁定）或"推荐码不能为空/推荐码"（参数校验在锁定校验前）
+        errBiz:(d)=>{
+          const msg=d.message||'';
+          const isExpected=msg.includes('已锁定')||msg.includes('锁定')||msg.includes('不可修改')
+            ||msg.includes('推荐码')||msg.includes('不能为空')||msg.includes('已绑定');
+          return{r:'修复验证(2026-02): updateReferee 返回"已锁定"或参数校验错误均属合法拦截',
+            p:isExpected,
+            a:isExpected?`✓合法拦截: ${msg}`:`⚠非预期错误: ${msg||'无message'}`}
+        },
+        sql:(C)=>`SELECT id, referee_id, is_referee_confirmed, referee_updated_at FROM tiandao_culture.users WHERE id=${C.userId||U.id}`
       }
     ]
   },
@@ -394,15 +411,20 @@ SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = $
         ],
         sql:()=>`SELECT c.id, c.name, c.type, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=1`
       },
-      // S2.3 我的课程：验证关联完整，检查是否有赠送课程
+      // S2.3 我的课程：验证关联完整，检查是否有赠送课程 + expire_at 字段(S2.X4)
       {name:'S2.3 我的课程列表',fn:'user',act:'getMyCourses',
         biz:[
           (d,raw)=>({r:'我的课程接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const list=Array.isArray(d)?d:(d?.list||[]);
             const gift=list.filter(c=>c.is_gift===1||c.is_gift===true);
-            return{r:'我的课程中is_gift标记应正确(有赠送课程时is_gift=1)',p:true,a:`共${list.length}门课,赠送${gift.length}门`}}
+            return{r:'我的课程中is_gift标记应正确(有赠送课程时is_gift=1)',p:true,a:`共${list.length}门课,赠送${gift.length}门`}},
+          (d)=>{const list=Array.isArray(d)?d:(d?.list||[]);
+            const bad=list.filter(c=>!('expire_at' in c));
+            return{r:'S2.X4: getMyCourses 应返回 expire_at 字段（null=永久有效）',
+              p:bad.length===0,
+              a:bad.length?`❌${bad.length}门课缺少expire_at字段`:list.length?`✓${list.length}门课均含expire_at`:'暂无课程(跳过)'}}
         ],
-        save:(d,_,C)=>{C.myCourses=Array.isArray(d)?d:(d?.list||[])},
+        save:(d,_,C)=>{C.myCourses=Array.isArray(d)?d:(d?.list||[]);C.myCourseIds=(C.myCourses||[]).map(c=>c.course_id||c.id)},
         sql:()=>`SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, uc.is_gift, uc.source_order_id, uc.status
 FROM tiandao_culture.user_courses uc
 JOIN tiandao_culture.courses c ON uc.course_id = c.id
@@ -435,9 +457,42 @@ WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
         ],
         sql:()=>`-- 验证 status=0 的排期(应被接口过滤掉)\nSELECT cr.id, cr.class_date, cr.class_time, cr.class_location, cr.total_quota, cr.booked_quota, cr.status\nFROM tiandao_culture.class_records cr\nWHERE cr.class_date>='2026-03-01' AND cr.class_date<='2026-03-31'\nORDER BY cr.status, cr.class_date`
       },
-      {name:'S2.5 案例列表',fn:'course',act:'getCaseList',params:{page:1,pageSize:5},
-        biz:[(d,raw)=>({r:'案例列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
-        sql:()=>`SELECT id, title, student_name, category, status FROM tiandao_culture.academy_cases WHERE status=1 ORDER BY sort_order LIMIT 5`
+      {name:'S2.5 案例列表(S2.X1 全字段验证)',fn:'course',act:'getCaseList',params:{page:1,pageSize:5},
+        biz:[
+          (d,raw)=>({r:'案例列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'S2.X1: 案例应含基础字段',p:true,a:'暂无案例'};
+            const first=list[0];
+            const hasBase=['id','student_name'].every(f=>first[f]!==undefined);
+            return{r:'S2.X1: 案例应含 id/student_name 字段',p:hasBase,a:`${list.length}条,字段=[${Object.keys(first).slice(0,6).join(',')}...]`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'S2.X1: student_avatar 应为 HTTPS URL',p:true,a:'无数据'};
+            const bad=list.filter(c=>c.student_avatar&&c.student_avatar.startsWith('cloud://'));
+            return{r:'S2.X1: student_avatar 应转换为 HTTPS CDN URL（非 cloud://）',
+              p:bad.length===0,
+              a:bad.length?`❌${bad.length}条仍为cloud://fileID`:`✓${list.length}条均为HTTPS URL`}},
+          (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'S2.X1: cover_image 字段验证',p:true,a:'无数据'};
+            const hasCover=list.every(c=>c.cover_image||c.student_avatar);
+            return{r:'S2.X1: 案例应有 cover_image（images[0] 或 student_avatar）',p:hasCover,a:hasCover?'✓均有封面图':'❌存在无封面案例'}}
+        ],
+        save:(d,_,C)=>{C._caseList=d?.list||(Array.isArray(d)?d:[])},
+        sql:()=>`SELECT id, student_name, category, student_avatar, cover_image, achievements, is_featured, status FROM tiandao_culture.academy_cases WHERE status=1 ORDER BY sort_order LIMIT 5`
+      },
+      // S2.5b getCaseDetail — S2.X2 新增详情验证
+      {name:'S2.5b 案例详情(S2.X2 getCaseDetail)',fn:'course',act:'getCaseDetail',
+        params:(C)=>({id:C._caseList?.length?C._caseList[0].id:1}),
+        biz:[
+          (d,raw)=>({r:'S2.X2: 案例详情接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'S2.X2: 详情应含 student_avatar（非空）',p:!d||!!(d.student_avatar||d.cover_image),a:`student_avatar=${d?.student_avatar||d?.cover_image||'null'}`}),
+          (d)=>({r:'S2.X2: student_avatar 应为 HTTPS URL（非 cloud://）',
+            p:!d||!d.student_avatar||d.student_avatar.startsWith('https://'),
+            a:d?.student_avatar||'null'}),
+          (d)=>({r:'S2.X2: achievements 应为 Array（已解析 JSON）',
+            p:!d||d.achievements===undefined||Array.isArray(d.achievements),
+            a:`type=${typeof d?.achievements}`}),
+          (d)=>({r:'S2.X2: view_count 应≥1（调用详情后自增）',
+            p:!d||d.view_count===undefined||Number(d.view_count)>=1,
+            a:`view_count=${d?.view_count}`})
+        ],
+        sql:(C)=>{const id=C._caseList?.length?C._caseList[0].id:1;return`SELECT id, view_count, student_avatar, video_url, images, achievements FROM tiandao_culture.academy_cases WHERE id=${id}`}
       },
       {name:'S2.6 素材列表',fn:'course',act:'getMaterialList',params:{page:1,pageSize:5},
         biz:[(d,raw)=>({r:'素材列表应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
@@ -711,6 +766,65 @@ WHERE er.exchange_no='${C.lastExchangeNo}'`:null
 FROM tiandao_culture.mall_exchange_records er
 JOIN tiandao_culture.users u ON u.id=er.user_id
 ORDER BY er.created_at DESC LIMIT 5`
+      },
+
+      // ── S3.10: [2026-03-01新增] attend_count 初始值=0 验证 ──
+      {name:'S3.10 购课后 attend_count 初始值应为 0（Bug修复验证）',fn:'user',act:'getMyCourses',
+        biz:[
+          (d,raw)=>({r:'getMyCourses 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            // 仅校验 2026-03-01 后购买的课程（修复基准日期）
+            const recent=list.filter(c=>c.buy_time&&c.buy_time>='2026-03-01');
+            const bad=recent.filter(c=>Number(c.attend_count||0)!==0);
+            if(!recent.length) return{r:'S3.10 Bug修复验证: 新购课程 attend_count 初始值=0',p:true,a:'⚠无2026-03-01后购买记录，跳过'};
+            return{r:'S3.10 Bug修复: 新购课程 attend_count 初始值应为 0（修复前为1）',
+              p:bad.length===0,
+              a:bad.length?`❌${bad.length}门课attend_count≠0`:` ✓${recent.length}门新购课均为0`}
+          }
+        ],
+        sql:()=>`-- S3.10 attend_count 初始值验证（修复后新购课程应为0）
+SELECT uc.id, uc.course_id, c.name, uc.attend_count, uc.buy_time
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.buy_time>='2026-03-01'
+ORDER BY uc.id DESC LIMIT 5
+-- 期望: attend_count=0（修复前为1，旧数据不计入）`
+      },
+
+      // ── S3.11: [2026-03-01新增] 课程有效期 expire_at 验证 ──
+      {name:'S3.11 课程有效期 expire_at 验证（validity_days 接入）',fn:'user',act:'getMyCourses',
+        biz:[
+          (d,raw)=>({r:'getMyCourses 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const bad=list.filter(c=>!('expire_at' in c));
+            return{r:'S3.11: getMyCourses 必须返回 expire_at 字段',
+              p:bad.length===0,
+              a:bad.length?`❌${bad.length}门课缺少expire_at`:list.length?`✓${list.length}门均含expire_at`:'暂无课程(跳过)'}
+          },
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            // validity_days 不为 NULL 的课程，expire_at 也不应为 NULL
+            const shouldHaveExpiry=list.filter(c=>c.validity_days&&Number(c.validity_days)>0);
+            const missing=shouldHaveExpiry.filter(c=>!c.expire_at);
+            if(!shouldHaveExpiry.length) return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',p:true,a:'⚠无设置了validity_days的课程，跳过'};
+            return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',
+              p:missing.length===0,
+              a:missing.length?`❌${missing.length}门课expire_at为NULL（Bug）`:`✓${shouldHaveExpiry.length}门课均有expire_at`}
+          }
+        ],
+        sql:()=>`-- S3.11 expire_at 验证
+SELECT c.id, c.name, c.validity_days, uc.id as uc_id, uc.buy_time, uc.expire_at,
+  CASE
+    WHEN c.validity_days IS NULL THEN '永久有效(NULL)'
+    WHEN uc.expire_at IS NULL THEN '⚠有效期未写入(Bug)'
+    ELSE CONCAT('有效',c.validity_days,'天,截止',DATE_FORMAT(uc.expire_at,'%Y-%m-%d'))
+  END as 有效期状态
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id}
+ORDER BY uc.id DESC LIMIT 5`
       },
 
       // ── S3.9: 核心写操作 — 后台确认领取（终态写，status=1→2） ──
@@ -1110,6 +1224,19 @@ FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DE
           (d)=>{if(!d)return{r:'待审核时升级选项eligible=false',p:true,a:'无数据'};const opts=d.upgrade_options||[];const allNotEligible=opts.every(o=>!o.eligible);return{r:'待审核时升级选项eligible=false(无法操作)',p:allNotEligible,a:`${opts.length}个选项均eligible=${!allNotEligible}`}}
         ],
         sql:()=>`SELECT user_id, status FROM tiandao_culture.ambassador_applications WHERE user_id=35 ORDER BY created_at DESC LIMIT 1`
+      },
+      // ── S5F.3: [2026-03-01修复] 重复申请应返回"待审核"而非"已申请" ──
+      {name:'S5F.3 [边界] 重复申请（已有status=0申请）应返回"待审核"错误',fn:'ambassador',act:'apply',
+        params:()=>({targetLevel:1,realName:'冯腾昊',phone:'13900000035'}),
+        expectFail:true,
+        errBiz:(d)=>{
+          const msg=d.message||'';
+          const isExpected=msg.includes('待审核')||msg.includes('审核中')||msg.includes('已有申请')||msg.includes('申请中');
+          return{r:'修复验证: 有status=0申请时再次apply应返回"待审核"错误（修复前文案为"已申请"）',
+            p:isExpected,
+            a:isExpected?`✓正确文案: ${msg}`:`⚠文案非预期(应含"待审核"): ${msg||'无message'}`}
+        },
+        sql:()=>`SELECT user_id, status, created_at FROM tiandao_culture.ambassador_applications WHERE user_id=35 ORDER BY created_at DESC LIMIT 1`
       }
     ]
   },
@@ -1136,7 +1263,7 @@ FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DE
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(!list.length)return{r:'需求3.1.6.6: 青鸾+应有协议记录',p:true,a:'暂无协议'};const invalid=list.filter(s=>![0,1,2,3].includes(Number(s.status)));return{r:'协议 status 应为 0(已作废)/1(有效)/2(已过期)/3(已续签)',p:invalid.length===0,a:invalid.length?`${invalid.length}条非法status`:`${list.length}条均合法`}},
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);const active=list.filter(s=>Number(s.status)===1);if(!active.length)return{r:'协议有效期: 结束日 > 开始日',p:true,a:'无有效协议'};const startKey='effective_date',endKey='expiry_date';const err=active.filter(s=>{const start=s[startKey],end=s[endKey];if(!start||!end)return true;return new Date(end)<=new Date(start)});return{r:'协议有效期: 结束日 > 开始日( effective_date/expiry_date )',p:err.length===0,a:err.length?`${err.length}条日期异常`:`${active.length}条有效协议日期均正常`}}
         ],
-        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length)C.sigId=list[0].id},
+        save:(d,_,C)=>{const list=d?.list||(Array.isArray(d)?d:[]);if(list.length){C.sigId=list[0].id;C.contractTemplateId=list[0].contract_template_id||list[0].template_id}},
         sql:()=>`-- 协议签署记录完整性
 SELECT cs.id, cs.contract_name, cs.contract_version, cs.ambassador_level, cs.status, cs.contract_start, cs.contract_end, cs.sign_time,
   DATEDIFF(cs.contract_end, NOW()) as 剩余天数,
@@ -1184,6 +1311,24 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
       {name:'S6.7 协议详情-不存在的 signature_id(应报错)',fn:'ambassador',act:'getContractDetail',params:{signature_id:99999},
         expectFail:true,
         errBiz:(raw)=>({r:'不存在的 signature_id 应返回错误',p:raw.success===false&&(raw.message||'').includes('不存在'),a:raw.message||'无message'})
+      },
+      // ── S6.8: [2026-03-01修复] signContract .single()修复验证 — 重复签署应返回"已签"错误 ──
+      {name:'S6.8 [边界] 重复签署协议应返回"已签"错误（.single()修复验证）',fn:'ambassador',act:'signContract',
+        params:(C)=>({
+          contractTemplateId:C.contractTemplateId||1,
+          signatureFileId:'cloud://test_fake_boundary_sig'
+        }),
+        expectFail:true,
+        errBiz:(d,_,C)=>{
+          const msg=d.message||'';
+          // 若用户无协议记录(sigId不存在)，接口可能成功，此时标注为数据不足
+          if(!C.sigId) return{r:'[S6.8] 无协议记录，无法验证重复签署拦截',p:true,a:'⚠跳过(需先有签署记录)'};
+          const isExpected=msg.includes('已签')||msg.includes('重复')||msg.includes('已存在')||msg.includes('已签署');
+          return{r:'修复验证: signContract .single()修复后，重复签署应返回"已签"错误',
+            p:isExpected,
+            a:isExpected?`✓正确拦截: ${msg}`:`⚠非预期错误(应含"已签"): ${msg||'无message'}`}
+        },
+        sql:(C)=>`SELECT id, status, sign_time, contract_end FROM tiandao_culture.contract_signatures WHERE user_id=${U.id} AND status=1 ORDER BY id DESC LIMIT 3`
       }
     ]
   },
@@ -1191,9 +1336,9 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
   // ────────────── FLOW 7: 预约 · 签到 · 学习进度 ──────────────
   {
     id:'F7',icon:'📅',name:'流程7: 预约 · 排期 · 学习进度 · 签到验证',
-    desc:'排期列表 → [写]createAppointment → [写]cancelAppointment → 我的预约 → 学院进度 → 边界(无预约用户/无进度用户)',
-    tables:['class_records','appointments','user_courses','academy_progress'],rules:14,
-    get chainHtml(){return ['getClassRecords','createAppointment','cancelAppointment','getMyAppointments','getAcademyProgress','边界验证x2'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    desc:'排期列表 → [写]createAppointment → [边界]cancelAppointment废弃→错误 → 我的预约 → 学院进度 → 复训费attend_count字段验证 → 复训拦截边界 → 无预约/无进度用户边界',
+    tables:['class_records','appointments','user_courses','academy_progress'],rules:18,
+    get chainHtml(){return ['getClassRecords','createAppointment','cancelAppointment(废弃)','getMyAppointments','getAcademyProgress','getMyCourses(attend_count)','复训拦截边界','边界x2'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S7.1 课程排期',fn:'course',act:'getClassRecords',params:{course_id:1},
         biz:[
@@ -1239,30 +1384,20 @@ SELECT cr.id, cr.booked_quota, cr.total_quota,
 FROM tiandao_culture.class_records cr WHERE cr.id=${C.classRecordId}`:null
       },
 
-      // ── S7.1c: 清理写操作 — 取消预约（保证测试幂等） ──
-      {name:'S7.1c [写操作] 取消预约（清理S7.1b，保证幂等）',fn:'course',act:'cancelAppointment',
-        params:(C)=>({appointment_id:C.newAppointmentId}),
+      // ── S7.1c: [边界] cancelAppointment 已废弃（2026-03-02，应返回错误） ──
+      {name:'S7.1c [边界] cancelAppointment 已废弃（应返回错误）',fn:'course',act:'cancelAppointment',
+        params:(C)=>({appointment_id:C.newAppointmentId||0}),
         biz:[
-          (d,raw,C)=>{
-            if(!C.newAppointmentId) return{r:'[S7.1c跳过] S7.1b未成功创建预约',p:true,a:'⚠跳过'};
-            return{r:'需求3.1.4: cancelAppointment 应成功取消',p:raw.success===true,a:raw.success?`✓appointment_id=${C.newAppointmentId}已取消`:raw.message}
-          },
-          (d,raw,C)=>{
-            if(!C.newAppointmentId||!raw.success) return null;
-            return{r:'规则4-T3: 取消后 booked_quota 应递减（见SQL）',p:true,a:'见验证SQL'}
-          },
-          (d,raw,C)=>{
-            if(!C.newAppointmentId||!raw.success) return null;
-            return{r:'[DB一致性] 取消不影响 status=2(已签到) 记录',p:true,a:'本次取消的是 status=1 预约，符合规则'}
+          (d,raw)=>{
+            const msg=raw.message||'';
+            const isExpected=!raw.success&&(msg.includes('不支持取消')||msg.includes('已废弃')||msg.includes('暂时')||msg.includes('禁止'));
+            return{r:'2026-03-02变更: cancelAppointment 已废弃，应返回"当前不支持取消预约"错误',
+              p:isExpected,
+              a:raw.success?'❌意外成功（接口未废弃？）':isExpected?`✓正确返回错误: ${msg}`:`⚠返回了非预期错误: ${msg}`}
           }
         ],
-        sql:(C)=>C.newAppointmentClassRecordId?`-- ★ S7.1c 取消预约后：booked_quota 应-1，appointments.status 应为 3(已取消)
-SELECT cr.id, cr.booked_quota,
-  a.id as apt_id, a.status as apt_status, a.cancel_time,
-  (SELECT COUNT(*) FROM tiandao_culture.appointments x WHERE x.class_record_id=cr.id AND x.status IN (0,1)) as 当前有效预约数
-FROM tiandao_culture.class_records cr
-LEFT JOIN tiandao_culture.appointments a ON a.id=${C.newAppointmentId}
-WHERE cr.id=${C.newAppointmentClassRecordId}`:null
+        sql:()=>`-- S7.1c 验证：cancelAppointment 废弃后预约记录应保持不变
+SELECT id, status, checkin_time FROM tiandao_culture.appointments WHERE user_id=${U.id} ORDER BY id DESC LIMIT 5`
       },
 
       {name:'S7.2 我的预约',fn:'course',act:'getMyAppointments',
@@ -1285,8 +1420,54 @@ WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
         biz:[(d,raw)=>({r:'学习进度接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
         sql:()=>`SELECT * FROM tiandao_culture.academy_progress WHERE user_id=${U.id}`
       },
+      // ── S7.4a: 复训费流程 — getMyCourses 验证 attend_count/retrain_price 字段 ──
+      {name:'S7.4a 复训费流程: getMyCourses 含 attend_count/retrain_price',fn:'user',act:'getMyCourses',
+        biz:[
+          (d,raw)=>({r:'getMyCourses 接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const bad=list.filter(c=>c.attend_count===undefined);
+            return{r:'S7.4a: getMyCourses 应返回 attend_count 字段（复训页面依赖）',p:bad.length===0,a:bad.length?`❌${bad.length}门课缺少attend_count`:`✓${list.length}门课均含attend_count`}
+          },
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const bad=list.filter(c=>c.retrain_price===undefined);
+            return{r:'S7.4a: getMyCourses 应返回 retrain_price 字段（复训费用来源）',p:bad.length===0,a:bad.length?`❌${bad.length}门课缺少retrain_price`:`✓${list.length}门课均含retrain_price`}
+          }
+        ],
+        save:(d,_,C)=>{C.myCoursesList=Array.isArray(d)?d:(d?.list||[])},
+        sql:()=>`SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, c.retrain_price, uc.buy_time
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.status=1
+ORDER BY uc.id DESC LIMIT 10`
+      },
+
+      // ── S7.4c: 复训拦截边界 — attend_count≥1 未支付复训费时 createAppointment 应被拦截 ──
+      {name:'S7.4c [边界] 复训拦截：attend_count≥1 未支付复训费（条件执行）',fn:'course',act:'createAppointment',
+        params:(C)=>{
+          const retrainCourse=C.myCoursesList?.find(c=>Number(c.attend_count||0)>=1&&Number(c.course_type||c.type||0)!==4);
+          C._retrainCourseId=retrainCourse?.course_id;
+          return C.classRecordId&&C._retrainCourseId?{classRecordId:C.classRecordId}:{classRecordId:0};
+        },
+        biz:[
+          (d,raw,C)=>{
+            if(!C._retrainCourseId) return{r:'[S7.4c跳过] 无 attend_count≥1 的非沙龙课程（需先签到上课）',p:true,a:'⚠跳过'};
+            if(!C.classRecordId) return{r:'[S7.4c跳过] 无可用排期ID',p:true,a:'⚠跳过'};
+            const msg=raw.message||'';
+            const isBlocked=!raw.success&&(msg.includes('复训费')||msg.includes('复训')||msg.includes('retrain')||msg.includes('支付'));
+            return{r:'需求3.1.4: attend_count≥1 且非沙龙 → createAppointment 应被拦截"需先支付复训费"',
+              p:isBlocked,
+              a:raw.success?'❌意外成功（复训拦截未生效）':isBlocked?`✓正确拦截: ${msg}`:`⚠拦截了但文案非预期: ${msg}`}
+          }
+        ],
+        sql:(C)=>C._retrainCourseId?`-- S7.4c 复训拦截后：appointments 表不应有新记录
+SELECT COUNT(*) as recent_cnt FROM tiandao_culture.appointments
+WHERE user_id=${U.id} AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)`:null
+      },
+
       // ── 边界：无预约用户（id=31, openid=edMSp1LTe_lY4QN_Jj21_g）──
-      {name:'S7.4 [边界] 无预约用户 getMyAppointments',fn:'course',act:'getMyAppointments',
+      {name:'S7.5 [边界] 无预约用户 getMyAppointments',fn:'course',act:'getMyAppointments',
         params:()=>({test_openid:'edMSp1LTe_lY4QN_Jj21_g'}),
         biz:[
           (d,raw)=>({r:'无预约用户接口应正常返回（不报错）',p:raw.success===true,a:raw.success?'OK':raw.message}),
@@ -1295,7 +1476,7 @@ WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
         sql:()=>`-- 边界验证：user_id=31 appointments 为空\nSELECT COUNT(*) as cnt FROM tiandao_culture.appointments WHERE user_id=31`
       },
       // ── 边界：无学习进度用户（id=31）──
-      {name:'S7.5 [边界] 无进度用户 getAcademyProgress',fn:'course',act:'getAcademyProgress',
+      {name:'S7.6 [边界] 无进度用户 getAcademyProgress',fn:'course',act:'getAcademyProgress',
         params:()=>({test_openid:'edMSp1LTe_lY4QN_Jj21_g'}),
         biz:[
           (d,raw)=>({r:'无进度用户接口应正常返回（不报错）',p:raw.success===true,a:raw.success?'OK':raw.message}),
@@ -1486,6 +1667,14 @@ SELECT COUNT(*) as cnt FROM tiandao_culture.user_courses WHERE user_id=33 AND st
             const list=d?.list||[];
             const myRegFilled=list.every(a=>a.my_registration!==undefined);
             return{r:'每个活动必须含 my_registration 字段（用户报名状态）',p:list.length===0||myRegFilled,a:myRegFilled?'结构正确':'缺少 my_registration 字段'}
+          },
+          (d)=>{
+            // S11.2 Bug修复验证(2026-03-01): getAvailableActivities 不应返回 status=2(报名截止)的活动
+            const list=d?.list||[];
+            const has2=list.filter(a=>Number(a.status||0)===2);
+            return{r:'S11.2 Bug修复验证: 可报名活动列表不应包含 status=2(报名截止)的活动',
+              p:has2.length===0,
+              a:has2.length?`❌含${has2.length}条status=2活动（接口未正确过滤）`:`✓${list.length}条活动均为status=1(报名中)`}
           }
         ],
         save:(d,_,C)=>{C.availableActivities=d?.list||[];C.activityListTotal=d?.total||0;if(d?.list?.length>0)C.firstActivityId=d.list[0].id},
@@ -1843,6 +2032,260 @@ LEFT JOIN tiandao_culture.users u ON rcl.user_id=u.id
 LEFT JOIN tiandao_culture.users old_r ON rcl.old_referee_id=old_r.id
 LEFT JOIN tiandao_culture.users new_r ON rcl.new_referee_id=new_r.id
 ORDER BY rcl.created_at DESC LIMIT 20`
+      }
+    ]
+  },
+
+  // ────────────── FLOW 12: 课程学习合同 ──────────────
+  {
+    id:'F12',icon:'📝',name:'流程12: 课程学习合同 · 签署拦截 · 合同配置 · 签约流程',
+    desc:'合同状态检查(基线) → [Admin写]创建模板 → 再检查(needSign=true) → 客户端获取模板 → 验证+更新模板 → 边界验证 ⚠️ signCourseContract需真实合同文件,参见MT-26手动测试',
+    tables:['contract_templates','contract_signatures','user_courses'],rules:12,
+    get chainHtml(){return ['checkCourseContract','createContractTemplate','getContractTemplateByCourse','adminGetCourseContractTemplate','updateContractTemplate','边界x3'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S12.1 检查课程合同状态(基线)',fn:'ambassador',act:'checkCourseContract',params:{courseId:1},
+        fields:['needSign','hasTemplate'],
+        biz:[
+          (d,raw)=>({r:'checkCourseContract接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'返回 needSign 布尔字段',p:typeof d?.needSign==='boolean',a:`needSign=${d?.needSign}, reason=${d?.reason||'—'}`})
+        ],
+        save:(d,_,C)=>{C.baselineNeedSign=d?.needSign;C.baselineContractSigned=(d?.reason==='已签约')},
+        sql:()=>`SELECT uc.id, uc.course_id, uc.contract_signed, uc.attend_count, uc.status
+FROM tiandao_culture.user_courses uc WHERE uc.user_id=30 AND uc.course_id=1 AND uc.status=1 LIMIT 1`
+      },
+      {name:'S12.2 管理端查课程合同模板(当前状态)',fn:'ambassador',act:'adminGetCourseContractTemplate',admin:true,
+        params:{courseId:1},
+        biz:[
+          (d,raw)=>({r:'adminGetCourseContractTemplate接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;return{r:'返回 template 字段(null或对象均合法)',p:t===null||t===undefined||typeof t==='object',a:t?`已有模板 id=${t.id}, type=${t.contract_type}`:'✓暂无模板'}}
+        ],
+        save:(d,_,C)=>{C.existingCourseTemplateId=d?.template?.id||null}
+      },
+      {name:'S12.3 [Admin写] 创建课程合同模板(条件执行)',fn:'ambassador',act:'createContractTemplate',admin:true,
+        params:{contractName:'初探班学习服务协议（自动化测试）',contractType:'course',courseId:1,validityYears:1},
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(C.existingCourseTemplateId) return{r:`[S12.3跳过] 课程1已有模板(id=${C.existingCourseTemplateId})`,p:true,a:'⚠跳过'};
+            return{r:'createContractTemplate应返回新模板id',p:raw.success===true,a:raw.success?`✓id=${d?.id||d?.template_id}`:raw.message}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success&&!C.existingCourseTemplateId)C.newCourseTemplateId=d?.id||d?.template_id},
+        sql:()=>`SELECT id, contract_name, contract_type, course_id, status FROM tiandao_culture.contract_templates
+WHERE course_id=1 AND contract_type=4 ORDER BY id DESC LIMIT 3
+-- ⚠️ 清理: DELETE FROM tiandao_culture.contract_templates WHERE course_id=1 AND contract_type=4 AND contract_name LIKE '%自动化测试%'`
+      },
+      {name:'S12.4 再检查合同状态(模板已配置)',fn:'ambassador',act:'checkCourseContract',params:{courseId:1},
+        biz:[
+          (d,raw)=>({r:'checkCourseContract接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d,_,C)=>{
+            if(C.baselineContractSigned) return{r:'[S12.4] 合同已签署，needSign=false属正常',p:true,a:'⚠已签约'};
+            return{r:'模板已配置且未签约时 needSign 应为 true',p:d?.needSign===true,a:`needSign=${d?.needSign}, reason=${d?.reason||'—'}`}
+          },
+          (d,_,C)=>{
+            if(C.baselineContractSigned||!d?.needSign) return null;
+            return{r:'needSign=true时应返回 templateId',p:!!d?.templateId,a:`templateId=${d?.templateId||'❌缺失'}`}
+          }
+        ],
+        save:(d,_,C)=>{if(d?.templateId)C.courseTemplateId=d.templateId}
+      },
+      {name:'S12.5 客户端获取课程合同模板',fn:'ambassador',act:'getContractTemplateByCourse',params:{courseId:1},
+        biz:[
+          (d,raw)=>({r:'getContractTemplateByCourse接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>({r:'template 对象非 null',p:!!d?.template,a:d?.template?`✓id=${d.template.id}`:'❌无模板(请先配置课程合同模板)'}),
+          (d)=>({r:'template含 contract_name 字段',p:!!(d?.template?.contract_name||d?.template?.title),a:d?.template?.contract_name||d?.template?.title||'❌缺失'}),
+          (d)=>({r:'返回 signed 状态字段',p:d?.signed!==undefined,a:d?.signed!==undefined?`signed=${d.signed}`:'❌缺少signed字段'})
+        ],
+        save:(d,_,C)=>{if(!C.courseTemplateId&&d?.template?.id)C.courseTemplateId=d.template.id}
+      },
+      {name:'S12.6 管理端验证模板已入库',fn:'ambassador',act:'adminGetCourseContractTemplate',admin:true,
+        params:{courseId:1},
+        biz:[
+          (d,raw)=>({r:'管理端应能查到课程1的合同模板',p:raw.success===true&&!!d?.template,a:d?.template?`✓id=${d.template.id}`:raw.message||'❌无模板'}),
+          (d)=>({r:'模板 contract_type 应为 4(课程学习协议)',p:Number(d?.template?.contract_type)===4,a:`contract_type=${d?.template?.contract_type}`}),
+          (d)=>({r:'模板 course_id 应为 1',p:Number(d?.template?.course_id)===1,a:`course_id=${d?.template?.course_id}`})
+        ],
+        save:(d,_,C)=>{C.courseTemplateId=C.courseTemplateId||d?.template?.id}
+      },
+      {name:'S12.7 [Admin写] 更新课程合同模板',fn:'ambassador',act:'updateContractTemplate',admin:true,
+        params:(C)=>({template_id:C.newCourseTemplateId||C.existingCourseTemplateId||C.courseTemplateId||1,contract_name:'初探班学习服务协议（自动化测试-已更新）',validityYears:1}),
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            const tid=C.newCourseTemplateId||C.existingCourseTemplateId||C.courseTemplateId;
+            if(!tid) return{r:'[S12.7跳过] 无模板ID',p:true,a:'⚠跳过'};
+            return{r:'updateContractTemplate应返回success=true',p:raw.success===true,a:raw.success?'✓已更新':raw.message}
+          }
+        ],
+        sql:(C)=>{const tid=C.newCourseTemplateId||C.existingCourseTemplateId;return tid?`SELECT id, contract_name, validity_years FROM tiandao_culture.contract_templates WHERE id=${tid}`:null}
+      },
+      {name:'S12.B1 边界: 缺少courseId应报错',fn:'ambassador',act:'checkCourseContract',params:{},
+        expectFail:true,
+        errBiz:(d)=>({r:'缺少courseId应返回参数错误',p:d.success===false,a:(d.message||'无message').slice(0,60)})
+      },
+      {name:'S12.B2 边界: signCourseContract缺少signatureFileId应报错',fn:'ambassador',act:'signCourseContract',
+        params:(C)=>({courseId:1,templateId:C.courseTemplateId||1,agreed:true}),
+        expectFail:true,
+        errBiz:(d)=>({r:'缺少signatureFileId应返回参数错误(参数校验阶段,无需真实文件)',p:d.success===false,a:(d.message||'无message').slice(0,60)})
+      },
+      {name:'S12.B3 边界: signCourseContract agreed=false应报错',fn:'ambassador',act:'signCourseContract',
+        params:(C)=>({courseId:1,templateId:C.courseTemplateId||1,signatureFileId:'cloud://placeholder/sig.png',agreed:false}),
+        expectFail:true,
+        errBiz:(d)=>({r:'agreed=false时应返回参数错误(参数校验阶段)',p:d.success===false,a:(d.message||'无message').slice(0,60)})
+      }
+    ]
+  },
+
+  // ────────────── FLOW 13: 退款申请全链路 ──────────────
+  {
+    id:'F13',icon:'💸',name:'流程13: 退款申请 · 合同拦截 · 审核流转 · 业务回滚',
+    desc:'查已支付订单(基线) → 验证contract_signed字段 → 查退款状态 → [写]申请退款 → [Admin]查退款列表 → [Admin写]驳回退款(数据清理) → 验证驳回状态 → 边界验证 ⚠️ markRefundTransferred需上传发票,见MT-20',
+    tables:['orders','user_courses','appointments'],rules:10,
+    get chainHtml(){return ['getMyOrders','getRefundStatus','requestRefund','getRefundList','rejectRefund','边界验证'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      {name:'S13.1 查已支付订单(寻找退款测试目标)',fn:'user',act:'getMyOrders',params:{page:1,pageSize:20},
+        fields:['list:a'],
+        biz:[
+          (d,raw)=>({r:'getMyOrders接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            const paid=list.filter(o=>o.pay_status===1);
+            return{r:'存在已支付订单(F13测试前提)',p:paid.length>0,a:paid.length>0?`✓${paid.length}条已支付订单`:'⚠无已支付订单,请先完成F3支付流程'}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          const eligible=list.find(o=>o.pay_status===1&&(!o.refund_status||o.refund_status===0));
+          const pending=list.find(o=>o.pay_status===1&&o.refund_status===1);
+          const rejected=list.find(o=>o.pay_status===1&&o.refund_status===4);
+          C.refundTargetOrder=eligible||pending||rejected||null;
+          C.refundOrderNo=C.refundTargetOrder?.order_no||null;
+        },
+        sql:()=>`SELECT order_no, order_name, pay_status, refund_status, final_amount
+FROM tiandao_culture.orders WHERE user_id=30 AND pay_status=1 ORDER BY created_at DESC LIMIT 10`
+      },
+      {name:'S13.2 课程列表验证contract_signed字段',fn:'user',act:'getMyCourses',
+        biz:[
+          (d,raw)=>({r:'getMyCourses接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            if(!list.length) return{r:'contract_signed字段验证',p:true,a:'暂无课程记录'};
+            const hasField=list.every(c=>c.contract_signed!==undefined);
+            return{r:'每条课程记录应含 contract_signed 字段(退款合同拦截依赖此字段)',p:hasField,a:hasField?`✓${list.length}条均含该字段`:'❌缺少contract_signed字段'}
+          }
+        ]
+      },
+      {name:'S13.3 查当前退款状态(基线确认)',fn:'order',act:'getRefundStatus',
+        params:(C)=>({order_no:C.refundOrderNo||'NO_ORDER'}),
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(!C.refundOrderNo) return{r:'[S13.3跳过] 无可用订单号',p:true,a:'⚠跳过'};
+            return{r:'getRefundStatus接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}
+          },
+          (d,_,C)=>{
+            if(!C.refundOrderNo||!d) return null;
+            const rs=Number(d?.refund_status||0);
+            const desc=['未申请退款','申请中(1)','处理中(2)','已完成退款(3)','已驳回(4)'];
+            return{r:'退款状态基线确认',p:true,a:`refund_status=${rs} ${desc[rs]||''}`}
+          }
+        ],
+        save:(d,_,C)=>{if(d?.refund_status!==undefined)C.refundCurrentStatus=Number(d.refund_status)}
+      },
+      {name:'S13.4 [写] 申请退款(条件:refund_status=0)',fn:'order',act:'requestRefund',
+        params:(C)=>C.refundOrderNo?{order_no:C.refundOrderNo,refund_reason:'集成测试退款申请（请勿审批，自动化测试会自动驳回）'}:{order_no:'NO_ORDER',refund_reason:'test'},
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(!C.refundOrderNo) return{r:'[S13.4跳过] 无可用订单',p:true,a:'⚠跳过'};
+            if(C.refundCurrentStatus===1) return{r:'[S13.4跳过] 退款已在审核中，直接进入后续步骤',p:true,a:'⚠已有pending退款'};
+            if(C.refundCurrentStatus===4) return{r:'[S13.4提示] 订单已被驳回(status=4)，若需重测请用MCP重置: UPDATE orders SET refund_status=0 WHERE order_no=...',p:true,a:'⚠refund_status=4，S13.4跳过'};
+            if(!raw.success&&(raw.message?.includes('审核中')||raw.message?.includes('已申请'))) return{r:'退款已在审核中(幂等:视为通过)',p:true,a:'⚠'+raw.message};
+            return{r:'requestRefund应返回success=true',p:raw.success===true,a:raw.success?'✓退款申请已提交':raw.message}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success)C.refundJustApplied=true},
+        sql:(C)=>C.refundOrderNo?`SELECT order_no, pay_status, refund_status, refund_amount, refund_reason
+FROM tiandao_culture.orders WHERE order_no='${C.refundOrderNo}'
+-- 期望: refund_status=1`:null
+      },
+      {name:'S13.5 查退款状态(验证=1申请中)',fn:'order',act:'getRefundStatus',
+        params:(C)=>({order_no:C.refundOrderNo||'NO_ORDER'}),
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(!C.refundOrderNo) return{r:'[S13.5跳过]',p:true,a:'⚠跳过'};
+            return{r:'getRefundStatus接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}
+          },
+          (d,_,C)=>{
+            if(!C.refundOrderNo) return null;
+            if(C.refundCurrentStatus===4&&!C.refundJustApplied) return{r:'[S13.5] 订单已驳回，跳过=1验证',p:true,a:'⚠跳过'};
+            const rs=Number(d?.refund_status||0);
+            return{r:'申请退款后 refund_status 应为 1',p:rs===1,a:`refund_status=${rs}${rs===1?'✓':'❌'}`}
+          }
+        ],
+        save:(d,_,C)=>{if(Number(d?.refund_status)===1)C.hasPendingRefund=true}
+      },
+      {name:'S13.6 [Admin] 退款列表(查pending记录)',fn:'order',act:'getRefundList',admin:true,
+        params:{page:1,pageSize:20,refund_status:1},
+        fields:['list:a'],
+        biz:[
+          (d,raw)=>({r:'getRefundList(admin)接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            const allOk=list.length===0||list.every(o=>o.id&&o.order_no&&o.refund_status!==undefined&&o.refund_amount!==undefined);
+            return{r:'退款列表字段含id/order_no/refund_status/refund_amount',p:allOk,a:allOk?`✓${list.length}条待审核`:'❌字段不完整'}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          const match=list.find(o=>o.order_no===C.refundOrderNo&&o.refund_status===1);
+          if(match)C.refundOrderId=match.id;
+        },
+        sql:()=>`SELECT id, order_no, user_name, refund_status, refund_amount, refund_reason
+FROM tiandao_culture.orders WHERE refund_status=1 ORDER BY id DESC LIMIT 10`
+      },
+      {name:'S13.7 [Admin写] 驳回退款(数据清理)',fn:'order',act:'rejectRefund',admin:true,
+        params:(C)=>C.refundOrderId&&C.hasPendingRefund?{order_id:C.refundOrderId,reject_reason:'集成测试自动驳回（数据还原）'}:{order_id:-1,reject_reason:'test'},
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(!C.refundOrderId||!C.hasPendingRefund) return{r:'[S13.7跳过] 无待驳回记录',p:true,a:'⚠跳过(无pending退款或未找到order_id)'};
+            return{r:'rejectRefund(admin)应返回success=true',p:raw.success===true,a:raw.success?'✓驳回成功，数据已清理':raw.message}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success)C.refundRejected=true},
+        sql:(C)=>C.refundOrderNo?`SELECT order_no, refund_status, refund_reject_reason, refund_audit_time
+FROM tiandao_culture.orders WHERE order_no='${C.refundOrderNo}'
+-- 期望: refund_status=4, refund_reject_reason有值`:null
+      },
+      {name:'S13.8 查退款状态(验证=4已驳回)',fn:'order',act:'getRefundStatus',
+        params:(C)=>({order_no:C.refundOrderNo||'NO_ORDER'}),
+        softFail:true,
+        biz:[
+          (d,raw,C)=>{
+            if(!C.refundOrderNo) return{r:'[S13.8跳过]',p:true,a:'⚠跳过'};
+            return{r:'getRefundStatus接口正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}
+          },
+          (d,_,C)=>{
+            if(!C.refundRejected) return{r:'[S13.8] 驳回步骤跳过，不验证最终状态',p:true,a:'⚠跳过'};
+            return{r:'驳回后 refund_status 应为 4',p:Number(d?.refund_status)===4,a:`refund_status=${d?.refund_status}`}
+          },
+          (d,_,C)=>{
+            if(!C.refundRejected) return null;
+            return{r:'驳回后 refund_reject_reason 应有值',p:!!(d?.refund_reject_reason),a:d?.refund_reject_reason||'❌无驳回原因'}
+          }
+        ]
+      },
+      {name:'S13.B1 边界: requestRefund缺少refund_reason应报错',fn:'order',act:'requestRefund',
+        params:(C)=>({order_no:C.refundOrderNo||'TEST_ORDER',refund_reason:''}),
+        expectFail:true,
+        errBiz:(d)=>({r:'空refund_reason应返回参数错误',p:d.success===false,a:(d.message||'无message').slice(0,60)})
+      },
+      {name:'S13.B2 边界: rejectRefund缺少order_id应报错',fn:'order',act:'rejectRefund',admin:true,
+        params:{reject_reason:'test'},
+        expectFail:true,
+        errBiz:(d)=>({r:'缺少order_id应返回参数错误',p:d.success===false,a:(d.message||'无message').slice(0,60)})
       }
     ]
   }

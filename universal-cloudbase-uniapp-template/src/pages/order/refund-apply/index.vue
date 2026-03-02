@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 提示信息 -->
         <view class="tip-bar">
-          <text class="tip-icon">💡</text>
+          <view class="tip-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <text class="tip-text">请选择要退款的课程，已签署学习合同的课程无法退款</text>
         </view>
 
@@ -17,7 +17,7 @@
 
         <!-- 空状态 -->
         <view v-else-if="refundableItems.length === 0" class="empty-wrapper">
-          <text class="empty-icon">📋</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无可退款的订单</text>
           <text class="empty-desc">已支付且未退款的课程订单才可申请退款</text>
         </view>

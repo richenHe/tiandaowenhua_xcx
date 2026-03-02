@@ -64,7 +64,7 @@
 
           <!-- 无推荐人提示 -->
           <view v-else class="empty-state">
-            <text class="empty-icon">🏇</text>
+            <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
             <text class="empty-text">暂无推荐人</text>
           </view>
 
@@ -77,7 +77,7 @@
 
           <!-- 说明信息 -->
           <view class="t-alert">
-            <text class="alert-icon">ℹ️</text>
+            <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
             <view class="alert-content">
               <text class="alert-message">伯乐是引荐您加入天道文化大家庭的人。首次购买课程后，推荐人关系将永久锁定。</text>
             </view>

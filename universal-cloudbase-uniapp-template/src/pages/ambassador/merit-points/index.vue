@@ -28,7 +28,7 @@
 
         <!-- 功德分说明 -->
         <view class="alert-box info">
-          <view class="alert-icon">ℹ️</view>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <view class="alert-message">
               • 功德分无上限，持续获得<br/>
@@ -92,7 +92,7 @@
 
         <!-- 空状态 -->
         <view v-if="recordsList.length === 0 && !loading" class="empty-state">
-          <text class="empty-icon">📝</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无功德分记录</text>
         </view>
 

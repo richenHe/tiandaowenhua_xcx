@@ -36,7 +36,7 @@ module.exports = async (event, context) => {
       .from('ambassador_activities')
       .select('*', { count: 'exact' })
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('schedule_date', { ascending: true });
 
     const result = await executePaginatedQuery(queryBuilder, page, pageSize);
 

@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('courses')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 添加类型过滤
     if (type) {

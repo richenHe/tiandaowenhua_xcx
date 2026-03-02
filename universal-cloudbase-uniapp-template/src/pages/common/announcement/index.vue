@@ -33,7 +33,7 @@
 
         <!-- 空状态 -->
         <view class="empty-state" v-if="announcements.length === 0 && !loading">
-          <view class="empty-icon">📢</view>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <view class="empty-text">暂无公告</view>
         </view>
 

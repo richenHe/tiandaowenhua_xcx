@@ -17,7 +17,7 @@ module.exports = async (event, context) => {
     // 构建查询
     let queryBuilder = db.from('users')
       .select('id, _openid, real_name, phone, city, avatar, referee_code, referee_id, ambassador_level, merit_points, cash_points_available, cash_points_frozen, profile_completed, created_at', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 关键词搜索
     if (keyword) {

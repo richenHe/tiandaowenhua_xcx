@@ -29,7 +29,7 @@ module.exports = async (event, context) => {
       .eq('status', 1)  // 有效
       .gte('contract_end', now.toISOString().split('T')[0])
       .lte('contract_end', futureDate.toISOString().split('T')[0])
-      .order('id', { ascending: true });
+      .order('contract_end', { ascending: true });
 
     if (error) throw error;
 

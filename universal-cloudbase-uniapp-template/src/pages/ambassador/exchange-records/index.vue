@@ -65,7 +65,7 @@
 
         <!-- 空状态 -->
         <view v-else class="empty-state">
-          <view class="empty-icon">📋</view>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <view class="empty-text">暂无兑换记录</view>
         </view>
 

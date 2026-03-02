@@ -28,7 +28,7 @@ module.exports = async (event, context) => {
         { count: 'exact' }
       )
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 支持按 type 过滤（如仅查提现相关：type=3/4/5）
     if (type !== undefined && type !== null) {

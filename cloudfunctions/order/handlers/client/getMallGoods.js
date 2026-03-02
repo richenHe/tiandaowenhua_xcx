@@ -19,7 +19,8 @@ module.exports = async (event, context) => {
       .from('mall_goods')
       .select('*', { count: 'exact' })
       .eq('status', 1) // 只查询上架商品
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: false })
+      .order('id', { ascending: false });
 
     // 关键词过滤
     if (keyword && keyword.trim()) {

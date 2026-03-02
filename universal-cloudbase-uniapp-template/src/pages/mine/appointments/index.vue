@@ -53,16 +53,6 @@
                 </view>
               </view>
 
-              <!-- 待上课状态：显示取消预约按钮 -->
-              <view v-if="appointment.appointmentStatus === 'pending'">
-                <view class="t-divider"></view>
-                <view class="card-actions">
-                  <button class="t-button t-button--outline t-button--block" @click.stop="handleCancel(appointment.id)">
-                    <text class="t-button__text">取消预约</text>
-                  </button>
-                </view>
-              </view>
-
               <!-- 已完成状态：显示评价 -->
               <view v-if="appointment.appointmentStatus === 'completed'">
                 <view class="t-divider"></view>
@@ -75,7 +65,7 @@
 
           <!-- 提示信息 -->
           <view class="t-alert">
-            <text class="alert-icon">💡</text>
+            <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
             <view class="alert-content">
               <text class="alert-message">可复训课程支持多次预约上课</text>
             </view>
@@ -84,7 +74,7 @@
 
         <!-- 空状态 -->
         <view v-else class="empty-state">
-          <text class="empty-icon">📦</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无预约</text>
         </view>
       </view>
@@ -122,8 +112,7 @@ const tabOptions = [
   { label: '全部', value: -1 },
   { label: '待上课', value: 0 },
   { label: '已签到', value: 1 },
-  { label: '缺席', value: 2 },
-  { label: '已取消', value: 3 }
+  { label: '缺席', value: 2 }
 ]
 
 // 预约数据
@@ -133,8 +122,7 @@ const appointments = ref<any[]>([])
 const statusMap: Record<number, { text: string; type: string; appointmentStatus: string }> = {
   0: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
   1: { text: '已签到', type: 'success', appointmentStatus: 'completed' },
-  2: { text: '缺席', type: 'danger', appointmentStatus: 'absent' },
-  3: { text: '已取消', type: 'default', appointmentStatus: 'cancelled' }
+  2: { text: '缺席', type: 'danger', appointmentStatus: 'absent' }
 }
 
 // 加载预约列表
@@ -189,31 +177,6 @@ const handleTabChange = (value: number) => {
   activeTab.value = value
   const statusValue = value === -1 ? undefined : value
   loadAppointments(statusValue)
-}
-
-// 取消预约
-const handleCancel = async (id: number) => {
-  uni.showModal({
-    title: '提示',
-    content: '确定要取消预约吗？',
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          await CourseApi.cancelAppointment({ appointment_id: id })
-
-          uni.showToast({
-            title: '取消成功',
-            icon: 'success'
-          })
-
-          // 重新加载列表
-          loadAppointments()
-        } catch (error) {
-          console.error('取消预约失败:', error)
-        }
-      }
-    }
-  })
 }
 
 onMounted(() => {

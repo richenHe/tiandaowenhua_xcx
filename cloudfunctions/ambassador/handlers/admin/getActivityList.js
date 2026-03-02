@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('ambassador_activity_records')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('start_time', { ascending: false });
 
     // 状态筛选
     if (status != null && status !== '') {

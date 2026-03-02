@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
       `, { count: 'exact' })
       .eq('course_id', finalCourseId)
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('class_date', { ascending: true });
 
     // 日期过滤
     if (finalStartDate) {

@@ -51,7 +51,7 @@
         <!-- 通知提示栏 - 轮播公告 -->
         <view class="notice-bar" @click="goToAnnouncement">
           <view class="t-alert t-alert--theme-info">
-            <view class="t-alert__icon">📢</view>
+            <view class="t-alert__icon"><icon type="info" size="16" color="#0052D9"/></view>
             <view class="t-alert__content">
               <swiper
                 class="announcement-swiper"
@@ -99,11 +99,11 @@
             <view class="t-card__body">
               <view class="course-header">
                 <text class="course-title">{{ course.title }}</text>
-                <view v-if="course.purchased" class="t-badge--standalone t-badge--theme-success">
+                <view v-if="course.purchased && course.type !== 4" class="t-badge--standalone t-badge--theme-success">
                   <text>已购买</text>
                 </view>
               </view>
-              <text class="course-price">¥{{ formatPrice(course.price) }}</text>
+              <text class="course-price">{{ course.type === 4 ? '免费' : '¥' + formatPrice(course.price) }}</text>
               <button class="t-button t-button--theme-warning t-button--variant-base t-button--block">
                 <text class="t-button__text">查看详情</text>
               </button>
@@ -154,11 +154,12 @@ const announcementList = ref([
 // 轮播图数据
 const bannerList = ref<any[]>([]);
 
-// 标签页数据（课程类型与数据库 courses.type 对齐：1初探班/2密训班；'calendar'为日历UI功能）
+// 标签页数据（课程类型与数据库 courses.type 对齐：1初探班/2密训班/4沙龙；'calendar'为日历UI功能）
 const allTabList = ref([
   { label: '全部', value: 'all' },
   { label: '初探班', value: 1 },
   { label: '密训班', value: 2 },
+  { label: '沙龙', value: 4 },
   { label: '日历', value: 'calendar' }
 ]);
 
@@ -198,7 +199,8 @@ const getCourseEmoji = (type: number): string => {
   const emojiMap: Record<number, string> = {
     1: '📚',
     2: '🎓',
-    3: '🔄'
+    3: '🔄',
+    4: '🎤'
   };
   return emojiMap[type] || '📚';
 };
@@ -208,7 +210,8 @@ const getCourseTheme = (type: number): string => {
   const themeMap: Record<number, string> = {
     1: 'course-image--pink',
     2: 'course-image--blue',
-    3: 'course-image--purple'
+    3: 'course-image--purple',
+    4: 'course-image--orange'
   };
   return themeMap[type] || 'course-image--pink';
 };
@@ -585,6 +588,10 @@ swiper-item {
   
   &--purple {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  &--orange {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
   }
 }
 

@@ -96,7 +96,7 @@
         </view>
 
         <view v-else-if="!loading" class="empty-state">
-          <view class="empty-icon">📋</view>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <view class="empty-text">暂无案例</view>
         </view>
 

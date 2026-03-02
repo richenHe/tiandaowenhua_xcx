@@ -72,7 +72,7 @@
 
         <!-- 空状态 -->
         <view v-if="filteredCourses.length === 0" class="empty-state">
-          <text class="empty-icon">📚</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无课程</text>
         </view>
       </view>

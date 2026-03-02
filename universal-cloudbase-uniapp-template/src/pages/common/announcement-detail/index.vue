@@ -43,7 +43,7 @@
 
       <!-- 空状态 -->
       <view class="empty-state" v-if="!loading && !announcement">
-        <view class="empty-state__icon">📢</view>
+        <view class="empty-state__icon"><icon type="info" size="60" color="#ccc"/></view>
         <text class="empty-state__text">公告不存在或已删除</text>
         <button
           class="t-button t-button--theme-primary t-button--variant-base t-button--size-large mt-m"

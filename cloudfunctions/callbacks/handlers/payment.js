@@ -362,13 +362,29 @@ async function handleRetrainPayment(order, db) {
     .single();
 
   if (order.class_record_id) {
+    // related_id 在复训订单中存储的是 user_course_id
+    const userCourseId = order.related_id;
+
+    // 从 class_records 获取正确的 course_id
+    const { data: classRecord } = await db
+      .from('class_records')
+      .select('course_id, booked_quota')
+      .eq('id', order.class_record_id)
+      .single();
+
+    if (!classRecord) {
+      console.error('[Payment] 复训：找不到 class_record:', order.class_record_id);
+      return;
+    }
+
     await db.from('appointments').insert({
       user_id: order.user_id,
       _openid: order._openid || '',
       user_name: user?.real_name || '',
       user_phone: user?.phone || '',
       class_record_id: order.class_record_id,
-      course_id: order.related_id,
+      user_course_id: userCourseId,
+      course_id: classRecord.course_id,
       is_retrain: 1,
       order_no: order.order_no,
       status: 0,
@@ -376,19 +392,11 @@ async function handleRetrainPayment(order, db) {
       updated_at: formatDateTime(new Date())
     });
 
-    const { data: classRecord } = await db
-      .from('class_records')
-      .select('booked_quota')
-      .eq('id', order.class_record_id)
-      .single();
+    await db.from('class_records').update({
+      booked_quota: (classRecord.booked_quota || 0) + 1
+    }).eq('id', order.class_record_id);
 
-    if (classRecord) {
-      await db.from('class_records').update({
-        booked_quota: (classRecord.booked_quota || 0) + 1
-      }).eq('id', order.class_record_id);
-    }
-
-    console.log('[Payment] 复训预约已创建');
+    console.log('[Payment] 复训预约已创建, course_id:', classRecord.course_id);
   }
 }
 

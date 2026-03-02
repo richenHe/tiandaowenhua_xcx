@@ -5,28 +5,28 @@
     <view class="checkin-wrapper">
       <!-- 加载中 -->
       <view v-if="status === 'loading'" class="status-box">
-        <view class="status-icon loading-icon">⏳</view>
+        <view class="status-icon loading-icon"><icon type="waiting" size="60" color="#D4AF37"/></view>
         <text class="status-title">正在签到...</text>
         <text class="status-desc">请稍候</text>
       </view>
 
       <!-- 签到成功 -->
       <view v-else-if="status === 'success'" class="status-box">
-        <view class="status-icon success-icon">✅</view>
+        <view class="status-icon success-icon"><icon type="success" size="60" color="#00A870"/></view>
         <text class="status-title">签到成功</text>
         <text class="status-desc">{{ checkinTime }}</text>
       </view>
 
       <!-- 签到失败 -->
       <view v-else-if="status === 'error'" class="status-box">
-        <view class="status-icon error-icon">❌</view>
+        <view class="status-icon error-icon"><icon type="cancel" size="60" color="#E34D59"/></view>
         <text class="status-title">签到失败</text>
         <text class="status-desc">{{ errorMsg }}</text>
       </view>
 
       <!-- 参数错误 -->
       <view v-else class="status-box">
-        <view class="status-icon error-icon">⚠️</view>
+        <view class="status-icon error-icon"><icon type="warn" size="60" color="#E6A23C"/></view>
         <text class="status-title">无效的签到码</text>
         <text class="status-desc">请通过扫描正确的签到二维码进入</text>
       </view>

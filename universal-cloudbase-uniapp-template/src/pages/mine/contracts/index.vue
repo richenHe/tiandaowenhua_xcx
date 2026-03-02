@@ -6,7 +6,7 @@
       <view class="page-content">
         <!-- 说明提示 -->
         <view class="t-alert t-alert--info">
-          <text class="alert-icon">ℹ️</text>
+          <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
             <text class="alert-message">仅青鸾及以上等级可查看协议记录</text>
           </view>
@@ -76,7 +76,7 @@
 
         <!-- 空状态 -->
         <view v-if="contracts.length === 0 && !loading" class="empty-state">
-          <text class="empty-icon">📋</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无协议记录</text>
         </view>
 

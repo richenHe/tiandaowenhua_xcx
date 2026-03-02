@@ -28,7 +28,7 @@
 
         <!-- 积分机制说明 -->
         <view class="alert-box warning">
-          <view class="alert-icon">⚠️</view>
+          <view class="alert-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="alert-content">
             <view class="alert-title">积分解冻机制</view>
             <view class="alert-message">
@@ -114,7 +114,7 @@
 
         <!-- 空状态 -->
         <view v-if="recordsList.length === 0 && !loading" class="empty-state">
-          <text class="empty-icon">📝</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无积分记录</text>
         </view>
 

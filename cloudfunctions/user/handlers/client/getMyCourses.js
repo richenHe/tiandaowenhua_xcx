@@ -37,7 +37,7 @@ module.exports = async (event, context) => {
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

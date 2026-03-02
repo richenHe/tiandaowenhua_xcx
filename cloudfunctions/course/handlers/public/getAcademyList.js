@@ -11,7 +11,8 @@ module.exports = async (event, context) => {
       .from('academy_intro')
       .select('id, title, cover_image, content, team, sort_order, created_at')
       .eq('status', 1)
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: false })
+      .order('id', { ascending: false });
 
     if (error) {
       throw error;

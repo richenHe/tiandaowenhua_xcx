@@ -25,7 +25,7 @@ module.exports = async (event, context) => {
         template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version, contract_file_id)
       `)
       .eq('user_id', user.id)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     if (error) throw error;
 

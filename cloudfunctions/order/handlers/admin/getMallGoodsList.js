@@ -16,7 +16,8 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('mall_goods')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: false });
 
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));

@@ -16,7 +16,7 @@
  * @param {number} event.totalQuota    - 总名额，对应 DB 字段 total_quota（默认 30）
  * @param {string} event.remark        - 备注，对应 DB 字段 remark
  */
-const { insert } = require('../../common/db');
+const { db, insert, findOne } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -42,6 +42,19 @@ module.exports = async (event, context) => {
 
     if (classEndDate && classEndDate < classDate) {
       return response.paramError('结课日期不能早于上课时间');
+    }
+
+    // 沙龙课程(type=4)只允许创建一个有效排期
+    const course = await findOne('courses', { id: courseId });
+    if (course && course.type === 4) {
+      const { data: existingRecords } = await db
+        .from('class_records')
+        .select('id')
+        .eq('course_id', courseId)
+        .neq('status', 0);
+      if (existingRecords && existingRecords.length > 0) {
+        return response.error('该沙龙课程已有排期，无法再次创建');
+      }
     }
 
     const [result] = await insert('class_records', {

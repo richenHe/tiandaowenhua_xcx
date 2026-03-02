@@ -7,7 +7,7 @@
       <view v-if="!isLoading" class="page-content">
         <!-- 支付状态 -->
         <view class="status-card">
-          <view class="status-icon">✓</view>
+          <view class="status-icon"><icon type="success_no_circle" size="48" color="white"/></view>
           <view class="status-title">支付成功</view>
           <view class="status-desc">感谢您的购买，祝您学习愉快！</view>
         </view>

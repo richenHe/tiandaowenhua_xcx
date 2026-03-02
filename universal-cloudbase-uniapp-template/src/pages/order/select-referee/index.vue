@@ -21,7 +21,7 @@
 
         <!-- 提示信息 -->
         <view class="t-alert t-alert--theme-info mb-l">
-          <view class="t-alert__icon">ℹ️</view>
+          <view class="t-alert__icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="t-alert__content">
             <view class="t-alert__message">支付前可多次修改推荐人，首次购买支付成功后永久锁定</view>
           </view>
@@ -29,7 +29,7 @@
 
         <!-- 重要说明 -->
         <view class="t-alert t-alert--theme-warning mb-l">
-          <view class="t-alert__icon">⚠️</view>
+          <view class="t-alert__icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="t-alert__content">
             <view class="t-alert__message">
               <view class="alert-title">推荐人资格说明：</view>

@@ -50,7 +50,7 @@ module.exports = async (event, context) => {
         user:users!fk_orders_user(real_name, phone)
       `, { count: 'exact' })
       .gt('refund_status', 0)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     if (refund_status != null && refund_status !== '') {
       queryBuilder = queryBuilder.eq('refund_status', parseInt(refund_status));

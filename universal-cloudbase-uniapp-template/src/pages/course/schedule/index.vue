@@ -38,7 +38,7 @@
 
         <!-- 空状态 -->
         <view v-if="schedules.length === 0" class="empty-state">
-          <text class="empty-icon">📅</text>
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无课程排期</text>
         </view>
       </view>
@@ -57,6 +57,8 @@ const schedules = ref<any[]>([]);
 
 // 课程ID
 const courseId = ref<number>(0);
+// 课程类型（4=沙龙，通过 URL 参数传入）
+const courseType = ref<number>(0);
 
 // 加载课程排期
 const loadSchedules = async () => {
@@ -99,6 +101,7 @@ const goToAppointmentConfirm = (schedule: any) => {
   const q = [
     `classRecordId=${schedule.id}`,
     `courseId=${courseId.value}`,
+    `courseType=${courseType.value}`,
     `courseName=${encodeURIComponent(schedule.courseName || '')}`,
     `classDate=${encodeURIComponent(schedule.startDate || '')}`,
     `classTime=${encodeURIComponent(schedule.startTime || '')}`,
@@ -109,30 +112,32 @@ const goToAppointmentConfirm = (schedule: any) => {
   });
 };
 
-// 处理预约（含合同签署检查）
+// 处理预约（沙龙课程跳过合同检查，其余类型需检查合同签署状态）
 const handleAppointment = async (schedule: any) => {
-  try {
-    uni.showLoading({ title: '检查中...' })
-    const checkResult = await AmbassadorApi.checkCourseContract(courseId.value)
-    uni.hideLoading()
+  if (courseType.value !== 4) {
+    try {
+      uni.showLoading({ title: '检查中...' })
+      const checkResult = await AmbassadorApi.checkCourseContract(courseId.value)
+      uni.hideLoading()
 
-    if (checkResult.needSign) {
-      uni.showModal({
-        title: '签署学习合同',
-        content: '您需要签署学习服务协议后才能参加学习，是否立即签署？',
-        success: (res) => {
-          if (res.confirm) {
-            uni.navigateTo({
-              url: `/pages/ambassador/contract-sign/index?courseId=${courseId.value}&templateId=${checkResult.templateId}`
-            })
+      if (checkResult.needSign) {
+        uni.showModal({
+          title: '签署学习合同',
+          content: '您需要签署学习服务协议后才能参加学习，是否立即签署？',
+          success: (res) => {
+            if (res.confirm) {
+              uni.navigateTo({
+                url: `/pages/ambassador/contract-sign/index?courseId=${courseId.value}&templateId=${checkResult.templateId}`
+              })
+            }
           }
-        }
-      })
-      return
+        })
+        return
+      }
+    } catch (e) {
+      uni.hideLoading()
+      console.error('检查合同状态失败:', e)
     }
-  } catch (e) {
-    uni.hideLoading()
-    console.error('检查合同状态失败:', e)
   }
 
   goToAppointmentConfirm(schedule)
@@ -143,6 +148,10 @@ onLoad((options: any) => {
   if (id) {
     courseId.value = Number(id);
     loadSchedules();
+  }
+  const type = options?.course_type ?? options?.courseType;
+  if (type) {
+    courseType.value = Number(type);
   }
 });
 

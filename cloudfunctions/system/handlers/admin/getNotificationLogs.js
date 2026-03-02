@@ -42,7 +42,7 @@ module.exports = async (event, context) => {
         created_at,
         user:users!fk_notification_logs_user(real_name, phone)
       `, { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 筛选条件
     if (user_id) {

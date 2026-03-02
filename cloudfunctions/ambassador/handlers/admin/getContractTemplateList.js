@@ -18,7 +18,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('contract_templates')
       .select('*', { count: 'exact' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 等级筛选
     if (level != null && level !== '') {

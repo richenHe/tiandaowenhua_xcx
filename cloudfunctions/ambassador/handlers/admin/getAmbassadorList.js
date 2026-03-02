@@ -19,7 +19,7 @@ module.exports = async (event, context) => {
       .from('users')
       .select('*', { count: 'exact' })
       .gt('ambassador_level', 0)
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
 
     // 等级筛选
     if (level != null && level !== '') {

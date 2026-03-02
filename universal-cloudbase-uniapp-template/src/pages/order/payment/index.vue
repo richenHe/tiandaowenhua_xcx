@@ -53,7 +53,7 @@
 
         <!-- 温馨提示 -->
         <view class="t-alert t-alert--theme-warning" style="margin-top: 48rpx;">
-          <view class="t-alert__icon">💡</view>
+          <view class="t-alert__icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <view class="t-alert__content">
             <view class="t-alert__message">请在15分钟内完成支付，超时订单将自动取消</view>
           </view>
@@ -82,6 +82,9 @@ const orderInfo = ref({
   orderType: 1,
   amount: 0,
 });
+
+// 是否为复训订单
+const isRetrainOrder = ref(false);
 
 // 选中的支付方式
 const selectedPayment = ref('wechat');
@@ -136,18 +139,32 @@ const handlePay = async () => {
       package: payParams.package,
       signType: payParams.signType,
       paySign: payParams.paySign,
-      success: () => {
-        uni.showToast({
-          title: '支付成功',
-          icon: 'success',
-          duration: 2000,
-        });
+      success: async () => {
+        // 复训订单：支付成功后请求订阅消息授权，然后跳转预约列表
+        if (isRetrainOrder.value) {
+          // #ifdef MP-WEIXIN
+          try {
+            await new Promise<void>((resolve) => {
+              uni.requestSubscribeMessage({
+                tmplIds: ['SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'],
+                complete: () => resolve()
+              });
+            });
+          } catch (_) { /* 订阅授权不阻塞流程 */ }
+          // #endif
 
-        setTimeout(() => {
-          uni.redirectTo({
-            url: '/pages/order/detail/index?orderNo=' + orderInfo.value.orderNo,
-          });
-        }, 2000);
+          uni.showToast({ title: '支付成功，预约已创建', icon: 'success', duration: 2000 });
+          setTimeout(() => {
+            uni.redirectTo({ url: '/pages/mine/appointments/index' });
+          }, 2000);
+        } else {
+          uni.showToast({ title: '支付成功', icon: 'success', duration: 2000 });
+          setTimeout(() => {
+            uni.redirectTo({
+              url: '/pages/order/detail/index?orderNo=' + orderInfo.value.orderNo,
+            });
+          }, 2000);
+        }
       },
       fail: (err) => {
         console.error('支付失败:', err);
@@ -182,6 +199,10 @@ onMounted(() => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = (currentPage as any).options || {};
+
+  if (options.isRetrain === '1') {
+    isRetrainOrder.value = true;
+  }
 
   if (options.orderNo) {
     orderInfo.value.orderNo = options.orderNo;
