@@ -77,7 +77,8 @@ const adminHandlers = {
   createPositionType: require('./handlers/admin/createPositionType'),
   updatePositionType: require('./handlers/admin/updatePositionType'),
   deletePositionType: require('./handlers/admin/deletePositionType'),
-  adminGetCourseContractTemplate: require('./handlers/admin/getContractTemplateByCourse')
+  adminGetCourseContractTemplate: require('./handlers/admin/getContractTemplateByCourse'),
+  adminGiftCourse: require('./handlers/admin/adminGiftCourse')
 };
 
 // 路由配置

@@ -41,7 +41,7 @@
         class="stat-item"
         @click="handleStatClick(stat.type)"
       >
-        <text class="stat-count" :style="{ color: stat.color }">{{ stat.count }}</text>
+        <text class="stat-count" :style="{ color: stat.color }">{{ stat.count > 99 ? '99+' : stat.count }}</text>
         <text class="stat-label">{{ stat.label }}</text>
       </view>
     </view>

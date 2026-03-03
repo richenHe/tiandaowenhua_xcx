@@ -6,6 +6,7 @@
       class="scroll-content"
       scroll-y
       @scroll="handleScroll"
+      @scrolltolower="loadMore"
     >
       <view class="page-content">
         <!-- 筛选标签 -->
@@ -53,9 +54,19 @@
         </view>
 
         <!-- 空状态 -->
-        <view v-if="filteredOrders.length === 0" class="empty-state">
+        <view v-if="filteredOrders.length === 0 && !loading" class="empty-state">
           <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无订单</text>
+        </view>
+
+        <!-- 加载更多 -->
+        <view v-if="!finished && filteredOrders.length > 0" class="load-more">
+          <text class="load-more-text">{{ loading ? '加载中...' : '上拉加载更多' }}</text>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="finished && filteredOrders.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
       </view>
 
@@ -101,6 +112,14 @@ const tabOptions = [
 // 订单数据
 const orders = ref<any[]>([])
 
+// 分页状态
+const MAX_ITEMS = 99
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
 // 订单类型对应的兜底渐变色（无封面图时使用）
 const fallbackBgMap: Record<number, string> = {
   1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // 课程
@@ -117,50 +136,73 @@ const statusMap: Record<number, { text: string; type: string; orderStatus: strin
   4: { text: '已退款', type: 'danger', orderStatus: 'refunded' }
 }
 
-// 加载订单列表
-const loadOrders = async (tabValue?: number) => {
+// 将接口返回的原始数据映射为前端展示结构
+const mapOrderItem = (item: any) => {
+  const statusInfo = statusMap[item.pay_status] || statusMap[0]
+  const coverUrl = item.cover_image ? cloudFileIDToURL(item.cover_image) : ''
+  return {
+    id: item.order_no,
+    title: item.order_name,
+    time: item.created_at,
+    price: item.final_amount,
+    status: statusInfo.text,
+    statusType: statusInfo.type,
+    coverUrl,
+    fallbackBg: fallbackBgMap[item.order_type] || fallbackBgMap[1],
+    orderStatus: statusInfo.orderStatus,
+    payStatus: item.pay_status
+  }
+}
+
+// 加载订单列表（reset=true 时重置分页从头加载）
+const loadOrders = async (reset = false) => {
+  if (loading.value || finished.value) return
+
+  if (reset) {
+    currentPage.value = 1
+    orders.value = []
+    finished.value = false
+  }
+
   try {
-    uni.showLoading({ title: '加载中...' })
-    // tabValue=-1表示全部，否则直接传入数据库 pay_status 值
-    const params: any = { page: 1, pageSize: 100 }
-    if (tabValue !== undefined && tabValue >= 0) {
-      params.status = tabValue
+    if (currentPage.value === 1) {
+      uni.showLoading({ title: '加载中...' })
+    }
+    loading.value = true
+
+    const params: any = { page: currentPage.value, pageSize: pageSize.value }
+    if (activeTab.value >= 0) {
+      params.status = activeTab.value
     }
 
     const result = await UserApi.getMyOrders(params)
+    orders.value.push(...result.list.map(mapOrderItem))
+    total.value = result.total || 0
+    currentPage.value++
 
-    orders.value = result.list.map((item: any) => {
-      const statusInfo = statusMap[item.pay_status] || statusMap[0]
-      const coverUrl = item.cover_image ? cloudFileIDToURL(item.cover_image) : ''
-
-      const orderData = {
-        id: item.order_no,
-        title: item.order_name,
-        time: item.created_at,
-        price: item.final_amount,
-        status: statusInfo.text,
-        statusType: statusInfo.type,
-        coverUrl,
-        fallbackBg: fallbackBgMap[item.order_type] || fallbackBgMap[1],
-        orderStatus: statusInfo.orderStatus,
-        payStatus: item.pay_status
+    if (orders.value.length >= total.value || orders.value.length >= MAX_ITEMS) {
+      finished.value = true
+      if (orders.value.length > MAX_ITEMS) {
+        orders.value = orders.value.slice(0, MAX_ITEMS)
       }
-      
-      console.log('🔍 [订单映射] 订单号:', item.order_no,
-                  '| pay_status:', item.pay_status,
-                  '| 显示状态:', statusInfo.text,
-                  '| coverUrl:', coverUrl)
-      
-      return orderData
-    })
-    uni.hideLoading()
+    }
+
+    if (currentPage.value === 2) {
+      uni.hideLoading()
+    }
   } catch (error) {
     console.error('加载订单列表失败:', error)
     uni.hideLoading()
-    uni.showToast({
-      title: '加载失败，请重试',
-      icon: 'none'
-    })
+    uni.showToast({ title: '加载失败，请重试', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (!finished.value && !loading.value) {
+    loadOrders()
   }
 }
 
@@ -172,10 +214,10 @@ const filteredOrders = computed(() => {
   return orders.value.filter(order => order.payStatus === activeTab.value)
 })
 
-// 切换 Tab
+// 切换 Tab 时重置分页
 const handleTabChange = (value: number) => {
   activeTab.value = value
-  loadOrders(value)
+  loadOrders(true)
 }
 
 // 跳转到订单详情
@@ -216,14 +258,11 @@ onMounted(() => {
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
 
-  // 加载订单列表
   loadOrders()
 })
 
-// 每次页面显示时重新加载订单（确保超时订单状态更新）
 onShow(() => {
-  console.log('[Orders] 页面显示，重新加载订单列表');
-  loadOrders(activeTab.value);
+  loadOrders(true)
 })
 
 // 返回上一页
@@ -366,6 +405,22 @@ const goBack = () => {
 
 .empty-text {
   font-size: 28rpx;
+  color: $td-text-color-placeholder;
+}
+
+// 加载更多
+.load-more {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.load-more-text {
+  font-size: 24rpx;
+  color: $td-text-color-secondary;
+}
+
+.finished-text {
+  font-size: 24rpx;
   color: $td-text-color-placeholder;
 }
 

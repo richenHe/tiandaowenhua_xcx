@@ -285,18 +285,17 @@ module.exports = async (event, context) => {
       return response.error('该协议模板未配置电子合同文件，请联系管理员');
     }
 
-    // ── 检查是否已签署 ────────────────────────────────────────────────────────
-    // 只检查有效签署记录（status=1），作废记录（status=0）不阻止重新签署
+    // ── 检查是否已签署（按等级判断，同一等级只能签一次）─────────────────────
     const { data: existing } = await db
       .from('contract_signatures')
       .select('id')
       .eq('user_id', user.id)
-      .eq('contract_template_id', finalTemplateId)
+      .eq('ambassador_level', template.ambassador_level)
       .eq('status', 1)
-      .single();
+      .limit(1);
 
-    if (existing) {
-      return response.error('您已签署过该协议');
+    if (existing && existing.length > 0) {
+      return response.error('您已签署过该等级的协议');
     }
 
     // ── 查询用户手机号 ────────────────────────────────────────────────────────

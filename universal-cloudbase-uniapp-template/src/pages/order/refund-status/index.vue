@@ -71,6 +71,16 @@
       </view>
     </scroll-view>
 
+    <!-- 电子发票按钮（退款成功 + 有发票时显示） -->
+    <view v-if="refundInfo.refund_status === 3 && refundInfo.invoice_url" class="invoice-section">
+      <button
+        class="invoice-view-btn"
+        @click="viewInvoice"
+      >
+        <text class="invoice-view-btn-text">查看电子发票</text>
+      </button>
+    </view>
+
     <!-- 底部操作栏 -->
     <view class="fixed-bottom">
       <view class="bottom-actions">
@@ -88,13 +98,13 @@
         >
           <text class="t-button__text">重新下单</text>
         </button>
-        <!-- 已驳回：重新申请 -->
+        <!-- 已驳回 或 退款失败：重新申请 -->
         <button
-          v-if="refundInfo.refund_status === 4"
+          v-if="refundInfo.refund_status === 4 || refundInfo.refund_status === 2"
           class="t-button t-button--theme-primary t-button--size-large action-btn"
           @click="handleReapply"
         >
-          <text class="t-button__text">重新申请</text>
+          <text class="t-button__text">重新申请退款</text>
         </button>
       </view>
     </view>
@@ -144,6 +154,15 @@ const statusConfig = computed<StatusConfig>(() => {
         iconColor: '#D4AF37',
         title: '退款审核中',
         desc: '您的退款申请已提交，请耐心等待审核'
+      }
+    case 2:
+      return {
+        cardClass: 'status-rejected',
+        icon: '⚠️',
+        iconType: 'cancel',
+        iconColor: 'white',
+        title: '退款失败',
+        desc: '退款处理异常，您可以重新申请退款'
       }
     case 3:
       return {
@@ -199,6 +218,35 @@ const handleReorder = () => {
 
 const handleReapply = () => {
   uni.redirectTo({ url: '/pages/order/refund-apply/index' })
+}
+
+const viewInvoice = () => {
+  const url = refundInfo.value.invoice_url
+  if (!url) {
+    uni.showToast({ title: '暂无电子发票', icon: 'none' })
+    return
+  }
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+  if (isImage) {
+    uni.previewImage({ urls: [url], current: url })
+  } else {
+    // #ifdef MP-WEIXIN
+    uni.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          uni.openDocument({ filePath: res.tempFilePath, showMenu: true })
+        }
+      },
+      fail: () => {
+        uni.showToast({ title: '文件打开失败', icon: 'none' })
+      }
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    window.open(url, '_blank')
+    // #endif
+  }
 }
 
 onMounted(() => {
@@ -340,6 +388,28 @@ onMounted(() => {
   font-size: 28rpx;
   color: $td-text-color-primary;
   line-height: 1.6;
+}
+
+/* 电子发票区域 */
+.invoice-section {
+  padding: 0 24rpx 24rpx;
+}
+
+.invoice-view-btn {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #E8F8F0;
+  border-radius: 16rpx;
+  border: 2rpx solid #00A67E;
+}
+
+.invoice-view-btn-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #00A67E;
 }
 
 /* 底部操作栏 */

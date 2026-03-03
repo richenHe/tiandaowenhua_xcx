@@ -25,6 +25,7 @@
  * @param {string}  event.teacher       - 讲师
  * @param {number}  event.sortOrder     - 排序，对应 DB 字段 sort_order
  * @param {number}  event.status        - 状态
+ * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
  */
 const { db, findOne, update } = require('../../common/db');
 const { response } = require('../../common');
@@ -49,7 +50,8 @@ module.exports = async (event, context) => {
     outline,
     teacher,
     sortOrder,
-    status
+    status,
+    includedCourseIds
   } = event;
 
   try {
@@ -63,6 +65,20 @@ module.exports = async (event, context) => {
     const course = await findOne('courses', { id });
     if (!course) {
       return response.notFound('课程不存在');
+    }
+
+    // 上架锁定：已上架课程只允许下架操作（修改 status），其他字段禁止修改
+    if (course.status === 1) {
+      const editFields = ['name', 'nickname', 'type', 'coverImage', 'currentPrice', 'originalPrice',
+        'retrainPrice', 'allowRetrain', 'validityDays', 'duration', 'description', 'content',
+        'outline', 'teacher', 'sortOrder', 'includedCourseIds'];
+      const hasEditField = editFields.some(k => event[k] !== undefined);
+      if (hasEditField) {
+        return response.error('课程已上架，不可修改任何字段。如需修改请先下架课程。');
+      }
+      if (status === undefined) {
+        return response.paramError('课程已上架，仅允许下架操作');
+      }
     }
 
     // 转换 camelCase → snake_case，构建 DB 更新字段
@@ -92,6 +108,16 @@ module.exports = async (event, context) => {
     if (outline !== undefined) fieldsToUpdate.outline = outline;
     if (teacher !== undefined) fieldsToUpdate.teacher = teacher;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
+    // 密训班赠送课程：将单个 ID 转为 JSON 数组；传 null/0 表示清除
+    if (includedCourseIds !== undefined) {
+      const effectiveTypeForGift = type !== undefined ? parseInt(type) : course.type;
+      if (effectiveTypeForGift === 2 && includedCourseIds) {
+        const giftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
+        fieldsToUpdate.included_course_ids = giftId ? JSON.stringify([parseInt(giftId)]) : null;
+      } else {
+        fieldsToUpdate.included_course_ids = null;
+      }
+    }
     if (status !== undefined) fieldsToUpdate.status = status;
 
     // 上架前检查是否已配置学习服务协议模板（沙龙课程无需合同，跳过检查）

@@ -516,6 +516,7 @@ ELSE:
 **字段说明**:
 - `included_courses`: 包含的赠送课程列表（仅密训班等组合课程有此字段）
 - `combo_note`: 组合课程说明文案
+- `gift_courses`（2026-03 新增）: 赠送课程详细信息数组，每项包含 `id, name, type, type_name, cover_image, validity_days, description, content, outline, teacher`。当 `courses.included_course_ids` 有值时返回，供前端展示赠送课程 tab
 
 **数据库设计注意点**:
 - user_courses 表:
@@ -530,6 +531,14 @@ ELSE:
 
 ### 🔵 2.3 我的课程
 **接口**: `GET /api/course/my`
+
+**请求参数**:
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Number | 否 | 页码，默认 1 |
+| page_size | Number | 否 | 每页条数，默认 20 |
+
+> 前端采用滚动分页加载，每次 20 条，累计最多展示 99 条（变更于 2026-03-03）
 
 **响应数据**:
 ```json
@@ -567,6 +576,7 @@ ELSE:
 
 **字段说明**:
 - `expire_at`: 课程有效期截止时间（`buy_time + courses.validity_days`），NULL 表示永久有效
+- `validity_days`: 课程有效期天数（来自 courses 表），NULL 或 0 表示永久有效（新增，2026-03-03）
 - `is_gift`: 是否为赠送课程
 - `gift_source`: 赠送来源说明（如"购买密训班赠送"）
 - `status`: 课程状态（1有效/0失效，退款后失效）
@@ -605,6 +615,11 @@ ELSE:
 > - `original_price`、`retrain_price`、`allow_retrain` 均自动设为 0
 > - `duration` 自动设为 NULL
 
+> **密训班赠送课程（2026-03 新增）**：
+> - `includedCourseIds`（可选）：赠送课程 ID（单个 ID 或数组），仅 `type=2` 密训班有效
+> - 服务端将其转为 JSON 数组 `[courseId]` 写入 `courses.included_course_ids`
+> - **新课程强制 `status=0`（下架）**，忽略前端传入的 status 值
+
 ### 🔴 2.5 课程管理 - 更新课程
 **接口**: `PUT /api/admin/course/update`
 
@@ -628,6 +643,15 @@ ELSE:
 > - 当 `status=1` 且课程当前状态不为 1（即从下架变为上架）时，系统检查 `contract_templates` 中是否存在 `course_id=id, contract_type=4, status=1, deleted_at IS NULL` 的记录
 > - 若不存在，返回错误：`"课程上架前必须配置学习服务协议模板，请先在课程列表点击\"合同\"按钮上传协议文件"`
 > - 已上架课程（course.status=1）再次设置 status=1 跳过此校验
+
+> **上架锁定（2026-03 新增）**：
+> - 课程 `status=1`（已上架）时，除 `status` 字段外的所有编辑字段均被锁定
+> - 尝试修改已上架课程的其他字段将返回错误：`"课程已上架，不可修改任何字段。如需修改请先下架课程。"`
+> - 允许的操作：仅传 `{ id, status: 0 }` 执行下架，下架后恢复可编辑
+
+> **密训班赠送课程（2026-03 新增）**：
+> - 新增 `includedCourseIds` 参数：赠送课程 ID（单个 ID），仅 `type=2` 密训班有效
+> - 传 `null` 或 `0` 清除赠送课程绑定
 
 ### 🔴 2.6 课程管理 - 删除课程
 **接口**: `DELETE /api/admin/course/delete`
@@ -740,7 +764,13 @@ ELSE:
    - 检查 `profile_completed` 是否为 1
    - 未完善返回 403:"请先完善资料"
 
-2. **根据 order_type 处理**
+2. **防重复下单（2026-03 新增）**
+   - 在创建新订单前，先查询同类型的待支付未过期订单（`pay_status=0 AND expire_at > NOW()`）
+   - 匹配条件：`user_id + order_type` 相同，且关键 ID 一致（课程/升级按 `related_id`，复训按 `class_record_id`）
+   - **若命中，直接返回原订单号**（不新建），响应体中 `is_existing=true`
+   - 前端逻辑不变：收到 `order_no` 后统一跳转支付页，无需感知是否已有订单
+
+3. **根据 order_type 处理（仅在无待支付订单时执行）**
 
 | order_type | item_id 含义 | 业务处理 |
 |-----------|-------------|---------|
@@ -748,7 +778,7 @@ ELSE:
 | 2 复训 | 用户课程ID | 验证用户已购买;检查复训截止时间(开课前3天);检查是否已预约 |
 | 4 升级 | 目标等级 | 验证当前等级;验证升级条件;验证协议是否签署;金额从 ambassador_level_configs.upgrade_payment_amount 读取 |
 
-3. **生成订单**
+4. **生成订单**
    - 生成订单号: `ORD + 年月日 + 8位随机数`
    - 插入 orders 表
    - 返回订单信息
@@ -764,7 +794,9 @@ ELSE:
   "referee_uid": "cloud-uid-100",
   "referee_name": "推荐人姓名",
   "referee_level": 2,
-  "status": 0
+  "status": 0,
+  "expire_at": "2026-03-03 14:30:00",
+  "is_existing": false
 }
 ```
 
@@ -776,6 +808,9 @@ ELSE:
   - `class_record_id`: INT,上课记录ID(复训专用)
   - `final_amount`: DECIMAL(10,2),应付金额
   - `order_metadata`: JSON,订单元数据(如密训班标记)
+  - `expire_at`: DATETIME,订单过期时间（创建后30分钟）
+- **响应字段说明**:
+  - `is_existing`: Boolean，`true` 表示命中已有待支付订单（非新建），`false` 为新建订单
 - **索引建议**:
   - `idx_user_type_status` (user_id, order_type, pay_status)
   - `idx_order_no` (order_no) UNIQUE
@@ -1001,9 +1036,13 @@ ELSE:
 **接口**: `GET /api/order/list`
 
 **请求参数**:
-```
-?status=1&page=1&page_size=10
-```
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
+| status | Number | 否 | 筛选 pay_status（0待支付/1已支付/2已取消/4已退款），不传为全部 |
+
+> 前端采用滚动分页加载，每次 20 条，累计最多展示 99 条（变更于 2026-03-03）
 
 **响应数据**:
 ```json
@@ -1012,17 +1051,29 @@ ELSE:
   "list": [
     {
       "order_no": "ORD202401150001",
-      "course_name": "初探班",
-      "amount": 1688.00,
+      "order_type": 1,
+      "order_name": "初探班",
+      "related_id": 1,
+      "final_amount": 1688.00,
       "pay_status": 1,
+      "refund_status": 0,
+      "refund_reason": "",
+      "refund_reject_reason": "",
+      "refund_amount": 0,
+      "refund_time": null,
+      "invoice_url": "",
+      "pay_status_name": "已支付",
       "pay_time": "2024-01-15 10:30:00",
       "referee_name": "推荐人",
       "is_reward_granted": true,
-      "created_at": "2024-01-15 10:00:00"
+      "created_at": "2024-01-15 10:00:00",
+      "expires_at": "2024-01-15 10:30:00"
     }
   ]
 }
 ```
+
+> **变更说明（2026-03-03）**：新增退款相关返回字段 `refund_reason`、`refund_reject_reason`、`refund_amount`、`refund_time`、`invoice_url`，用于前端退款列表页动态展示退款状态。
 
 ### 🔵 3.6 订单详情
 **接口**: `GET /api/order/detail`
@@ -1101,14 +1152,25 @@ ELSE:
 **业务逻辑**:
 ```
 1. 验证用户身份
-2. 查询订单：必须属于当前用户 + pay_status=1（已支付）+ refund_status=0（无退款）
-3. 若订单类型=1（课程订单）：查询 user_courses.contract_signed
-   - contract_signed=1：返回错误"已签署学习合同，无法退款"
-4. 更新 orders 表：
+2. 查询订单：必须属于当前用户 + pay_status=1（已支付）
+3. refund_status 校验：
+   - refund_status=0（无退款）/ 2（退款失败）/ 4（已驳回）→ 允许申请
+   - refund_status=1（申请中）→ 拒绝：退款审核中，请耐心等待
+   - refund_status=3（已退款）→ 拒绝：已退款，无法重复申请
+4. 若订单类型=1（课程订单）：
+   a. 查询主课程 user_courses.contract_signed
+      - contract_signed=1：返回错误"已签署学习合同，无法退款"
+   b. 查询主课程 courses.included_course_ids（赠送课程）
+      - 对每个赠送课程查 user_courses.contract_signed
+      - 任一赠送课程 contract_signed=1：返回错误"赠送课程已签署学习合同，无法退款"
+5. 更新 orders 表：
    - refund_status = 1（申请退款）
    - refund_amount = final_amount
    - refund_reason = 用户填写的原因
-5. 返回申请成功
+   - refund_reject_reason = null（清空之前的驳回原因）
+   - refund_audit_admin_id = null
+   - refund_audit_time = null
+6. 返回申请成功
 ```
 
 **响应数据**:
@@ -1126,7 +1188,8 @@ ELSE:
 
 **错误情况**:
 - `pay_status !== 1`：只能对已支付订单申请退款
-- `refund_status !== 0`：该订单已有退款记录
+- `refund_status === 1`：退款审核中，请耐心等待
+- `refund_status === 3`：已退款，无法重复申请
 - `contract_signed = 1`：已签署学习合同，无法退款
 
 ---
@@ -1169,8 +1232,9 @@ ELSE:
 |----|------|
 | 0 | 无退款 |
 | 1 | 申请退款（待审核） |
+| 2 | 退款失败（微信退款处理异常，可重新申请） |
 | 3 | 已退款（财务已转账） |
-| 4 | 已驳回 |
+| 4 | 已驳回（可重新申请） |
 
 ---
 
@@ -1313,14 +1377,15 @@ ELSE:
    - refund_audit_time = NOW()
 5. 调用 rollbackOrderBusiness 回滚业务：
    a. 课程订单（order_type=1）：
-      - UPDATE user_courses SET status=2 WHERE order_id=orders.id AND is_gift=0
-      - UPDATE user_courses SET status=2 WHERE source_order_id=orders.id（赠送课程）
-      - 取消所有待上课预约（appointments.status=4）
+      - 主课程：UPDATE user_courses SET status=0 WHERE user_id AND course_id=related_id
+      - 赠送课程回退（2026-03 新增）：
+        - 查询主课程的 courses.included_course_ids
+        - 对每个赠送课程 ID：
+          1. 查找 is_gift=1 且 source_order_id=order.id 的记录
+          2. 有记录（新建的赠送）→ status=0 失效
+          3. 无记录（叠加有效期）→ expire_at 减去赠送课程的 validity_days 天
    b. 复训订单（order_type=2）：
       - 取消对应预约
-   c. 升级订单（order_type=4）：
-      - 降回上一个大使等级
-   d. 推荐人奖励回退（若 is_reward_granted=1）
 6. 返回标记成功
 ```
 
@@ -1444,6 +1509,15 @@ ELSE:
 
 ### 🔵 4.4 我的预约
 **接口**: `GET /api/appointment/my`
+
+**请求参数**:
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Number | 否 | 页码，默认 1 |
+| page_size | Number | 否 | 每页条数，默认 20 |
+| status | Number | 否 | 筛选状态（0待上课/1已签到/2缺席），-1或不传为全部 |
+
+> 前端采用滚动分页加载，每次 20 条，累计最多展示 99 条（变更于 2026-03-03）
 
 **响应数据**:
 ```json
@@ -2594,8 +2668,13 @@ Page({
 6. 事务执行：
    a. 扣减 users.merit_points 或 cash_points_available
    b. 写入 user_courses（见写入规则）
-   c. 写入 merit_points_records 或 cash_points_records（见明细规则）
-   d. 更新 courses.sold_count +1
+   c. 密训班赠送课程处理（2026-03 新增）：
+      - 查询 courses.included_course_ids
+      - 对每个赠送课程：
+        - 用户无该课程 → 新建 user_courses（is_gift=1, gift_source="兑换XX赠送"）
+        - 用户已有 → 在现有 expire_at 上叠加 validity_days 天
+   d. 写入 merit_points_records 或 cash_points_records（见明细规则）
+   e. 更新 courses.sold_count +1
       若 stock != -1：courses.stock -1
 ```
 
@@ -2794,6 +2873,9 @@ IF 无记录（首次兑换）:
 7. 发送通知给受赠人
 ```
 
+**时区处理（2026-03-02 修复）**:
+- 为受赠人新建 `ambassador_quotas` 记录时，`expire_date` 使用 `Date.now() + 8h` 手动偏移至北京时间后直接用 UTC 方法取日期字符串，不再二次调用 `formatBeijingDate`，避免双重 +8h 导致到期日多一天
+
 **响应数据**:
 ```json
 {
@@ -2803,6 +2885,42 @@ IF 无记录（首次兑换）:
   "remaining_quantity": 6
 }
 ```
+
+### 🔴 6.17 管理端赠送课程（2026-03-03 新增）
+
+- **action**: `adminGiftCourse`
+- **调用方**: 管理后台
+- **描述**: 管理员代大使赠送课程给指定用户，自动扣减大使名额并为用户开通/续期课程
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| ambassadorUserId | Number | 是 | 大使用户ID |
+| recipientUserId | Number | 是 | 接收人用户ID |
+| courseId | Number | 是 | 课程ID |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| record_id | Number | quota_usage_records 记录ID |
+| user_course_id | Number | user_courses 记录ID |
+| action | String | 操作类型：新开通 / 延长有效期 / 重新激活并延期 |
+| ambassador_name | String | 大使姓名 |
+| recipient_name | String | 接收人姓名 |
+| course_name | String | 课程名称 |
+| remaining_quota | Number | 大使该类型剩余名额 |
+
+**业务规则**
+1. 仅 course.type=1（初探班）和 type=2（密训班）支持赠送
+2. 大使必须有对应 quota_type 的剩余名额（ambassador_quotas.remaining_quantity > 0）
+3. 扣减名额按 id 升序（最早记录优先）
+4. 接收人未拥有该课程 → 新建 user_courses（is_gift=1, attend_count=0）
+5. 接收人已有且未过期 → 在 expire_at 基础上加 validity_days 天
+6. 接收人已有但已过期/失效 → 从当前时间起算 validity_days 天，恢复 status=1
+7. validity_days 为 NULL → expire_at 设为 NULL（永久有效）
+8. 写入 quota_usage_records（usage_type=1）
 
 ### 🔴 6.12 大使申请管理 - 列表
 **接口**: `GET /api/admin/ambassador/applications`
@@ -4039,6 +4157,8 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ### 🔵 7.3 我的协议列表
 **接口**: `GET /api/contract/my-list`
 
+> 后端一次性返回全部协议，前端客户端截取前 99 条展示（变更于 2026-03-03）
+
 **响应数据**:
 ```json
 {
@@ -4168,6 +4288,8 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 - `signatureFileId` 缺失 → 返回参数错误："缺少手写签名文件（signatureFileId）"
 - 签约成功后：写入 `contract_signatures`，更新 `user_courses.contract_signed=1`
 - **奖励延迟发放**：若 `orders.referee_id` 不为空且 `is_reward_granted=0`，签约成功触发奖励发放逻辑（`is_reward_granted=1, reward_granted_at=now()`）；无推荐人时不报错
+- **docx 签名注入**：使用 `insertAfterLabelSmart` 精确注入签名到甲方位置；当标签与其他内容共享同一个 `<w:r>` run 时，自动拆分 run 确保签名/姓名/证件号插入到正确标签之后
+- **合同期限计算**：`contract_end = signDate + validity_years` 年，直接取北京时间日期，避免双重 UTC+8 偏移
 
 ---
 

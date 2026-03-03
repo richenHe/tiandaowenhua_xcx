@@ -22,7 +22,7 @@
             <view class="t-card__body">
               <view class="course-title">{{ courseInfo.name || '课程名称' }}</view>
               <view class="course-meta">
-                <text class="course-price">{{ courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price) }}</text>
+                <text class="course-price">{{ isExchangeMode ? pointsPrice + '积分' : (courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price)) }}</text>
                 <view v-if="courseInfo.type !== 4" class="t-badge--standalone t-badge--theme-success">
                   已有{{ courseInfo.soldCount }}人购买
                 </view>
@@ -38,7 +38,7 @@
                 <view class="t-tabs__nav-wrap">
                   <view
                     class="t-tabs__bar"
-                    :style="{ left: `calc(${activeTabIndex} * 33.33%)`, width: '33.33%' }"
+                    :style="{ left: `calc(${activeTabIndex} * ${100/tabs.length}%)`, width: (100/tabs.length) + '%' }"
                   ></view>
                   <view
                     v-for="(tab, index) in tabs"
@@ -78,6 +78,34 @@
                   <view class="section-heading">👨‍🏫 讲师介绍</view>
                   <view class="section-text">{{ courseInfo.instructor }}</view>
                 </view>
+
+                <!-- 赠送课程（动态 tab，index >= 3；v-for 必须在外层 template，否则 Vue 3 的 v-if 优先级高于 v-for，gi 为 undefined） -->
+                <template v-for="(gc, gi) in giftCourses" :key="'gift-'+gc.id">
+                  <view v-if="activeTabIndex === 3 + gi">
+                    <view class="section-heading">🎁 赠送课程详情</view>
+                    <view class="gift-course-card">
+                      <image v-if="gc.cover_image" :src="gc.cover_image" class="gift-course-cover" mode="aspectFill" />
+                      <view class="gift-course-info">
+                        <view class="gift-course-name">{{ gc.name }}</view>
+                        <view class="gift-course-meta">
+                          <text class="gift-course-type">{{ gc.type_name }}</text>
+                          <text v-if="gc.validity_days" class="gift-course-validity">有效期 {{ gc.validity_days }} 天</text>
+                          <text v-else class="gift-course-validity">永久有效</text>
+                        </view>
+                      </view>
+                    </view>
+                    <view v-if="gc.description" style="margin-top: 24rpx;">
+                      <view class="section-heading">📖 课程介绍</view>
+                      <view class="section-text">{{ gc.description }}</view>
+                    </view>
+                    <view v-if="gc.outline && gc.outline.length > 0" style="margin-top: 24rpx;">
+                      <view class="section-heading">📋 课程大纲</view>
+                      <view class="section-list">
+                        <view v-for="(item, idx) in gc.outline" :key="idx" class="list-item">{{ item }}</view>
+                      </view>
+                    </view>
+                  </view>
+                </template>
               </view>
             </view>
           </view>
@@ -88,9 +116,11 @@
 
     <!-- 固定底部 -->
     <view class="fixed-bottom">
-      <text class="bottom-price">{{ courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price) }}</text>
+      <text class="bottom-price">{{ bottomPriceText }}</text>
       <button
         class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
+        :class="{ 't-button--disabled': isExchangeMode && !canAffordExchange }"
+        :disabled="isExchangeMode && !canAffordExchange"
         @click="handleBuy"
       >
         <span class="t-button__text">{{ buttonText }}</span>
@@ -103,18 +133,20 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi } from '@/api';
+import { CourseApi, OrderApi, SystemApi } from '@/api';
 import { formatPrice } from '@/utils';
 
 // 当前选中的标签页
 const activeTabIndex = ref(0);
 
-// 标签页列表
-const tabs = [
+// 标签页列表（动态，含赠送课程 tab）
+const baseTabs = [
   { label: '课程介绍' },
   { label: '课程大纲' },
   { label: '讲师介绍' },
 ];
+const tabs = ref(baseTabs);
+const giftCourses = ref<any[]>([]);
 
 // 课程信息
 const courseInfo = ref({
@@ -131,6 +163,13 @@ const courseInfo = ref({
   user_course_id: null as number | null,
   attend_count: 1,
 });
+
+// 兑换模式相关状态
+const isExchangeMode = ref(false);
+const pointsPrice = ref(0);
+const userCashPoints = ref(0);
+
+const canAffordExchange = computed(() => userCashPoints.value >= pointsPrice.value);
 
 const getCourseEmoji = (type: number): string => {
   const map: Record<number, string> = { 1: '📚', 2: '🎓', 3: '🔄', 4: '🎤' };
@@ -179,6 +218,15 @@ const loadCourseDetail = async (courseId: number) => {
         courseInfo.value.outline = course.outline ? [course.outline] : [];
       }
     }
+
+    // 赠送课程 tabs
+    giftCourses.value = course.gift_courses || [];
+    const dynamicTabs = [...baseTabs];
+    for (let i = 0; i < giftCourses.value.length; i++) {
+      dynamicTabs.push({ label: '赠送课程' });
+    }
+    tabs.value = dynamicTabs;
+
     uni.hideLoading();
   } catch (error) {
     console.error('加载课程详情失败:', error);
@@ -192,19 +240,32 @@ const loadCourseDetail = async (courseId: number) => {
   }
 };
 
+// 加载用户积分（兑换模式使用）
+const loadUserPoints = async () => {
+  try {
+    const points = await SystemApi.getUserPoints() as any;
+    userCashPoints.value = points.cash_points_available ?? points.cashPointsAvailable ?? 0;
+  } catch (error) {
+    console.error('加载用户积分失败:', error);
+  }
+};
+
 onMounted(() => {
-  // 获取页面参数
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = (currentPage as any).options || {};
 
-  // 支持多种参数名：id、courseId、course_id（兼容性）
-  // ⚠️ 先转 Number 再判断，避免字符串 "0" 被误判为 truthy
+  // 检测兑换模式：从商城页跳转时携带 from=exchange
+  if (options.from === 'exchange') {
+    isExchangeMode.value = true;
+    pointsPrice.value = Number(options.pointsPrice || 0);
+    loadUserPoints();
+  }
+
   const courseId = Number(options.id || options.courseId || options.course_id || 0);
   if (courseId > 0) {
     loadCourseDetail(courseId);
   } else {
-    // 没有课程ID，显示错误并停止加载
     isLoading.value = false;
     uni.showToast({
       title: '课程ID不存在',
@@ -217,35 +278,88 @@ onShow(() => {
   if (courseInfo.value.id > 0) {
     loadCourseDetail(courseInfo.value.id);
   }
+  if (isExchangeMode.value) {
+    loadUserPoints();
+  }
 });
 
-// 按钮文本：沙龙课程(type=4)始终显示"立即预约"
+// 底部价格文案
+const bottomPriceText = computed(() => {
+  if (isExchangeMode.value) return pointsPrice.value + '积分';
+  if (courseInfo.value.type === 4) return '免费';
+  return '¥' + formatPrice(courseInfo.value.price);
+});
+
+// 按钮文本
 const buttonText = computed(() => {
+  if (isExchangeMode.value) {
+    return canAffordExchange.value ? '立即兑换' : '积分不足';
+  }
   if (courseInfo.value.type === 4) return '立即预约';
   if (courseInfo.value.is_purchased) return '立即预约';
   return '立即购买';
 });
 
 /**
- * 立即购买/预约
+ * 积分兑换课程（兑换模式下调用，逻辑与商城页 handleExchangeCourse 一致）
  */
-const handleBuy = () => {
-  // 验证课程ID是否有效
-  if (!courseInfo.value.id) {
-    uni.showToast({
-      title: '课程信息加载中，请稍候',
-      icon: 'none'
+const handleExchange = () => {
+  if (!canAffordExchange.value) {
+    uni.showModal({
+      title: '提示',
+      content: '积分不足，无法兑换该课程',
+      showCancel: false,
     });
     return;
   }
 
+  uni.showModal({
+    title: '提示',
+    content: `确定用 ${pointsPrice.value} 积分兑换课程吗？`,
+    confirmText: '确定',
+    cancelText: '取消',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await OrderApi.exchangeCourse({
+            course_id: courseInfo.value.id!,
+            use_cash_points_if_not_enough: true
+          });
+          await loadUserPoints();
+          uni.showToast({ title: '兑换成功', icon: 'success', duration: 2000 });
+        } catch (error: any) {
+          console.error('兑换失败:', error);
+          uni.showToast({
+            title: error?.message || '兑换失败，请重试',
+            icon: 'none',
+            duration: 2500,
+          });
+        }
+      }
+    },
+  });
+};
+
+/**
+ * 立即购买/预约/兑换
+ */
+const handleBuy = () => {
+  if (!courseInfo.value.id) {
+    uni.showToast({ title: '课程信息加载中，请稍候', icon: 'none' });
+    return;
+  }
+
+  // 兑换模式：执行积分兑换
+  if (isExchangeMode.value) {
+    handleExchange();
+    return;
+  }
+
   if (courseInfo.value.type === 4 || courseInfo.value.is_purchased) {
-    // 沙龙课程(免费)或已购买：进入课程计划页选择排期
     uni.navigateTo({
       url: `/pages/course/schedule/index?course_id=${courseInfo.value.id}&course_type=${courseInfo.value.type}`,
     });
   } else {
-    // 未购买：跳转到订单确认页
     uni.navigateTo({
       url: `/pages/order/confirm/index?courseId=${courseInfo.value.id}`,
     });
@@ -436,6 +550,46 @@ const handleBuy = () => {
   }
 }
 
+// 赠送课程卡片
+.gift-course-card {
+  display: flex;
+  gap: 24rpx;
+  align-items: flex-start;
+
+  .gift-course-cover {
+    width: 180rpx;
+    height: 120rpx;
+    border-radius: $td-radius-default;
+    flex-shrink: 0;
+  }
+
+  .gift-course-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gift-course-name {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: $td-text-color-primary;
+    margin-bottom: 12rpx;
+  }
+
+  .gift-course-meta {
+    display: flex;
+    gap: 16rpx;
+    font-size: 24rpx;
+    color: $td-text-color-secondary;
+  }
+
+  .gift-course-type {
+    padding: 4rpx 12rpx;
+    background: rgba($td-brand-color, 0.1);
+    color: $td-brand-color;
+    border-radius: 4rpx;
+  }
+}
+
 // 固定底部
 .fixed-bottom {
   position: fixed;
@@ -479,6 +633,11 @@ const handleBuy = () => {
       font-size: 32rpx;
       font-weight: 500;
     }
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    background-color: $td-text-color-placeholder;
   }
 }
 </style>

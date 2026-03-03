@@ -167,7 +167,58 @@ module.exports = async (event, context) => {
         );
       }
 
-      // 7.4 写入功德分消耗明细
+      // 7.4 密训班赠送课程处理（逻辑同 payment.js）
+      if (course.type === 2) {
+        let giftIds = course.included_course_ids;
+        if (typeof giftIds === 'string') {
+          try { giftIds = JSON.parse(giftIds); } catch (e) { giftIds = []; }
+        }
+        if (giftIds && giftIds.length > 0) {
+          for (const giftCourseId of giftIds) {
+            const giftCourse = await findOne('courses', { id: giftCourseId });
+            if (!giftCourse) {
+              console.warn('[exchangeCourse] 赠送课程不存在:', giftCourseId);
+              continue;
+            }
+            const { data: existingGift } = await db
+              .from('user_courses')
+              .select('id, expire_at')
+              .eq('user_id', user.id)
+              .eq('course_id', giftCourseId)
+              .eq('status', 1)
+              .limit(1);
+
+            if (!existingGift || existingGift.length === 0) {
+              const giftExpireAt = calcExpireAt(nowStr, giftCourse.validity_days);
+              await insert('user_courses', {
+                user_id: user.id,
+                _openid: OPENID || '',
+                course_id: giftCourseId,
+                course_type: giftCourse.type,
+                course_name: giftCourse.name,
+                order_no: null,
+                source_course_id: course.id,
+                buy_price: 0,
+                buy_time: nowStr,
+                expire_at: giftExpireAt,
+                is_gift: 1,
+                gift_source: `兑换${course.name}赠送`,
+                attend_count: 0,
+                status: 1
+              });
+              console.log('[exchangeCourse] 赠送课程已创建:', giftCourse.name);
+            } else if (giftCourse.validity_days != null) {
+              const eg = existingGift[0];
+              const base = eg.expire_at && new Date(eg.expire_at) > new Date() ? eg.expire_at : nowStr;
+              const newExpire = calcExpireAt(base, giftCourse.validity_days);
+              await update('user_courses', { expire_at: newExpire }, { id: eg.id });
+              console.log('[exchangeCourse] 赠送课程叠加有效期:', giftCourse.name, '新截止:', newExpire);
+            }
+          }
+        }
+      }
+
+      // 7.5 写入功德分消耗明细
       if (merit_points_used > 0) {
         await insert('merit_points_records', {
           user_id: user.id,
@@ -180,7 +231,7 @@ module.exports = async (event, context) => {
         });
       }
 
-      // 7.5 写入积分消耗明细（type=6 系统调整，表示商城兑换扣减）
+      // 7.6 写入积分消耗明细（type=6 系统调整，表示商城兑换扣减）
       if (cash_points_used > 0) {
         await insert('cash_points_records', {
           user_id: user.id,

@@ -23,7 +23,8 @@
  * @param {string}  event.outline       - 大纲
  * @param {string}  event.teacher       - 讲师
  * @param {number}  event.sortOrder     - 排序，对应 DB 字段 sort_order
- * @param {number}  event.status        - 状态（默认 1）
+ * @param {number}  event.status        - 状态（新课程强制为 0=下架）
+ * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
  */
 const { insert } = require('../../common/db');
 const { response } = require('../../common');
@@ -46,7 +47,7 @@ module.exports = async (event, context) => {
   const outline = event.outline;
   const teacher = event.teacher;
   const sortOrder = event.sortOrder || event.sort_order;
-  const status = event.status;
+  const includedCourseIds = event.includedCourseIds || event.included_course_ids;
 
   try {
     const isSalon = parseInt(type) === 4;
@@ -68,7 +69,16 @@ module.exports = async (event, context) => {
       }
     }
 
-    // camelCase → snake_case，写入 DB
+    // 密训班赠送课程：将单个 ID 转为 JSON 数组
+    let includedCourseIdsJson = null;
+    if (parseInt(type) === 2 && includedCourseIds) {
+      const giftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
+      if (giftId) {
+        includedCourseIdsJson = JSON.stringify([parseInt(giftId)]);
+      }
+    }
+
+    // camelCase → snake_case，写入 DB（新课程强制 status=0 下架）
     const [result] = await insert('courses', {
       name,
       nickname: nickname || null,
@@ -84,8 +94,9 @@ module.exports = async (event, context) => {
       retrain_price: isSalon ? 0 : (retrainPrice || 0),
       allow_retrain: isSalon ? 0 : (allowRetrain ? 1 : 0),
       validity_days: validityDaysParsed,
+      included_course_ids: includedCourseIdsJson,
       sort_order: sortOrder || 0,
-      status: status !== undefined ? status : 1
+      status: 0
     });
 
     return response.success({

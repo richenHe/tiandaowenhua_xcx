@@ -46,6 +46,40 @@ module.exports = async (event, context) => {
       else if (resolvedLevel === 3) contractTypeValue = 3;
     }
 
+    // 防重：查是否已有同等级/同课程的生效模板，有则转为更新
+    let existQuery = db
+      .from('contract_templates')
+      .select('id')
+      .eq('status', 1);
+
+    if (isCourseContract) {
+      existQuery = existQuery.eq('course_id', Number(courseId)).eq('contract_type', 4);
+    } else {
+      existQuery = existQuery.eq('ambassador_level', resolvedLevel).eq('contract_type', contractTypeValue);
+    }
+
+    const { data: existList } = await existQuery.limit(1);
+    if (existList && existList.length > 0) {
+      const updateFields = {
+        contract_name: resolvedName,
+        version: version || 'v1.0',
+        content: content || '',
+        validity_years: validityYears != null ? parseInt(validityYears) : 1,
+        updated_at: formatDateTime(new Date())
+      };
+      if (contractFileId) updateFields.contract_file_id = contractFileId;
+
+      await db.from('contract_templates').update(updateFields).eq('id', existList[0].id);
+      console.log(`[createContractTemplate] 已存在模板 id=${existList[0].id}，转为更新`);
+
+      return response.success({
+        template_id: existList[0].id,
+        contract_name: resolvedName,
+        level: resolvedLevel,
+        version: version || 'v1.0'
+      }, '协议模板已更新（已有模板）');
+    }
+
     const insertData = {
       contract_name: resolvedName,
       contract_type: contractTypeValue,

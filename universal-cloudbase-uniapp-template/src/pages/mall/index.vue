@@ -59,7 +59,6 @@
               v-for="product in filteredProducts" 
               :key="product.id"
               class="product-card"
-              @click="handleProductClick(product)"
             >
               <view class="product-image">
                 <image
@@ -389,14 +388,6 @@ const goToPointsDetail = () => {
   })
 }
 
-// 点击商品
-const handleProductClick = (product: any) => {
-  uni.showToast({
-    title: `查看${product.name}`,
-    icon: 'none'
-  })
-}
-
 // 兑换商品
 const handleExchange = (product: any) => {
   const productPoints = product.points;
@@ -461,11 +452,10 @@ const handleExchange = (product: any) => {
   });
 };
 
-// 点击课程
+// 点击课程 → 跳转课程详情页（兑换模式）
 const handleCourseClick = (course: any) => {
-  uni.showToast({
-    title: `查看${course.name}`,
-    icon: 'none'
+  uni.navigateTo({
+    url: `/pages/course/detail/index?courseId=${course.id}&from=exchange&pointsPrice=${course.points}`
   })
 }
 

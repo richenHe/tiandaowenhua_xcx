@@ -458,6 +458,10 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updateAmbassadorLevel', { user_id: userId, level });
   }
 
+  static async adminGiftCourse({ ambassadorUserId, recipientUserId, courseId }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminGiftCourse', { ambassadorUserId, recipientUserId, courseId });
+  }
+
   // 申请管理
   static async getApplicationList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getApplicationList', params);

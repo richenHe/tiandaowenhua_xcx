@@ -17,7 +17,7 @@
 
         <!-- 协议列表 -->
         <view
-          v-for="contract in contracts"
+          v-for="contract in displayContracts"
           :key="contract.id"
           class="t-card"
           @click="goToContractDetail(contract.id)"
@@ -75,9 +75,14 @@
         </view>
 
         <!-- 空状态 -->
-        <view v-if="contracts.length === 0 && !loading" class="empty-state">
+        <view v-if="displayContracts.length === 0 && !loading" class="empty-state">
           <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无协议记录</text>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="displayContracts.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
 
       </view>
@@ -89,16 +94,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { AmbassadorApi } from '@/api'
 import { openContractDocument } from '@/utils/open-document'
 import type { Contract } from '@/api/types/ambassador'
 
+const MAX_ITEMS = 99
+
 // 协议列表
 const contracts = ref<Contract[]>([])
 const loading = ref(false)
+
+// 客户端截取最多 99 条展示
+const displayContracts = computed(() => contracts.value.slice(0, MAX_ITEMS))
 
 onMounted(() => {
   loadContracts()
@@ -108,7 +118,7 @@ onShow(() => {
   loadContracts()
 })
 
-// 加载协议列表
+// 加载协议列表（后端不支持分页，客户端限制最多99条）
 const loadContracts = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
@@ -151,14 +161,17 @@ const handleViewContract = (contract: Contract) => {
   openContractDocument(url, contract.title)
 }
 
-// 计算剩余天数
+// 计算剩余天数（基于纯日期比较，避免时区/时间分量导致多算一天）
 const calculateDaysLeft = (expiryDate: string) => {
   if (!expiryDate) return 0
 
-  const expiry = new Date(expiryDate)
-  const today = new Date()
-  const diff = expiry.getTime() - today.getTime()
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+  const parts = expiryDate.split(' ')[0].split('-').map(Number)
+  const expiryMs = Date.UTC(parts[0], parts[1] - 1, parts[2])
+
+  const now = new Date()
+  const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+
+  return Math.max(0, Math.round((expiryMs - todayMs) / (1000 * 60 * 60 * 24)))
 }
 
 // 获取状态类型
@@ -395,6 +408,17 @@ const formatDate = (dateStr: string) => {
 .desc-bold {
   font-weight: 500;
   color: $td-text-color-primary;
+}
+
+// 加载更多
+.load-more {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.finished-text {
+  font-size: 24rpx;
+  color: $td-text-color-placeholder;
 }
 
 // 底部留白

@@ -13,7 +13,7 @@
  *   4. 查询 user_courses 检查 contract_signed：已签合同则拒绝退款
  *   5. 更新 orders: refund_status=1, refund_amount=final_amount, refund_reason
  */
-const { findOne, update } = require('../../common/db');
+const { findOne, update, query, db } = require('../../common/db');
 const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -43,9 +43,13 @@ module.exports = async (event, context) => {
       return response.error('只能对已支付订单申请退款');
     }
 
-    if (order.refund_status !== 0) {
-      const statusText = { 1: '退款审核中', 3: '已退款', 4: '退款被驳回' };
-      return response.error(`该订单${statusText[order.refund_status] || '已有退款记录'}，无法重复申请`);
+    // refund_status: 0=无退款, 1=申请中, 2=退款失败, 3=已退款, 4=已驳回
+    // 仅允许 0/2/4 状态重新申请
+    if (order.refund_status === 1) {
+      return response.error('该订单退款审核中，请耐心等待');
+    }
+    if (order.refund_status === 3) {
+      return response.error('该订单已退款，无法重复申请');
     }
 
     // 大使升级订单不支持退款
@@ -53,16 +57,35 @@ module.exports = async (event, context) => {
       return response.error('大使升级订单不支持退款。如有疑问请联系客服。');
     }
 
-    // 课程订单需检查合同签署状态
+    // 课程订单需检查合同签署状态：主课程 + 赠送课程任一签了合同均拒绝退款
     if (order.order_type === 1 && order.related_id) {
-      const userCourse = await findOne('user_courses', {
-        user_id: user.id,
-        course_id: order.related_id,
-        status: 1
+      const userCourses = await query('user_courses', {
+        where: { user_id: user.id, course_id: order.related_id, status: 1 },
+        limit: 1
       });
 
-      if (userCourse && userCourse.contract_signed === 1) {
+      if (userCourses.length > 0 && userCourses[0].contract_signed === 1) {
         return response.error('该课程已签署学习合同，无法退款。如有疑问请联系客服。');
+      }
+
+      // 检查赠送课程的合同签署状态
+      const course = await findOne('courses', { id: order.related_id });
+      if (course) {
+        let giftIds = course.included_course_ids;
+        if (typeof giftIds === 'string') {
+          try { giftIds = JSON.parse(giftIds); } catch (e) { giftIds = []; }
+        }
+        if (giftIds && giftIds.length > 0) {
+          for (const giftCourseId of giftIds) {
+            const giftUc = await query('user_courses', {
+              where: { user_id: user.id, course_id: giftCourseId, status: 1 },
+              limit: 1
+            });
+            if (giftUc.length > 0 && giftUc[0].contract_signed === 1) {
+              return response.error('赠送课程已签署学习合同，无法退款。如有疑问请联系客服。');
+            }
+          }
+        }
       }
     }
 
@@ -72,7 +95,10 @@ module.exports = async (event, context) => {
       {
         refund_status: 1,
         refund_amount: order.final_amount,
-        refund_reason: refund_reason.trim()
+        refund_reason: refund_reason.trim(),
+        refund_reject_reason: null,
+        refund_audit_admin_id: null,
+        refund_audit_time: null
       },
       { order_no }
     );

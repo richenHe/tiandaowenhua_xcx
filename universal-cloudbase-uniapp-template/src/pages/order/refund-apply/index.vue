@@ -2,10 +2,19 @@
   <view class="page-container">
     <TdPageHeader title="申请退款" :showBack="true" />
 
+    <!-- Tabs 栏 -->
+    <view class="tabs-wrapper">
+      <CapsuleTabs
+        v-model="activeTab"
+        :options="tabOptions"
+        @change="onTabChange"
+      />
+    </view>
+
     <scroll-view scroll-y class="scroll-area">
       <view class="page-content">
-        <!-- 提示信息 -->
-        <view class="tip-bar">
+        <!-- 提示信息（仅在未退款 tab 显示） -->
+        <view v-if="activeTab === 'pending'" class="tip-bar">
           <view class="tip-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
           <text class="tip-text">请选择要退款的课程，已签署学习合同的课程无法退款</text>
         </view>
@@ -16,22 +25,24 @@
         </view>
 
         <!-- 空状态 -->
-        <view v-else-if="refundableItems.length === 0" class="empty-wrapper">
+        <view v-else-if="filteredList.length === 0" class="empty-wrapper">
           <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
-          <text class="empty-text">暂无可退款的订单</text>
-          <text class="empty-desc">已支付且未退款的课程订单才可申请退款</text>
+          <text class="empty-text">{{ activeTab === 'pending' ? '暂无可退款的订单' : '暂无已退款订单' }}</text>
+          <text class="empty-desc">{{ activeTab === 'pending' ? '已支付且未退款的课程订单才可申请退款' : '退款成功的订单会显示在这里' }}</text>
         </view>
 
-        <!-- 课程列表 -->
-        <view v-else class="course-list">
+        <!-- === 未退款列表 === -->
+        <view v-else-if="activeTab === 'pending'" class="course-list">
           <view
-            v-for="item in refundableItems"
+            v-for="item in filteredList"
             :key="item.order_no"
-            :class="['course-card', { 'selected': selectedOrderNo === item.order_no, 'disabled': item.contract_signed === 1 }]"
-            @click="selectCourse(item)"
+            :class="['course-card', {
+              'selected': selectedOrderNo === item.order_no,
+              'disabled': !canSelectItem(item)
+            }]"
+            @click="handleCardClick(item)"
           >
             <view class="card-left">
-              <!-- 有封面图时显示图片，否则降级为渐变色图标 -->
               <image
                 v-if="item.cover_image"
                 :src="item.cover_image"
@@ -48,19 +59,81 @@
                 <text class="card-amount">¥{{ formatPrice(item.final_amount) }}</text>
                 <text class="card-time">{{ item.pay_time || item.created_at }}</text>
               </view>
-              <view v-if="item.contract_signed === 1" class="contract-tag">
-                <text class="contract-tag-text">已签合同</text>
+              <!-- 退款状态标签 -->
+              <view v-if="item.refund_status === 1" class="status-tag status-pending">
+                <text class="status-tag-text">退款申请中</text>
+              </view>
+              <view v-else-if="item.refund_status === 2" class="status-tag status-failed">
+                <text class="status-tag-text">退款失败</text>
+              </view>
+              <view v-else-if="item.refund_status === 4" class="status-tag status-rejected">
+                <text class="status-tag-text">退款被驳回</text>
+              </view>
+              <view v-else-if="item.contract_signed === 1" class="status-tag status-contract">
+                <text class="status-tag-text">已签合同</text>
+              </view>
+              <!-- 驳回/失败原因 -->
+              <view v-if="item.refund_status === 4 && item.refund_reject_reason" class="reject-reason">
+                <text class="reject-reason-text">驳回原因：{{ item.refund_reject_reason }}</text>
+              </view>
+              <view v-if="item.refund_status === 2" class="reject-reason">
+                <text class="reject-reason-text">退款处理异常，可重新申请退款</text>
               </view>
             </view>
             <view class="card-right">
-              <view v-if="item.contract_signed !== 1" :class="['radio', { 'radio-active': selectedOrderNo === item.order_no }]">
+              <!-- 可选状态（refund_status=0/2/4 且未签合同） -->
+              <view v-if="canSelectItem(item)" :class="['radio', { 'radio-active': selectedOrderNo === item.order_no }]">
                 <text v-if="selectedOrderNo === item.order_no" class="radio-check">✓</text>
               </view>
-              <text v-else class="lock-icon">🔒</text>
+              <!-- 申请中：显示时钟图标 -->
+              <text v-else-if="item.refund_status === 1" class="status-icon-right">🕐</text>
+              <!-- 已签合同：锁图标 -->
+              <text v-else-if="item.contract_signed === 1" class="lock-icon">🔒</text>
+              <!-- 失败/驳回：重新申请箭头 -->
+              <text v-else class="status-icon-right">→</text>
             </view>
           </view>
         </view>
 
+        <!-- === 已退款列表 === -->
+        <view v-else class="course-list">
+          <view
+            v-for="item in filteredList"
+            :key="item.order_no"
+            class="course-card refunded-card"
+          >
+            <view class="card-left">
+              <image
+                v-if="item.cover_image"
+                :src="item.cover_image"
+                class="course-cover"
+                mode="aspectFill"
+              />
+              <view v-else :class="['course-icon', getIconBg(item.order_type)]">
+                <text>{{ getIcon(item.order_type) }}</text>
+              </view>
+            </view>
+            <view class="card-body">
+              <view class="card-title">{{ item.order_name }}</view>
+              <view class="card-meta">
+                <text class="card-amount refunded-amount">¥{{ formatPrice(item.refund_amount || item.final_amount) }}</text>
+                <text class="card-time">{{ item.refund_time || item.pay_time || item.created_at }}</text>
+              </view>
+              <view class="status-tag status-success">
+                <text class="status-tag-text">已退款</text>
+              </view>
+            </view>
+            <view class="card-right">
+              <view
+                v-if="item.invoice_url"
+                class="invoice-btn"
+                @click.stop="viewInvoice(item.invoice_url)"
+              >
+                <text class="invoice-btn-text">查看电子发票</text>
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
     </scroll-view>
 
@@ -69,12 +142,10 @@
 
     <!-- 底部弹层 -->
     <view :class="['bottom-sheet', { 'bottom-sheet--visible': selectedOrderNo }]">
-      <!-- 拖拽把手 -->
       <view class="sheet-handle-bar">
         <view class="sheet-handle" />
       </view>
 
-      <!-- 弹层标题 + 课程信息 -->
       <view class="sheet-header">
         <text class="sheet-title">申请退款</text>
         <view class="sheet-course-info">
@@ -94,7 +165,6 @@
         </view>
       </view>
 
-      <!-- 退款原因 -->
       <view class="sheet-body">
         <view class="sheet-label">退款原因 <text class="required">*</text></view>
         <view class="reason-card">
@@ -112,7 +182,6 @@
         <view class="sheet-note">退款将由财务审核后转账，预计3-7个工作日到账</view>
       </view>
 
-      <!-- 底部按钮 -->
       <view class="sheet-footer">
         <button class="cancel-btn" @click="closeSheet">
           <text>取消</text>
@@ -132,6 +201,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
+import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import { OrderApi, UserApi } from '@/api'
 import { formatPrice } from '@/utils'
 import { cloudFileIDToURL } from '@/api/modules/storage'
@@ -146,20 +216,49 @@ interface RefundableItem {
   created_at: string
   contract_signed: number
   cover_image: string
+  refund_status: number
+  refund_reason: string
+  refund_reject_reason: string
+  refund_amount: number
+  refund_time: string | null
+  invoice_url: string
 }
 
 const loading = ref(true)
-const refundableItems = ref<RefundableItem[]>([])
+const allItems = ref<RefundableItem[]>([])
 const selectedOrderNo = ref('')
 const refundReason = ref('')
+const activeTab = ref<string | number>('pending')
+
+const tabOptions = [
+  { label: '未退款', value: 'pending' },
+  { label: '已退款', value: 'refunded' }
+]
+
+const filteredList = computed(() => {
+  if (activeTab.value === 'refunded') {
+    return allItems.value.filter(i => i.refund_status === 3)
+  }
+  // 未退款：除了 refund_status=3 之外的所有状态
+  return allItems.value.filter(i => i.refund_status !== 3)
+})
 
 const selectedItem = computed(() =>
-  refundableItems.value.find(i => i.order_no === selectedOrderNo.value) || null
+  allItems.value.find(i => i.order_no === selectedOrderNo.value) || null
 )
 
 const canSubmit = computed(() =>
   selectedOrderNo.value && refundReason.value.trim().length > 0
 )
+
+/**
+ * 判断该订单是否可以选中申请退款
+ * 仅 refund_status=0/2/4 且未签合同可选
+ */
+const canSelectItem = (item: RefundableItem): boolean => {
+  if (item.contract_signed === 1) return false
+  return [0, 2, 4].includes(item.refund_status)
+}
 
 const getIcon = (type: number) => {
   const icons: Record<number, string> = { 1: '📚', 2: '🎓', 4: '⬆️' }
@@ -182,7 +281,6 @@ const loadData = async () => {
     const orders = (ordersRes as any).list || []
     const courses = (coursesRes as any).list || []
 
-    // 构建 course_id → { contract_signed, cover_image } 映射
     const contractMap = new Map<number, number>()
     const coverMap = new Map<number, string>()
     for (const c of courses) {
@@ -192,13 +290,20 @@ const loadData = async () => {
       }
     }
 
-    // 筛选可退款订单：已支付 + 无退款记录 + 仅课程类订单（order_type 1=初探班/2=密训班/3=咨询），排除大使升级(4)等非课程类
-    refundableItems.value = orders
-      .filter((o: any) =>
-        o.pay_status === 1 &&
-        (o.refund_status === 0 || !o.refund_status) &&
-        [1, 2, 3].includes(o.order_type)
-      )
+    // 也加载已退款订单（pay_status=4）
+    let refundedOrders: any[] = []
+    try {
+      const refundedRes = await OrderApi.getList({ page: 1, pageSize: 100, status: 4 })
+      refundedOrders = (refundedRes as any).list || []
+    } catch (e) {
+      console.error('加载已退款订单失败:', e)
+    }
+
+    const allOrders = [...orders, ...refundedOrders]
+
+    // 筛选课程类订单（order_type 1/2/3），排除大使升级(4)
+    allItems.value = allOrders
+      .filter((o: any) => [1, 2, 3].includes(o.order_type))
       .map((o: any) => ({
         order_no: o.order_no,
         order_type: o.order_type,
@@ -208,7 +313,13 @@ const loadData = async () => {
         pay_time: o.pay_time,
         created_at: o.created_at,
         contract_signed: contractMap.get(o.related_id) ?? 0,
-        cover_image: coverMap.get(o.related_id) || ''
+        cover_image: coverMap.get(o.related_id) || '',
+        refund_status: o.refund_status || 0,
+        refund_reason: o.refund_reason || '',
+        refund_reject_reason: o.refund_reject_reason || '',
+        refund_amount: o.refund_amount || 0,
+        refund_time: o.refund_time || null,
+        invoice_url: o.invoice_url || ''
       }))
   } catch (error) {
     console.error('加载数据失败:', error)
@@ -218,7 +329,13 @@ const loadData = async () => {
   }
 }
 
-const selectCourse = (item: RefundableItem) => {
+const onTabChange = () => {
+  selectedOrderNo.value = ''
+  refundReason.value = ''
+}
+
+const handleCardClick = (item: RefundableItem) => {
+  // 已签合同不可操作
   if (item.contract_signed === 1) {
     uni.showModal({
       title: '无法退款',
@@ -228,8 +345,18 @@ const selectCourse = (item: RefundableItem) => {
     })
     return
   }
-  selectedOrderNo.value = item.order_no
-  refundReason.value = ''
+  // 退款申请中 → 跳转到退款详情页
+  if (item.refund_status === 1) {
+    uni.navigateTo({
+      url: `/pages/order/refund-status/index?orderNo=${item.order_no}`
+    })
+    return
+  }
+  // 可选状态（0/2/4）→ 打开申请弹层
+  if (canSelectItem(item)) {
+    selectedOrderNo.value = item.order_no
+    refundReason.value = ''
+  }
 }
 
 const closeSheet = () => {
@@ -243,9 +370,12 @@ const handleSubmit = async () => {
   const item = selectedItem.value
   if (!item) return
 
+  const isReapply = [2, 4].includes(item.refund_status)
+  const confirmTitle = isReapply ? '重新申请退款' : '确认退款'
+
   const { confirm } = await new Promise<{ confirm: boolean }>((resolve) => {
     uni.showModal({
-      title: '确认退款',
+      title: confirmTitle,
       content: `确定要对"${item.order_name}"申请退款 ¥${formatPrice(item.final_amount)} 吗？`,
       confirmText: '确认退款',
       confirmColor: '#E34D59',
@@ -256,17 +386,16 @@ const handleSubmit = async () => {
   if (!confirm) return
 
   try {
-    const result = await OrderApi.requestRefund({
+    await OrderApi.requestRefund({
       order_no: item.order_no,
       refund_reason: refundReason.value.trim()
     })
 
     uni.showToast({ title: '退款申请已提交', icon: 'success' })
+    closeSheet()
 
     setTimeout(() => {
-      uni.redirectTo({
-        url: `/pages/order/refund-status/index?orderNo=${item.order_no}`
-      })
+      loadData()
     }, 1500)
   } catch (error: any) {
     console.error('提交退款申请失败:', error)
@@ -275,6 +404,38 @@ const handleSubmit = async () => {
       icon: 'none',
       duration: 3000
     })
+  }
+}
+
+const viewInvoice = (url: string) => {
+  if (!url) {
+    uni.showToast({ title: '暂无电子发票', icon: 'none' })
+    return
+  }
+  // 预览文件（PDF/图片）
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+  if (isImage) {
+    uni.previewImage({ urls: [url], current: url })
+  } else {
+    // #ifdef MP-WEIXIN
+    uni.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          uni.openDocument({
+            filePath: res.tempFilePath,
+            showMenu: true
+          })
+        }
+      },
+      fail: () => {
+        uni.showToast({ title: '文件打开失败', icon: 'none' })
+      }
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    window.open(url, '_blank')
+    // #endif
   }
 }
 
@@ -291,6 +452,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   background-color: $td-bg-color-page;
+}
+
+/* Tabs 区域 */
+.tabs-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 24rpx 12rpx;
+  background-color: $td-bg-color-container;
 }
 
 .scroll-area {
@@ -364,7 +533,7 @@ onMounted(() => {
 
 .course-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 20rpx;
   padding: 28rpx 24rpx;
   background-color: $td-bg-color-container;
@@ -380,10 +549,15 @@ onMounted(() => {
   &.disabled {
     opacity: 0.6;
   }
+
+  &.refunded-card {
+    opacity: 0.85;
+  }
 }
 
 .card-left {
   flex-shrink: 0;
+  padding-top: 4rpx;
 }
 
 .course-cover {
@@ -442,26 +616,87 @@ onMounted(() => {
   color: $td-error-color;
 }
 
+.refunded-amount {
+  color: #00A67E;
+}
+
 .card-time {
   font-size: 24rpx;
   color: $td-text-color-placeholder;
 }
 
-.contract-tag {
+/* 退款状态标签 */
+.status-tag {
   display: inline-flex;
   margin-top: 8rpx;
   padding: 4rpx 12rpx;
-  background-color: $td-warning-color-light;
   border-radius: 6rpx;
+
+  &.status-pending {
+    background-color: #FFF7E6;
+  }
+
+  &.status-failed {
+    background-color: #FFF2F2;
+  }
+
+  &.status-rejected {
+    background-color: #FFF2F2;
+  }
+
+  &.status-success {
+    background-color: #E8F8F0;
+  }
+
+  &.status-contract {
+    background-color: $td-warning-color-light;
+  }
 }
 
-.contract-tag-text {
+.status-tag-text {
   font-size: 22rpx;
-  color: $td-warning-color;
+
+  .status-pending & {
+    color: #FF9800;
+  }
+
+  .status-failed & {
+    color: $td-error-color;
+  }
+
+  .status-rejected & {
+    color: $td-error-color;
+  }
+
+  .status-success & {
+    color: #00A67E;
+  }
+
+  .status-contract & {
+    color: $td-warning-color;
+  }
+}
+
+/* 驳回/失败原因 */
+.reject-reason {
+  margin-top: 8rpx;
+  padding: 8rpx 12rpx;
+  background-color: #FFF8F8;
+  border-radius: 8rpx;
+  border-left: 4rpx solid $td-error-color;
+}
+
+.reject-reason-text {
+  font-size: 22rpx;
+  color: $td-error-color;
+  line-height: 1.5;
 }
 
 .card-right {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 4rpx;
 }
 
 .radio {
@@ -487,6 +722,24 @@ onMounted(() => {
 
 .lock-icon {
   font-size: 36rpx;
+}
+
+.status-icon-right {
+  font-size: 32rpx;
+}
+
+/* 查看电子发票按钮 */
+.invoice-btn {
+  padding: 10rpx 20rpx;
+  background-color: $td-brand-color;
+  border-radius: 8rpx;
+  white-space: nowrap;
+}
+
+.invoice-btn-text {
+  font-size: 22rpx;
+  color: white;
+  font-weight: 500;
 }
 
 /* 底部弹层遮罩 */

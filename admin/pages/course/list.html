@@ -186,18 +186,23 @@
       @confirm="handleSave"
     >
       <t-form :data="editForm" ref="editFormRef" label-width="120px">
+        <!-- 上架锁定提示 -->
+        <t-alert v-if="isCourseLocked" theme="warning" style="margin-bottom:16px;">
+          <template #message>课程已上架，所有字段不可修改。如需修改请先下架课程。</template>
+        </t-alert>
+
         <t-form-item label="课程名称" name="name" :rules="[{ required: true, message: '请输入课程名称' }]">
-          <t-input v-model="editForm.name" placeholder="请输入课程名称" />
+          <t-input v-model="editForm.name" placeholder="请输入课程名称" :disabled="isCourseLocked" />
         </t-form-item>
 
         <t-form-item label="课程昵称" name="nickname">
-          <t-input v-model="editForm.nickname" placeholder="选填，课程简称（如：初探班）" />
+          <t-input v-model="editForm.nickname" placeholder="选填，课程简称（如：初探班）" :disabled="isCourseLocked" />
         </t-form-item>
         
         <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
         <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙；咨询服务暂停新增/编辑 -->
         <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
-          <t-select v-model="editForm.type" placeholder="请选择课程类型">
+          <t-select v-model="editForm.type" placeholder="请选择课程类型" :disabled="isCourseLocked">
             <t-option :value="1" label="初探班"></t-option>
             <t-option :value="2" label="密训班"></t-option>
             <t-option :value="4" label="沙龙"></t-option>
@@ -220,21 +225,21 @@
         <!-- 沙龙课程(type=4)免费，隐藏价格/有效期/时长字段 -->
         <template v-if="editForm.type !== 4">
           <t-form-item label="现价（元）" name="currentPrice" :rules="[{ required: true, message: '请输入课程现价' }]">
-            <t-input-number v-model="editForm.currentPrice" :min="0" :step="0.01" style="width:100%;" />
+            <t-input-number v-model="editForm.currentPrice" :min="0" :step="0.01" style="width:100%;" :disabled="isCourseLocked" />
           </t-form-item>
           
           <t-form-item label="原价（元）" name="originalPrice">
-            <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" />
+            <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" :disabled="isCourseLocked" />
           </t-form-item>
           
           <t-form-item label="重训价（元）" name="retrainPrice">
-            <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" />
+            <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" :disabled="isCourseLocked" />
           </t-form-item>
 
           <!-- courses.validity_days: 必填正整数，单位：天 -->
           <t-form-item label="课程有效期" name="validityDays" :rules="[{ required: true, message: '请输入课程有效期' }, { validator: (val) => Number(val) > 0, message: '有效期必须大于 0 天' }]">
             <div style="display:flex; align-items:center; gap:8px;">
-              <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="必填，如：365" />
+              <t-input-number v-model="editForm.validityDays" :min="1" :max="3650" style="width:160px;" placeholder="必填，如：365" :disabled="isCourseLocked" />
               <span style="color:#666; font-size:13px;">天（例：365 = 1年，730 = 2年）</span>
             </div>
             <div style="font-size:12px; color:#999; margin-top:4px;">
@@ -243,28 +248,53 @@
           </t-form-item>
 
           <t-form-item label="课程时长" name="duration">
-            <t-input v-model="editForm.duration" placeholder="例如：3天2夜" />
+            <t-input v-model="editForm.duration" placeholder="例如：3天2夜" :disabled="isCourseLocked" />
+          </t-form-item>
+        </template>
+
+        <!-- 密训班(type=2)专属：赠送课程配置 -->
+        <template v-if="editForm.type === 2">
+          <t-form-item label="赠送课程">
+            <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+              <t-switch v-model="editForm.enableGiftCourse" :disabled="isCourseLocked" />
+              <span style="font-size:12px;color:#999;">开启后，购买该密训班将同时赠送绑定的课程</span>
+              <t-select
+                v-if="editForm.enableGiftCourse"
+                v-model="editForm.includedCourseId"
+                placeholder="请选择赠送课程"
+                :disabled="isCourseLocked"
+                clearable
+                filterable
+              >
+                <t-option
+                  v-for="c in publishedCourseOptions"
+                  :key="c.id"
+                  :value="c.id"
+                  :label="c.name + ' (' + getTypeText(c.type) + ')'"
+                ></t-option>
+              </t-select>
+            </div>
           </t-form-item>
         </template>
         
         <t-form-item label="课程简介" name="description">
-          <t-textarea v-model="editForm.description" placeholder="请输入课程简介" :maxlength="500" />
+          <t-textarea v-model="editForm.description" placeholder="请输入课程简介" :maxlength="500" :disabled="isCourseLocked" />
         </t-form-item>
         
         <t-form-item label="课程详情" name="content">
-          <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" />
+          <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" :disabled="isCourseLocked" />
         </t-form-item>
         
         <t-form-item label="讲师" name="teacher">
-          <t-input v-model="editForm.teacher" placeholder="请输入讲师姓名" />
+          <t-input v-model="editForm.teacher" placeholder="请输入讲师姓名" :disabled="isCourseLocked" />
         </t-form-item>
         
         <t-form-item label="排序" name="sortOrder">
-          <t-input-number v-model="editForm.sortOrder" :min="0" />
+          <t-input-number v-model="editForm.sortOrder" :min="0" :disabled="isCourseLocked" />
         </t-form-item>
         
         <t-form-item label="状态" name="status">
-          <t-switch v-model="editForm.status" :true-value="1" :false-value="0" />
+          <t-switch v-model="editForm.status" :true-value="1" :false-value="0" :disabled="isCourseLocked" />
           <span style="margin-left: 8px;">{{ editForm.status === 1 ? '上架' : '下架' }}</span>
         </t-form-item>
       </t-form>
@@ -427,8 +457,12 @@
           outline: '',
           teacher: '',
           sortOrder: 0,
-          status: 1
+          status: 0,
+          enableGiftCourse: false,  // 赠送课程开关（仅密训班）
+          includedCourseId: null    // 赠送课程ID（单选）
         });
+        const isCourseLocked = ref(false);        // 课程已上架时锁定编辑
+        const publishedCourseOptions = ref([]);   // 上架课程列表（供赠送课程下拉选择）
 
 
         // 表格列配置
@@ -493,9 +527,20 @@
           fetchCourses();
         };
 
-        // 显示新增对话框
+        // 加载上架课程列表（供赠送课程下拉选择，排除自身）
+        const loadPublishedCourses = async (excludeId) => {
+          try {
+            const data = await AdminAPI.getCourseList({ status: 1, pageSize: 100 });
+            publishedCourseOptions.value = (data.list || []).filter(c => c.id !== excludeId);
+          } catch (e) {
+            console.warn('加载上架课程列表失败', e);
+          }
+        };
+
+        // 显示新增对话框（新课程默认下架 status=0）
         const showAddDialog = () => {
           editMode.value = 'add';
+          isCourseLocked.value = false;
           Object.assign(editForm, {
             id: null,
             name: '',
@@ -513,15 +558,29 @@
             outline: '',
             teacher: '',
             sortOrder: 0,
-            status: 1
+            status: 0,
+            enableGiftCourse: false,
+            includedCourseId: null
           });
+          loadPublishedCourses(null);
           editDialogVisible.value = true;
         };
 
         // 编辑课程
         const editCourse = async (course) => {
           editMode.value = 'edit';
+          isCourseLocked.value = course.status === 1;
           const vd = course.validity_days != null ? parseInt(course.validity_days) : null;
+
+          // 解析 included_course_ids（DB 存 JSON 字符串 如 "[3]"）
+          let giftId = null;
+          try {
+            const ids = course.included_course_ids
+              ? (typeof course.included_course_ids === 'string' ? JSON.parse(course.included_course_ids) : course.included_course_ids)
+              : [];
+            giftId = ids.length > 0 ? ids[0] : null;
+          } catch (e) { /* ignore */ }
+
           Object.assign(editForm, {
             id: course.id,
             name: course.name,
@@ -532,14 +591,16 @@
             originalPrice: course.original_price,
             currentPrice: course.current_price,
             retrainPrice: course.retrain_price,
-            validityDays: vd,  // DB 是 null 则显示空，强制管理员填写
+            validityDays: vd,
             duration: course.duration,
             description: course.description,
             content: course.content,
             outline: course.outline,
             teacher: course.teacher,
             sortOrder: course.sort_order,
-            status: course.status
+            status: course.status,
+            enableGiftCourse: !!giftId,
+            includedCourseId: giftId
           });
           // 将 fileID 转为临时 URL 用于预览
           if (course.cover_image) {
@@ -547,11 +608,16 @@
               editForm.coverImageURL = await window.CloudStorageHelper.getSingleTempURL(course.cover_image);
             } catch (e) { console.warn('获取封面临时URL失败', e); }
           }
+          await loadPublishedCourses(course.id);
           editDialogVisible.value = true;
         };
 
         // 保存课程，所有参数使用 camelCase，云函数负责转换
         const handleSave = async () => {
+          if (isCourseLocked.value) {
+            TDesign.MessagePlugin.warning('课程已上架，不可修改。如需修改请先下架。');
+            return;
+          }
           try {
             const isSalon = editForm.type === 4;
             // 非沙龙课程有效期为必填
@@ -574,14 +640,16 @@
               outline: editForm.outline,
               teacher: editForm.teacher,
               sortOrder: editForm.sortOrder,
-              status: editForm.status
+              status: editForm.status,
+              includedCourseIds: (editForm.type === 2 && editForm.enableGiftCourse && editForm.includedCourseId)
+                ? editForm.includedCourseId
+                : null
             };
 
             if (editMode.value === 'add') {
               await AdminAPI.createCourse(params);
               TDesign.MessagePlugin.success('课程创建成功');
             } else {
-              // 更新时传 id（云函数 updateCourse 用 id 查询）
               params.id = editForm.id;
               await AdminAPI.updateCourse(params);
               TDesign.MessagePlugin.success('课程更新成功');
@@ -594,13 +662,20 @@
           }
         };
 
-        // 切换状态
+        // 切换状态（下架→上架时弹出确认框）
         const toggleStatus = async (course) => {
-          try {
-            await AdminAPI.updateCourse({
-              id: course.id,
-              status: course.status === 1 ? 0 : 1
+          const newStatus = course.status === 1 ? 0 : 1;
+          if (newStatus === 1) {
+            const confirmResult = await TDesign.DialogPlugin.confirm({
+              header: '确认上架',
+              body: '课程上架后不能修改任何字段，确定好再上架。',
+              confirmBtn: '确认上架',
+              cancelBtn: '取消'
             });
+            if (confirmResult === 'cancel' || confirmResult === 'close' || confirmResult === 'esc' || confirmResult === 'overlay') return;
+          }
+          try {
+            await AdminAPI.updateCourse({ id: course.id, status: newStatus });
             TDesign.MessagePlugin.success('状态更新成功');
             fetchCourses();
           } catch (error) {
@@ -776,6 +851,8 @@
           editMode,
           editFormRef,
           editForm,
+          isCourseLocked,
+          publishedCourseOptions,
           handleSearch,
           handleReset,
           handlePageChange,

@@ -36,7 +36,26 @@ module.exports = async (event, context) => {
       return response.paramError('item_id 必须是大于 0 的整数');
     }
 
-    // 3. 根据 order_type 处理不同业务逻辑
+    // 3. 防重复下单：查是否已有同类型的未支付订单（未过期）
+    const duplicateCheck = await checkExistingPendingOrder(user.id, order_type, item_id, class_record_id);
+    if (duplicateCheck) {
+      console.log(`[create] 命中待支付订单，返回原订单:`, duplicateCheck.order_no);
+      return response.success({
+        order_no: duplicateCheck.order_no,
+        order_type: duplicateCheck.order_type,
+        order_name: duplicateCheck.order_name,
+        amount: parseFloat(duplicateCheck.final_amount),
+        referee_id: duplicateCheck.referee_id,
+        referee_uid: duplicateCheck.referee_uid,
+        referee_name: duplicateCheck.referee_name,
+        referee_level: duplicateCheck.referee_level,
+        status: 0,
+        expire_at: duplicateCheck.expire_at,
+        is_existing: true // 标记为已有订单，前端可感知
+      }, '已有待支付订单');
+    }
+
+    // 4. 根据 order_type 处理不同业务逻辑
     let orderData = {};
 
     switch (order_type) {
@@ -59,10 +78,10 @@ module.exports = async (event, context) => {
         return response.paramError('不支持的订单类型');
     }
 
-    // 4. 生成订单号
+    // 5. 生成订单号
     const order_no = business.generateOrderNo('ORD');
 
-    // 5. 插入订单记录
+    // 6. 插入订单记录
     const expire_at = formatDateTime(new Date(Date.now() + 30 * 60 * 1000));
     
     const order = await insert('orders', {
@@ -87,7 +106,7 @@ module.exports = async (event, context) => {
 
     console.log(`[create] 订单创建成功:`, order_no);
 
-    // 6. 返回订单信息
+    // 7. 返回订单信息
     return response.success({
       order_no,
       order_type,
@@ -259,4 +278,31 @@ async function handleUpgradeOrder(user, target_level) {
     referee_id: null,
     referee_uid: null
   };
+}
+
+/**
+ * 防重复下单：查找同类型的待支付订单（未过期）
+ * - type=1: user + order_type + related_id(course_id)
+ * - type=2: user + order_type + class_record_id
+ * - type=4: user + order_type + related_id(target_level)
+ */
+async function checkExistingPendingOrder(user_id, order_type, item_id, class_record_id) {
+  let query = db
+    .from('orders')
+    .select('order_no, order_type, order_name, final_amount, referee_id, referee_uid, referee_name, referee_level, expire_at')
+    .eq('user_id', user_id)
+    .eq('order_type', order_type)
+    .eq('pay_status', 0)
+    .gt('expire_at', formatDateTime(new Date())); // 未过期
+
+  if (order_type === 2) {
+    // 复训费：按 class_record_id 去重
+    query = query.eq('class_record_id', class_record_id);
+  } else {
+    // 课程购买(1) / 大使升级(4)：按 related_id 去重
+    query = query.eq('related_id', item_id);
+  }
+
+  const { data } = await query.limit(1);
+  return data && data.length > 0 ? data[0] : null;
 }

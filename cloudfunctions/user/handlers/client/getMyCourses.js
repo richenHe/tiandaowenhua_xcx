@@ -33,10 +33,12 @@ module.exports = async (event, context) => {
           description,
           duration,
           teacher,
-          outline
+          outline,
+          validity_days
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
+      .eq('status', 1)
       .order('id', { ascending: false });
 
     // 执行分页查询
@@ -64,7 +66,8 @@ module.exports = async (event, context) => {
       description: uc.course?.description,
       duration: uc.course?.duration,
       teacher: uc.course?.teacher,
-      outline: uc.course?.outline
+      outline: uc.course?.outline,
+      validity_days: uc.course?.validity_days
     }));
 
     console.log('[getMyCourses] 查询成功，共', result.total, '条');

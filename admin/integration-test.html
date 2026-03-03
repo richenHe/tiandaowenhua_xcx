@@ -101,6 +101,9 @@
       <t-button theme="primary" @click="runAll" :loading="running" :disabled="running">
         {{ running ? '运行中...' : '▶ 运行全部业务流程' }}
       </t-button>
+      <t-button theme="primary" variant="outline" @click="runFlow('F99')" :disabled="running" style="border-color:#0052d9">
+        🔁 综合回归测试
+      </t-button>
       <t-button @click="clear" :disabled="running">清空</t-button>
       <t-button @click="exportRpt" :disabled="!results.length">📊 导出报告</t-button>
       <t-button theme="warning" variant="outline" @click="dbOpen=true" :disabled="!sqls.length">
@@ -111,7 +114,11 @@
         <t-checkbox v-model="opt.stopFail">失败停止</t-checkbox>
         <t-checkbox v-model="opt.sql">SQL</t-checkbox>
       </t-space>
-      <div class="rt">
+      <div class="rt" style="display:flex;align-items:center;gap:10px">
+        <span v-if="adminLoggedIn" style="color:#00a870;font-size:12px;font-weight:600">🔑 管理员已登录</span>
+        <span v-else style="color:#e34d59;font-size:12px;font-weight:600;cursor:pointer" @click="doAdminLogin">
+          ⚠️ 未登录 — 点击自动登录
+        </span>
         测试用户: {{ U.real_name }} (ID:{{ U.id }}) · _openid: {{ U._openid.slice(0,12) }}...
       </div>
     </div>
@@ -119,8 +126,11 @@
 
   <!-- Module Cards (before run) -->
   <div class="mcards" v-if="!results.length && !running">
-    <div class="mc" v-for="f in flows" :key="f.id" @click="runFlow(f.id)">
-      <h3>{{ f.icon }} {{ f.name }}</h3>
+    <div class="mc" v-for="f in flows" :key="f.id" @click="runFlow(f.id)"
+      :style="f.id==='F99'?'border:2px solid #0052d9;background:linear-gradient(135deg,#e8f4ff 0%,#f0f5ff 100%);':''">
+      <h3>{{ f.icon }} {{ f.name }}
+        <t-tag v-if="f.id==='F99'" theme="primary" size="small" style="margin-left:6px;vertical-align:middle">推荐首跑</t-tag>
+      </h3>
       <p>{{ f.desc }}</p>
       <div class="chain" v-html="f.chainHtml"></div>
       <div class="tags">
@@ -209,21 +219,53 @@
 <script src="./assets/libs/tdesign.min.js"></script>
 <script src="./assets/js/config.js?v=20260227"></script>
 <script>
-const {createApp,ref,reactive,computed,nextTick}=Vue;
+const {createApp,ref,reactive,computed,nextTick,onMounted}=Vue;
+
+const ADMIN_CREDENTIALS={username:'herichen',password:'tiandaowenhua'};
 
 const app=createApp({
 setup(){
   const running=ref(false), results=ref([]), sqls=ref([]), dbOpen=ref(false);
+  const adminLoggedIn=ref(false);
   const opt=reactive({detail:true,stopFail:false,sql:false});
   const U=reactive({id:30,_openid:'2017456901935075328',real_name:'张三'});
   const CTX=reactive({});
 
+  // ===== Admin 自动登录 =====
+  async function doAdminLogin(){
+    try{
+      const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/system`;
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'login',username:ADMIN_CREDENTIALS.username,password:ADMIN_CREDENTIALS.password})});
+      let d=await r.json();
+      if(d.body&&typeof d.body==='string') d=JSON.parse(d.body);
+      const token=d.token||(d.data&&d.data.token);
+      if(token){
+        localStorage.setItem('adminToken',token);
+        adminLoggedIn.value=true;
+        TDesign.MessagePlugin.success('管理员登录成功');
+      } else {
+        TDesign.MessagePlugin.error('登录失败: '+(d.message||'未返回token'));
+      }
+    }catch(e){
+      TDesign.MessagePlugin.error('登录异常: '+e.message);
+    }
+  }
+
+  onMounted(async()=>{
+    // 检查 localStorage 是否已有 token，没有则自动登录
+    const existing=localStorage.getItem('adminToken');
+    if(existing){adminLoggedIn.value=true;}
+    else{await doAdminLogin();}
+  });
+
   // ===== API =====
-  async function api(fn,act,p={},admin=false){
+  async function api(fn,act,p={},admin=false,timer=false){
     const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/${fn}`;
     const t0=Date.now();
-    const body={action:act,test_openid:U._openid,...p};
-    if(admin){
+    // timer=true 时模拟定时触发：不加 action 字段，只传 Time+TriggerName
+    const body=timer?{...p}:{action:act,test_openid:U._openid,...p};
+    if(admin&&!timer){
       const token=localStorage.getItem('adminToken');
       if(!token) throw new Error('管理端接口需要先在admin后台登录获取token（请先访问login.html登录）');
       body.jwtToken=token;
@@ -248,8 +290,10 @@ setup(){
     const r={id:`${fid}_${s.act}`,fid,name:s.name,fn:s.fn,act:s.act,cls:'run',icon:'⏳',checks:[],biz:[],err:null,raw:null,sql:null,dur:0};
     results.value.push(r);await nextTick();
     try{
+      // beforeRun 钩子：在正式调用前执行（如修改测试数据日期）
+      if(s.beforeRun) await s.beforeRun(CTX);
       const params=typeof s.params==='function'?s.params(CTX):s.params||{};
-      const{d,ms}=await api(s.fn,s.act,params,!!s.admin);
+      const{d,ms}=await api(s.fn,s.act,params,!!s.admin,!!s.timer);
       r.dur=ms;r.raw=d;
       if(s.expectFail){
         r.cls='pass';r.icon='✓';
@@ -375,9 +419,9 @@ SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = $
         ],
         sql:()=>`SELECT id, name, type, current_price, included_course_ids FROM tiandao_culture.courses WHERE status=1 ORDER BY sort_order ASC LIMIT 10 OFFSET 10`
       },
-      // S2.2 使用 id=4（"测试课程"，type=1，user 30 未购买）；id=25 已被购买，2026-03-02 修正
+      // S2.2 使用 id=6（"测试课程"，type=1，user 30 未购买）；id=25 已被购买(2026-03-02修正)；id=4 也已被购买(2026-03-03再修正)
       {name:'S2.2 初探班详情(未购买)',fn:'course',act:'getDetail',
-        params:{id:4},
+        params:{id:6},
         biz:[
           (d,raw)=>({r:'课程详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>({r:'初探班type应为1',p:!d||d.type===1,a:`type=${d?.type}`}),
@@ -386,7 +430,7 @@ SELECT COUNT(*) as referee_count FROM tiandao_culture.users WHERE referee_id = $
             a:`is_purchased=${d?.is_purchased}`})
         ],
         save:(d,_,C)=>{C.courseDetail=d},
-        sql:()=>`SELECT c.id, c.name, c.type, c.current_price, c.included_course_ids, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=4`
+        sql:()=>`SELECT c.id, c.name, c.type, c.current_price, c.included_course_ids, (SELECT COUNT(*) FROM tiandao_culture.user_courses uc WHERE uc.course_id=c.id AND uc.user_id=${U.id} AND uc.status=1) as is_purchased FROM tiandao_culture.courses c WHERE c.id=6`
       },
       // S2.2b 密训班：验证 included_course_ids 不为空
       {name:'S2.2b 密训班详情(included_course_ids专项)',fn:'course',act:'getDetail',
@@ -516,8 +560,8 @@ WHERE uc.user_id = ${U.id} ORDER BY uc.created_at DESC`
   // ────────────── FLOW 3: 订单 · 商城 · 兑换全链路 ──────────────
   {
     id:'F3',icon:'🛒',name:'流程3: 订单 · 商城兑换 · 多表数据一致性',
-    desc:'我的订单 → 订单详情(已支付优先) → 商城课程 → 商城商品(字段验证) → 兑换记录(source=6回归) → [写]exchangeGoods → [边界]exchangeGoods余额不足 → [写]exchangeCourse(正向) → [边界]exchangeCourse×2(余额不足) → [写]cancelExchange → [边界]cancelExchange(重复撤销) → 后台兑换列表 → [写]confirmPickup → [边界]confirmPickup×2(重复确认+已取消拦截)',
-    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:19,
+    desc:'我的订单 → 订单详情(已支付优先) → 商城课程 → 商城商品(字段验证) → 兑换记录(source=6回归) → [写]exchangeGoods → [边界]exchangeGoods余额不足 → [写]exchangeCourse(正向) → [边界]exchangeCourse×2(余额不足) → [写]cancelExchange → [边界]cancelExchange(重复撤销) → 后台兑换列表 → [写]confirmPickup → [边界]confirmPickup×2(重复确认+已取消拦截) ⚠️ 密训班赠课(用户无课/叠加有效期/兑换赠课/课程详情赠课tab)见MT-36/37/38/45',
+    tables:['orders','user_courses','merit_points_records','cash_points_records','mall_goods','mall_exchange_records'],rules:21,
     get chainHtml(){return ['getMyOrders','getDetail','getMallCourses','getMallGoods','getExchangeRecords','exchangeGoods×2','exchangeCourse×3','cancelExchange×2','getExchangeList','confirmPickup×3'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       {name:'S3.1 我的订单列表',fn:'user',act:'getMyOrders',params:{page:1,pageSize:10},
@@ -545,14 +589,14 @@ WHERE o.user_id = ${U.id} ORDER BY o.created_at DESC LIMIT 10`
             return{r:'需求3.1.2: 订单详情应含推荐人+奖励状态',p:raw.success===true,a:raw.success?'OK':raw.message}
           },
           (d,raw,C)=>{
-            if(!d) return{r:'已支付订单 referee_confirmed_at 应有值',p:true,a:'跳过'};
-            if(d.pay_status!==1) return{r:'已支付订单 referee_confirmed_at 应有值',p:true,a:`pay_status=${d.pay_status}(未支付,跳过)${C.firstPaidOrder?'':'⚠当前无已支付订单'}`};
+            if(!d) return{r:'已支付订单 referee_confirmed_at 应有值',p:false,a:'❌接口未返回数据（无订单）'};
+            if(d.pay_status!==1) return{r:'已支付订单 referee_confirmed_at 应有值',p:false,a:`❌当前订单 pay_status=${d.pay_status}（未支付），请确保测试用户有已支付订单${C.firstPaidOrder?'':'（当前无已支付订单）'}`};
             return{r:'需求2.4: 已支付订单推荐人不可修改(referee_confirmed_at有值)',
               p:d.referee_confirmed_at!==undefined&&d.referee_confirmed_at!==null,
               a:`referee_confirmed_at=${d.referee_confirmed_at}`}
           },
           (d,raw,C)=>{
-            if(!d||d.pay_status!==1) return{r:'已支付订单 is_reward_granted 应有值',p:true,a:'跳过'};
+            if(!d||d.pay_status!==1) return{r:'已支付订单 is_reward_granted 应有值',p:false,a:`❌当前订单 pay_status=${d?.pay_status}（未支付或无数据）`};
             return{r:'需求2.4: 已支付订单奖励发放状态应明确(is_reward_granted=0或1)',
               p:d.is_reward_granted===0||d.is_reward_granted===1,
               a:`is_reward_granted=${d.is_reward_granted}`}
@@ -664,7 +708,7 @@ WHERE er.user_id=${U.id} ORDER BY er.created_at DESC LIMIT 10`
         }),
         biz:[
           (d,raw,C)=>{
-            if(!C.cheapestGoods) return{r:'[S3.6跳过] 无商品数据',p:true,a:'⚠跳过'};
+            if(!C.cheapestGoods) return{r:'[S3.6] 无商品数据',p:false,a:'❌S3.3 商城课程列表未获取到商品，请检查 getMallGoods 是否返回数据'};
             // 功德分不足是合法的业务场景（非BUG），通过对错误格式的验证
             if(!raw.success&&raw.message&&raw.message.includes('功德分不足')) return{r:'需求3.1.7.2: 功德分不足时应返回明确错误信息',p:true,a:`⚠功德分不足(合法错误):${raw.message}`};
             if(!raw.success&&raw.message&&raw.message.includes('库存不足')) return{r:'需求3.1.7.2: 库存不足时应返回明确错误信息',p:true,a:`⚠库存不足(合法错误):${raw.message}`};
@@ -697,7 +741,7 @@ ORDER BY er.created_at DESC LIMIT 1`:null
         }),
         biz:[
           (d,raw,C)=>{
-            if(!C.cheapestCourse) return{r:'[S3.6b跳过] 无课程数据',p:true,a:'⚠跳过'};
+            if(!C.cheapestCourse) return{r:'[S3.6b] 无课程数据',p:false,a:'❌S3.3 未获取到可兑换课程数据'};
             if(!raw.success&&raw.message&&raw.message.includes('功德分不足')) return{r:'需求3.1.7.2: 功德分不足时应返回明确错误信息',p:true,a:`⚠功德分不足(合法错误):${raw.message}`};
             if(!raw.success&&raw.message&&raw.message.includes('名额已满')) return{r:'需求3.1.7.2: 库存不足时应返回明确错误信息',p:true,a:`⚠名额已满(合法错误):${raw.message}`};
             return{r:'需求3.1.7.2: exchangeCourse 成功时应返回 course_id 和 price',p:raw.success===true&&!!d?.course_id&&d?.price>0,a:raw.success?`✓course_id=${d?.course_id},price=${d?.price}`:raw.message}
@@ -728,7 +772,7 @@ ORDER BY uc.id DESC, mp.id DESC LIMIT 1`:null
         params:(C)=>({course_id:C.mostExpensiveCourse?.id||1,use_cash_points_if_not_enough:false}),
         biz:[
           (d,raw,C)=>{
-            if(!C.mostExpensiveCourse) return{r:'[S3.6c跳过] 无高价课程数据',p:true,a:'⚠跳过'};
+            if(!C.mostExpensiveCourse) return{r:'[S3.6c] 无高价课程数据',p:false,a:'❌S3.3 未获取到高价课程数据（无法测试功德分不足场景）'};
             // 若余额恰好充足则跳过（条件不满足）
             if(raw.success===true) return{r:'S3.6c: 余额充足(条件不满足,跳过)',p:true,a:`⚠course_id=${C.mostExpensiveCourse.id},price=${C.mostExpensiveCourse.currentPrice},余额充足`};
             const msg=raw.message||'';
@@ -743,7 +787,7 @@ ORDER BY uc.id DESC, mp.id DESC LIMIT 1`:null
         params:(C)=>({course_id:C.mostExpensiveCourse?.id||1,use_cash_points_if_not_enough:true}),
         biz:[
           (d,raw,C)=>{
-            if(!C.mostExpensiveCourse) return{r:'[S3.6d跳过] 无高价课程数据',p:true,a:'⚠跳过'};
+            if(!C.mostExpensiveCourse) return{r:'[S3.6d] 无高价课程数据',p:false,a:'❌S3.3 未获取到高价课程数据（无法测试功德分积分均不足场景）'};
             // 若余额充足（merit 或 cash）则跳过
             if(raw.success===true) return{r:'S3.6d: 余额充足(条件不满足,跳过)',p:true,a:`⚠course_id=${C.mostExpensiveCourse.id},price=${C.mostExpensiveCourse.currentPrice},余额充足`};
             const msg=raw.message||'';
@@ -818,7 +862,7 @@ WHERE er.exchange_no='${C.lastExchangeNo}'`:null
           (d,raw)=>{
             if(!raw.success) return{r:'§6.20: 列表应含user_name/user_phone字段',p:false,a:'接口失败'};
             const list=(d?.list||d?.records||[]);
-            if(!list.length) return{r:'§6.20: 列表应含user_name/user_phone字段',p:true,a:'⚠暂无记录，跳过字段验证'};
+            if(!list.length) return{r:'§6.20: 列表应含user_name/user_phone字段',p:false,a:'❌暂无兑换记录，无法验证字段（请先在商城兑换商品后重跑）'};
             const first=list[0];
             const hasFields=first.user_name!==undefined&&first.user_phone!==undefined;
             return{r:'§6.20: 返回字段应含user_name/user_phone',p:hasFields,a:`${list.length}条,user_name=${first.user_name??'undefined'},user_phone=${first.user_phone??'undefined'}`}
@@ -836,6 +880,8 @@ WHERE er.exchange_no='${C.lastExchangeNo}'`:null
           const list=d?.list||d?.records||[];
           const pending=list.find(r=>r.status===1);
           if(pending) C.pendingPickupNo=pending.exchange_no;
+          // 标记是否有待领取数据，供 S3.9 beforeRun 决策是否需要造数据
+          C._hasPendingPickup=!!pending;
         },
         sql:()=>`SELECT er.exchange_no, er.goods_name, er.status, er.created_at,
   u.real_name as user_name, u.phone as user_phone
@@ -845,7 +891,28 @@ ORDER BY er.created_at DESC LIMIT 5`
       },
 
       // ── S3.10: [2026-03-01新增] attend_count 初始值=0 验证 ──
+      // beforeRun：若无 2026-03-01 后购买记录，先购买一门测试课程造数据
       {name:'S3.10 购课后 attend_count 初始值应为 0（Bug修复验证）',fn:'user',act:'getMyCourses',
+        beforeRun:async(C)=>{
+          // 先查一次 getMyCourses，检查是否有 2026-03-01 后的购买记录
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/user`;
+          const body={action:'getMyCourses',test_openid:U._openid};
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const data=d.data!==undefined?d.data:d;
+            const list=Array.isArray(data)?data:(data?.list||[]);
+            const recent=list.filter(c=>c.buy_time&&c.buy_time>='2026-03-01');
+            if(recent.length>0) return; // 有数据，无需造
+            // 无数据：通过 createOrder 购买一门课程（使用 cheapestCourse 或 course_id=6）
+            const courseId=C.cheapestCourse?.id||6;
+            const oUrl=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/order`;
+            const oBody={action:'createOrder',test_openid:U._openid,course_id:courseId,order_type:1};
+            const or=await fetch(oUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(oBody)});
+            let od=await or.json();if(od.body&&typeof od.body==='string')od=JSON.parse(od.body);
+            if(od.success&&od.data?.order_no) C._s310CreatedOrderNo=od.data.order_no;
+          }catch(e){/* 造数据失败不阻断 */}
+        },
         biz:[
           (d,raw)=>({r:'getMyCourses 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
@@ -853,10 +920,10 @@ ORDER BY er.created_at DESC LIMIT 5`
             // 仅校验 2026-03-01 后购买的课程（修复基准日期）
             const recent=list.filter(c=>c.buy_time&&c.buy_time>='2026-03-01');
             const bad=recent.filter(c=>Number(c.attend_count||0)!==0);
-            if(!recent.length) return{r:'S3.10 Bug修复验证: 新购课程 attend_count 初始值=0',p:true,a:'⚠无2026-03-01后购买记录，跳过'};
+            if(!recent.length) return{r:'S3.10 Bug修复验证: 新购课程 attend_count 初始值=0',p:false,a:'❌仍无2026-03-01后购买记录（造数据也失败，请检查 createOrder 接口或余额）'};
             return{r:'S3.10 Bug修复: 新购课程 attend_count 初始值应为 0（修复前为1）',
               p:bad.length===0,
-              a:bad.length?`❌${bad.length}门课attend_count≠0`:` ✓${recent.length}门新购课均为0`}
+              a:bad.length?`❌${bad.length}门课attend_count≠0`:`✓${recent.length}门新购课均为0`}
           }
         ],
         sql:()=>`-- S3.10 attend_count 初始值验证（修复后新购课程应为0）
@@ -884,7 +951,7 @@ ORDER BY uc.id DESC LIMIT 5
             // validity_days 不为 NULL 的课程，expire_at 也不应为 NULL
             const shouldHaveExpiry=list.filter(c=>c.validity_days&&Number(c.validity_days)>0);
             const missing=shouldHaveExpiry.filter(c=>!c.expire_at);
-            if(!shouldHaveExpiry.length) return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',p:true,a:'⚠无设置了validity_days的课程，跳过'};
+            if(!shouldHaveExpiry.length) return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',p:false,a:'❌用户名下无设置了validity_days的课程（请确认测试用户已购买带有效期的课程）'};
             return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',
               p:missing.length===0,
               a:missing.length?`❌${missing.length}门课expire_at为NULL（Bug）`:`✓${shouldHaveExpiry.length}门课均有expire_at`}
@@ -904,24 +971,42 @@ ORDER BY uc.id DESC LIMIT 5`
       },
 
       // ── S3.9: 核心写操作 — 后台确认领取（终态写，status=1→2） ──
-      // softFail:true 确保 pendingPickupNo 为空时 API 错误不会阻断 biz 检查（graceful skip）
-      {name:'S3.9 [写操作] 后台确认领取(条件执行)',fn:'order',act:'confirmPickup',admin:true,softFail:true,
+      // beforeRun：若无 status=1 的兑换记录，先调用 exchangeGoods 造一条测试数据
+      {name:'S3.9 [写操作] 后台确认领取(自动造数据)',fn:'order',act:'confirmPickup',admin:true,softFail:true,
+        beforeRun:async(C)=>{
+          if(C._hasPendingPickup) return; // S3.8 已找到待领取记录，无需造数据
+          // 造数据：调用 exchangeGoods 创建一条 status=1 的待领取记录
+          const goodsId=C.cheapestGoods?.id||4;
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/order`;
+          const body={action:'exchangeGoods',test_openid:U._openid,goods_id:goodsId,quantity:1,use_cash_points_if_not_enough:false};
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const data=d.data!==undefined?d.data:d;
+            if(d.success&&data?.exchange_no){
+              C.pendingPickupNo=data.exchange_no;
+              C._hasPendingPickup=true;
+              C._s39CreatedData=true; // 标记为自动造的数据
+            }
+          }catch(e){/* 造数据失败不阻断，biz 里会报错 */}
+        },
         params:(C)=>({
           exchange_no: C.pendingPickupNo,
           remark: '[集成测试] 自动化确认领取验证'
         }),
         biz:[
           (d,raw,C)=>{
-            if(!C.pendingPickupNo) return{r:'[S3.9跳过] 无待领取(status=1)兑换记录',p:true,a:'⚠跳过'};
-            if(!raw.success&&raw.message?.includes('已确认领取')) return{r:'§6.21: 已确认领取（幂等/重复操作）',p:true,a:`⚠${raw.message}`};
-            return{r:'§6.21: confirmPickup 成功应返回 status=2',p:raw.success===true&&d?.status===2,a:raw.success?`✓status=${d?.status},exchange_no=${d?.exchange_no}`:raw.message}
+            if(!C.pendingPickupNo) return{r:'[S3.9失败] 无待领取记录且自动造数据也失败（请检查商城是否有商品/余额是否充足）',p:false,a:'❌无法构造测试数据'};
+            const dataNote=C._s39CreatedData?'（自动造数据）':'（原有数据）';
+            if(!raw.success&&raw.message?.includes('已确认领取')) return{r:`§6.21: 已确认领取（幂等）${dataNote}`,p:true,a:`⚠${raw.message}`};
+            return{r:`§6.21: confirmPickup 成功应返回 status=2 ${dataNote}`,p:raw.success===true&&d?.status===2,a:raw.success?`✓status=${d?.status},exchange_no=${d?.exchange_no}`:raw.message}
           },
           (d,raw,C)=>{
-            if(!C.pendingPickupNo||!raw.success) return{r:'pickup_time验证(跳过)',p:true,a:'跳过'};
+            if(!C.pendingPickupNo||!raw.success) return{r:'pickup_time验证',p:false,a:!C.pendingPickupNo?'❌无测试数据':'❌接口未成功'};
             return{r:'§6.21: 返回应含 pickup_time 字段',p:!!d?.pickup_time,a:d?.pickup_time||'❌缺少pickup_time'}
           },
           (d,raw,C)=>{
-            if(!C.pendingPickupNo||!raw.success) return{r:'goods_name/user_name验证(跳过)',p:true,a:'跳过'};
+            if(!C.pendingPickupNo||!raw.success) return{r:'goods_name/user_name验证',p:false,a:!C.pendingPickupNo?'❌无测试数据':'❌接口未成功'};
             return{r:'§6.21: 返回应含 goods_name 和 user_name',p:!!d?.goods_name&&d?.user_name!==undefined,a:d?`goods=${d.goods_name},user=${d.user_name}`:'缺少字段'}
           }
         ],
@@ -936,7 +1021,7 @@ WHERE exchange_no='${C.pendingPickupNo}'`:null
         params:(C)=>({exchange_no:C.pendingPickupNo,remark:'S3.9x 重复确认测试'}),
         biz:[
           (d,raw,C)=>{
-            if(!C.pendingPickupNo) return{r:'[S3.9x跳过] 无已确认记录',p:true,a:'⚠跳过'};
+            if(!C.pendingPickupNo) return{r:'[S3.9x失败] 无测试数据（S3.9未能创建兑换记录）',p:false,a:'❌无测试数据'};
             // 已领取时返回错误（正确拦截）
             if(!raw.success&&(raw.message||'').includes('已确认')) return{r:'§6.21边界: 重复确认应返回"已确认领取"拦截',p:true,a:`✓拦截:${raw.message}`};
             // 幂等成功也可接受
@@ -953,7 +1038,7 @@ WHERE exchange_no='${C.pendingPickupNo}'`:null
         params:(C)=>({exchange_no:C.cancelledExchangeNo,remark:'S3.9y 已取消记录测试'}),
         biz:[
           (d,raw,C)=>{
-            if(!C.cancelledExchangeNo) return{r:'[S3.9y跳过] S3.7未成功(无已取消记录)',p:true,a:'⚠跳过'};
+            if(!C.cancelledExchangeNo) return{r:'[S3.9y失败] S3.7未成功（无已取消记录）— 请确保 S3.6→S3.7 链路完整',p:false,a:'❌无已取消记录，S3.7 兑换+撤销链路未完整执行'};
             if(raw.success===true) return{r:'S3.9y: 意外成功(应被拦截)',p:false,a:'❌已取消记录不应能确认领取'};
             const msg=raw.message||'';
             const ok=msg.includes('已取消')||msg.includes('取消')||msg.includes('无法确认')||msg.includes('不支持');
@@ -1394,7 +1479,7 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
             return{r:'需求3.1.6.6: 合同结束日期 > 开始日期',p:end>start,a:`${sig.contract_start}→${sig.contract_end}`}
           },
           (d)=>{
-            const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'需求: 合同期应为1年或2年',p:true,a:'跳过'};
+            const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'需求: 合同期应为1年或2年',p:false,a:'❌无合同记录（用户尚未签约）'};
             const start=new Date(sig.contract_start),end=new Date(sig.contract_end);
             const days=Math.round((end-start)/(1000*60*60*24));
             const ok1y=days>=360&&days<=370,ok2y=days>=725&&days<=735;
@@ -1413,7 +1498,7 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
         biz:[
           (d,raw)=>({r:'鸿鹄模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const t=d?.template;if(!t)return{r:'模板应含名称',p:false,a:'无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
-          (d)=>{const t=d?.template;if(!t)return{r:'模板宜有 contract_file_url（鸿鹄未上传则跳过）',p:true,a:'无模板'};return{r:'模板宜有 contract_file_url（鸿鹄未上传则跳过）',p:true,a:t.contract_file_url?'✓有电子版':'暂无'}}
+          (d)=>{const t=d?.template;if(!t)return{r:'模板应有 contract_file_url（鸿鹄）',p:false,a:'❌无模板'};return{r:'模板应有 contract_file_url（鸿鹄电子版）',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌暂无，请在后台上传鸿鹄等级协议电子版文件'}}
         ]
       },
       {name:'S6.6 无模板等级(level=99 应报错)',fn:'ambassador',act:'getContractTemplate',params:{level:99},
@@ -1448,7 +1533,7 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
         biz:[
           (d,raw)=>({r:'金凤模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const t=d?.template;if(!t)return{r:'模板应含名称',p:false,a:'无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
-          (d)=>{const t=d?.template;if(!t)return{r:'模板宜有 contract_file_url（金凤未上传则跳过）',p:true,a:'无模板'};return{r:'模板宜有 contract_file_url（金凤未上传则跳过）',p:true,a:t.contract_file_url?'✓有电子版':'暂无'}}
+          (d)=>{const t=d?.template;if(!t)return{r:'模板应有 contract_file_url（金凤）',p:false,a:'❌无模板'};return{r:'模板应有 contract_file_url（金凤电子版）',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌暂无，请在后台上传金凤等级协议电子版文件'}}
         ]
       },
       // ── S6.10: 已过期协议(status=2)详情验证 ——规则表必须维度：协议已过期 ──
@@ -1457,8 +1542,8 @@ WHERE cs.user_id=${U.id} ORDER BY cs.created_at DESC`
         biz:[
           (d,raw)=>({r:'已过期协议详情应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const sig=d?.signature;if(!sig)return{r:'协议记录应存在',p:false,a:'无记录'};return{r:'status 应为 2(已过期)',p:Number(sig.status)===2,a:`status=${sig.status}`}},
-          (d)=>{const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'合同起止日期应存在',p:true,a:'跳过'};return{r:'已过期：contract_end 应早于今日',p:new Date(sig.contract_end)<new Date(),a:`${sig.contract_start}→${sig.contract_end}`}},
-          (d)=>{const sig=d?.signature;if(!sig)return{r:'status_text 应为 已过期',p:true,a:'跳过'};const st=sig.status_text||'';return{r:'status_text 应包含"过期"',p:st.includes('过期')||st.includes('expired'),a:st||'❌缺失'}}
+          (d)=>{const sig=d?.signature;if(!sig||!sig.contract_start)return{r:'合同起止日期应存在',p:false,a:'❌无合同记录（signature_id=8 对应的协议不存在或无合同起止日期）'};return{r:'已过期：contract_end 应早于今日',p:new Date(sig.contract_end)<new Date(),a:`${sig.contract_start}→${sig.contract_end}`}},
+          (d)=>{const sig=d?.signature;if(!sig)return{r:'status_text 应为 已过期',p:false,a:'❌无合同记录（signature_id=8不存在）'};const st=sig.status_text||'';return{r:'status_text 应包含"过期"',p:st.includes('过期')||st.includes('expired'),a:st||'❌缺失'}}
         ],
         sql:()=>`SELECT id, status, contract_start, contract_end, sign_time FROM tiandao_culture.contract_signatures WHERE id=8`
       }
@@ -1524,13 +1609,13 @@ FROM tiandao_culture.class_records WHERE course_id=18 ORDER BY id`
         softFail:true,
         biz:[
           (d,raw,C)=>{
-            if(!C.firstAppointClassRecordId) return{r:'[S7.1b跳过] 无 attend_count=0 课程的可用排期',p:true,a:'⚠跳过'};
+            if(!C.firstAppointClassRecordId) return{r:'[S7.1b] 无 attend_count=0 课程的可用排期',p:false,a:'❌S7.1a 未找到 course_id=18 的有效排期（请检查排期是否存在且 booking_deadline 未过期）'};
             if(!raw.success&&raw.message?.includes('已预约')) return{r:'需求3.1.4: 用户已预约该排期（幂等：视为通过）',p:true,a:`⚠${raw.message}`};
             if(!raw.success&&raw.message?.includes('名额已满')) return{r:'排期名额已满（合法边界）',p:true,a:`⚠${raw.message}`};
             return{r:'需求3.1.4: attend_count=0 首次预约应成功，返回 appointment_id',p:raw.success===true&&!!d?.appointment_id,a:raw.success?`✓appointment_id=${d?.appointment_id},class_date=${d?.class_date}`:raw.message}
           },
           (d,raw,C)=>{
-            if(!C.firstAppointClassRecordId||!raw.success||!d?.appointment_id) return{r:'class_date字段验证(跳过)',p:true,a:'跳过'};
+            if(!C.firstAppointClassRecordId||!raw.success||!d?.appointment_id) return{r:'class_date字段验证',p:!C.firstAppointClassRecordId?false:raw.success,a:!C.firstAppointClassRecordId?'❌无排期数据':'❌接口未成功'};
             return{r:'需求3.1.4: 返回应含 class_date 字段',p:!!d?.class_date,a:d?.class_date||'❌缺少class_date'}
           }
         ],
@@ -1613,8 +1698,8 @@ ORDER BY uc.id DESC LIMIT 10`
         softFail:true,
         biz:[
           (d,raw,C)=>{
-            if(!C._retrainCourseId) return{r:'[S7.4c跳过] 无 attend_count≥1 的非沙龙课程（需先签到上课）',p:true,a:'⚠跳过'};
-            if(!C.classRecordId) return{r:'[S7.4c跳过] 无可用排期ID',p:true,a:'⚠跳过'};
+            if(!C._retrainCourseId) return{r:'[S7.4c] 无 attend_count≥1 的非沙龙课程',p:false,a:'❌需先完成至少一次签到（F7 S7.1b预约→后台签到updateAppointmentStatus）后再运行此步骤'};
+            if(!C.classRecordId) return{r:'[S7.4c] 无可用排期ID',p:false,a:'❌S7.1未能获取到有效排期'};
             const msg=raw.message||'';
             const isBlocked=!raw.success&&(msg.includes('复训费')||msg.includes('复训')||msg.includes('retrain')||msg.includes('支付'));
             return{r:'需求3.1.4: attend_count≥1 且非沙龙 → createAppointment 应被拦截"需先支付复训费"',
@@ -1861,12 +1946,12 @@ ORDER BY aa.schedule_date LIMIT 10`
         },
         biz:[
           (d,raw,C)=>{
-            if(!C._pendingApplyActivityId) return{r:'[S11.2b跳过] 无可报名活动（活动数为0或已全部报名）',p:true,a:'⚠跳过'};
+            if(!C._pendingApplyActivityId) return{r:'[S11.2b] 无可报名活动',p:false,a:'❌无可报名活动（活动数为0、或已全部报名、或无无等级限制岗位）— 请先在后台创建一个有空余名额的活动'};
             if(!raw.success&&(raw.message?.includes('已报名')||raw.message?.includes('已在其他活动'))) return{r:'用户已存在报名记录（幂等：视为通过）',p:true,a:`⚠${raw.message}`};
             return{r:'需求3.1.7.5: applyForActivity 应返回 activity_id 和 position_name',p:raw.success===true&&!!d?.activity_id&&!!d?.position_name,a:raw.success?`✓activity_id=${d?.activity_id},pos=${d?.position_name}`:raw.message}
           },
           (d,raw,C)=>{
-            if(!C._pendingApplyActivityId||!raw.success) return{r:'报名成功后 merit_points 验证(跳过)',p:true,a:'跳过'};
+            if(!C._pendingApplyActivityId||!raw.success) return{r:'报名成功后 merit_points 验证',p:!!C._pendingApplyActivityId&&raw.success,a:!C._pendingApplyActivityId?'❌无测试数据':'❌接口未成功'};
             return{r:'需求3.1.7.5: 返回 merit_points 应≥0',p:d?.merit_points!==undefined&&Number(d.merit_points)>=0,a:`merit_points=${d?.merit_points}`}
           },
           (d,raw,C)=>{
@@ -1892,7 +1977,7 @@ ORDER BY r.id DESC LIMIT 1`:null
         params:(C)=>C.applySuccess?{activityId:C.appliedActivityId,positionName:C.appliedPositionName}:{activityId:0,positionName:''},
         biz:[
           (d,raw,C)=>{
-            if(!C.applySuccess)return{r:'[S11.2c跳过] S11.2b未成功报名，跳过重复报名测试',p:true,a:'⚠跳过'};
+            if(!C.applySuccess)return{r:'[S11.2c] S11.2b未成功报名，无法测试重复报名',p:false,a:'❌S11.2b 未能成功报名（需先有可报名活动）'};
             const msg=raw.message||'';
             const isBlocked=!raw.success&&(msg.includes('已报名')||msg.includes('已在其他活动'));
             return{r:'重复报名同一活动应被拦截，返回"已报名"类错误',p:isBlocked,a:msg||'⚠意外成功'}
@@ -1970,7 +2055,7 @@ ORDER BY r.created_at`
             return{r:'发放功德分：成功/已发放/暂无报名均属预期',p:isOk,a:msg||'OK'}
           },
           (d,raw,C)=>{
-            if(!raw.success)return{r:'发放人数一致性（未成功时跳过）',p:true,a:`跳过: ${raw.message||''}`};
+            if(!raw.success)return{r:'发放人数一致性',p:false,a:`❌接口未成功: ${raw.message||''}`};
             const successCount=d?.success_count||0;
             const validReg=(C.registrantList||[]).filter(r=>r.status===1).length;
             return{r:'发放成功人数应等于有效报名（status=1）的数量',p:validReg===0||successCount===validReg,a:`发放=${successCount}, 有效报名=${validReg}`}
@@ -1992,7 +2077,7 @@ GROUP BY aa.id`
         params:(C)=>({activityId:C.adminActivityId||C.firstActivityId||1}),
         biz:[
           (d,raw,C)=>{
-            if(!C.distributeResult?.success)return{r:'[S11.7b跳过] S11.7未成功发放，跳过幂等测试',p:true,a:'⚠跳过'};
+            if(!C.distributeResult?.success)return{r:'[S11.7b] S11.7未成功发放，无法测试幂等',p:false,a:'❌S11.7 发放未成功，检查活动是否有有效报名记录'};
             const msg=raw.message||'';
             const isIdempotent=!raw.success&&msg.includes('已发放');
             return{r:'已发放的活动再次发放应返回"已发放"幂等错误',p:isIdempotent,a:msg||'⚠意外成功'}
@@ -2006,7 +2091,7 @@ SELECT id, merit_distributed, merit_distributed_at, status FROM tiandao_culture.
         biz:[
           (d,raw)=>({r:'用户资料接口正常',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d,_,C)=>{
-            if(!C.distributeResult?.success)return{r:'功德分余额验证（发放未成功，跳过）',p:true,a:'跳过'};
+            if(!C.distributeResult?.success)return{r:'功德分余额验证（发放未成功）',p:false,a:'❌S11.7 发放未成功，无法验证余额变化'};
             const before=Number(C.meritBeforeDistribute||0);
             const after=Number(d?.merit_points||0);
             const distributed=C.distributeResult?.data?.success_count||0;
@@ -2026,11 +2111,11 @@ FROM tiandao_culture.users u WHERE u.id=${U.id}`
         biz:[
           (d,raw)=>({r:'活动详情接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d,_,C)=>{
-            if(!C.distributeResult?.success)return{r:'活动状态验证（发放未成功，跳过）',p:true,a:'跳过'};
+            if(!C.distributeResult?.success)return{r:'活动状态验证（发放未成功）',p:false,a:'❌S11.7 发放未成功，无法验证活动状态'};
             return{r:'发放功德分后活动 merit_distributed 应为 1',p:d?.merit_distributed===1,a:`merit_distributed=${d?.merit_distributed}`}
           },
           (d,_,C)=>{
-            if(!C.distributeResult?.success)return{r:'活动状态（已结束）验证跳过',p:true,a:'跳过'};
+            if(!C.distributeResult?.success)return{r:'活动状态（已结束）验证',p:false,a:'❌S11.7 发放未成功，无法验证活动已结束状态'};
             return{r:'发放功德分后活动 status 应为 0（已结束）',p:d?.status===0,a:`status=${d?.status}`}
           }
         ],
@@ -2102,7 +2187,7 @@ WHERE r.activity_id=${C.adminActivityId||C.firstActivityId||1} AND r.user_id=${U
         params:(C)=>({activityId:C.appliedActivityId||0}),
         biz:[
           (d,raw,C)=>{
-            if(!C.applySuccess) return{r:'[S11.12b跳过] S11.2b未成功创建报名，无需清理',p:true,a:'⚠跳过'};
+            if(!C.applySuccess) return{r:'[S11.12b] S11.2b未成功创建报名，清理步骤无法执行',p:false,a:'❌S11.2b 未能成功报名，此清理步骤无意义（请先确保有可报名活动）'};
             const msg=raw.message||'';
             // 活动已被分发（status=0）时取消会报错，属于预期行为
             const isOk=raw.success===true||msg.includes('已结束')||msg.includes('未找到')||msg.includes('已发放');
@@ -2335,7 +2420,7 @@ WHERE course_id=18 AND contract_type=4 ORDER BY id DESC LIMIT 3
         biz:[
           (d,raw,C)=>{
             const tid=C.newCourseTemplateId18||C.existingCourseTemplateId18||C.courseTemplateId18;
-            if(!tid) return{r:'[S12.7跳过] 无模板ID',p:true,a:'⚠跳过'};
+            if(!tid) return{r:'[S12.7] 无模板ID',p:false,a:'❌S12.3 创建模板未成功，无法测试更新接口'};
             return{r:'updateContractTemplate应返回success=true',p:raw.success===true,a:raw.success?'✓已更新':raw.message}
           }
         ],
@@ -2446,8 +2531,8 @@ WHERE uc.user_id=30 AND uc.course_id=1 AND uc.status=1 LIMIT 1
   // ────────────── FLOW 13: 退款申请全链路 ──────────────
   {
     id:'F13',icon:'💸',name:'流程13: 退款申请 · 合同拦截 · 审核流转 · 业务回滚',
-    desc:'查已支付订单(基线) → 验证contract_signed → 退款状态基线 → [写]申请退款 → 重复申请拦截 → 验证=1 → [Admin]退款列表+统计 → [Admin写]驳回(清理) → 验证=4+审核字段 → 边界8项(合同拦截/未支付/发票必填/参数校验) ⚠️ markRefundTransferred真实转账见MT-20',
-    tables:['orders','user_courses','appointments'],rules:17,
+    desc:'查已支付订单(基线) → 验证contract_signed → 退款状态基线 → [写]申请退款 → 重复申请拦截 → 验证=1 → [Admin]退款列表+统计 → [Admin写]驳回(清理) → 验证=4+审核字段 → 边界8项(合同拦截/未支付/发票必填/参数校验) ⚠️ markRefundTransferred真实转账见MT-20 ⚠️ 密训班赠课退款拦截(MT-39)/赠课新建记录失效(MT-40)/有效期回退(MT-41)见手动测试清单',
+    tables:['orders','user_courses','appointments'],rules:20,
     get chainHtml(){return ['getMyOrders','getMyCourses','getRefundStatus','requestRefund','重复拦截','getRefundList','rejectRefund','markRefundTransferred','边界×8'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
     steps:[
       // ─── 主流程：申请 → 驳回全链路 ───
@@ -2486,7 +2571,7 @@ FROM tiandao_culture.orders WHERE user_id=30 AND pay_status IN (0,1) ORDER BY cr
           (d)=>{
             const list=d?.list||(Array.isArray(d)?d:[]);
             const signed=list.filter(c=>c.contract_signed===1);
-            return{r:'统计已签合同课程(S13.B3合同拦截依赖)',p:true,a:signed.length>0?`${signed.length}条已签合同(可测试合同拦截)`:'⚠无已签合同课程,S13.B3将跳过'}
+            return{r:'统计已签合同课程(S13.B3合同拦截依赖)',p:signed.length>0,a:signed.length>0?`${signed.length}条已签合同(可测试合同拦截)`:'❌无已签合同课程，S13.B3将失败（需先完成 F12 签署学习合同）'}
           }
         ],
         save:(d,_,C)=>{
@@ -2588,8 +2673,8 @@ FROM tiandao_culture.orders WHERE order_no='${C.refundOrderNo}'
           (d,raw)=>({r:'getRefundList(admin)接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
             const list=d?.list||(Array.isArray(d)?d:[]);
-            const allOk=list.length===0||list.every(o=>o.id&&o.order_no&&o.refund_status!==undefined&&o.refund_amount!==undefined);
-            return{r:'退款列表字段含 id/order_no/refund_status/refund_amount',p:allOk,a:allOk?`✓${list.length}条待审核`:'❌字段不完整'}
+            const allOk=list.length===0||list.every(o=>o.id&&o.order_no&&o.refund_status!==undefined&&o.amount!==undefined);
+            return{r:'退款列表字段含 id/order_no/refund_status/amount',p:allOk,a:allOk?`✓${list.length}条待审核`:'❌字段不完整'}
           },
           (d)=>{
             const s=d?.statistics;
@@ -2677,7 +2762,7 @@ FROM tiandao_culture.orders WHERE order_no='${C.refundOrderNo}'
         softFail:true,
         biz:[
           (d,raw,C)=>{
-            if(!C.contractSignedOrderNo) return{r:'[S13.B3跳过] 无已签合同+未退款的课程订单(需先完成MT-30签约)',p:true,a:'⚠跳过'};
+            if(!C.contractSignedOrderNo) return{r:'[S13.B3] 无已签合同+未退款的课程订单',p:false,a:'❌需先完成 MT-30（签署学习合同）再运行 F13，或手动在 CTX.contractSignedOrderNo 设置订单号'};
             const blocked=raw.success===false&&raw.message?.includes('合同');
             return{r:'已签学习合同的课程申请退款应被拦截',p:blocked,a:blocked?`✓合同拦截: ${(raw.message||'').slice(0,60)}`:`❌未拦截: ${(raw.message||'success='+raw.success).slice(0,60)}`}
           }
@@ -2696,7 +2781,7 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
         softFail:true,
         biz:[
           (d,raw,C)=>{
-            if(!C.unpaidOrderNo) return{r:'[S13.B4跳过] 无未支付订单',p:true,a:'⚠跳过'};
+            if(!C.unpaidOrderNo) return{r:'[S13.B4] 无未支付订单',p:false,a:'❌无未支付订单可测试（请先创建一笔未支付订单）'};
             return{r:'未支付订单申请退款应被拦截',p:raw.success===false,a:raw.success===false?`✓拦截: ${(raw.message||'').slice(0,60)}`:'❌未拦截未支付退款'}
           }
         ]
@@ -2720,12 +2805,735 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
         params:{},
         expectFail:true,
         errBiz:(d)=>({r:'缺少order_no应返回"缺少订单号"',p:d.success===false,a:(d.message||'无message').slice(0,60)})
+      },
+      // ─── 密训班赠课退款边界（MT-39/40/41 纯手动测试，无法自动化） ───
+      // ⚠️ 以下三个场景需要先完成 MT-36/MT-37（密训班赠课），无法自动化，以 getProfile 代替调用（无副作用）展示测试说明
+      {name:'S13.C1 [MT-39 手动] 赠送课程已签合同拦截退款',fn:'user',act:'getProfile',softFail:true,
+        biz:[
+          ()=>({r:'[手动测试-MT39] 需人工执行：密训班购买→赠课→学员签学习合同→尝试申请密训班退款',p:false,
+            a:'❌ 手动步骤：1.购买密训班课程 2.在后台赠课给学员 3.学员签学习合同 4.申请密训班退款 → 期望：系统拦截，提示"赠送课程已签署学习合同，无法退款"'})
+        ]
+      },
+      {name:'S13.C2 [MT-40 手动] 退款后赠课记录应失效',fn:'user',act:'getProfile',softFail:true,
+        biz:[
+          ()=>({r:'[手动测试-MT40] 需人工执行：密训班购买→赠课→密训班退款转账→验证赠课记录失效',p:false,
+            a:'❌ 手动步骤：1.购买密训班课程 2.在后台赠课给学员 3.完成退款转账(markRefundTransferred) 4.MCP SQL验证: SELECT status FROM tiandao_culture.user_courses WHERE is_gift=1 AND source_order_id=<订单id> → 期望：status=0（已失效）'})
+        ]
+      },
+      {name:'S13.C3 [MT-41 手动] 退款后赠课有效期应回退',fn:'user',act:'getProfile',softFail:true,
+        biz:[
+          ()=>({r:'[手动测试-MT41] 需人工执行：密训班购买(含有效期叠加)→赠课→退款转账→验证expire_at回退',p:false,
+            a:'❌ 手动步骤：1.购买含validity_days的密训班 2.赠课给已有同类课程的学员(会叠加expire_at) 3.完成退款转账 4.MCP SQL验证: SELECT expire_at FROM tiandao_culture.user_courses WHERE user_id=<学员id> AND course_id=<赠课id> → 期望：expire_at比叠加后少约validity_days天'})
+        ]
       }
     ]
   }
   ]);
 
-  // ===== Computed =====
+  // ────────────── FLOW 14: 沙龙课程 · 免费预约 · 自动签到 · 结束清理 ──────────────
+  flows.value.push({
+    id:'F14',icon:'🎪',name:'流程14: 沙龙课程 · 免费预约 · 自动签到 · 结束清理',
+    desc:'[Admin写]创建沙龙课程(type=4,price=0) → [Admin写]上架(不检查合同模板) → [Admin写]创建排期 → [Admin边界]重复创建排期拦截 → [写]预约沙龙(自动建user_courses) → [边界]重复预约拦截 → [Admin写]定时任务开课(自动签到) → [Admin写]定时任务结束(硬删除清理)',
+    tables:['courses','class_records','appointments','user_courses'],rules:12,
+    get chainHtml(){return ['createCourse(type=4)','updateCourse(上架)','createClassRecord','重复排期拦截','createAppointment','重复预约拦截','autoUpdateScheduleStatus(开课)','autoUpdateScheduleStatus(结束)'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      // ─── S14.1: 创建沙龙课程 ───
+      {name:'S14.1 [Admin写] 创建沙龙课程(type=4,price=0)',fn:'course',act:'createCourse',admin:true,
+        params:{
+          name:`[集成测试]沙龙课程_${Date.now()}`,
+          type:4,
+          description:'自动化集成测试沙龙课程，测试完成后硬删除',
+          sort_order:99
+        },
+        biz:[
+          (d,raw)=>({r:'createCourse 沙龙课程应创建成功',p:raw.success===true,a:raw.success?`✓id=${d?.id||d?.course_id}`:(raw.message||'失败')}),
+          (d,raw)=>{
+            if(!raw.success) return{r:'type=4 course_id 应有值（跳过）',p:true,a:'跳过'};
+            return{r:'沙龙课程应返回 id',p:!!(d?.id||d?.course_id),a:`id=${d?.id||d?.course_id}`}
+          }
+        ],
+        save:(d,raw,C)=>{
+          if(raw.success){
+            C.salonCourseId=d?.id||d?.course_id||d?.courseId;
+          }
+        },
+        sql:(C)=>C.salonCourseId?`-- S14.1: 验证沙龙课程字段
+SELECT id, name, type, current_price, original_price, retrain_price, validity_days, status
+FROM tiandao_culture.courses WHERE id=${C.salonCourseId}
+-- 期望: type=4, current_price=0, original_price=0, validity_days IS NULL, status=0`:null
+      },
+      // ─── S14.2: 沙龙课程上架（不检查合同模板） ───
+      {name:'S14.2 [Admin写] 沙龙课程上架(不检查合同模板)',fn:'course',act:'updateCourse',admin:true,softFail:true,
+        params:(C)=>C.salonCourseId?{id:C.salonCourseId,status:1}:{id:0,status:1},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonCourseId) return{r:'[S14.2跳过] S14.1未成功',p:true,a:'⚠跳过'};
+            // 不应因缺合同模板被拦截
+            if(!raw.success&&(raw.message||'').includes('学习服务协议')) return{r:'沙龙课程上架不应被合同模板拦截',p:false,a:`❌被合同拦截: ${raw.message}`};
+            return{r:'沙龙课程上架应成功（type=4不检查合同模板）',p:raw.success===true,a:raw.success?`✓status=1`:(raw.message||'失败')}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success) C.salonCourseOnline=true},
+        sql:(C)=>C.salonCourseId?`-- S14.2: 验证沙龙课程已上架
+SELECT id, name, type, status FROM tiandao_culture.courses WHERE id=${C.salonCourseId}
+-- 期望: status=1`:null
+      },
+      // ─── S14.3: 为沙龙课程创建排期 ───
+      {name:'S14.3 [Admin写] 为沙龙课程创建排期',fn:'course',act:'createClassRecord',admin:true,softFail:true,
+        params:(C)=>C.salonCourseId?{
+          courseId:C.salonCourseId,
+          classDate:'2099-12-31',
+          classEndDate:'2099-12-31',
+          classTime:'10:00-18:00',
+          classLocation:'[集成测试]沙龙测试地点',
+          teacher:'[集成测试]讲师',
+          capacity:50
+        }:{courseId:0,classDate:'2099-12-31'},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonCourseId) return{r:'[S14.3跳过] S14.1未成功',p:true,a:'⚠跳过'};
+            return{r:'沙龙课程创建排期应成功',p:raw.success===true,a:raw.success?`✓id=${d?.id||d?.class_record_id}`:(raw.message||'失败')}
+          },
+          (d,raw,C)=>{
+            if(!C.salonCourseId||!raw.success) return{r:'排期id验证(跳过)',p:true,a:'跳过'};
+            return{r:'排期应返回 class_record_id',p:!!(d?.id||d?.class_record_id),a:`id=${d?.id||d?.class_record_id}`}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success) C.salonClassRecordId=d?.id||d?.class_record_id},
+        sql:(C)=>C.salonCourseId?`-- S14.3: 验证沙龙排期
+SELECT id, course_id, class_date, class_time, class_location, status, booked_quota
+FROM tiandao_culture.class_records WHERE course_id=${C.salonCourseId} ORDER BY id DESC LIMIT 1`:null
+      },
+      // ─── S14.4: 重复创建排期应被拦截 ───
+      {name:'S14.4 [边界] 沙龙课程重复创建排期应拦截',fn:'course',act:'createClassRecord',admin:true,softFail:true,
+        params:(C)=>C.salonCourseId?{
+          courseId:C.salonCourseId,
+          classDate:'2099-12-30',
+          classEndDate:'2099-12-30',
+          classTime:'10:00-18:00',
+          classLocation:'[集成测试]沙龙测试地点',
+          teacher:'[集成测试]讲师',
+          capacity:50
+        }:{courseId:0,classDate:'2099-12-30'},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonCourseId||!C.salonClassRecordId) return{r:'[S14.4跳过] 排期未创建成功',p:true,a:'⚠跳过'};
+            if(!raw.success&&(raw.message||'').includes('已有排期')) return{r:'沙龙课程重复排期应被拦截（"已有排期"）',p:true,a:`✓拦截: ${raw.message}`};
+            if(!raw.success) return{r:'沙龙课程重复排期应被拦截',p:true,a:`✓拦截(其他错误): ${raw.message}`};
+            return{r:'沙龙课程重复排期应被拦截',p:false,a:'❌意外成功，应返回已有排期错误'}
+          }
+        ]
+      },
+      // ─── S14.5: 用户预约沙龙课程（自动建 user_courses） ───
+      {name:'S14.5 [写操作] 用户预约沙龙课程（自动建 user_courses）',fn:'course',act:'createAppointment',softFail:true,
+        params:(C)=>C.salonClassRecordId?{class_record_id:C.salonClassRecordId}:{class_record_id:0},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonClassRecordId) return{r:'[S14.5跳过] 排期未创建成功',p:true,a:'⚠跳过'};
+            // 已预约时幂等通过（防重复运行测试）
+            if(!raw.success&&(raw.message||'').includes('已预约')) return{r:'沙龙预约已存在（幂等通过）',p:true,a:`⚠已预约: ${raw.message}`};
+            return{r:'沙龙课程预约应成功，自动创建 user_courses(buy_price=0)',p:raw.success===true,a:raw.success?`✓appointment_id=${d?.appointment_id||d?.id}`:(raw.message||'失败')}
+          },
+          (d,raw,C)=>{
+            if(!C.salonClassRecordId||!raw.success) return{r:'appointment_id验证(跳过)',p:true,a:'跳过'};
+            return{r:'预约应返回 appointment_id',p:!!(d?.appointment_id||d?.id),a:`appointment_id=${d?.appointment_id||d?.id}`}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success) C.salonAppointmentId=d?.appointment_id||d?.id},
+        sql:(C)=>C.salonCourseId?`-- S14.5: 验证沙龙预约及自动建 user_courses
+SELECT uc.id as uc_id, uc.user_id, uc.course_id, uc.buy_price, uc.status, uc.attend_count,
+       a.id as appt_id, a.status as appt_status, a.is_retrain
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.appointments a ON a.user_id=uc.user_id AND a.course_id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.course_id=${C.salonCourseId}
+ORDER BY uc.id DESC LIMIT 3
+-- 期望: buy_price=0, status=1, attend_count=0, is_retrain=0`:null
+      },
+      // ─── S14.6: 重复预约同一沙龙排期拦截 ───
+      {name:'S14.6 [边界] 重复预约同一沙龙排期应拦截',fn:'course',act:'createAppointment',softFail:true,
+        params:(C)=>C.salonClassRecordId?{class_record_id:C.salonClassRecordId}:{class_record_id:0},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonClassRecordId) return{r:'[S14.6跳过] 排期未创建成功',p:true,a:'⚠跳过'};
+            if(!raw.success&&(raw.message||'').includes('已预约')) return{r:'重复预约沙龙应被拦截（"已预约"）',p:true,a:`✓拦截: ${raw.message}`};
+            if(!raw.success) return{r:'重复预约应被拦截（其他错误）',p:true,a:`✓拦截: ${raw.message}`};
+            return{r:'重复预约同一沙龙排期应被拦截',p:false,a:'❌意外成功，应返回重复预约错误'}
+          }
+        ]
+      },
+      // ─── S14.7: autoUpdateScheduleStatus 开课当天（沙龙自动签到） ───
+      // 先将排期日期改为今天，再模拟定时器触发，触发"未开始→进行中"及沙龙自动签到
+      {name:'S14.7 [Admin写] 定时任务开课（沙龙预约自动签到）',fn:'course',act:'autoUpdateScheduleStatus',timer:true,softFail:true,
+        beforeRun:async(C)=>{
+          // 将排期日期改为今天，使定时任务能触发"未开始→进行中"
+          if(C.salonClassRecordId){
+            const today=new Date().toISOString().slice(0,10);
+            await api('course','updateClassRecord',{id:C.salonClassRecordId,classDate:today,classEndDate:today},true);
+          }
+        },
+        params:(C)=>({Time:new Date().toISOString().replace('T',' ').slice(0,19),TriggerName:'auto-update-schedule-status'}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonClassRecordId) return{r:'[S14.7跳过] 排期未创建成功',p:true,a:'⚠跳过'};
+            return{r:'autoUpdateScheduleStatus 定时任务应正常返回',p:raw.success===true,a:raw.success?`✓签到:${d?.salonAutoCheckin??0}`:(raw.message||'失败')}
+          },
+          (d,raw,C)=>{
+            if(!C.salonClassRecordId||!raw.success) return{r:'沙龙自动签到数验证(跳过)',p:true,a:'跳过'};
+            return{r:'沙龙自动签到数 >= 1',p:(d?.salonAutoCheckin??0)>=1,a:`salonAutoCheckin=${d?.salonAutoCheckin??0}`}
+          }
+        ],
+        sql:(C)=>C.salonCourseId&&C.salonClassRecordId?`-- S14.7: 验证沙龙开课自动签到
+SELECT a.id, a.user_id, a.status, a.checkin_time,
+       cr.class_date, cr.status as cr_status
+FROM tiandao_culture.appointments a
+JOIN tiandao_culture.class_records cr ON a.class_record_id=cr.id
+WHERE cr.course_id=${C.salonCourseId} AND a.user_id=${U.id}
+-- 期望: a.status=1(已签到), a.checkin_time 非NULL, cr.status=2(进行中)`:null
+      },
+      // ─── S14.8: 沙龙课程结束后硬删除清理 ───
+      // 将排期日期改为昨天，再触发一次定时任务，触发"进行中→已结束+硬删除"
+      {name:'S14.8 [Admin写] 沙龙结束后硬删除清理验证',fn:'course',act:'autoUpdateScheduleStatus',timer:true,softFail:true,
+        beforeRun:async(C)=>{
+          // 将排期日期改为昨天，使 class_end_date < today，触发"进行中→已结束"及沙龙清理
+          if(C.salonClassRecordId){
+            const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+            await api('course','updateClassRecord',{id:C.salonClassRecordId,classDate:yesterday,classEndDate:yesterday},true);
+          }
+        },
+        params:(C)=>({Time:new Date().toISOString().replace('T',' ').slice(0,19),TriggerName:'auto-update-schedule-status'}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.salonCourseId) return{r:'[S14.8跳过] 沙龙课程未创建成功',p:true,a:'⚠跳过'};
+            return{r:'autoUpdateScheduleStatus 定时任务（模拟结束）应正常返回',p:raw.success===true,a:raw.success?`✓清理课程:${d?.salonCleanedCourses??0}`:(raw.message||'失败')}
+          },
+          (d,raw,C)=>{
+            if(!C.salonCourseId||!raw.success) return{r:'沙龙清理数验证(跳过)',p:true,a:'跳过'};
+            return{r:'沙龙清理课程数 >= 1',p:(d?.salonCleanedCourses??0)>=1,a:`salonCleanedCourses=${d?.salonCleanedCourses??0}, salonCleanedRecords=${d?.salonCleanedRecords??0}`}
+          }
+        ],
+        sql:(C)=>C.salonCourseId?`-- S14.8: 验证沙龙结束后硬删除
+-- 期望: courses+class_records 被删除，appointments 保留（class_record_id=NULL）
+SELECT COUNT(*) as courses_cnt FROM tiandao_culture.courses WHERE id=${C.salonCourseId}
+-- 期望: cnt=0（已硬删除）
+SELECT COUNT(*) as appt_cnt, SUM(CASE WHEN class_record_id IS NULL THEN 1 ELSE 0 END) as null_cr_cnt FROM tiandao_culture.appointments WHERE course_id=${C.salonCourseId}
+-- 期望: appt_cnt>=1（保留历史记录），null_cr_cnt>=1（class_record_id已被置NULL）`:null
+      }
+    ]
+  });
+
+  // ────────────── FLOW 15: 管理端大使赠送课程 · 名额扣减 · 课程开通/续期 ──────────────
+  flows.value.push({
+    id:'F15',icon:'🎁',name:'流程15: 管理端大使赠送课程 · 名额扣减 · 课程开通/续期',
+    desc:'[Admin写]已失效课程重新激活 → [Admin写]重复赠送(延长expire_at) → [边界]名额不足 → [边界]课程类型拦截 → [边界]缺参数 → [Admin写]赠送密训班(新建) → [Admin写]密训班续期 → [边界]接收人不存在 → [边界]大使不存在',
+    tables:['ambassador_quotas','quota_usage_records','user_courses'],rules:14,
+    get chainHtml(){return ['重新激活','延长有效期','名额不足拦截','类型拦截','缺参数','密训班新建','密训班续期','接收人不存在','大使不存在'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+      // ─── S15.0: 前置检查：查询大使可用名额（使用 user_id=32 何日琛，level=2）───
+      // 注意：adminGiftCourse 参数为 { ambassadorUserId, recipientUserId, courseId }
+      // 测试大使：user_id=32（何日琛，ambassador_level=2）
+      //   - quota_type=1（初探班）id=4 remaining=2 → 供 S15.1/S15.2 使用
+      //   - quota_type=2（密训班）id=5 remaining=2 → 供 S15.6/S15.7 使用
+      {name:'S15.0 前置检查：查询大使(id=32)可用名额',fn:'ambassador',act:'getMyQuotas',
+        params:()=>({test_openid:'oJr1c7AODZ6ZocPfFuTeooL9PHXE'}),
+        biz:[
+          (d,raw)=>({r:'getMyQuotas 接口应正常返回',p:raw.success===true,a:raw.success?'OK':(raw.message||'失败')}),
+          (d)=>{
+            // getMyQuotas 返回 { summary, quotas, usage_records }
+            const list=d?.quotas||(Array.isArray(d)?d:[]);
+            const avail=list.filter(q=>(q.remaining_quantity??0)>0);
+            return{r:'user_id=32大使存在 remaining_quantity>0 的名额（F15 前置条件）',p:avail.length>0,a:avail.length>0?`✓${avail.length}条可用名额(remaining=${avail[0]?.remaining_quantity})`:'⚠️无可用名额，S15.1将跳过'}
+          }
+        ],
+        save:(d,raw,C)=>{
+          // getMyQuotas 返回 { summary, quotas, usage_records }
+          const list=d?.quotas||(Array.isArray(d)?d:[]);
+          const avail=list.filter(q=>(q.remaining_quantity??0)>0);
+          if(avail.length>0){
+            C.giftAmbassadorId=32;
+            C.giftAmbassadorQuotaId=avail[0].id;
+            C.giftAmbassadorRemaining=avail[0].remaining_quantity??0;
+            C.hasGiftQuota=true;
+          }
+        },
+        sql:()=>`-- S15.0: 前置检查大使(id=32)可用名额
+SELECT aq.id, aq.user_id, u.real_name, u.ambassador_level, aq.quota_type,
+       aq.total_quantity, aq.used_quantity, aq.remaining_quantity, aq.status, aq.expire_date
+FROM tiandao_culture.ambassador_quotas aq
+JOIN tiandao_culture.users u ON u.id=aq.user_id
+WHERE aq.user_id=32 AND aq.status=1
+ORDER BY aq.id`
+      },
+      // ─── S15.1: 赠送初探班给 user_id=30（已有 status=2 失效记录）→ 重新激活路径 ───
+      {name:'S15.1 [Admin写] 赠送初探班(已失效课程→重新激活, status:2→1)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:(C)=>{
+          if(!C.hasGiftQuota) return{ambassadorUserId:0,recipientUserId:30,courseId:4};
+          return{ambassadorUserId:C.giftAmbassadorId,recipientUserId:30,courseId:4};
+        },
+        biz:[
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota) return{r:'[S15.1] 无可用名额',p:false,a:'❌user_id=32 的大使无 remaining_quantity>0 的赠课名额（请先在后台为大使分配赠课名额）'};
+            return{r:'adminGiftCourse 赠送已失效课程应成功（重新激活）',p:raw.success===true,a:raw.success?`✓${d?.action||'赠送成功'}: uc_id=${d?.user_course_id}`:(raw.message||'失败')}
+          },
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota||!raw.success) return{r:'action 应含"激活"字样',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
+            const action=d?.action||'';
+            return{r:'action 应含"激活"字样（重新激活并延期）',p:action.includes('激活'),a:`action="${action}"`}
+          },
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota||!raw.success) return{r:'remaining_quota 减少验证',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
+            const before=C.giftAmbassadorRemaining;
+            const after=d?.remaining_quota;
+            return{r:`名额应从${before}减为${before-1}`,p:after===before-1,a:`remaining=${after}(期望${before-1})`}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success){C.giftedUserCourseId=d?.user_course_id;C.giftAmbassadorRemainingAfterS1=d?.remaining_quota}},
+        sql:(C)=>C.hasGiftQuota?`-- S15.1: 验证已失效课程重新激活（status 应从 2→1）
+SELECT uc.id, uc.user_id, uc.course_id, uc.is_gift, uc.attend_count, uc.gift_source, uc.expire_at, uc.status, uc.updated_at
+FROM tiandao_culture.user_courses uc
+WHERE uc.user_id=30 AND uc.course_id=4
+ORDER BY uc.id DESC LIMIT 3
+-- 期望: id=24 status=1（已从2激活为1），attend_count=0 不变
+
+-- 名额扣减验证
+SELECT id, used_quantity, remaining_quantity
+FROM tiandao_culture.ambassador_quotas WHERE user_id=32 AND quota_type=1
+-- 期望: remaining_quantity 比操作前少 1
+
+-- quota_usage_records 验证（最新记录 remark 应含"激活"）
+SELECT id, usage_type, course_id, recipient_id, remark, created_at
+FROM tiandao_culture.quota_usage_records
+WHERE ambassador_id=32 ORDER BY id DESC LIMIT 3`:null
+      },
+      // ─── S15.2: 重复赠送（用户已有课程 → 延长 expire_at） ───
+      {name:'S15.2 [Admin写] 重复赠送(用户已有课程,延长 expire_at)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:(C)=>C.hasGiftQuota?{ambassadorUserId:C.giftAmbassadorId,recipientUserId:30,courseId:4}:{ambassadorUserId:0,recipientUserId:30,courseId:4},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota) return{r:'[S15.2] 无可用名额',p:false,a:'❌user_id=32 无赠课名额（请先在后台分配名额）'};
+            if(!raw.success&&(raw.message||'').includes('不足')) return{r:'[S15.2] 名额不足（已在S15.1消耗完）',p:true,a:`⚠名额不足: ${raw.message}`};
+            return{r:'重复赠送应成功（延长expire_at）',p:raw.success===true,a:raw.success?`✓${d?.action||'续期'}`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota||!raw.success) return{r:'续期action应为"延长有效期"',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
+            const action=d?.action||'';
+            return{r:'action 应含"延长"或"激活"字样',p:action.includes('延长')||action.includes('激活'),a:`action="${action}"`}
+          }
+        ],
+        sql:(C)=>C.hasGiftQuota?`-- S15.2: 验证重复赠送后 expire_at 延长
+SELECT uc.id, uc.expire_at, uc.updated_at, uc.is_gift
+FROM tiandao_culture.user_courses uc
+WHERE uc.user_id=30 AND uc.course_id=4 AND uc.status=1
+ORDER BY uc.id DESC LIMIT 1
+-- 期望: expire_at 比 S15.1 时更长（延长 validity_days 天）`:null
+      },
+      // ─── S15.3: 名额不足时赠送应被拦截（user_id=30 名额已用完 remaining=0）───
+      {name:'S15.3 [边界] 名额不足时赠送应被拦截',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:{ambassadorUserId:30,recipientUserId:32,courseId:4},
+        biz:[
+          (d,raw)=>{
+            if(!raw.success&&(raw.message||'').includes('不足')) return{r:'[S15.3] 名额不足应被拦截',p:true,a:`✓拦截: ${raw.message}`};
+            if(!raw.success) return{r:'[S15.3] 无效大使/名额不足应被拦截（其他错误）',p:true,a:`✓拦截: ${raw.message}`};
+            return{r:'[S15.3] 名额不足应被拦截（user_id=30 remaining=0）',p:false,a:'❌意外成功'}
+          }
+        ]
+      },
+      // ─── S15.4: 咨询/沙龙课程不支持赠送（courseId=3，type=3 咨询）───
+      {name:'S15.4 [边界] 咨询/沙龙课程类型不支持赠送',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:(C)=>C.hasGiftQuota?{ambassadorUserId:C.giftAmbassadorId,recipientUserId:30,courseId:3}:{ambassadorUserId:32,recipientUserId:30,courseId:3},
+        biz:[
+          (d,raw)=>{
+            if(!raw.success&&(raw.message||'').includes('类型')) return{r:'[S15.4] 咨询课程类型应被拦截',p:true,a:`✓拦截: ${raw.message}`};
+            if(!raw.success) return{r:'[S15.4] 非法课程类型应被拦截（其他错误）',p:true,a:`✓拦截: ${raw.message}`};
+            return{r:'[S15.4] 咨询/沙龙课程类型应被拦截（type=3/4不支持赠送）',p:false,a:'❌意外成功'}
+          }
+        ]
+      },
+      // ─── S15.5: 缺少必填参数（ambassadorUserId/recipientUserId/courseId）───
+      {name:'S15.5 [边界] 缺少必填参数应报错(ambassadorUserId/recipientUserId/courseId)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:{},
+        biz:[
+          (d,raw)=>({r:'[S15.5] 缺少必填参数应返回参数错误',p:raw.success===false,a:raw.success===false?`✓拦截: ${(raw.message||'').slice(0,60)}`:'❌意外成功'})
+        ]
+      },
+      // ─── S15.6: 赠送密训班（quota_type=2，course_id=2）→ 接收人无该课程 → 新建 ───
+      {name:'S15.6 [Admin写] 赠送密训班(quota_type=2, course_id=2, 新建 user_courses)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:(C)=>{
+          // user_id=32 有 quota_type=2 名额(id=5, remaining=2)，赠送密训班(id=2)给 user_id=29
+          // user_id=29 原本无 course_id=2 记录 → 应新建
+          return{ambassadorUserId:32,recipientUserId:29,courseId:2};
+        },
+        biz:[
+          (d,raw)=>({r:'赠送密训班应成功',p:raw.success===true,a:raw.success?`✓${d?.action||'赠送成功'}: uc_id=${d?.user_course_id}`:(raw.message||'失败')}),
+          (d,raw)=>{
+            if(!raw.success) return{r:'action 验证',p:false,a:'❌接口未成功，无法验证 action 字段'};
+            const action=d?.action||'';
+            return{r:'action 应含"新开通"或"激活"字样',p:action.includes('新开通')||action.includes('激活')||action.includes('新建'),a:`action="${action}"`}
+          },
+          (d,raw)=>{
+            if(!raw.success) return{r:'quota_type 应匹配密训班名额',p:false,a:'❌接口未成功，无法验证 user_course_id'};
+            return{r:'应返回 user_course_id',p:!!(d?.user_course_id),a:d?.user_course_id?`✓uc_id=${d.user_course_id}`:'❌缺少user_course_id'}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success){C.giftedMixunUcId=d?.user_course_id}},
+        sql:()=>`-- S15.6: 验证密训班赠送记录
+SELECT uc.id, uc.user_id, uc.course_id, uc.is_gift, uc.attend_count, uc.gift_source, uc.expire_at, uc.status
+FROM tiandao_culture.user_courses uc
+WHERE uc.user_id=29 AND uc.course_id=2
+ORDER BY uc.id DESC LIMIT 3
+-- 期望: is_gift=1, status=1, attend_count=0
+
+-- 密训班名额扣减验证（quota_type=2 remaining 应减 1）
+SELECT id, quota_type, used_quantity, remaining_quantity
+FROM tiandao_culture.ambassador_quotas WHERE user_id=32
+ORDER BY id
+-- 期望: id=5(quota_type=2) remaining 从 2 变为 1
+
+-- quota_usage_records 新增记录
+SELECT id, usage_type, course_id, recipient_id, remark, created_at
+FROM tiandao_culture.quota_usage_records
+WHERE ambassador_id=32 ORDER BY id DESC LIMIT 3`
+      },
+      // ─── S15.7: 重复赠送密训班（已有 course_id=2 记录 → 延长 expire_at）───
+      {name:'S15.7 [Admin写] 重复赠送密训班(续期, expire_at 延长)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:{ambassadorUserId:32,recipientUserId:29,courseId:2},
+        biz:[
+          (d,raw)=>({r:'重复赠送密训班应成功（续期）',p:raw.success===true,a:raw.success?`✓${d?.action||'续期'}`:(raw.message||'失败')}),
+          (d,raw)=>{
+            if(!raw.success) return{r:'action 含"延长"或"激活"字样',p:false,a:'❌接口未成功，无法验证 action 字段'};
+            const action=d?.action||'';
+            return{r:'action 应含"延长"或"激活"字样',p:action.includes('延长')||action.includes('激活'),a:`action="${action}"`}
+          }
+        ],
+        sql:()=>`-- S15.7: 密训班续期验证（expire_at 应比 S15.6 更长）
+SELECT uc.id, uc.expire_at, uc.updated_at, uc.status
+FROM tiandao_culture.user_courses uc
+WHERE uc.user_id=29 AND uc.course_id=2 AND uc.status=1
+ORDER BY uc.id DESC LIMIT 1
+-- 期望: expire_at 比 S15.6 赠送后更晚
+
+-- quota_type=2 名额再次扣减（remaining 应再减 1）
+SELECT id, quota_type, used_quantity, remaining_quantity
+FROM tiandao_culture.ambassador_quotas WHERE user_id=32
+ORDER BY id`
+      },
+      // ─── S15.8: 接收人不存在（recipientUserId=999999）→ 应拦截 ───
+      {name:'S15.8 [边界] 接收人不存在(recipientUserId=999999)应报错',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:{ambassadorUserId:32,recipientUserId:999999,courseId:4},
+        biz:[
+          (d,raw)=>{
+            if(!raw.success) return{r:'[S15.8] 接收人不存在应被拦截',p:true,a:`✓拦截: ${(raw.message||'').slice(0,80)}`};
+            return{r:'[S15.8] 接收人不存在应被拦截',p:false,a:'❌意外成功，recipientUserId=999999 不应存在'}
+          }
+        ]
+      },
+      // ─── S15.9: 大使不存在（ambassadorUserId=999999）→ 应拦截 ───
+      {name:'S15.9 [边界] 大使不存在(ambassadorUserId=999999)应报错',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+        params:{ambassadorUserId:999999,recipientUserId:30,courseId:4},
+        biz:[
+          (d,raw)=>{
+            if(!raw.success) return{r:'[S15.9] 大使不存在应被拦截',p:true,a:`✓拦截: ${(raw.message||'').slice(0,80)}`};
+            return{r:'[S15.9] 大使不存在应被拦截',p:false,a:'❌意外成功，ambassadorUserId=999999 不应存在'}
+          }
+        ]
+      }
+    ]
+  });
+
+  // ────────────── FLOW 99: 综合回归测试（一键验证所有关键场景）──────────────
+  flows.value.push({
+    id:'F99',icon:'🔁',name:'流程99: 综合回归测试 · 一键验证全部关键场景',
+    desc:'自动造数据 + 验证: 商城兑换→确认领取→重复确认拦截 → attend_count初始值=0 → expire_at有效期 → 已支付订单字段 → 合同模板文件 → 首次预约 → 复训拦截 → 活动报名',
+    tables:['mall_exchange_records','user_courses','courses','contract_templates','appointments','ambassador_activity_registrations'],rules:28,
+    get chainHtml(){return ['getMallGoods','exchangeGoods(造数据)','confirmPickup','重复确认拦截','getMyCourses(attend_count/expire_at)','合同模板文件验证','首次预约','复训拦截','活动报名'].map(s=>`<strong>${s}</strong>`).join('<span class="arrow">→</span>')},
+    steps:[
+
+      // ── R0: 初始化 — 获取用户资料和基础数据 ──
+      {name:'R0 初始化：获取用户资料',fn:'user',act:'getProfile',
+        biz:[(d,raw)=>({r:'用户资料应正常返回',p:raw.success===true,a:raw.success?`✓id=${d?.id}`:raw.message})],
+        save:(d,_,C)=>{C.userId=d?.id;C.meritBalance=Number(d?.merit_points||0)}
+      },
+
+      // ── R1: 商城商品列表 — 获取最低价商品 ──
+      {name:'R1 商城商品列表(获取最低价商品)',fn:'order',act:'getMallGoods',params:{page:1,pageSize:20},
+        biz:[(d,raw)=>({r:'商城商品接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          if(list.length){
+            // 按功德分价格排序，找最低价且有库存的商品
+            const avail=list.filter(g=>(g.stock_quantity||0)>0).sort((a,b)=>Number(a.merit_points_price||a.merit_price||a.price||0)-Number(b.merit_points_price||b.merit_price||b.price||0));
+            C.cheapestGoods=avail[0]||list[0];
+          }
+        },
+        sql:()=>`SELECT id, name, merit_price, stock_quantity, sold_quantity FROM tiandao_culture.mall_goods WHERE status=1 ORDER BY merit_price ASC LIMIT 5`
+      },
+
+      // ── R2: 兑换商品（自动造待领取数据）──
+      {name:'R2 [造数据] 兑换商品（创建待领取记录）',fn:'order',act:'exchangeGoods',softFail:true,
+        params:(C)=>({goods_id:C.cheapestGoods?.id||4,quantity:1,use_cash_points_if_not_enough:false}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.cheapestGoods) return{r:'[R2] 无商品数据',p:false,a:'❌R1 未获取到商品，请检查商城是否有上架商品'};
+            if(!raw.success&&raw.message?.includes('功德分不足')) return{r:'造数据失败：功德分不足',p:false,a:`❌${raw.message}（测试用户功德分=0，请先充值功德分后重跑）`};
+            if(!raw.success&&raw.message?.includes('库存不足')) return{r:'造数据失败：库存不足',p:false,a:`❌${raw.message}（请先补充商品库存后重跑）`};
+            if(!raw.success) return{r:'兑换商品（造测试数据）',p:false,a:`❌${raw.message}`};
+            return{r:'兑换商品成功，已创建待领取记录',p:raw.success===true&&!!d?.exchange_no,a:`✓exchange_no=${d?.exchange_no}`}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success&&d?.exchange_no)C.r99ExchangeNo=d.exchange_no},
+        sql:(C)=>C.cheapestGoods?`-- R2: 兑换后记录验证
+SELECT exchange_no, goods_name, status, merit_points_used, created_at
+FROM tiandao_culture.mall_exchange_records
+WHERE user_id=${U.id} ORDER BY created_at DESC LIMIT 3`:null
+      },
+
+      // ── R3: 后台确认领取（核心验证）──
+      {name:'R3 [写操作] 后台确认领取（status=1→2）',fn:'order',act:'confirmPickup',admin:true,softFail:true,
+        params:(C)=>({exchange_no:C.r99ExchangeNo,remark:'[F99综合回归] 确认领取验证'}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.r99ExchangeNo) return{r:'[R3] 无兑换记录',p:false,a:'❌R2 兑换商品未成功，无法测试确认领取'};
+            return{r:'confirmPickup 应成功返回 status=2',p:raw.success===true&&d?.status===2,a:raw.success?`✓status=${d?.status}`:raw.message}
+          },
+          (d,raw,C)=>{
+            if(!C.r99ExchangeNo||!raw.success) return{r:'pickup_time 验证',p:!!C.r99ExchangeNo&&raw.success,a:'❌接口未成功'};
+            return{r:'返回应含 pickup_time 字段',p:!!d?.pickup_time,a:d?.pickup_time||'❌缺少pickup_time'}
+          },
+          (d,raw,C)=>{
+            if(!C.r99ExchangeNo||!raw.success) return{r:'goods_name/user_name 验证',p:!!C.r99ExchangeNo&&raw.success,a:'❌接口未成功'};
+            return{r:'返回应含 goods_name 和 user_name',p:!!d?.goods_name&&d?.user_name!==undefined,a:d?`goods=${d.goods_name},user=${d.user_name}`:'❌缺少字段'}
+          }
+        ],
+        sql:(C)=>C.r99ExchangeNo?`-- R3: 确认领取后验证
+SELECT exchange_no, status, goods_name, pickup_admin_id, pickup_time, remark
+FROM tiandao_culture.mall_exchange_records WHERE exchange_no='${C.r99ExchangeNo}'
+-- 期望: status=2, pickup_time 有值`:null
+      },
+
+      // ── R3x: 重复确认拦截 ──
+      {name:'R3x [边界] 重复确认领取应被拦截',fn:'order',act:'confirmPickup',admin:true,softFail:true,
+        params:(C)=>({exchange_no:C.r99ExchangeNo,remark:'R3x 重复确认测试'}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.r99ExchangeNo) return{r:'[R3x] 无测试数据',p:false,a:'❌R2 未成功，无已领取记录可测'};
+            if(raw.success&&d?.status===2) return{r:'重复确认幂等(status=2)',p:true,a:'✓幂等'};
+            const msg=raw.message||'';
+            const ok=msg.includes('已确认')||msg.includes('已领取')||msg.includes('不支持');
+            return{r:'重复确认应被拦截（返回"已确认领取"错误）',p:ok,a:ok?`✓拦截:${msg}`:`❌非预期:${msg}`}
+          }
+        ]
+      },
+
+      // ── R4: getMyCourses — attend_count 初始值验证 ──
+      {name:'R4 getMyCourses — attend_count 初始值=0 验证',fn:'user',act:'getMyCourses',
+        beforeRun:async(C)=>{
+          // 先检查是否已有 2026-03-01 后购买记录，没有就调 createOrder 造一条
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/user`;
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getMyCourses',test_openid:U._openid})});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const list=Array.isArray(d.data)?d.data:(d.data?.list||[]);
+            const recent=list.filter(c=>c.buy_time&&c.buy_time>='2026-03-01');
+            if(recent.length>0){C._r4HasRecentCourse=true;return;}
+            // 无记录：购买一门课程
+            const courseId=6; // 测试课程(type=1，未购买)
+            const oUrl=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/order`;
+            const or=await fetch(oUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'createOrder',test_openid:U._openid,course_id:courseId,order_type:1})});
+            let od=await or.json();if(od.body&&typeof od.body==='string')od=JSON.parse(od.body);
+            if(od.success)C._r4CreatedOrder=true;
+          }catch(e){}
+        },
+        biz:[
+          (d,raw)=>({r:'getMyCourses 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const recent=list.filter(c=>c.buy_time&&c.buy_time>='2026-03-01');
+            const bad=recent.filter(c=>Number(c.attend_count||0)!==0);
+            if(!recent.length) return{r:'attend_count 初始值验证',p:false,a:'❌仍无2026-03-01后购买记录（createOrder 可能失败，请手动购买一门课程）'};
+            return{r:'新购课程 attend_count 初始值应为 0',p:bad.length===0,a:bad.length?`❌${bad.length}门课attend_count≠0`:`✓${recent.length}门新购课均为0`}
+          },
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const bad=list.filter(c=>!('expire_at' in c));
+            return{r:'getMyCourses 必须返回 expire_at 字段',p:bad.length===0,a:bad.length?`❌${bad.length}门课缺少expire_at`:list.length?`✓${list.length}门均含expire_at`:'暂无课程'}
+          },
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const withValidity=list.filter(c=>c.validity_days&&Number(c.validity_days)>0);
+            const missing=withValidity.filter(c=>!c.expire_at);
+            if(!withValidity.length) return{r:'validity_days>0 的课程 expire_at 不应为 NULL',p:false,a:'❌用户名下无设置了validity_days的课程（请购买有效期课程）'};
+            return{r:'validity_days>0 的课程 expire_at 不应为 NULL',p:missing.length===0,a:missing.length?`❌${missing.length}门课expire_at为NULL`:`✓${withValidity.length}门课均有expire_at`}
+          }
+        ],
+        save:(d,_,C)=>{C.r4CourseList=Array.isArray(d)?d:(d?.list||[])},
+        sql:()=>`SELECT uc.id, uc.course_id, c.name, uc.attend_count, uc.buy_time, c.validity_days, uc.expire_at
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.status=1
+ORDER BY uc.id DESC LIMIT 10
+-- 期望: 2026-03-01后购买的课程 attend_count=0`
+      },
+
+      // ── R5: 合同模板文件验证（三个等级）──
+      {name:'R5a 合同模板文件 — 青鸾(level=2)',fn:'ambassador',act:'getContractTemplate',params:{level:2},
+        biz:[
+          (d,raw)=>({r:'青鸾模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;if(!t)return{r:'青鸾模板应存在',p:false,a:'❌无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'青鸾模板应有 contract_file_url',p:false,a:'❌无模板'};return{r:'青鸾模板应有 contract_file_url（电子版）',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌暂无，请在后台上传青鸾协议电子版'}}
+        ]
+      },
+      {name:'R5b 合同模板文件 — 鸿鹄(level=3)',fn:'ambassador',act:'getContractTemplate',params:{level:3},
+        biz:[
+          (d,raw)=>({r:'鸿鹄模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;if(!t)return{r:'鸿鹄模板应存在',p:false,a:'❌无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'鸿鹄模板应有 contract_file_url',p:false,a:'❌无模板'};return{r:'鸿鹄模板应有 contract_file_url（电子版）',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌暂无，请在后台上传鸿鹄协议电子版'}}
+        ]
+      },
+      {name:'R5c 合同模板文件 — 金凤(level=4)',fn:'ambassador',act:'getContractTemplate',params:{level:4},
+        biz:[
+          (d,raw)=>({r:'金凤模板接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{const t=d?.template;if(!t)return{r:'金凤模板应存在',p:false,a:'❌无模板'};return{r:'模板应含名称',p:!!(t.title||t.contract_name),a:t.title||t.contract_name||'❌'}},
+          (d)=>{const t=d?.template;if(!t)return{r:'金凤模板应有 contract_file_url',p:false,a:'❌无模板'};return{r:'金凤模板应有 contract_file_url（电子版）',p:!!t.contract_file_url,a:t.contract_file_url?'✓有电子版':'❌暂无，请在后台上传金凤协议电子版'}}
+        ]
+      },
+
+      // ── R6: 首次预约验证 ──
+      {name:'R6a course_id=18 排期列表(首次预约前置)',fn:'course',act:'getClassRecords',params:{course_id:18},
+        biz:[
+          (d,raw)=>({r:'course_id=18 排期接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||(Array.isArray(d)?d:[]);
+            const avail=list.find(r=>!r.booking_deadline||new Date(r.booking_deadline)>new Date());
+            return{r:'应存在 booking_deadline 未截止的排期',p:!!avail,a:avail?`✓id=${avail.id}`:' ❌无可用排期（请检查课程18的排期是否有效）'}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||(Array.isArray(d)?d:[]);
+          const normal=list.find(r=>!r.booking_deadline||new Date(r.booking_deadline)>new Date());
+          if(normal) C.r6ClassRecordId=normal.id;
+        }
+      },
+      {name:'R6b [写操作] 首次预约(attend_count=0)',fn:'course',act:'createAppointment',softFail:true,
+        params:(C)=>({classRecordId:C.r6ClassRecordId||0}),
+        biz:[
+          (d,raw,C)=>{
+            if(!C.r6ClassRecordId) return{r:'[R6b] 无可用排期',p:false,a:'❌R6a 未找到有效排期，请检查课程18的排期数据'};
+            if(!raw.success&&raw.message?.includes('已预约')) return{r:'用户已预约该排期（幂等）',p:true,a:`⚠${raw.message}`};
+            if(!raw.success&&raw.message?.includes('名额已满')) return{r:'排期名额已满',p:true,a:`⚠${raw.message}`};
+            return{r:'attend_count=0 首次预约应成功，返回 appointment_id',p:raw.success===true&&!!d?.appointment_id,a:raw.success?`✓appointment_id=${d?.appointment_id}`:raw.message}
+          },
+          (d,raw,C)=>{
+            // 已预约幂等或名额已满时，class_date 无法从当次响应获取，直接豁免（数据库中已有预约记录即可）
+            const isIdempotent=!raw.success&&(raw.message?.includes('已预约')||raw.message?.includes('名额已满'));
+            if(isIdempotent) return{r:'返回应含 class_date（已预约，跳过）',p:true,a:`⚠幂等场景不验证class_date`};
+            if(!C.r6ClassRecordId||!raw.success) return{r:'返回应含 class_date',p:!C.r6ClassRecordId?false:raw.success,a:'❌接口未成功'};
+            return{r:'返回应含 class_date 字段',p:!!d?.class_date,a:d?.class_date||'❌缺少class_date'}
+          }
+        ],
+        save:(d,raw,C)=>{if(raw.success&&d?.appointment_id)C.r6AppointmentId=d.appointment_id},
+        sql:(C)=>C.r6ClassRecordId?`-- R6b: 预约后验证
+SELECT cr.booked_quota, cr.total_quota,
+  (SELECT a.id FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.user_id=${U.id} ORDER BY a.id DESC LIMIT 1) as 本用户最新预约id,
+  (SELECT a.is_retrain FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.user_id=${U.id} ORDER BY a.id DESC LIMIT 1) as is_retrain_应为0
+FROM tiandao_culture.class_records cr WHERE cr.id=${C.r6ClassRecordId}`:null
+      },
+
+      // ── R7: 复训拦截验证 ──
+      {name:'R7 [边界] 复训拦截：attend_count≥1 未付复训费应被拒绝',fn:'course',act:'createAppointment',softFail:true,
+        beforeRun:async(C)=>{
+          if(C.classRecordId) return;
+          // 获取 course_id=1 的排期，用于复训拦截测试
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/course`;
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getClassRecords',test_openid:U._openid,course_id:1})});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const list=d.data?.list||d.data||(Array.isArray(d.data)?d.data:[]);
+            const avail=list.find(r=>((r.booked_quota||0)<(r.total_quota||30)));
+            if(avail) C.classRecordId=avail.id;
+            else if(list.length) C.classRecordId=list[0].id;
+          }catch(e){}
+        },
+        params:(C)=>{
+          // 找用户 attend_count≥1 的非沙龙课程，以及它的一个可用排期
+          const retrainCourse=(C.r4CourseList||[]).find(c=>Number(c.attend_count||0)>=1&&Number(c.course_type||c.type||0)!==4);
+          C._r7RetrainCourseId=retrainCourse?.course_id;
+          // 用 S7.1 的 classRecordId（course_id=1 的排期）
+          return C._r7RetrainCourseId&&C.classRecordId?{classRecordId:C.classRecordId}:{classRecordId:C.r6ClassRecordId||0};
+        },
+        biz:[
+          (d,raw,C)=>{
+            if(!C._r7RetrainCourseId) return{r:'[R7] 无 attend_count≥1 的非沙龙课程',p:false,a:'❌需先完成至少一次签到后再验证复训拦截（运行 F7 并在后台完成签到）'};
+            const msg=raw.message||'';
+            const isBlocked=!raw.success&&(msg.includes('复训费')||msg.includes('复训')||msg.includes('retrain')||msg.includes('支付'));
+            return{r:'attend_count≥1 且非沙龙 → 预约应被拦截"需先支付复训费"',
+              p:isBlocked,
+              a:raw.success?'❌意外成功（复训拦截未生效）':isBlocked?`✓正确拦截: ${msg}`:`⚠拦截了但文案非预期: ${msg}`}
+          }
+        ]
+      },
+
+      // ── R8: 活动报名验证 ──
+      {name:'R8a 可报名活动列表',fn:'ambassador',act:'getAvailableActivities',params:{page:1,pageSize:20},
+        biz:[
+          (d,raw)=>({r:'可报名活动接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||[];
+            const has2=list.filter(a=>Number(a.status||0)===2);
+            return{r:'可报名活动不应包含 status=2（报名截止）的活动',p:has2.length===0,a:has2.length?`❌含${has2.length}条status=2活动`:`✓${list.length}条均为报名中`}
+          }
+        ],
+        save:(d,_,C)=>{
+          const list=d?.list||[];
+          // 优先找用户未报名的活动；若都报过了，找已报名但活动仍开放的（走幂等路径）
+          let act=list.find(a=>!a.my_registration&&a.positions?.some(p=>(!p.required_level)&&((p.quota||0)-(p.registered_count||0))>0));
+          if(!act) act=list.find(a=>a.my_registration&&a.positions?.some(p=>(!p.required_level)));
+          const pos=act?.positions?.find(p=>(!p.required_level)&&((p.quota||0)-(p.registered_count||0))>0)
+                 ||(act?.my_registration?act?.positions?.find(p=>(!p.required_level)):null);
+          C._r8ActivityId=act?.id;C._r8PositionName=pos?.name||act?.my_registration?.position_name;
+        }
+      },
+      {name:'R8b [写操作] 报名活动',fn:'ambassador',act:'applyForActivity',softFail:true,
+        params:(C)=>C._r8ActivityId?{activityId:C._r8ActivityId,positionName:C._r8PositionName}:{activityId:0,positionName:''},
+        biz:[
+          (d,raw,C)=>{
+            if(!C._r8ActivityId) return{r:'[R8b] 无可报名活动',p:false,a:'❌无活动可报名（活动数为0、已全部报名、或无无等级限制岗位）— 请先在后台创建有空余名额的活动'};
+            if(!raw.success&&(raw.message?.includes('已报名')||raw.message?.includes('已在其他活动'))) return{r:'已存在报名记录（幂等）',p:true,a:`⚠${raw.message}`};
+            return{r:'报名活动应成功，返回 activity_id',p:raw.success===true&&!!d?.activity_id,a:raw.success?`✓activity_id=${d?.activity_id},pos=${d?.position_name}`:raw.message}
+          },
+          (d,raw,C)=>{
+            // 幂等场景（已报名）raw.success=false，豁免 merit_points 验证
+            const isIdempotent=!raw.success&&(raw.message?.includes('已报名')||raw.message?.includes('已在其他活动'));
+            if(isIdempotent) return{r:'返回 merit_points 应≥0（已报名幂等，跳过）',p:true,a:'⚠幂等场景不验证merit_points'};
+            if(!C._r8ActivityId||!raw.success) return{r:'返回 merit_points 应≥0',p:!C._r8ActivityId?false:raw.success,a:'❌接口未成功'};
+            return{r:'返回 merit_points 应≥0',p:d?.merit_points!==undefined&&Number(d.merit_points)>=0,a:`merit_points=${d?.merit_points}`}
+          }
+        ],
+        save:(d,raw,C)=>{
+          // 成功或幂等（已报名）都标记为成功，用于 R8c 前置检查
+          const isIdempotent=!raw.success&&(raw.message?.includes('已报名')||raw.message?.includes('已在其他活动'));
+          if(raw.success||isIdempotent) C.r8ApplySuccess=true;
+        },
+        sql:(C)=>C._r8ActivityId?`-- R8b: 报名后验证
+SELECT r.id, r.user_id, r.activity_id, r.position_name, r.status
+FROM tiandao_culture.ambassador_activity_registrations r
+WHERE r.activity_id=${C._r8ActivityId} AND r.user_id=${U.id}
+ORDER BY r.id DESC LIMIT 1`:null
+      },
+      {name:'R8c [边界] 重复报名同一活动应被拒绝',fn:'ambassador',act:'applyForActivity',softFail:true,
+        params:(C)=>C.r8ApplySuccess?{activityId:C._r8ActivityId,positionName:C._r8PositionName}:{activityId:0,positionName:''},
+        biz:[
+          (d,raw,C)=>{
+            if(!C.r8ApplySuccess) return{r:'[R8c] R8b未成功，无法测试重复报名',p:false,a:'❌R8b 未能成功报名'};
+            const msg=raw.message||'';
+            const ok=!raw.success&&(msg.includes('已报名')||msg.includes('已在其他活动')||msg.includes('重复'));
+            return{r:'重复报名应被拒绝',p:ok,a:ok?`✓拦截:${msg}`:`❌未拦截: success=${raw.success},${msg}`}
+          }
+        ]
+      }
+
+    ]
+  });
+
+
   const S=computed(()=>{
     const total=flows.value.reduce((s,f)=>s+f.steps.length,0);
     const pass=results.value.filter(r=>r.cls==='pass').length;
@@ -2759,7 +3567,10 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
 
   // ===== Actions =====
   async function runAll(){
-    if(running.value)return;running.value=true;results.value=[];sqls.value=[];
+    if(running.value)return;
+    // 运行前确保已登录
+    if(!adminLoggedIn.value) await doAdminLogin();
+    running.value=true;results.value=[];sqls.value=[];
     try{
       for(const f of flows.value){
         for(const s of f.steps){
@@ -2773,6 +3584,8 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
 
   async function runFlow(id){
     if(running.value)return;const f=flows.value.find(x=>x.id===id);if(!f)return;
+    // 运行前确保已登录
+    if(!adminLoggedIn.value) await doAdminLogin();
     running.value=true;
     // 支持流程级用户切换（补充边界测试流程）
     const savedUser=f.user?{id:U.id,_openid:U._openid,real_name:U.real_name}:null;
@@ -2801,7 +3614,7 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
     navigator.clipboard.writeText(all).then(()=>TDesign.MessagePlugin.success('已复制'));
   }
 
-  return{running,results,sqls,dbOpen,opt,U,S,flows,flowsWithResults,flowStats,violations,runAll,runFlow,clear,exportRpt,copySql}
+  return{running,results,sqls,dbOpen,opt,U,S,flows,flowsWithResults,flowStats,violations,runAll,runFlow,clear,exportRpt,copySql,adminLoggedIn,doAdminLogin}
 }
 });
 app.use(TDesign);app.mount('#app');

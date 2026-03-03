@@ -245,6 +245,12 @@
                       :bordered="true"
                     />
                   </div>
+                  <div style="margin-top: 12px;">
+                    <t-button theme="primary" variant="base" @click="openGiftCourse"
+                      :disabled="!((currentAmbassador.quota_summary?.basic?.remaining || 0) + (currentAmbassador.quota_summary?.advanced?.remaining || 0))">
+                      赠送课程
+                    </t-button>
+                  </div>
                 </div>
 
                 <!-- 合约信息 -->
@@ -331,6 +337,60 @@
               </t-form-item>
             </t-form>
           </t-dialog>
+
+          <!-- 赠送课程对话框 -->
+          <t-dialog
+            v-model:visible="giftCourseVisible"
+            header="赠送课程"
+            width="700px"
+            :footer="false"
+          >
+            <!-- Step 1: 搜索用户 -->
+            <div v-if="giftStep === 1">
+              <div style="margin-bottom: 16px;">
+                <t-space style="width: 100%;">
+                  <t-input v-model="giftSearchKeyword" placeholder="输入用户姓名或手机号搜索" @enter="searchGiftUsers" style="width: 320px;"></t-input>
+                  <t-button theme="primary" @click="searchGiftUsers" :loading="giftSearchLoading">搜索</t-button>
+                </t-space>
+              </div>
+              <t-table
+                v-if="giftUserList.length"
+                :data="giftUserList"
+                :columns="giftUserColumns"
+                row-key="id"
+                size="small"
+                :bordered="true"
+                :loading="giftSearchLoading"
+                max-height="360"
+              />
+              <div v-if="!giftUserList.length && !giftSearchLoading" style="text-align:center; padding: 40px 0; color:#999;">
+                请输入关键词搜索用户
+              </div>
+            </div>
+
+            <!-- Step 2: 选择课程 -->
+            <div v-if="giftStep === 2">
+              <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <t-button variant="text" theme="default" @click="giftStep = 1" style="padding-left:0;">← 返回选择用户</t-button>
+                <t-divider layout="vertical"></t-divider>
+                <span>接收人：<strong>{{ giftSelectedUser?.real_name || '-' }}</strong>（{{ giftSelectedUser?.phone }}）</span>
+              </div>
+              <t-table
+                v-if="giftCourseList.length"
+                :data="giftCourseList"
+                :columns="giftCourseColumns"
+                row-key="id"
+                size="small"
+                :bordered="true"
+                :loading="giftCourseLoading"
+                max-height="360"
+              />
+              <div v-if="!giftCourseList.length && !giftCourseLoading" style="text-align:center; padding: 40px 0; color:#999;">
+                该大使没有可用的赠课名额对应的课程
+              </div>
+            </div>
+          </t-dialog>
+
         </t-content>
       </t-layout>
     </t-layout>
@@ -597,6 +657,125 @@
           level: 1,
         });
 
+        // ========== 赠送课程 ==========
+        const giftCourseVisible = ref(false);
+        const giftStep = ref(1);
+        const giftSearchKeyword = ref('');
+        const giftSearchLoading = ref(false);
+        const giftUserList = ref([]);
+        const giftSelectedUser = ref(null);
+        const giftCourseList = ref([]);
+        const giftCourseLoading = ref(false);
+        const giftSubmitting = ref(false);
+
+        const giftUserColumns = [
+          { colKey: 'real_name', title: '姓名', width: 120 },
+          { colKey: 'phone', title: '手机号', width: 140 },
+          { colKey: 'ambassador_level', title: '身份', width: 100, cell: (h, { row }) => {
+            return row.ambassador_level ? h(TDesign.Tag, { theme: 'warning', size: 'small' }, () => '大使') : h('span', '普通用户');
+          }},
+          { colKey: 'action', title: '操作', width: 100, cell: (h, { row }) => {
+            return h(TDesign.Button, { theme: 'primary', variant: 'text', size: 'small', onClick: () => selectGiftUser(row) }, () => '选择');
+          }},
+        ];
+
+        const giftCourseColumns = [
+          { colKey: 'name', title: '课程名称', width: 180 },
+          { colKey: 'type', title: '类型', width: 100, cell: (h, { row }) => {
+            const typeMap = { 1: '初探班', 2: '密训班' };
+            return h('span', typeMap[row.type] || '-');
+          }},
+          { colKey: 'current_price', title: '价格', width: 100, cell: (h, { row }) => h('span', `¥${row.current_price}`) },
+          { colKey: 'action', title: '操作', width: 100, cell: (h, { row }) => {
+            return h(TDesign.Button, {
+              theme: 'primary', size: 'small',
+              loading: giftSubmitting.value,
+              onClick: () => confirmGiftCourse(row)
+            }, () => '赠送');
+          }},
+        ];
+
+        const openGiftCourse = () => {
+          giftStep.value = 1;
+          giftSearchKeyword.value = '';
+          giftUserList.value = [];
+          giftSelectedUser.value = null;
+          giftCourseList.value = [];
+          giftCourseVisible.value = true;
+        };
+
+        const searchGiftUsers = async () => {
+          if (!giftSearchKeyword.value.trim()) {
+            TDesign.MessagePlugin.warning('请输入搜索关键词');
+            return;
+          }
+          giftSearchLoading.value = true;
+          try {
+            const result = await AdminAPI.getUserList({ keyword: giftSearchKeyword.value.trim(), pageSize: 20 });
+            giftUserList.value = result.list || [];
+            if (!giftUserList.value.length) {
+              TDesign.MessagePlugin.info('未找到匹配的用户');
+            }
+          } catch (error) {
+            TDesign.MessagePlugin.error('搜索失败: ' + error.message);
+          } finally {
+            giftSearchLoading.value = false;
+          }
+        };
+
+        const selectGiftUser = async (user) => {
+          giftSelectedUser.value = user;
+          giftStep.value = 2;
+          giftCourseLoading.value = true;
+
+          try {
+            // 获取课程列表，根据大使可用名额类型筛选
+            const allCourses = await AdminAPI.getAllCourses();
+            const basicRemaining = currentAmbassador.value?.quota_summary?.basic?.remaining || 0;
+            const advancedRemaining = currentAmbassador.value?.quota_summary?.advanced?.remaining || 0;
+
+            giftCourseList.value = allCourses.filter(c => {
+              if (c.status !== 1) return false;
+              if (c.type === 1 && basicRemaining > 0) return true;
+              if (c.type === 2 && advancedRemaining > 0) return true;
+              return false;
+            });
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载课程列表失败: ' + error.message);
+          } finally {
+            giftCourseLoading.value = false;
+          }
+        };
+
+        const confirmGiftCourse = (course) => {
+          const userName = giftSelectedUser.value?.real_name || '-';
+          const ambassadorName = currentAmbassador.value?.real_name || '-';
+          const confirmDlg = TDesign.DialogPlugin.confirm({
+            header: '确认赠送',
+            body: `确认将课程【${course.name}】赠送给【${userName}】？将消耗大使【${ambassadorName}】的 1 个${course.type === 1 ? '初探班' : '密训班'}名额。`,
+            confirmBtn: '确认赠送',
+            cancelBtn: '取消',
+            onConfirm: async () => {
+              confirmDlg.update({ confirmBtn: { loading: true, content: '赠送中...' } });
+              try {
+                const result = await AdminAPI.adminGiftCourse({
+                  ambassadorUserId: currentAmbassador.value.user_id || currentAmbassador.value.id,
+                  recipientUserId: giftSelectedUser.value.id,
+                  courseId: course.id,
+                });
+                confirmDlg.hide();
+                TDesign.MessagePlugin.success(`赠送成功！${result.action || ''}`);
+                giftCourseVisible.value = false;
+                viewDetail({ id: currentAmbassador.value.user_id || currentAmbassador.value.id, user_id: currentAmbassador.value.user_id || currentAmbassador.value.id });
+              } catch (error) {
+                confirmDlg.update({ confirmBtn: { loading: false, content: '确认赠送' } });
+                TDesign.MessagePlugin.error('赠送失败: ' + error.message);
+              }
+            },
+            onClose: () => { confirmDlg.hide(); },
+          });
+        };
+
         const handleAddAmbassador = () => {
           Object.assign(addAmbassadorForm, { phone: '', userId: '', userName: '', level: 1 });
           addAmbassadorVisible.value = true;
@@ -672,6 +851,21 @@
           handleAddAmbassador,
           searchUserByPhone,
           submitAddAmbassador,
+          giftCourseVisible,
+          giftStep,
+          giftSearchKeyword,
+          giftSearchLoading,
+          giftUserList,
+          giftUserColumns,
+          giftSelectedUser,
+          giftCourseList,
+          giftCourseColumns,
+          giftCourseLoading,
+          giftSubmitting,
+          openGiftCourse,
+          searchGiftUsers,
+          selectGiftUser,
+          confirmGiftCourse,
           handleSearch,
           handleReset,
           onPageChange,

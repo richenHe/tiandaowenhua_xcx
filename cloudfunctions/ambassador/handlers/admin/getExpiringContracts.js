@@ -14,11 +14,13 @@ module.exports = async (event, context) => {
 
     const { db } = require('../../common/db');
 
-    // 计算到期时间范围
+    // 用北京时间日期做过滤，避免凌晨时 toISOString() 取到 UTC 前一天
+    const { formatBeijingDate } = require('../../common/utils');
     const now = new Date();
+    const todayStr = formatBeijingDate(now);
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const futureDateStr = formatBeijingDate(futureDate);
 
-    // 查询即将到期的协议签署记录
     const { data: signatures, error } = await db
       .from('contract_signatures')
       .select(`
@@ -26,17 +28,21 @@ module.exports = async (event, context) => {
         user:users!fk_contract_signatures_user(id, real_name, phone, avatar, ambassador_level),
         template:contract_templates!fk_contract_signatures_template(id, contract_name, ambassador_level, version)
       `)
-      .eq('status', 1)  // 有效
-      .gte('contract_end', now.toISOString().split('T')[0])
-      .lte('contract_end', futureDate.toISOString().split('T')[0])
+      .eq('status', 1)
+      .gte('contract_end', todayStr)
+      .lte('contract_end', futureDateStr)
       .order('contract_end', { ascending: true });
 
     if (error) throw error;
 
-    // 格式化返回数据，字段名与前端 contract.html 对齐
+    // 基于纯日期比较计算剩余天数
+    const todayParts = todayStr.split('-').map(Number);
+    const todayMs = Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]);
+
     const list = (signatures || []).map(sig => {
-      const expiryDate = new Date(sig.contract_end);
-      const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+      const endParts = (sig.contract_end || '').split(' ')[0].split('-').map(Number);
+      const endMs = Date.UTC(endParts[0], endParts[1] - 1, endParts[2]);
+      const daysRemaining = Math.round((endMs - todayMs) / (1000 * 60 * 60 * 24));
       const contractName = sig.template?.contract_name || sig.contract_name || '';
 
       return {

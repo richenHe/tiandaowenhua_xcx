@@ -5,6 +5,7 @@
     <scroll-view
       scroll-y
       class="scroll-area"
+      @scrolltolower="loadMore"
     >
       <view class="page-content">
         <!-- 课程列表 -->
@@ -71,9 +72,19 @@
         </view>
 
         <!-- 空状态 -->
-        <view v-if="filteredCourses.length === 0" class="empty-state">
+        <view v-if="filteredCourses.length === 0 && !loading" class="empty-state">
           <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无课程</text>
+        </view>
+
+        <!-- 加载更多 -->
+        <view v-if="!finished && filteredCourses.length > 0" class="load-more">
+          <text class="load-more-text">{{ loading ? '加载中...' : '上拉加载更多' }}</text>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="finished && filteredCourses.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
       </view>
     </scroll-view>
@@ -89,6 +100,14 @@ import { UserApi } from '@/api';
 // 课程数据
 const courses = ref<any[]>([]);
 
+// 分页状态
+const MAX_ITEMS = 99;
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const loading = ref(false);
+const finished = ref(false);
+
 // 课程图标和渐变色映射
 const courseStyles: Record<number, { icon: string; gradient: string }> = {
   1: { icon: '📚', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 初探班
@@ -103,13 +122,16 @@ const courseStyles: Record<number, { icon: string; gradient: string }> = {
 const calcExpireInfo = (expireAt: string | null) => {
   if (!expireAt) return { label: '永久有效', urgent: false, expired: false };
 
-  const now = Date.now();
-  const expireTime = new Date(expireAt).getTime();
-  const diffMs = expireTime - now;
+  // 基于纯日期比较，避免时间分量导致 Math.ceil 多算一天
+  const parts = expireAt.split(' ')[0].split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0])) return { label: '永久有效', urgent: false, expired: false };
 
-  if (diffMs <= 0) return { label: '已过期', urgent: true, expired: true };
+  const expireMs = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+  const now = new Date();
+  const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((expireMs - todayMs) / (1000 * 60 * 60 * 24));
 
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return { label: '已过期', urgent: true, expired: true };
 
   if (diffDays > 365) {
     const years = Math.floor(diffDays / 365);
@@ -121,34 +143,73 @@ const calcExpireInfo = (expireAt: string | null) => {
   return { label: `${diffDays}天`, urgent: true, expired: false };
 };
 
-// 加载我的课程
-const loadMyCourses = async () => {
-  try {
-    uni.showLoading({ title: '加载中...' });
-    const result = await UserApi.getMyCourses({ page: 1, page_size: 100 });
+const mapCourseItem = (item: any) => {
+  const style = courseStyles[item.type] || courseStyles[1];
+  const expireInfo = calcExpireInfo(item.expire_at);
+  return {
+    id: item.course_id,
+    name: item.title,
+    cover_image: item.cover_image || '',
+    icon: style.icon,
+    gradient: style.gradient,
+    purchaseDate: (item.purchase_date || item.buy_time || '').split(' ')[0],
+    attendedCount: item.attend_count || 0,
+    canRetrain: item.attend_count >= 1,
+    expireLabel: expireInfo.label,
+    expireUrgent: expireInfo.urgent,
+    expireExpired: expireInfo.expired,
+    status: item.attend_count >= 1 ? 'completed' : 'ongoing'
+  };
+};
 
-    courses.value = result.list.map((item: any) => {
-      const style = courseStyles[item.type] || courseStyles[1];
-      const expireInfo = calcExpireInfo(item.expire_at);
-      return {
-        id: item.course_id,
-        name: item.title,
-        cover_image: item.cover_image || '',
-        icon: style.icon,
-        gradient: style.gradient,
-        purchaseDate: (item.purchase_date || item.buy_time || '').split(' ')[0],
-        attendedCount: item.attend_count || 0,
-        canRetrain: item.attend_count >= 1,
-        expireLabel: expireInfo.label,
-        expireUrgent: expireInfo.urgent,
-        expireExpired: expireInfo.expired,
-        status: item.attend_count >= 1 ? 'completed' : 'ongoing'
-      };
+// 加载我的课程（reset=true 时重置分页从头加载）
+const loadMyCourses = async (reset = false) => {
+  if (loading.value || finished.value) return;
+
+  if (reset) {
+    currentPage.value = 1;
+    courses.value = [];
+    finished.value = false;
+  }
+
+  try {
+    if (currentPage.value === 1) {
+      uni.showLoading({ title: '加载中...' });
+    }
+    loading.value = true;
+
+    const result = await UserApi.getMyCourses({
+      page: currentPage.value,
+      page_size: pageSize.value
     });
-    uni.hideLoading();
+
+    courses.value.push(...result.list.map(mapCourseItem));
+    total.value = result.total || 0;
+    currentPage.value++;
+
+    if (courses.value.length >= total.value || courses.value.length >= MAX_ITEMS) {
+      finished.value = true;
+      if (courses.value.length > MAX_ITEMS) {
+        courses.value = courses.value.slice(0, MAX_ITEMS);
+      }
+    }
+
+    if (currentPage.value === 2) {
+      uni.hideLoading();
+    }
   } catch (error) {
     console.error('加载课程列表失败:', error);
     uni.hideLoading();
+    uni.showToast({ title: '加载失败，请重试', icon: 'none' });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 加载更多
+const loadMore = () => {
+  if (!finished.value && !loading.value) {
+    loadMyCourses();
   }
 };
 
@@ -157,7 +218,7 @@ onMounted(() => {
 });
 
 onShow(() => {
-  loadMyCourses();
+  loadMyCourses(true);
 });
 
 const filteredCourses = computed(() => courses.value);
@@ -282,6 +343,22 @@ const goToCourseSchedule = (courseId: string) => {
     color: #d54941;
     background-color: #fdecee;
   }
+}
+
+// 加载更多
+.load-more {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.load-more-text {
+  font-size: 24rpx;
+  color: $td-text-color-secondary;
+}
+
+.finished-text {
+  font-size: 24rpx;
+  color: $td-text-color-placeholder;
 }
 
 // 空状态样式

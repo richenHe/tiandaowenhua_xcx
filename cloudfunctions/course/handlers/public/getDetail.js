@@ -80,6 +80,33 @@ module.exports = async (event, context) => {
       course.cover_image = cloudFileIDToURL(course.cover_image);
     }
 
+    // 密训班赠送课程信息：查询 included_course_ids 对应课程的基本信息
+    course.gift_courses = [];
+    let giftIds = course.included_course_ids;
+    if (typeof giftIds === 'string') {
+      try { giftIds = JSON.parse(giftIds); } catch (e) { giftIds = []; }
+    }
+    if (giftIds && giftIds.length > 0) {
+      for (const giftId of giftIds) {
+        const { data: gc } = await db
+          .from('courses')
+          .select('id, name, type, cover_image, validity_days, description, content, outline, teacher')
+          .eq('id', giftId)
+          .single();
+        if (gc) {
+          const typeNames2 = { 1: '初探班', 2: '密训班', 3: '咨询服务', 4: '沙龙' };
+          gc.type_name = typeNames2[gc.type] || '未知';
+          if (gc.cover_image) gc.cover_image = cloudFileIDToURL(gc.cover_image);
+          if (gc.outline && typeof gc.outline === 'string') {
+            try { gc.outline = JSON.parse(gc.outline); } catch (e) { gc.outline = [gc.outline]; }
+          } else if (!gc.outline) {
+            gc.outline = [];
+          }
+          course.gift_courses.push(gc);
+        }
+      }
+    }
+
     return response.success(course);
 
   } catch (error) {

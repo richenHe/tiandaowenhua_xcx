@@ -5,7 +5,7 @@
  * 使用 Supabase 风格 JOIN 查询，利用外键约束优化性能（消除 N+1 查询）
  */
 const { db } = require('../../common/db');
-const { response, utils, executePaginatedQuery } = require('../../common');
+const { response, utils, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -28,6 +28,11 @@ module.exports = async (event, context) => {
         final_amount,
         pay_status,
         refund_status,
+        refund_reason,
+        refund_reject_reason,
+        refund_invoice_file_id,
+        refund_time,
+        refund_amount,
         pay_time,
         is_reward_granted,
         created_at,
@@ -92,6 +97,11 @@ module.exports = async (event, context) => {
       final_amount: order.final_amount,
       pay_status: order.pay_status,
       refund_status: order.refund_status || 0,
+      refund_reason: order.refund_reason || '',
+      refund_reject_reason: order.refund_reject_reason || '',
+      refund_amount: order.refund_amount || 0,
+      refund_time: order.refund_time || null,
+      invoice_url: order.refund_invoice_file_id ? cloudFileIDToURL(order.refund_invoice_file_id) : '',
       pay_status_name: getPayStatusName(order.pay_status),
       pay_time: order.pay_time,
       referee_name: order.referee?.real_name || null,

@@ -276,52 +276,75 @@ async function handleCoursePurchase(order, db) {
 
   console.log('[Payment] 主课程记录已创建，有效期截止:', expireAt || '永久');
 
-  // 密训班赠送初探班
-  if (course.included_course_ids && course.included_course_ids.length > 0) {
-    for (const giftCourseId of course.included_course_ids) {
-      const { data: existingCourse } = await db
+  // 密训班赠送课程（included_course_ids 为 JSON 字符串或数组）
+  let giftCourseIds = course.included_course_ids;
+  if (typeof giftCourseIds === 'string') {
+    try { giftCourseIds = JSON.parse(giftCourseIds); } catch (e) { giftCourseIds = []; }
+  }
+  if (giftCourseIds && giftCourseIds.length > 0) {
+    for (const giftCourseId of giftCourseIds) {
+      const { data: giftCourse } = await db
+        .from('courses')
+        .select('name, type, validity_days')
+        .eq('id', giftCourseId)
+        .single();
+
+      if (!giftCourse) {
+        console.warn('[Payment] 赠送课程不存在:', giftCourseId);
+        continue;
+      }
+
+      // 查询用户是否已有该课程（status=1 的活跃记录）
+      const { data: existingCourses } = await db
         .from('user_courses')
-        .select('id')
+        .select('id, expire_at')
         .eq('user_id', order.user_id)
         .eq('course_id', giftCourseId)
+        .eq('status', 1)
         .limit(1);
 
-      if (!existingCourse || existingCourse.length === 0) {
-        const { data: giftCourse } = await db
-          .from('courses')
-          .select('name, type, validity_days')
-          .eq('id', giftCourseId)
-          .single();
+      if (!existingCourses || existingCourses.length === 0) {
+        // 用户无该课程 → 新建 is_gift=1 记录
+        const giftExpireAt = giftCourse.validity_days != null
+          ? formatDateTime(new Date(buyTime.getTime() + parseInt(giftCourse.validity_days) * 86400000))
+          : null;
 
-        if (giftCourse) {
-          // 赠送课程有效期：按赠送课程自身配置计算（如无配置则永久）
-          const giftExpireAt = giftCourse.validity_days != null
-            ? formatDateTime(new Date(buyTime.getTime() + parseInt(giftCourse.validity_days) * 24 * 60 * 60 * 1000))
-            : null;
-
-          await db.from('user_courses').insert({
-            user_id: order.user_id,
-            _openid: order._openid || '',
-            course_id: giftCourseId,
-            course_type: giftCourse.type,
-            course_name: giftCourse.name,
-            order_no: order.order_no,
-            source_order_id: order.id,
-            source_course_id: course.id,
-            buy_price: 0,
-            buy_time: formatDateTime(buyTime),
-            expire_at: giftExpireAt,
-            is_gift: 1,
-            gift_source: `购买${course.name}赠送`,
-            attend_count: 0,
-            status: 1,
-            created_at: formatDateTime(buyTime),
-            updated_at: formatDateTime(buyTime)
-          });
-          console.log('[Payment] 赠送课程已创建:', giftCourse.name, '有效期截止:', giftExpireAt || '永久');
-        }
+        await db.from('user_courses').insert({
+          user_id: order.user_id,
+          _openid: order._openid || '',
+          course_id: giftCourseId,
+          course_type: giftCourse.type,
+          course_name: giftCourse.name,
+          order_no: order.order_no,
+          source_order_id: order.id,
+          source_course_id: course.id,
+          buy_price: 0,
+          buy_time: formatDateTime(buyTime),
+          expire_at: giftExpireAt,
+          is_gift: 1,
+          gift_source: `购买${course.name}赠送`,
+          attend_count: 0,
+          status: 1,
+          created_at: formatDateTime(buyTime),
+          updated_at: formatDateTime(buyTime)
+        });
+        console.log('[Payment] 赠送课程已创建:', giftCourse.name, '有效期截止:', giftExpireAt || '永久');
       } else {
-        console.log('[Payment] 用户已有赠送课程，跳过:', giftCourseId);
+        // 用户已有该课程 → 叠加有效期（不创建新记录，退款时通过"无 is_gift 记录"识别为叠加场景）
+        const existing = existingCourses[0];
+        if (giftCourse.validity_days != null) {
+          const days = parseInt(giftCourse.validity_days);
+          const baseDate = existing.expire_at && new Date(existing.expire_at) > new Date()
+            ? new Date(existing.expire_at) : new Date();
+          const newExpire = formatDateTime(new Date(baseDate.getTime() + days * 86400000));
+          await db.from('user_courses').update({
+            expire_at: newExpire,
+            updated_at: formatDateTime(new Date())
+          }).eq('id', existing.id);
+          console.log('[Payment] 用户已有赠送课程，叠加有效期:', giftCourse.name, '新截止:', newExpire);
+        } else {
+          console.log('[Payment] 用户已有赠送课程且无有效期限制，跳过:', giftCourseId);
+        }
       }
     }
   }

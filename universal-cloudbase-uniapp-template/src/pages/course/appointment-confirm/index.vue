@@ -24,12 +24,10 @@
         </view>
 
         <!-- 温馨提示 -->
-        <view class="tips-card">
-          <view class="tips-title">📝 温馨提示</view>
+        <view class="tips-card tips-card--warning">
+          <view class="tips-title">⚠️ 温馨提示</view>
           <view class="tips-content">
-            <view class="tips-item">1. 系统将自动获取您的注册信息进行预约</view>
-            <view class="tips-item">2. 预约成功后，工作人员会在3个工作日内与您联系</view>
-            <view class="tips-item">3. 如有疑问，请联系客服：{{ customerServicePhone }}</view>
+            <view class="tips-item">预约成功后无法取消，请确认好时间再预约。</view>
           </view>
         </view>
       </view>
@@ -51,7 +49,7 @@
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi, UserApi, SystemApi } from '@/api';
+import { CourseApi, UserApi } from '@/api';
 
 const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
 
@@ -69,8 +67,6 @@ const requestSubscribe = (): Promise<void> => {
     // #endif
   })
 }
-
-const customerServicePhone = ref('');
 
 const courseInfo = ref({
   classRecordId: 0,
@@ -144,23 +140,16 @@ const loadUserCourseInfo = async (courseId: number) => {
   }
 };
 
-const loadCustomerServicePhone = async () => {
-  try {
-    const result = await SystemApi.getSystemConfig({ key: 'customer_service_phone' });
-    customerServicePhone.value = result.value;
-  } catch (error) {
-    console.error('加载客服电话失败:', error);
-  }
-};
 
 const handleSubmit = async () => {
   if (isSubmitted.value) return
+
   if (needRetrainFee.value) {
     uni.showModal({
       title: '预约确认',
-      content: `确定要预约该课程并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？费用支付后无法取消预约且不退费。`,
-      confirmText: '确定',
-      cancelText: '取消',
+      content: `预约成功后无法取消。确认要预约并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`,
+      confirmText: '确认预约',
+      cancelText: '再想想',
       success: (res) => {
         if (res.confirm) {
           isSubmitted.value = true
@@ -177,15 +166,17 @@ const handleSubmit = async () => {
       },
     });
   } else {
+    // 非复训费场景：在按钮点击的同步上下文中请求订阅授权
+    await requestSubscribe();
+
     uni.showModal({
       title: '预约确认',
-      content: '确定要预约该课程吗？',
-      confirmText: '确定',
-      cancelText: '取消',
+      content: '预约成功后无法取消，确认要预约吗？',
+      confirmText: '确认预约',
+      cancelText: '再想想',
       success: async (res) => {
         if (res.confirm) {
           isSubmitted.value = true
-          await requestSubscribe();
           try {
             await CourseApi.createAppointment({
               class_record_id: courseInfo.value.classRecordId
@@ -241,7 +232,6 @@ onLoad(async (options: any) => {
     uni.hideLoading();
   }
 
-  loadCustomerServicePhone();
 });
 </script>
 

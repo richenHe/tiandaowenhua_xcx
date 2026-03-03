@@ -153,7 +153,7 @@ const SQL_MODULES = {
       buy_time DATETIME COMMENT '购买时间',
       is_gift TINYINT(1) DEFAULT 0 COMMENT '是否赠送：0否/1是（密训班赠送的初探班）',
       gift_source VARCHAR(100) COMMENT '赠送来源说明',
-      attend_count INT DEFAULT 1 COMMENT '可上课次数（初始为1，表示可首次上课）',
+      attend_count INT DEFAULT 0 COMMENT '已上课次数（签到 +1，初始为 0）',
       first_class_time DATETIME COMMENT '首次上课时间',
       last_attend_time DATETIME COMMENT '最后上课时间',
       status TINYINT DEFAULT 1 COMMENT '状态：0无效/1有效/2已退款',

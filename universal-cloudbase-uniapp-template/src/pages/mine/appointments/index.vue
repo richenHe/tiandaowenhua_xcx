@@ -6,6 +6,7 @@
       class="scroll-content"
       scroll-y
       @scroll="handleScroll"
+      @scrolltolower="loadMore"
     >
       <view class="page-content">
         <!-- 筛选标签 -->
@@ -73,9 +74,19 @@
         </view>
 
         <!-- 空状态 -->
-        <view v-else class="empty-state">
+        <view v-if="filteredAppointments.length === 0 && !loading" class="empty-state">
           <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
           <text class="empty-text">暂无预约</text>
+        </view>
+
+        <!-- 加载更多 -->
+        <view v-if="!finished && filteredAppointments.length > 0" class="load-more">
+          <text class="load-more-text">{{ loading ? '加载中...' : '上拉加载更多' }}</text>
+        </view>
+
+        <!-- 已加载全部 -->
+        <view v-if="finished && filteredAppointments.length > 0" class="load-more">
+          <text class="finished-text">已加载全部</text>
         </view>
       </view>
 
@@ -118,6 +129,14 @@ const tabOptions = [
 // 预约数据
 const appointments = ref<any[]>([])
 
+// 分页状态
+const MAX_ITEMS = 99
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
 // 状态映射（与数据库 appointments.status 一致：0待上课/1已签到/2缺席/3已取消）
 const statusMap: Record<number, { text: string; type: string; appointmentStatus: string }> = {
   0: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
@@ -125,42 +144,77 @@ const statusMap: Record<number, { text: string; type: string; appointmentStatus:
   2: { text: '缺席', type: 'danger', appointmentStatus: 'absent' }
 }
 
-// 加载预约列表
-const loadAppointments = async (status?: number) => {
+// 将接口返回的原始数据映射为前端展示结构
+const mapAppointmentItem = (item: any) => {
+  const statusInfo = statusMap[item.status] ?? statusMap[0]
+  return {
+    id: item.id,
+    courseId: item.course_id,
+    classRecordId: item.class_record_id,
+    courseName: item.course_name || '',
+    classDate: item.class_date || '',
+    classTime: item.start_time || item.class_time || '',
+    title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
+    time: `${item.class_date} ${item.start_time || ''}`,
+    location: item.location || '',
+    teacher: item.teacher,
+    phone: '',
+    status: statusInfo.text,
+    statusType: statusInfo.type,
+    appointmentStatus: statusInfo.appointmentStatus,
+    dbStatus: item.status,
+    rating: item.status === 1 ? '⭐⭐⭐⭐⭐' : ''
+  }
+}
+
+// 加载预约列表（reset=true 时重置分页从头加载）
+const loadAppointments = async (reset = false) => {
+  if (loading.value || finished.value) return
+
+  if (reset) {
+    currentPage.value = 1
+    appointments.value = []
+    finished.value = false
+  }
+
   try {
-    uni.showLoading({ title: '加载中...' })
-    const params: any = { page: 1, page_size: 100 }
-    if (status !== undefined && status >= 0) {
-      params.status = status
+    if (currentPage.value === 1) {
+      uni.showLoading({ title: '加载中...' })
+    }
+    loading.value = true
+
+    const params: any = { page: currentPage.value, page_size: pageSize.value }
+    if (activeTab.value >= 0) {
+      params.status = activeTab.value
     }
 
     const result = await CourseApi.getMyAppointments(params)
+    appointments.value.push(...result.list.map(mapAppointmentItem))
+    total.value = result.total || 0
+    currentPage.value++
 
-    appointments.value = result.list.map((item: any) => {
-      const statusInfo = statusMap[item.status] ?? statusMap[0]
-      return {
-        id: item.id,
-        courseId: item.course_id,
-        classRecordId: item.class_record_id,
-        courseName: item.course_name || '',
-        classDate: item.class_date || '',
-        classTime: item.start_time || item.class_time || '',
-        title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
-        time: `${item.class_date} ${item.start_time || ''}`,
-        location: item.location || '',
-        teacher: item.teacher,
-        phone: '',
-        status: statusInfo.text,
-        statusType: statusInfo.type,
-        appointmentStatus: statusInfo.appointmentStatus,
-        dbStatus: item.status,
-        rating: item.status === 1 ? '⭐⭐⭐⭐⭐' : ''
+    if (appointments.value.length >= total.value || appointments.value.length >= MAX_ITEMS) {
+      finished.value = true
+      if (appointments.value.length > MAX_ITEMS) {
+        appointments.value = appointments.value.slice(0, MAX_ITEMS)
       }
-    })
-    uni.hideLoading()
+    }
+
+    if (currentPage.value === 2) {
+      uni.hideLoading()
+    }
   } catch (error) {
     console.error('加载预约列表失败:', error)
     uni.hideLoading()
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (!finished.value && !loading.value) {
+    loadAppointments()
   }
 }
 
@@ -172,26 +226,23 @@ const filteredAppointments = computed(() => {
   return appointments.value.filter(item => item.dbStatus === activeTab.value)
 })
 
-// 切换 Tab
+// 切换 Tab 时重置分页
 const handleTabChange = (value: number) => {
   activeTab.value = value
-  const statusValue = value === -1 ? undefined : value
-  loadAppointments(statusValue)
+  loadAppointments(true)
 }
 
 onMounted(() => {
-  // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
 
-  // 加载预约列表
   loadAppointments()
 })
 
 onShow(() => {
-  loadAppointments()
+  loadAppointments(true)
 })
 </script>
 
@@ -388,6 +439,22 @@ onShow(() => {
   font-size: 26rpx;
   color: $td-text-color-secondary;
   line-height: 1.6;
+}
+
+// 加载更多
+.load-more {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.load-more-text {
+  font-size: 24rpx;
+  color: $td-text-color-secondary;
+}
+
+.finished-text {
+  font-size: 24rpx;
+  color: $td-text-color-placeholder;
 }
 
 // 底部留白
