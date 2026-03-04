@@ -261,7 +261,7 @@ module.exports = async (event, context) => {
       return response.error('该协议模板未配置电子合同文件，请联系管理员');
     }
 
-    // 检查是否已签署
+    // 检查是否已签署（查最新 status=1 的有效合同）
     const { data: existing } = await db
       .from('contract_signatures')
       .select('id')
@@ -272,7 +272,8 @@ module.exports = async (event, context) => {
 
     if (existing) {
       // 已签过，确保 user_courses 标记一致后直接返回
-      await update('user_courses', { contract_signed: 1 }, { user_id: user.id, course_id: Number(courseId) });
+      await db.from('user_courses').update({ contract_signed: 1 })
+        .eq('user_id', user.id).eq('course_id', Number(courseId)).eq('contract_signed', 0).eq('status', 1);
       return response.error('您已签署过该课程的学习服务协议');
     }
 
@@ -286,14 +287,40 @@ module.exports = async (event, context) => {
     const userPhone = userInfo?.phone || '';
     const userRealName = userInfo?.real_name || '';
 
-    // 计算合约有效期（北京时间 UTC+8）
+    // 查询课程 validity_days 和用户课程的 pending_days（统一以 courses.validity_days 为来源）
+    const { data: courseInfo } = await db
+      .from('courses')
+      .select('validity_days')
+      .eq('id', Number(courseId))
+      .single();
+
+    // 查找待签合同的 user_courses 记录，获取 pending_days
+    const { data: userCourseRecord } = await db
+      .from('user_courses')
+      .select('id, pending_days')
+      .eq('user_id', user.id)
+      .eq('course_id', Number(courseId))
+      .eq('contract_signed', 0)
+      .eq('status', 1)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // pending_days 优先用记录值，兜底用 validity_days
+    const totalDays = (userCourseRecord?.pending_days > 0)
+      ? userCourseRecord.pending_days
+      : (courseInfo?.validity_days || 365);
+
+    // 计算合约有效期（北京时间 UTC+8），以 courses.validity_days 为唯一来源
     const { formatBeijingDate } = require('../../common/utils');
     const signDate = new Date(Date.now() + 8 * 3600000);
     const contractStart = formatBeijingDate(new Date());
-    const contractEndDate = new Date(signDate);
-    contractEndDate.setUTCFullYear(contractEndDate.getUTCFullYear() + (template.validity_years || 1));
-    // signDate 已含 +8h 偏移，直接用 UTC 方法取北京日期，避免 formatBeijingDate 再加一次 +8h
+    // contract_end = 签约日 + totalDays 天
+    const contractEndDate = new Date(signDate.getTime() + totalDays * 86400000);
+    // signDate 已含 +8h 偏移，直接用 UTC 方法取北京日期
     const contractEnd = `${contractEndDate.getUTCFullYear()}-${String(contractEndDate.getUTCMonth() + 1).padStart(2, '0')}-${String(contractEndDate.getUTCDate()).padStart(2, '0')}`;
+    // expire_at = contract_end 当天 23:59:59（北京时间）
+    const expireAt = `${contractEnd} 23:59:59`;
 
     const y = signDate.getUTCFullYear();
     const m = String(signDate.getUTCMonth() + 1).padStart(2, '0');
@@ -358,9 +385,24 @@ module.exports = async (event, context) => {
       throw insertError;
     }
 
-    // 更新 user_courses.contract_signed = 1
-    await update('user_courses', { contract_signed: 1 }, { user_id: user.id, course_id: Number(courseId) });
-    console.log(`[signCourseContract] user_courses.contract_signed 已更新 user_id=${user.id} course_id=${courseId}`);
+    // 更新 user_courses：回写 expire_at，标记已签，清零 pending_days
+    if (userCourseRecord) {
+      await db.from('user_courses').update({
+        contract_signed: 1,
+        expire_at: expireAt,
+        pending_days: 0,
+        updated_at: formatDateTime(new Date())
+      }).eq('id', userCourseRecord.id);
+    } else {
+      // 兜底：按 user_id + course_id 更新（不应出现此情况）
+      await db.from('user_courses').update({
+        contract_signed: 1,
+        expire_at: expireAt,
+        pending_days: 0,
+        updated_at: formatDateTime(new Date())
+      }).eq('user_id', user.id).eq('course_id', Number(courseId)).eq('contract_signed', 0).eq('status', 1);
+    }
+    console.log(`[signCourseContract] user_courses 已更新 expire_at=${expireAt}, pending_days=0, user_id=${user.id}, course_id=${courseId}`);
 
     // 签约后触发推荐人奖励（支付时已跳过即时发放）
     await grantRefereeRewardAfterSign(user.id, Number(courseId), db);

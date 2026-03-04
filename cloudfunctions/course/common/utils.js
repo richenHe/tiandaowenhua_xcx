@@ -226,11 +226,24 @@ function cloudFileIDToURL(fileID) {
   return `https://${bucket}.tcb.qcloud.la/${filePath}`;
 }
 
+/**
+ * 将数据库中存储的北京时间字符串解析为正确的 Date 对象
+ * 云函数运行在 UTC 环境，new Date("YYYY-MM-DD HH:mm:ss") 会被当作 UTC 解析，
+ * 但数据库存储的实际是北京时间(UTC+8)，需减去 8 小时还原为正确的 UTC 时间戳
+ * @param {string} str - 北京时间字符串 "YYYY-MM-DD HH:mm:ss"
+ * @returns {Date} 正确的 UTC Date 对象
+ */
+function parseBeijingDateStr(str) {
+  if (!str) return new Date();
+  return new Date(new Date(str).getTime() - 8 * 3600000);
+}
+
 module.exports = {
   validateRequired,
   getPagination,
   formatDateTime,
   formatBeijingDate,
+  parseBeijingDateStr,
   randomString,
   maskPhone,
   validatePhone,

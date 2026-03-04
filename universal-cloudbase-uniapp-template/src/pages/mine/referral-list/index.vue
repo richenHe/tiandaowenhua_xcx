@@ -40,7 +40,7 @@
               <view class="card-info">
                 <view class="info-name">
                   <text class="name-text">{{ referee.real_name || '未设置' }}</text>
-                  <text class="level-badge">{{ getLevelIcon(referee.ambassador_level) }}</text>
+                  <text class="level-badge">{{ getLevelIcon(referee.activity_count || 0) }}</text>
                 </view>
                 <view class="info-level">
                   <text class="t-badge t-badge--primary">{{ getLevelText(referee.ambassador_level) }}</text>
@@ -117,7 +117,7 @@
               <view class="card-info">
                 <view class="info-name">
                   <text class="name-text">{{ person.real_name || '未设置' }}</text>
-                  <text class="level-badge level-badge--small">{{ getLevelIcon(person.ambassador_level) }}</text>
+                  <text class="level-badge level-badge--small">{{ getLevelIcon(person.activity_count || 0) }}</text>
                 </view>
                 <text class="info-date">加入时间: {{ formatDate(person.created_at) }}</text>
               </view>
@@ -193,9 +193,10 @@ const loadRefereeInfo = async () => {
       referee.value = {
         id: profile.referee_id,
         real_name: profile.referee_name,
-        phone: '', // 推荐人手机号由后端返回，这里暂时为空
+        phone: '',
         referral_code: '',
         ambassador_level: profile.referee_level || 0,
+        activity_count: profile.referee_activity_count || 0,
         avatar: '',
         created_at: profile.referee_confirmed_at || profile.created_at
       }
@@ -316,16 +317,26 @@ const getLevelText = (level: number) => {
   return levelMap[level] || '普通用户'
 }
 
-// 获取等级图标
-const getLevelIcon = (level: number) => {
-  const iconMap: Record<number, string> = {
-    0: '🌱',
-    1: '🌿',
-    2: '🍀',
-    3: '🌳',
-    4: '🌟'
+// 获取成长标志图标（四进制图标计数器，与 mine/index 保持一致）
+// 规则：4🌱=1🌿，4🌿=1🍀，4🍀=1🌳，4🌳=1🌟
+// 示例：1次=🌱，4次=🌿，6次=🌿🌱🌱，17次=🍀🌱
+const getLevelIcon = (activityCount: number): string => {
+  if (activityCount <= 0) return '';
+  let n = activityCount;
+  let result = '';
+  const levels = [
+    { icon: '🌟', value: 256 },
+    { icon: '🌳', value: 64 },
+    { icon: '🍀', value: 16 },
+    { icon: '🌿', value: 4 },
+    { icon: '🌱', value: 1 }
+  ];
+  for (const { icon, value } of levels) {
+    const count = Math.floor(n / value);
+    if (count > 0) result += icon.repeat(count);
+    n = n % value;
   }
-  return iconMap[level] || '🌱'
+  return result;
 }
 
 // 获取状态文本

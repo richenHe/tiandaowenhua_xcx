@@ -44,6 +44,15 @@ module.exports = async (event, context) => {
       return response.notFound('上课排期不存在');
     }
 
+    // 修改了开课日期时，校验不能早于今天（北京时间 UTC+8）
+    if (classDate !== undefined) {
+      const nowBJ = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const todayStr = nowBJ.toISOString().slice(0, 10);
+      if (classDate < todayStr) {
+        return response.paramError('上课日期不能早于今天');
+      }
+    }
+
     if (classDate !== undefined && classEndDate !== undefined && classEndDate && classEndDate < classDate) {
       return response.paramError('结课日期不能早于上课时间');
     }

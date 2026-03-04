@@ -118,9 +118,11 @@
     <view class="fixed-bottom">
       <text class="bottom-price">{{ bottomPriceText }}</text>
       <button
-        class="t-button t-button--theme-warning t-button--variant-base t-button--size-large"
-        :class="{ 't-button--disabled': isExchangeMode && !canAffordExchange }"
-        :disabled="isExchangeMode && !canAffordExchange"
+        class="t-button t-button--size-large"
+        :class="(isExchangeMode && !canAffordExchange) || isAllExpired
+          ? 't-button--theme-default t-button--variant-outline t-button--disabled'
+          : 't-button--theme-warning t-button--variant-base'"
+        :disabled="(isExchangeMode && !canAffordExchange) || isAllExpired"
         @click="handleBuy"
       >
         <span class="t-button__text">{{ buttonText }}</span>
@@ -162,6 +164,7 @@ const courseInfo = ref({
   is_purchased: false,
   user_course_id: null as number | null,
   attend_count: 1,
+  user_course_status: null as number | null,
 });
 
 // 兑换模式相关状态
@@ -207,6 +210,7 @@ const loadCourseDetail = async (courseId: number) => {
     courseInfo.value.is_purchased = course.is_purchased || false;
     courseInfo.value.user_course_id = course.user_course_id || null;
     courseInfo.value.attend_count = course.attend_count || 0;
+    courseInfo.value.user_course_status = course.user_course_status ?? null;
 
     // 解析课程大纲
     if (course.outline) {
@@ -290,12 +294,18 @@ const bottomPriceText = computed(() => {
   return '¥' + formatPrice(courseInfo.value.price);
 });
 
+// 是否所有课程记录都已过期（status=3），且没有有效记录
+const isAllExpired = computed(() => {
+  return courseInfo.value.is_purchased && courseInfo.value.user_course_status === 3;
+});
+
 // 按钮文本
 const buttonText = computed(() => {
   if (isExchangeMode.value) {
     return canAffordExchange.value ? '立即兑换' : '积分不足';
   }
   if (courseInfo.value.type === 4) return '立即预约';
+  if (isAllExpired.value) return '课程已过期';
   if (courseInfo.value.is_purchased) return '立即预约';
   return '立即购买';
 });
@@ -352,6 +362,16 @@ const handleBuy = () => {
   // 兑换模式：执行积分兑换
   if (isExchangeMode.value) {
     handleExchange();
+    return;
+  }
+
+  // 已购买且全部过期 → 提示重新购买
+  if (isAllExpired.value) {
+    uni.showModal({
+      title: '提示',
+      content: '课程已过期，请重新购买后继续学习',
+      showCancel: false,
+    });
     return;
   }
 
@@ -636,8 +656,12 @@ const handleBuy = () => {
   }
 
   &--disabled {
-    opacity: 0.5;
-    background-color: $td-text-color-placeholder;
+    opacity: 1;
+    background-color: #bbbbbb;
+
+    .t-button__text {
+      color: #ffffff;
+    }
   }
 }
 </style>

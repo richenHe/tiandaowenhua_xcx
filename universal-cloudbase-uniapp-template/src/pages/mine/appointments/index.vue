@@ -5,6 +5,7 @@
     <scroll-view
       class="scroll-content"
       scroll-y
+      lower-threshold="100"
       @scroll="handleScroll"
       @scrolltolower="loadMore"
     >
@@ -106,14 +107,19 @@ import { CourseApi } from '@/api'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)
+const scrollViewHeight = ref(0)
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 
-// 处理滚动事件
+// 处理滚动事件 + 触底检测加载更多
 const handleScroll = (e: any) => {
   if (stickyTabsRef.value) {
     stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
+  }
+  const { scrollTop, scrollHeight } = e.detail
+  if (scrollViewHeight.value > 0 && scrollHeight - scrollTop - scrollViewHeight.value < 100) {
+    loadMore()
   }
 }
 
@@ -169,13 +175,13 @@ const mapAppointmentItem = (item: any) => {
 
 // 加载预约列表（reset=true 时重置分页从头加载）
 const loadAppointments = async (reset = false) => {
-  if (loading.value || finished.value) return
-
   if (reset) {
     currentPage.value = 1
     appointments.value = []
     finished.value = false
   }
+
+  if (loading.value || finished.value) return
 
   try {
     if (currentPage.value === 1) {
@@ -189,11 +195,17 @@ const loadAppointments = async (reset = false) => {
     }
 
     const result = await CourseApi.getMyAppointments(params)
-    appointments.value.push(...result.list.map(mapAppointmentItem))
+    const newItems = result.list.map(mapAppointmentItem)
+    appointments.value.push(...newItems)
     total.value = result.total || 0
     currentPage.value++
 
-    if (appointments.value.length >= total.value || appointments.value.length >= MAX_ITEMS) {
+    if (
+      newItems.length === 0 ||
+      newItems.length < pageSize.value ||
+      appointments.value.length >= total.value ||
+      appointments.value.length >= MAX_ITEMS
+    ) {
       finished.value = true
       if (appointments.value.length > MAX_ITEMS) {
         appointments.value = appointments.value.slice(0, MAX_ITEMS)
@@ -237,6 +249,7 @@ onMounted(() => {
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
+  scrollViewHeight.value = systemInfo.windowHeight - pageHeaderHeight.value
 
   loadAppointments()
 })
@@ -250,13 +263,16 @@ onShow(() => {
 @import '@/styles/tdesign-vars.scss';
 
 .page-container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: $td-bg-color-page;
+  display: flex;
+  flex-direction: column;
 }
 
 // 滚动内容
 .scroll-content {
-  height: calc(100vh - var(--td-page-header-height));
+  flex: 1;
+  overflow: hidden;
 }
 
 .page-content {

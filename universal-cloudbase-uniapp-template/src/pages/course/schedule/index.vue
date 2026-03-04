@@ -50,7 +50,7 @@
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi, AmbassadorApi } from '@/api';
+import { CourseApi, AmbassadorApi, UserApi } from '@/api';
 
 // 课程排期数据
 const schedules = ref<any[]>([]);
@@ -66,6 +66,25 @@ const loadSchedules = async () => {
 
   try {
     uni.showLoading({ title: '加载中...' })
+
+    // 非沙龙课：防御性校验用户课程状态（防止通过 URL 直接访问过期课程）
+    if (courseType.value !== 4) {
+      const myCoursesResult = await UserApi.getMyCourses({ page: 1, page_size: 100 });
+      const courseRecord = (myCoursesResult?.list || []).find(
+        (uc: any) => uc.course_id === courseId.value && uc.status === 1
+      );
+      if (!courseRecord) {
+        uni.hideLoading();
+        uni.showModal({
+          title: '无法预约',
+          content: '您未购买该课程或课程已过期，无法查看排期',
+          showCancel: false,
+          success: () => uni.navigateBack()
+        });
+        return;
+      }
+    }
+
     const result = await CourseApi.getClassRecords({
       course_id: courseId.value,
       page: 1,

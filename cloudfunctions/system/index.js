@@ -74,7 +74,9 @@ const adminHandlers = {
   getAdminBannerList: require('./handlers/admin/getAdminBannerList'),
   createBanner: require('./handlers/admin/createBanner'),
   updateBanner: require('./handlers/admin/updateBanner'),
-  deleteBanner: require('./handlers/admin/deleteBanner')
+  deleteBanner: require('./handlers/admin/deleteBanner'),
+  // 过期标记定时任务
+  checkExpiredCourses: require('./handlers/admin/checkExpiredCourses')
 };
 
 // 路由配置
@@ -102,7 +104,13 @@ exports.main = async (event, context) => {
   console.log('[STEP 1] 云函数启动');
   console.log('[STEP 1] event:', JSON.stringify(event));
   console.log('[STEP 1] context:', JSON.stringify(context));
-  
+
+  // 检测是否是定时触发（timer trigger：event 含 Time 字段，且无 action）
+  if (event.Time && !event.action) {
+    console.log('[System] 定时触发：标记过期课程和合同', event.Time);
+    return adminHandlers.checkExpiredCourses(event, context);
+  }
+
   // 检测是否是 HTTP 请求（检测多种可能的方式）
   const isHttpRequest = 
     (context && context.SOURCE === 'wx_http') || 

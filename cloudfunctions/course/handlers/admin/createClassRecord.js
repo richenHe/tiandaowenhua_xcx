@@ -40,6 +40,13 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
+    // 取服务器今天日期（北京时间 UTC+8，YYYY-MM-DD 格式）
+    const nowBJ = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    const todayStr = nowBJ.toISOString().slice(0, 10);
+    if (classDate < todayStr) {
+      return response.paramError('上课日期不能早于今天');
+    }
+
     if (classEndDate && classEndDate < classDate) {
       return response.paramError('结课日期不能早于上课时间');
     }

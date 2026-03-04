@@ -96,71 +96,55 @@ async function rollbackOrderBusiness(order) {
 }
 
 async function rollbackCoursePurchase(order) {
-  const now = new Date();
+  const now = utils.formatDateTime(new Date());
+
+  // 通过 source_order_id 精确找到该订单创建的所有 user_courses（主课程+赠送课程）
+  const { data: ucList } = await db
+    .from('user_courses')
+    .select('id, course_id, pending_days, contract_signed, status')
+    .eq('source_order_id', order.id)
+    .in('status', [1]);
+
+  if (!ucList || ucList.length === 0) {
+    console.log(`[rollbackCoursePurchase] 未找到该订单的课程记录: order_id=${order.id}`);
+    return;
+  }
+
+  // 查询各课程的 validity_days
   const course = await findOne('courses', { id: order.related_id });
   if (!course) return;
 
-  // 1. 主课程：回退有效期而非直接失效
-  await rollbackUserCourseValidity(order.user_id, order.related_id, course.validity_days, now);
+  // 构建课程ID到validity_days的映射
+  const courseValidityMap = {};
+  courseValidityMap[course.id] = course.validity_days || 365;
 
-  // 2. 赠送课程：同样回退有效期
   let giftIds = course.included_course_ids;
   if (typeof giftIds === 'string') {
     try { giftIds = JSON.parse(giftIds); } catch (e) { giftIds = []; }
   }
-  if (!giftIds || giftIds.length === 0) return;
-
-  for (const giftCourseId of giftIds) {
-    const giftCourse = await findOne('courses', { id: giftCourseId });
-    if (!giftCourse) continue;
-    await rollbackUserCourseValidity(order.user_id, giftCourseId, giftCourse.validity_days, now);
+  if (giftIds && giftIds.length > 0) {
+    for (const giftCourseId of giftIds) {
+      const giftCourse = await findOne('courses', { id: giftCourseId });
+      if (giftCourse) courseValidityMap[giftCourseId] = giftCourse.validity_days || 365;
+    }
   }
 
-  console.log(`[rollbackCoursePurchase] 课程购买回退完成（含赠送课程）`);
-}
-
-/**
- * 回退单条 user_courses 的有效期
- * 逻辑：expire_at 减去 validity_days；若减后仍在未来则保留课程，否则失效
- * 永久有效课程（validity_days=null）被退款时直接失效
- */
-async function rollbackUserCourseValidity(userId, courseId, validityDays, now) {
-  const { data: ucList } = await db
-    .from('user_courses')
-    .select('id, expire_at, status')
-    .eq('user_id', userId)
-    .eq('course_id', courseId)
-    .eq('status', 1)
-    .limit(1);
-
-  if (!ucList || ucList.length === 0) {
-    console.log(`[rollbackValidity] 未找到有效课程记录: user=${userId}, course=${courseId}`);
-    return;
+  for (const uc of ucList) {
+    const validityDays = courseValidityMap[uc.course_id] || 365;
+    // 退款时必定 contract_signed=0（签了就退不了），扣减 pending_days
+    const newPendingDays = (uc.pending_days || 0) - validityDays;
+    if (newPendingDays <= 0) {
+      // pending_days 清零 → 课程退款失效
+      await update('user_courses', { status: 2, pending_days: 0, updated_at: now }, { id: uc.id });
+      console.log(`[rollbackCoursePurchase] 课程已退款失效: id=${uc.id}, course_id=${uc.course_id}`);
+    } else {
+      // 仍有兑换叠加的天数 → 保留记录，仅扣减
+      await update('user_courses', { pending_days: newPendingDays, updated_at: now }, { id: uc.id });
+      console.log(`[rollbackCoursePurchase] 扣减 pending_days: id=${uc.id}, course_id=${uc.course_id}, 剩余=${newPendingDays}`);
+    }
   }
 
-  const uc = ucList[0];
-
-  if (validityDays == null || !uc.expire_at) {
-    // 永久有效课程被退款 → 直接失效
-    await update('user_courses', { status: 0 }, { id: uc.id });
-    console.log(`[rollbackValidity] 永久课程已失效: id=${uc.id}, course=${courseId}`);
-    return;
-  }
-
-  const currentExpire = new Date(uc.expire_at);
-  const rolledBack = new Date(currentExpire.getTime() - parseInt(validityDays) * 86400000);
-
-  if (rolledBack > now) {
-    // 回退后仍有剩余有效期（来自积分兑换等其他来源）→ 保留课程
-    await update('user_courses', {
-      expire_at: utils.formatDateTime(rolledBack)
-    }, { id: uc.id });
-    console.log(`[rollbackValidity] 有效期已缩短: id=${uc.id}, course=${courseId}, 新截止=${utils.formatDateTime(rolledBack)}`);
-  } else {
-    // 回退后已过期 → 失效
-    await update('user_courses', { status: 0 }, { id: uc.id });
-    console.log(`[rollbackValidity] 回退后已过期，课程失效: id=${uc.id}, course=${courseId}`);
-  }
+  console.log(`[rollbackCoursePurchase] 课程购买回退完成，共处理 ${ucList.length} 条记录`);
 }
 
 async function rollbackRetrain(order) {

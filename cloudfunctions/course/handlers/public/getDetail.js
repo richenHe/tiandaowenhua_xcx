@@ -46,17 +46,23 @@ module.exports = async (event, context) => {
     if (OPENID) {
       const user = await findOne('users', { _openid: OPENID });
       if (user) {
-        // 查询是否已购买
-        const { data: userCourse } = await db
+        // 查询是否已购买（status=1 有效记录优先，其次看 status=3 过期记录）
+        const { data: userCourseList } = await db
           .from('user_courses')
-          .select('*')
+          .select('id, status, attend_count')
           .eq('user_id', user.id)
           .eq('course_id', id)
-          .single();
+          .in('status', [1, 3])
+          .order('status', { ascending: true })
+          .limit(1);
 
+        const userCourse = userCourseList && userCourseList[0];
         course.is_purchased = !!userCourse;
 
         if (userCourse) {
+          course.user_course_id = userCourse.id;
+          // 返回课程状态：1=有效，3=已过期
+          course.user_course_status = userCourse.status;
           // 查询上课次数
           const { count: classCount } = await db
             .from('appointments')
@@ -67,6 +73,7 @@ module.exports = async (event, context) => {
 
           course.class_count = classCount || 0;
         } else {
+          course.user_course_status = null;
           course.class_count = 0;
         }
       }

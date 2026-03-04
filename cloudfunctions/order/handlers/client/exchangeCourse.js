@@ -4,27 +4,81 @@
  *
  * 使用功德分（或积分）兑换商城课程，直接写入 user_courses，无需线下领取。
  * 兑换价格 = courses.current_price（1元=1功德分/积分）
- * 首次兑换：新建 user_courses，expire_at = 兑换时间 + courses.validity_days（NULL则永久）
- * 重复兑换：在原 expire_at 基础上顺延 + courses.validity_days 天（NULL则不变或设永久）
+ * 统一叠加逻辑（4种情况）：
+ *   A. 无记录 → 新建，expire_at=NULL, pending_days=validity_days
+ *   B. 已有记录 + 未签合同(contract_signed=0) → pending_days += validity_days
+ *   C. 已有记录 + 已签合同(contract_signed=1) + 未过期(status=1) → expire_at/contract_end 双向延长
+ *   D. 无 status=1 的记录（全过期 status=3）→ 新建（同 A）
  */
 
-/**
- * 按课程有效期天数计算截止时间
- * @param {string|Date} base       - 起始时间（当前有效期截止 或 兑换时间）
- * @param {number|null} validityDays - 有效期天数，null 表示永久
- * @returns {string|null}
- */
-function calcExpireAt(base, validityDays) {
-  if (validityDays == null) return null; // 永久有效
-  const d = base ? new Date(base) : new Date();
-  const expire = new Date(d.getTime() + parseInt(validityDays) * 24 * 60 * 60 * 1000);
-  // 转换为 UTC+8 时间字符串
-  const d8 = new Date(expire.getTime() + 8 * 60 * 60 * 1000);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d8.getUTCFullYear()}-${pad(d8.getUTCMonth() + 1)}-${pad(d8.getUTCDate())} ${pad(d8.getUTCHours())}:${pad(d8.getUTCMinutes())}:${pad(d8.getUTCSeconds())}`;
-}
 const { findOne, insert, update, db } = require('../../common/db');
 const { response, utils } = require('../../common');
+
+/**
+ * 统一叠加逻辑：处理兑换/赠送时的 user_courses 更新
+ * @param {object} db - 数据库实例
+ * @param {number} userId - 用户 ID
+ * @param {string} openid - 用户 openid
+ * @param {object} targetCourse - 目标课程对象
+ * @param {object} insertBaseData - 新建记录时的额外字段
+ * @param {string} nowStr - 当前时间字符串
+ */
+async function applyCourseDays(db, userId, openid, targetCourse, insertBaseData, nowStr) {
+  const validityDays = targetCourse.validity_days || 365;
+
+  // 查 status=1 的最新记录
+  const { data: existingList } = await db
+    .from('user_courses')
+    .select('id, contract_signed, pending_days, expire_at')
+    .eq('user_id', userId)
+    .eq('course_id', targetCourse.id)
+    .eq('status', 1)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!existingList || existingList.length === 0) {
+    // A/D. 无 status=1 记录 → 新建
+    await insert('user_courses', {
+      user_id: userId,
+      _openid: openid || '',
+      course_id: targetCourse.id,
+      course_type: targetCourse.type,
+      course_name: targetCourse.name,
+      expire_at: null,
+      pending_days: validityDays,
+      attend_count: 0,
+      status: 1,
+      created_at: nowStr,
+      updated_at: nowStr,
+      ...insertBaseData
+    });
+    console.log(`[applyCourseDays] 新建课程记录: course_id=${targetCourse.id}, pending_days=${validityDays}`);
+    return;
+  }
+
+  const existing = existingList[0];
+
+  if (existing.contract_signed === 0) {
+    // B. 未签合同 → pending_days 累加
+    const newPendingDays = (existing.pending_days || 0) + validityDays;
+    await update('user_courses', { pending_days: newPendingDays, updated_at: nowStr }, { id: existing.id });
+    console.log(`[applyCourseDays] 叠加 pending_days: course_id=${targetCourse.id}, 新值=${newPendingDays}`);
+  } else {
+    // C. 已签合同且未过期 → 双向延长
+    const currentExpire = utils.parseBeijingDateStr(existing.expire_at);
+    const newExpireDate = new Date(currentExpire.getTime() + validityDays * 86400000);
+    const newExpireAt = utils.formatDateTime(newExpireDate);
+    const newContractEnd = newExpireAt.split(' ')[0];
+
+    await update('user_courses', { expire_at: newExpireAt, updated_at: nowStr }, { id: existing.id });
+    // 同步延长合同有效期
+    await db.from('contract_signatures').update({
+      contract_end: newContractEnd,
+      updated_at: nowStr
+    }).eq('user_id', userId).eq('course_id', targetCourse.id).eq('status', 1);
+    console.log(`[applyCourseDays] 双向延长有效期: course_id=${targetCourse.id}, 新截止=${newExpireAt}`);
+  }
+}
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
@@ -102,54 +156,24 @@ module.exports = async (event, context) => {
         { id: user.id }
       );
 
-      // 7.2 处理 user_courses：已有记录则在原有效期基础上续期 +1年，否则新建
-      const { data: existingList } = await db
+      // 7.2 处理 user_courses：统一叠加逻辑（4种情况）
+      await applyCourseDays(db, user.id, OPENID, course, {
+        order_no: null,
+        buy_price: price,
+        buy_time: nowStr,
+        is_gift: 0
+      }, nowStr);
+
+      // 获取用户课程ID（用于返回值）
+      const { data: ucResult } = await db
         .from('user_courses')
-        .select('id, expire_at')
+        .select('id')
         .eq('user_id', user.id)
         .eq('course_id', course.id)
         .eq('status', 1)
-        .order('id', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(1);
-
-      let userCourseId = null;
-      if (existingList && existingList.length > 0) {
-        // 已有记录：validity_days 有值才续期；为 null（永久有效）时不覆盖已有 expire_at
-        const existing = existingList[0];
-        if (course.validity_days != null) {
-          // 续期基准：原截止时间（若已过期则从现在起算）
-          const base = existing.expire_at && new Date(existing.expire_at) > new Date() ? existing.expire_at : nowStr;
-          const newExpireAt = calcExpireAt(base, course.validity_days);
-          await update('user_courses',
-            { expire_at: newExpireAt },
-            { id: existing.id }
-          );
-          console.log(`[exchangeCourse] 续期成功，新有效期：${newExpireAt}`);
-        } else {
-          // validity_days 为 null：课程无固定有效期，保留已有 expire_at，不覆盖
-          console.log(`[exchangeCourse] 课程无固定有效期，保留原 expire_at：${existing.expire_at || '永久'}`);
-        }
-        userCourseId = existing.id;
-      } else {
-        // 首次兑换：新建记录
-        const expireAt = calcExpireAt(nowStr, course.validity_days);
-        const insertResult = await insert('user_courses', {
-          user_id: user.id,
-          _openid: OPENID || '',
-          course_id: course.id,
-          course_type: course.type,
-          course_name: course.name,
-          order_no: null,
-          buy_price: price,
-          buy_time: nowStr,
-          expire_at: expireAt,
-          is_gift: 0,
-          attend_count: 0,
-          status: 1
-        });
-        userCourseId = insertResult?.id || null;
-        console.log(`[exchangeCourse] 首次兑换，有效期至：${expireAt || '永久'}`);
-      }
+      let userCourseId = ucResult?.[0]?.id || null;
 
       // 7.3 更新课程销量（有限库存同步扣减库存）
       if (course.stock !== -1) {
@@ -167,7 +191,7 @@ module.exports = async (event, context) => {
         );
       }
 
-      // 7.4 密训班赠送课程处理（逻辑同 payment.js）
+      // 7.4 密训班赠送课程处理（统一叠加逻辑）
       if (course.type === 2) {
         let giftIds = course.included_course_ids;
         if (typeof giftIds === 'string') {
@@ -180,40 +204,14 @@ module.exports = async (event, context) => {
               console.warn('[exchangeCourse] 赠送课程不存在:', giftCourseId);
               continue;
             }
-            const { data: existingGift } = await db
-              .from('user_courses')
-              .select('id, expire_at')
-              .eq('user_id', user.id)
-              .eq('course_id', giftCourseId)
-              .eq('status', 1)
-              .limit(1);
-
-            if (!existingGift || existingGift.length === 0) {
-              const giftExpireAt = calcExpireAt(nowStr, giftCourse.validity_days);
-              await insert('user_courses', {
-                user_id: user.id,
-                _openid: OPENID || '',
-                course_id: giftCourseId,
-                course_type: giftCourse.type,
-                course_name: giftCourse.name,
-                order_no: null,
-                source_course_id: course.id,
-                buy_price: 0,
-                buy_time: nowStr,
-                expire_at: giftExpireAt,
-                is_gift: 1,
-                gift_source: `兑换${course.name}赠送`,
-                attend_count: 0,
-                status: 1
-              });
-              console.log('[exchangeCourse] 赠送课程已创建:', giftCourse.name);
-            } else if (giftCourse.validity_days != null) {
-              const eg = existingGift[0];
-              const base = eg.expire_at && new Date(eg.expire_at) > new Date() ? eg.expire_at : nowStr;
-              const newExpire = calcExpireAt(base, giftCourse.validity_days);
-              await update('user_courses', { expire_at: newExpire }, { id: eg.id });
-              console.log('[exchangeCourse] 赠送课程叠加有效期:', giftCourse.name, '新截止:', newExpire);
-            }
+            await applyCourseDays(db, user.id, OPENID, giftCourse, {
+              order_no: null,
+              source_course_id: course.id,
+              buy_price: 0,
+              buy_time: nowStr,
+              is_gift: 1,
+              gift_source: `兑换${course.name}赠送`
+            }, nowStr);
           }
         }
       }

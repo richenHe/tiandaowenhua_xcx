@@ -36,7 +36,9 @@
     <!-- 固定底部按钮 -->
     <view class="fixed-bottom">
       <button
-        class="t-button t-button--theme-light t-button--variant-base t-button--block t-button--size-large"
+        class="t-button t-button--variant-base t-button--block t-button--size-large"
+        :class="alreadyBooked ? 't-button--theme-default' : 't-button--theme-light'"
+        :disabled="alreadyBooked"
         @click="handleSubmit"
       >
         <span class="t-button__text">{{ buttonText }}</span>
@@ -92,7 +94,11 @@ const needRetrainFee = computed(() => {
 
 const isSubmitted = ref(false)
 
+// 是否已预约该排期
+const alreadyBooked = ref(false)
+
 const buttonText = computed(() => {
+  if (alreadyBooked.value) return '您已预约该排期';
   if (needRetrainFee.value) {
     return `立即预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
   }
@@ -141,8 +147,24 @@ const loadUserCourseInfo = async (courseId: number) => {
 };
 
 
+/**
+ * 检查当前排期是否已有有效预约（status !== 3 即非已取消）
+ * 避免用户重复进入订单页才报错
+ */
+const checkAlreadyBooked = async (classRecordId: number) => {
+  try {
+    const result = await CourseApi.getMyAppointments({ page: 1, page_size: 100 });
+    const list = result?.list || [];
+    alreadyBooked.value = list.some(
+      (item: any) => item.class_record_id === classRecordId && item.status !== 3
+    );
+  } catch (error) {
+    console.error('检查预约状态失败:', error);
+  }
+};
+
 const handleSubmit = async () => {
-  if (isSubmitted.value) return
+  if (isSubmitted.value || alreadyBooked.value) return
 
   if (needRetrainFee.value) {
     uni.showModal({
@@ -225,10 +247,13 @@ onLoad(async (options: any) => {
     loading.value = false;
   }
 
-  // 加载用户课程信息（attend_count + retrain_price）
+  // 加载用户课程信息（attend_count + retrain_price）并检查是否已预约
   if (courseInfo.value.courseId) {
     uni.showLoading({ title: '加载中...' });
-    await loadUserCourseInfo(courseInfo.value.courseId);
+    await Promise.all([
+      loadUserCourseInfo(courseInfo.value.courseId),
+      checkAlreadyBooked(courseInfo.value.classRecordId),
+    ]);
     uni.hideLoading();
   }
 

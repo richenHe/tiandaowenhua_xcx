@@ -316,13 +316,6 @@
             <t-input v-model="contractForm.contract_name" placeholder="请输入协议名称，如：初探班学习服务协议"/>
           </div>
           <div style="margin-bottom:16px;">
-            <div style="font-weight:600;margin-bottom:4px;">合同期限</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <t-input-number v-model="contractForm.validity_years" :min="1" :max="99" style="width:120px;"/>
-              <span style="font-size:13px;color:#666;">年</span>
-            </div>
-          </div>
-          <div style="margin-bottom:16px;">
             <div style="font-weight:600;margin-bottom:8px;">电子合同文件（PDF / Word）</div>
             <div style="font-size:12px;color:#999;margin-bottom:8px;">上传 PDF 或 Word 格式文件，用户签约时会在此文件上附加手写签名。</div>
             <input type="file" ref="contractFileInput" accept=".pdf,.doc,.docx" style="display:none;" @change="handleContractFileChange"/>
@@ -727,6 +720,8 @@
           contractCourseRow.value = row;
           contractDialogVisible.value = true;
           contractLoading.value = true;
+          // 合同期限由课程有效期换算：validity_days / 365，四舍五入，最小 1 年
+          const courseValidityYears = Math.max(1, Math.round((row.validity_days || 365) / 365));
           try {
             const res = await AdminAPI.getContractTemplateByCourse(row.id);
             if (res.template) {
@@ -737,7 +732,8 @@
                 contract_file_name: res.template.contract_file_id
                   ? res.template.contract_file_id.split('/').pop()
                   : null,
-                validity_years: res.template.validity_years || 1,
+                // 始终以课程有效期为准，忽略模板中存储的旧值
+                validity_years: courseValidityYears,
                 template_id: res.template.id,
                 isNew: false
               };
@@ -747,7 +743,7 @@
                 contract_file_id: null,
                 contract_file_url: null,
                 contract_file_name: null,
-                validity_years: 1,
+                validity_years: courseValidityYears,
                 template_id: null,
                 isNew: true
               };

@@ -65,15 +65,32 @@ module.exports = async (event, context) => {
         userCourseId = newUc.id;
       }
     } else {
-      // 非沙龙课程：验证用户是否已购买
+      // 非沙龙课程：验证用户是否已购买且已签合同且未过期（status=1 + contract_signed=1）
       const { data: userCourses, error: courseError } = await db
         .from('user_courses')
         .select('*')
         .eq('user_id', user.id)
         .eq('course_id', classRecord.course_id)
+        .eq('status', 1)
+        .eq('contract_signed', 1)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
       if (courseError || !userCourses) {
-        return response.forbidden('您还未购买该课程');
+        // 检查是否有未签合同的记录（待签合同状态）
+        const { data: unsignedUc } = await db
+          .from('user_courses')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('course_id', classRecord.course_id)
+          .eq('status', 1)
+          .eq('contract_signed', 0)
+          .limit(1)
+          .single();
+        if (unsignedUc) {
+          return response.forbidden('请先签署学习合同后再预约');
+        }
+        return response.forbidden('您还未购买该课程或课程已过期');
       }
       userCourseId = userCourses.id;
 

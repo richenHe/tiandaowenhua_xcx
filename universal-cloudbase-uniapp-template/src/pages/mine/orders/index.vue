@@ -5,6 +5,7 @@
     <scroll-view
       class="scroll-content"
       scroll-y
+      lower-threshold="100"
       @scroll="handleScroll"
       @scrolltolower="loadMore"
     >
@@ -88,14 +89,20 @@ import { cloudFileIDToURL } from '@/api/modules/storage'
 
 // 页面头部高度
 const pageHeaderHeight = ref(64)
+// scroll-view 可见区域高度（用于触底检测）
+const scrollViewHeight = ref(0)
 
 // StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 
-// 处理滚动事件
+// 处理滚动事件 + 触底检测加载更多
 const handleScroll = (e: any) => {
   if (stickyTabsRef.value) {
     stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
+  }
+  const { scrollTop, scrollHeight } = e.detail
+  if (scrollViewHeight.value > 0 && scrollHeight - scrollTop - scrollViewHeight.value < 100) {
+    loadMore()
   }
 }
 
@@ -156,13 +163,13 @@ const mapOrderItem = (item: any) => {
 
 // 加载订单列表（reset=true 时重置分页从头加载）
 const loadOrders = async (reset = false) => {
-  if (loading.value || finished.value) return
-
   if (reset) {
     currentPage.value = 1
     orders.value = []
     finished.value = false
   }
+
+  if (loading.value || finished.value) return
 
   try {
     if (currentPage.value === 1) {
@@ -176,11 +183,17 @@ const loadOrders = async (reset = false) => {
     }
 
     const result = await UserApi.getMyOrders(params)
-    orders.value.push(...result.list.map(mapOrderItem))
+    const newItems = result.list.map(mapOrderItem)
+    orders.value.push(...newItems)
     total.value = result.total || 0
     currentPage.value++
 
-    if (orders.value.length >= total.value || orders.value.length >= MAX_ITEMS) {
+    if (
+      newItems.length === 0 ||
+      newItems.length < pageSize.value ||
+      orders.value.length >= total.value ||
+      orders.value.length >= MAX_ITEMS
+    ) {
       finished.value = true
       if (orders.value.length > MAX_ITEMS) {
         orders.value = orders.value.slice(0, MAX_ITEMS)
@@ -252,11 +265,11 @@ const goToOrderDetail = (orderNo: string, orderStatus: string) => {
 }
 
 onMounted(() => {
-  // 计算页面头部高度
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
   const navbarHeight = 44
   pageHeaderHeight.value = statusBarHeight + navbarHeight
+  scrollViewHeight.value = systemInfo.windowHeight - pageHeaderHeight.value
 
   loadOrders()
 })
@@ -275,13 +288,16 @@ const goBack = () => {
 @import '@/styles/tdesign-vars.scss';
 
 .page-container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: $td-bg-color-page;
+  display: flex;
+  flex-direction: column;
 }
 
 // 滚动内容
 .scroll-content {
-  height: calc(100vh - var(--td-page-header-height));
+  flex: 1;
+  overflow: hidden;
 }
 
 .page-content {

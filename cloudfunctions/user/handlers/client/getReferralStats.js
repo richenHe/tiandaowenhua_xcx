@@ -37,12 +37,12 @@ module.exports = async (event, context) => {
       throw userError;
     }
 
-    // 3. 统计活动次数（从 ambassador_activity_records 表）
+    // 3. 统计活动次数（从 ambassador_activity_records 表，与活动记录页保持一致）
     const { count: activity_count, error: activityError } = await db
       .from('ambassador_activity_records')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .eq('status', 2); // 只统计已审核通过的活动
+      .eq('status', 1); // status=1 有效记录，与活动记录页统计口径一致
 
     if (activityError && activityError.code !== 'PGRST116') {
       throw activityError;

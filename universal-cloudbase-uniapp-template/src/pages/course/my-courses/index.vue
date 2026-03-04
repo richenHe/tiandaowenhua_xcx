@@ -5,6 +5,7 @@
     <scroll-view
       scroll-y
       class="scroll-area"
+      lower-threshold="100"
       @scrolltolower="loadMore"
     >
       <view class="page-content">
@@ -40,7 +41,13 @@
                   <view
                     v-if="course.expireLabel"
                     class="expire-tag"
-                    :class="course.expireExpired ? 'expire-tag--danger' : course.expireUrgent ? 'expire-tag--warning' : 'expire-tag--success'"
+                    :class="course.expireExpired
+                      ? 'expire-tag--danger'
+                      : course.expireLabel === '待签合同'
+                        ? 'expire-tag--info'
+                        : course.expireUrgent
+                          ? 'expire-tag--warning'
+                          : 'expire-tag--success'"
                   >
                     {{ course.expireLabel }}
                   </view>
@@ -60,11 +67,15 @@
               </view>
               <view class="action-button">
                 <button
-                  class="t-button t-button--theme-primary t-button--variant-base t-button--size-small"
+                  class="t-button t-button--size-small"
+                  :class="course.isExpired
+                    ? 't-button--theme-default t-button--variant-outline'
+                    : 't-button--theme-primary t-button--variant-base'"
                   style="width: 100%"
-                  @click="goToCourseSchedule(course.id)"
+                  :disabled="course.isExpired"
+                  @click="!course.isExpired && goToCourseSchedule(course.id)"
                 >
-                  <span class="t-button__text">预约上课</span>
+                  <span class="t-button__text">{{ course.isExpired ? '已过期' : '预约上课' }}</span>
                 </button>
               </view>
             </view>
@@ -116,15 +127,32 @@ const courseStyles: Record<number, { icon: string; gradient: string }> = {
 };
 
 /**
- * 根据 expire_at 计算有效期剩余文案
- * @returns { label: 展示文案, urgent: <=30天, expired: 已过期 }
+ * 计算有效期剩余文案
+ * - status=3（已过期）→ 「已过期」
+ * - contract_signed=0（未签合同）→ 「待签合同」（沙龙课不显示）
+ * - contract_signed=1 + status=1 → 根据 expire_at 算剩余天数
  */
-const calcExpireInfo = (expireAt: string | null) => {
-  if (!expireAt) return { label: '永久有效', urgent: false, expired: false };
+const calcExpireInfo = (item: any) => {
+  const isSalon = item.course_type === 4 || item.type === 4;
 
-  // 基于纯日期比较，避免时间分量导致 Math.ceil 多算一天
-  const parts = expireAt.split(' ')[0].split('-').map(Number);
-  if (parts.length < 3 || isNaN(parts[0])) return { label: '永久有效', urgent: false, expired: false };
+  // 沙龙课：不显示有效期标签
+  if (isSalon) return { label: '', urgent: false, expired: false };
+
+  // 已过期（定时任务标记 status=3）
+  if (item.status === 3) {
+    return { label: '已过期', urgent: true, expired: true };
+  }
+
+  // 未签合同（待激活状态）
+  if (item.contract_signed === 0) {
+    return { label: '待签合同', urgent: false, expired: false };
+  }
+
+  // 已签合同且有效（status=1 + contract_signed=1）→ 计算剩余天数
+  if (!item.expire_at) return { label: '', urgent: false, expired: false };
+
+  const parts = item.expire_at.split(' ')[0].split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0])) return { label: '', urgent: false, expired: false };
 
   const expireMs = Date.UTC(parts[0], parts[1] - 1, parts[2]);
   const now = new Date();
@@ -132,12 +160,10 @@ const calcExpireInfo = (expireAt: string | null) => {
   const diffDays = Math.round((expireMs - todayMs) / (1000 * 60 * 60 * 24));
 
   if (diffDays <= 0) return { label: '已过期', urgent: true, expired: true };
-
   if (diffDays > 365) {
     const years = Math.floor(diffDays / 365);
     const remainDays = diffDays % 365;
-    const label = remainDays > 0 ? `${years}年${remainDays}天` : `${years}年`;
-    return { label, urgent: false, expired: false };
+    return { label: remainDays > 0 ? `${years}年${remainDays}天` : `${years}年`, urgent: false, expired: false };
   }
   if (diffDays > 30) return { label: `${diffDays}天`, urgent: false, expired: false };
   return { label: `${diffDays}天`, urgent: true, expired: false };
@@ -145,7 +171,7 @@ const calcExpireInfo = (expireAt: string | null) => {
 
 const mapCourseItem = (item: any) => {
   const style = courseStyles[item.type] || courseStyles[1];
-  const expireInfo = calcExpireInfo(item.expire_at);
+  const expireInfo = calcExpireInfo(item);
   return {
     id: item.course_id,
     name: item.title,
@@ -154,23 +180,24 @@ const mapCourseItem = (item: any) => {
     gradient: style.gradient,
     purchaseDate: (item.purchase_date || item.buy_time || '').split(' ')[0],
     attendedCount: item.attend_count || 0,
-    canRetrain: item.attend_count >= 1,
+    canRetrain: item.attend_count >= 1 && item.status !== 3,
     expireLabel: expireInfo.label,
     expireUrgent: expireInfo.urgent,
     expireExpired: expireInfo.expired,
-    status: item.attend_count >= 1 ? 'completed' : 'ongoing'
+    isExpired: item.status === 3,
+    status: item.status
   };
 };
 
 // 加载我的课程（reset=true 时重置分页从头加载）
 const loadMyCourses = async (reset = false) => {
-  if (loading.value || finished.value) return;
-
   if (reset) {
     currentPage.value = 1;
     courses.value = [];
     finished.value = false;
   }
+
+  if (loading.value || finished.value) return;
 
   try {
     if (currentPage.value === 1) {
@@ -183,11 +210,17 @@ const loadMyCourses = async (reset = false) => {
       page_size: pageSize.value
     });
 
-    courses.value.push(...result.list.map(mapCourseItem));
+    const newItems = result.list.map(mapCourseItem);
+    courses.value.push(...newItems);
     total.value = result.total || 0;
     currentPage.value++;
 
-    if (courses.value.length >= total.value || courses.value.length >= MAX_ITEMS) {
+    if (
+      newItems.length === 0 ||
+      newItems.length < pageSize.value ||
+      courses.value.length >= total.value ||
+      courses.value.length >= MAX_ITEMS
+    ) {
       finished.value = true;
       if (courses.value.length > MAX_ITEMS) {
         courses.value = courses.value.slice(0, MAX_ITEMS);
@@ -244,13 +277,15 @@ const goToCourseSchedule = (courseId: string) => {
 @import '@/styles/tdesign-vars.scss';
 
 .page-container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: $td-bg-color-page;
-  padding-bottom: var(--td-tab-bar-height);
+  display: flex;
+  flex-direction: column;
 }
 
 .scroll-area {
-  height: calc(100vh - var(--td-page-header-height) - var(--td-tab-bar-height));
+  flex: 1;
+  overflow: hidden;
 }
 
 .page-content {
@@ -342,6 +377,11 @@ const goToCourseSchedule = (courseId: string) => {
   &--danger {
     color: #d54941;
     background-color: #fdecee;
+  }
+
+  &--info {
+    color: $td-brand-color;
+    background-color: #e8f0fd;
   }
 }
 

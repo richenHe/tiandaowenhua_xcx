@@ -21,7 +21,7 @@
         <view class="user-info">
           <view class="user-name">
             <text>{{ userInfo.name }}</text>
-            <text class="growth-level">{{ growthLevelDisplay }}</text>
+            <text class="growth-badge" @tap.stop="openGrowthPopup">{{ growthLevelDisplay || '🌱' }}</text>
           </view>
           <!-- 积分显示 -->
           <view class="user-points">
@@ -43,6 +43,50 @@
       >
         <text class="stat-count" :style="{ color: stat.color }">{{ stat.count > 99 ? '99+' : stat.count }}</text>
         <text class="stat-label">{{ stat.label }}</text>
+      </view>
+    </view>
+
+    <!-- 成长等级说明浮窗 -->
+    <view v-if="showGrowthPopup" class="growth-popup-mask" @tap="closeGrowthPopup">
+      <view class="growth-popup" @tap.stop>
+        <view class="growth-popup__header">
+          <text class="growth-popup__title">🌱 成长等级说明</text>
+          <text class="growth-popup__close" @tap="closeGrowthPopup">✕</text>
+        </view>
+        <view class="growth-popup__intro">
+          <text class="growth-popup__intro-text">成长等级与参加活动的次数相关，每参加一次有效活动，积累一个🌱，图标会随着参与次数自动升级。</text>
+        </view>
+        <view class="growth-popup__levels">
+          <view class="growth-level-row">
+            <text class="growth-level-icon">🌱🌱🌱🌱</text>
+            <text class="growth-level-arrow">＝</text>
+            <text class="growth-level-icon">🌿</text>
+            <text class="growth-level-desc">4次活动升一阶</text>
+          </view>
+          <view class="growth-level-row">
+            <text class="growth-level-icon">🌿🌿🌿🌿</text>
+            <text class="growth-level-arrow">＝</text>
+            <text class="growth-level-icon">🍀</text>
+            <text class="growth-level-desc">累计16次</text>
+          </view>
+          <view class="growth-level-row">
+            <text class="growth-level-icon">🍀🍀🍀🍀</text>
+            <text class="growth-level-arrow">＝</text>
+            <text class="growth-level-icon">🌳</text>
+            <text class="growth-level-desc">累计64次</text>
+          </view>
+          <view class="growth-level-row">
+            <text class="growth-level-icon">🌳🌳🌳🌳</text>
+            <text class="growth-level-arrow">＝</text>
+            <text class="growth-level-icon">🌟</text>
+            <text class="growth-level-desc">累计256次</text>
+          </view>
+        </view>
+        <view class="growth-popup__example">
+          <text class="growth-popup__example-title">示例</text>
+          <text class="growth-popup__example-text">参加6次活动 → 🌿🌱🌱</text>
+          <text class="growth-popup__example-text">参加17次活动 → 🍀🌱</text>
+        </view>
       </view>
     </view>
 
@@ -103,17 +147,35 @@ import { onShow } from '@dcloudio/uni-app';
 import { UserApi, SystemApi, CourseApi, AmbassadorApi } from '@/api';
 import { formatPoints } from '@/utils';
 
-// 获取成长等级显示（根据活动次数）
-// 规则：5绿叶=1花朵，5花朵=1果实，5果实=1大树
+// 获取成长等级显示（四进制图标计数器）
+// 规则：4🌱=1🌿，4🌿=1🍀，4🍀=1🌳，4🌳=1🌟
+// 示例：1次=🌱，2次=🌱🌱，4次=🌿，6次=🌿🌱🌱，17次=🍀🌱
 const getGrowthLevelDisplay = (activityCount: number): string => {
-  if (activityCount < 5) return '🍃'; // 等级一：绿叶（新生、起点，初级成员）
-  if (activityCount < 25) return '🌸'; // 等级二：花朵（绽放、活跃，进阶贡献）5*5=25
-  if (activityCount < 125) return '🍎'; // 等级三：果实（沉淀、价值，核心成员）5*25=125
-  return '🌳'; // 等级四：大树（成熟、庇荫，领袖或资深专家）125+
+  if (activityCount <= 0) return '';
+  let n = activityCount;
+  let result = '';
+  const levels = [
+    { icon: '🌟', value: 256 },
+    { icon: '🌳', value: 64 },
+    { icon: '🍀', value: 16 },
+    { icon: '🌿', value: 4 },
+    { icon: '🌱', value: 1 }
+  ];
+  for (const { icon, value } of levels) {
+    const count = Math.floor(n / value);
+    if (count > 0) result += icon.repeat(count);
+    n = n % value;
+  }
+  return result;
 };
 
-// 成长等级显示
-const growthLevelDisplay = ref('🍃');
+// 成长等级显示（默认幼苗，加载后根据活动次数更新）
+const growthLevelDisplay = ref('🌱');
+
+// 成长等级说明浮窗
+const showGrowthPopup = ref(false);
+const openGrowthPopup = () => { showGrowthPopup.value = true; };
+const closeGrowthPopup = () => { showGrowthPopup.value = false; };
 
 // 推荐统计信息
 const referralStats = ref({
@@ -236,6 +298,18 @@ const loadStats = async () => {
     console.error('加载统计数据失败:', error);
     uni.hideLoading()
   }
+};
+
+// 获取成长标志图标（与引荐人列表页保持一致）
+const getLevelIcon = (level: number): string => {
+  const iconMap: Record<number, string> = {
+    0: '🌱',
+    1: '🌿',
+    2: '🍀',
+    3: '🌳',
+    4: '🌟'
+  };
+  return iconMap[level] ?? '🌱';
 };
 
 // 获取等级徽章（与大使等级页保持一致）
@@ -431,8 +505,114 @@ const handleMenuClick = (type: string) => {
   gap: 12rpx;
 }
 
-.level-badge {
+.growth-badge {
   font-size: 32rpx;
+  cursor: pointer;
+}
+
+// 成长等级说明浮窗
+.growth-popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.growth-popup {
+  width: 600rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+.growth-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 32rpx 24rpx;
+  border-bottom: 1rpx solid $td-border-level-1;
+}
+
+.growth-popup__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $td-text-color-primary;
+}
+
+.growth-popup__close {
+  font-size: 28rpx;
+  color: $td-text-color-placeholder;
+  padding: 8rpx;
+}
+
+.growth-popup__intro {
+  padding: 24rpx 32rpx;
+  background: $td-info-color-light;
+}
+
+.growth-popup__intro-text {
+  font-size: 26rpx;
+  color: $td-text-color-secondary;
+  line-height: 1.6;
+}
+
+.growth-popup__levels {
+  padding: 16rpx 32rpx;
+}
+
+.growth-level-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid $td-border-level-0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.growth-level-icon {
+  font-size: 30rpx;
+  min-width: 136rpx;
+}
+
+.growth-level-arrow {
+  font-size: 28rpx;
+  color: $td-text-color-placeholder;
+  min-width: 40rpx;
+  text-align: center;
+}
+
+.growth-level-desc {
+  font-size: 24rpx;
+  color: $td-text-color-secondary;
+  flex: 1;
+}
+
+.growth-popup__example {
+  padding: 20rpx 32rpx 28rpx;
+  background: $td-bg-color-page;
+}
+
+.growth-popup__example-title {
+  font-size: 24rpx;
+  color: $td-text-color-placeholder;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.growth-popup__example-text {
+  font-size: 26rpx;
+  color: $td-text-color-secondary;
+  display: block;
+  line-height: 1.8;
 }
 
 .user-points {

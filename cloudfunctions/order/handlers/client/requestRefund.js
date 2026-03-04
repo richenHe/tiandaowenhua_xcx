@@ -57,35 +57,19 @@ module.exports = async (event, context) => {
       return response.error('大使升级订单不支持退款。如有疑问请联系客服。');
     }
 
-    // 课程订单需检查合同签署状态：主课程 + 赠送课程任一签了合同均拒绝退款
-    if (order.order_type === 1 && order.related_id) {
-      const userCourses = await query('user_courses', {
-        where: { user_id: user.id, course_id: order.related_id, status: 1 },
-        limit: 1
-      });
+    // 课程订单需检查合同签署状态：通过 source_order_id 精确关联，任一签了合同均拒绝退款
+    // 使用 source_order_id 避免旧过期记录（已签合同但过期）干扰新订单退款判断
+    if (order.order_type === 1) {
+      const { data: signedCourses } = await db
+        .from('user_courses')
+        .select('id')
+        .eq('source_order_id', order.id)
+        .eq('contract_signed', 1)
+        .in('status', [1, 3])
+        .limit(1);
 
-      if (userCourses.length > 0 && userCourses[0].contract_signed === 1) {
+      if (signedCourses && signedCourses.length > 0) {
         return response.error('该课程已签署学习合同，无法退款。如有疑问请联系客服。');
-      }
-
-      // 检查赠送课程的合同签署状态
-      const course = await findOne('courses', { id: order.related_id });
-      if (course) {
-        let giftIds = course.included_course_ids;
-        if (typeof giftIds === 'string') {
-          try { giftIds = JSON.parse(giftIds); } catch (e) { giftIds = []; }
-        }
-        if (giftIds && giftIds.length > 0) {
-          for (const giftCourseId of giftIds) {
-            const giftUc = await query('user_courses', {
-              where: { user_id: user.id, course_id: giftCourseId, status: 1 },
-              limit: 1
-            });
-            if (giftUc.length > 0 && giftUc[0].contract_signed === 1) {
-              return response.error('赠送课程已签署学习合同，无法退款。如有疑问请联系客服。');
-            }
-          }
-        }
       }
     }
 

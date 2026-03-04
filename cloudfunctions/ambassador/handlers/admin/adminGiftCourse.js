@@ -9,7 +9,7 @@
  *   4. 写入 quota_usage_records 日志
  */
 const { db, insert, update } = require('../../common/db');
-const { response, formatDateTime } = require('../../common');
+const { response, formatDateTime, parseBeijingDateStr } = require('../../common');
 
 module.exports = async (event, context) => {
   const { ambassadorUserId, recipientUserId, courseId } = event;
@@ -96,29 +96,25 @@ module.exports = async (event, context) => {
       remaining: targetQuota.remaining_quantity - 1
     });
 
-    // 计算有效期
     const now = new Date();
     const nowStr = formatDateTime(now);
-    let expireAt = null;
-    if (course.validity_days != null) {
-      const expireDate = new Date(now.getTime() + course.validity_days * 86400000);
-      expireAt = formatDateTime(expireDate);
-    }
+    const validityDays = course.validity_days || 365;
 
-    // 查询接收人是否已有该课程
-    const { data: existingCourses } = await db
+    // 统一叠加逻辑：查 status=1 的最新记录
+    const { data: existingList } = await db
       .from('user_courses')
-      .select('id, expire_at, status')
+      .select('id, contract_signed, pending_days, expire_at, status')
       .eq('user_id', recipient.id)
       .eq('course_id', course.id)
+      .eq('status', 1)
+      .order('created_at', { ascending: false })
       .limit(1);
 
-    const existing = existingCourses?.[0] || null;
     let userCourseId;
     let actionDesc;
 
-    if (!existing) {
-      // 新建 user_courses 记录
+    if (!existingList || existingList.length === 0) {
+      // 无 status=1 记录 → 新建赠课记录（旧退款记录保留作历史）
       const [newRecord] = await insert('user_courses', {
         user_id: recipient.id,
         _openid: '',
@@ -128,7 +124,8 @@ module.exports = async (event, context) => {
         order_no: null,
         buy_price: 0,
         buy_time: nowStr,
-        expire_at: expireAt,
+        expire_at: null,
+        pending_days: validityDays,
         is_gift: 1,
         gift_source: `大使赠送:${ambassador.real_name || ambassador.id}`,
         attend_count: 0,
@@ -138,32 +135,32 @@ module.exports = async (event, context) => {
       });
       userCourseId = newRecord.id;
       actionDesc = '新开通';
-      console.log('[adminGiftCourse] 新建课程记录:', userCourseId);
+      console.log('[adminGiftCourse] 新建课程记录:', userCourseId, '待签合同天数:', validityDays);
     } else {
-      // 已有课程 → 延长有效期
+      const existing = existingList[0];
       userCourseId = existing.id;
-      let newExpireAt = null;
 
-      if (course.validity_days != null) {
-        // 判断现有有效期是否已过期
-        const currentExpire = existing.expire_at ? new Date(existing.expire_at) : null;
-        const baseTime = (currentExpire && currentExpire > now) ? currentExpire : now;
-        const extended = new Date(baseTime.getTime() + course.validity_days * 86400000);
-        newExpireAt = formatDateTime(extended);
+      if (existing.contract_signed === 0) {
+        // B. 未签合同 → pending_days 累加
+        const newPendingDays = (existing.pending_days || 0) + validityDays;
+        await update('user_courses', { pending_days: newPendingDays, updated_at: nowStr }, { id: existing.id });
+        actionDesc = '叠加待签天数';
+        console.log('[adminGiftCourse] 叠加 pending_days:', newPendingDays);
+      } else {
+        // C. 已签合同且未过期 → 双向延长有效期
+        const currentExpire = parseBeijingDateStr(existing.expire_at);
+        const newExpireDate = new Date(currentExpire.getTime() + validityDays * 86400000);
+        const newExpireAt = formatDateTime(newExpireDate);
+        const newContractEnd = newExpireAt.split(' ')[0];
+
+        await update('user_courses', { expire_at: newExpireAt, updated_at: nowStr }, { id: existing.id });
+        await db.from('contract_signatures').update({
+          contract_end: newContractEnd,
+          updated_at: nowStr
+        }).eq('user_id', recipient.id).eq('course_id', course.id).eq('status', 1);
+        actionDesc = '延长有效期';
+        console.log('[adminGiftCourse] 双向延长有效期:', newExpireAt);
       }
-
-      const updateData = {
-        expire_at: newExpireAt,
-        updated_at: nowStr
-      };
-      // 如果课程已过期/失效，恢复为有效
-      if (existing.status !== 1) {
-        updateData.status = 1;
-      }
-
-      await update('user_courses', updateData, { id: existing.id });
-      actionDesc = existing.status !== 1 ? '重新激活并延期' : '延长有效期';
-      console.log('[adminGiftCourse] 课程已延期:', { id: existing.id, new_expire_at: newExpireAt });
     }
 
     // 写入 quota_usage_records 日志

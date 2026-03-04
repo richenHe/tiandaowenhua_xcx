@@ -10,9 +10,10 @@ module.exports = async (event, context) => {
   try {
     console.log('[getProfile] 获取个人资料:', user.id);
 
-    // 如果有推荐人，查询推荐人详细信息
+    // 如果有推荐人，查询推荐人详细信息及活动次数
     let refereeName = null;
     let refereeLevel = 0;
+    let refereeActivityCount = 0;
     if (user.referee_id) {
       const { data: refereeData, error } = await db
         .from('users')
@@ -23,7 +24,16 @@ module.exports = async (event, context) => {
       if (!error && refereeData && refereeData.length > 0) {
         refereeName = refereeData[0].real_name || refereeData[0].nickname || null;
         refereeLevel = refereeData[0].ambassador_level || 0;
-        console.log('[getProfile] 推荐人信息:', { name: refereeName, level: refereeLevel });
+
+        // 查询推荐人的活动次数（status=1 有效记录，与活动记录页统计口径一致）
+        const { count: actCount } = await db
+          .from('ambassador_activity_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.referee_id)
+          .eq('status', 1);
+        refereeActivityCount = actCount || 0;
+
+        console.log('[getProfile] 推荐人信息:', { name: refereeName, level: refereeLevel, activityCount: refereeActivityCount });
       }
     }
 
@@ -33,6 +43,7 @@ module.exports = async (event, context) => {
       // 添加推荐人信息
       referee_name: refereeName,
       referee_level: refereeLevel,
+      referee_activity_count: refereeActivityCount,
       // 返回数字，与数据库规范一致（0=女/1=男）；兼容历史数据 gender=2（旧版误存的女性）
       gender: user.gender === 1 ? 1 : (user.gender === 0 || user.gender === 2) ? 0 : null,
       // 解析出生八字 JSON

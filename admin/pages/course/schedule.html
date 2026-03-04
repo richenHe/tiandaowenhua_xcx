@@ -250,7 +250,18 @@
         const rules = {
           courseId: [{ required: true, message: '请选择课程', type: 'error' }],
           teacher: [{ required: true, message: '请输入主讲老师', type: 'error' }],
-          classDate: [{ required: true, message: '请选择上课日期', type: 'error' }],
+          classDate: [
+            { required: true, message: '请选择上课日期', type: 'error' },
+            {
+              validator: (val) => {
+                if (!val) return true;
+                // 取今天日期（本地时区，YYYY-MM-DD 格式），与排期日期做字符串比较
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                return val >= todayStr ? true : { result: false, message: '上课日期不能早于今天', type: 'error' };
+              }
+            }
+          ],
           classEndDate: [{ required: true, message: '请选择结课日期', type: 'error' }],
           classTime: [{ required: true, message: '请输入上课时段', type: 'error' }],
           classLocation: [{ required: true, message: '请输入上课地点', type: 'error' }],

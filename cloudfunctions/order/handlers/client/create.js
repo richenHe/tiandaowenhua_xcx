@@ -8,7 +8,7 @@
  * - order_type=4: 需支付的大使升级
  */
 const { findOne, insert, query, db } = require('../../common/db');
-const { response, formatDateTime } = require('../../common');
+const { response, formatDateTime, utils } = require('../../common');
 const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
@@ -210,13 +210,11 @@ async function handleRetrainOrder(user, user_course_id, class_record_id) {
     throw new Error('上课记录不存在');
   }
 
-  // 3. 检查复训截止时间（开课前3天）
-  const classDate = new Date(classRecord.class_date);
-  const now = new Date();
-  const daysUntilClass = Math.ceil((classDate - now) / (1000 * 60 * 60 * 24));
-
-  if (daysUntilClass < 3) {
-    throw new Error('开课前3天内无法预约复训');
+  // 3. 检查排期状态：只有"未开始(1)"才允许预约复训
+  // status: 0=已取消 / 1=未开始 / 2=进行中 / 3=已结束
+  if (classRecord.status !== 1) {
+    const statusMsg = { 0: '已取消', 2: '进行中', 3: '已结束' };
+    throw new Error(`该排期${statusMsg[classRecord.status] || '状态异常'}，无法预约复训`);
   }
 
   // 4. 检查是否已预约

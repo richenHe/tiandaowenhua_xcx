@@ -128,7 +128,26 @@ export interface RefereeInfo {
   phone: string
   referee_code: string
   ambassador_level: number
+  /** 活动参与次数（用于计算成长等级） */
+  activity_count: number
   avatar: string
+  created_at: string
+}
+
+/**
+ * 我推荐的人列表项
+ */
+export interface RefereeListItem {
+  id: number
+  real_name: string
+  phone: string
+  avatar: string
+  ambassador_level: number
+  /** 活动参与次数（用于计算成长等级） */
+  activity_count: number
+  created_at: string
+  /** 是否已购课 */
+  has_purchased: boolean
 }
 
 /**

@@ -4,7 +4,7 @@
  */
 const cloud = require('wx-server-sdk');
 const { db } = require('../../common/db');
-const { response } = require('../../common');
+const { response, parseBeijingDateStr } = require('../../common');
 const crypto = require('crypto');
 const axios = require('axios');
 
@@ -69,7 +69,7 @@ module.exports = async (event, context) => {
 
     // 4. 验证订单是否过期
     const now = new Date();
-    const expiresAt = new Date(order.expire_at);
+    const expiresAt = parseBeijingDateStr(order.expire_at);
     if (now > expiresAt) {
       await db
         .from('orders')

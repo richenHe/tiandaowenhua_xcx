@@ -19,17 +19,9 @@
             </view>
           </view>
           <view class="t-card__body">
-            <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
+            <view :style="{ display: 'flex', justifyContent: 'space-between', fontSize: '26rpx' }">
               <text :style="{ color: '#999' }">协议编号：</text>
               <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.id }}</text>
-            </view>
-            <view :style="{ display: 'flex', justifyContent: 'space-between', marginBottom: '16rpx', fontSize: '26rpx' }">
-              <text :style="{ color: '#999' }">协议版本：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.version }}</text>
-            </view>
-            <view :style="{ display: 'flex', justifyContent: 'space-between', fontSize: '26rpx' }">
-              <text :style="{ color: '#999' }">大使等级：</text>
-              <text :style="{ color: '#333', fontWeight: '500' }">{{ contractDetail.signature.level }}</text>
             </view>
           </view>
         </view>

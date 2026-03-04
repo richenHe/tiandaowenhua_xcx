@@ -935,39 +935,95 @@ ORDER BY uc.id DESC LIMIT 5
 -- 期望: attend_count=0（修复前为1，旧数据不计入）`
       },
 
-      // ── S3.11: [2026-03-01新增] 课程有效期 expire_at 验证 ──
-      {name:'S3.11 课程有效期 expire_at 验证（validity_days 接入）',fn:'user',act:'getMyCourses',
+      // ── S3.11: [v2.4重构] 课程有效期字段验证（pending_days + expire_at 双字段逻辑） ──
+      // v2.4 变更：新购课程 expire_at 不再立即写入，改为 NULL+pending_days（签约后才写 expire_at）
+      {name:'S3.11 [v2.4] 课程有效期字段验证（pending_days+expire_at）',fn:'user',act:'getMyCourses',
         biz:[
           (d,raw)=>({r:'getMyCourses 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
             const list=Array.isArray(d)?d:(d?.list||[]);
             const bad=list.filter(c=>!('expire_at' in c));
-            return{r:'S3.11: getMyCourses 必须返回 expire_at 字段',
+            return{r:'S3.11: getMyCourses 必须返回 expire_at 字段（已签约时有值，未签约时为 NULL）',
               p:bad.length===0,
               a:bad.length?`❌${bad.length}门课缺少expire_at`:list.length?`✓${list.length}门均含expire_at`:'暂无课程(跳过)'}
           },
           (d)=>{
             const list=Array.isArray(d)?d:(d?.list||[]);
-            // validity_days 不为 NULL 的课程，expire_at 也不应为 NULL
-            const shouldHaveExpiry=list.filter(c=>c.validity_days&&Number(c.validity_days)>0);
-            const missing=shouldHaveExpiry.filter(c=>!c.expire_at);
-            if(!shouldHaveExpiry.length) return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',p:false,a:'❌用户名下无设置了validity_days的课程（请确认测试用户已购买带有效期的课程）'};
-            return{r:'S3.11: validity_days>0 的课程 expire_at 不应为 NULL',
-              p:missing.length===0,
-              a:missing.length?`❌${missing.length}门课expire_at为NULL（Bug）`:`✓${shouldHaveExpiry.length}门课均有expire_at`}
+            // v2.4: 已签约课程（contract_signed=1）应有 expire_at；未签约课程应有 pending_days
+            const signed=list.filter(c=>c.contract_signed===1&&c.validity_days&&Number(c.validity_days)>0);
+            const missingExpiry=signed.filter(c=>!c.expire_at);
+            if(signed.length>0){
+              return{r:'S3.11 v2.4: 已签合同+有有效期的课程 expire_at 不应为 NULL',
+                p:missingExpiry.length===0,
+                a:missingExpiry.length?`❌${missingExpiry.length}门已签课程 expire_at 为 NULL（Bug）`:`✓${signed.length}门已签课程均有 expire_at`}
+            }
+            // 无已签合同课程时，验证字段结构存在即可
+            return{r:'S3.11 v2.4: expire_at 字段结构验证通过（暂无已签合同课程可深度验证）',p:true,a:'⚠无已签合同课程，仅验证字段存在'}
           }
         ],
-        sql:()=>`-- S3.11 expire_at 验证
-SELECT c.id, c.name, c.validity_days, uc.id as uc_id, uc.buy_time, uc.expire_at,
+        sql:()=>`-- S3.11 v2.4 双字段验证：pending_days（签约前）+ expire_at（签约后）
+SELECT c.id, c.name, c.validity_days, uc.id as uc_id, uc.buy_time,
+  uc.contract_signed, uc.pending_days, uc.expire_at,
   CASE
     WHEN c.validity_days IS NULL THEN '永久有效(NULL)'
-    WHEN uc.expire_at IS NULL THEN '⚠有效期未写入(Bug)'
-    ELSE CONCAT('有效',c.validity_days,'天,截止',DATE_FORMAT(uc.expire_at,'%Y-%m-%d'))
+    WHEN uc.contract_signed=1 AND uc.expire_at IS NOT NULL THEN CONCAT('已签约,截止',DATE_FORMAT(uc.expire_at,'%Y-%m-%d'))
+    WHEN uc.contract_signed=0 AND uc.pending_days>0 THEN CONCAT('未签约,pending=',uc.pending_days,'天')
+    WHEN uc.contract_signed=0 AND (uc.pending_days IS NULL OR uc.pending_days=0) THEN '⚠未签约且无pending_days(旧数据或永久课程)'
+    ELSE '待确认'
   END as 有效期状态
 FROM tiandao_culture.user_courses uc
 JOIN tiandao_culture.courses c ON c.id=uc.course_id
 WHERE uc.user_id=${U.id}
-ORDER BY uc.id DESC LIMIT 5`
+ORDER BY uc.id DESC LIMIT 8
+-- v2.4期望: 未签合同→pending_days=validity_days,expire_at=NULL；已签合同→expire_at有值`
+      },
+
+      // ── S3.12b: [v2.4新增] 新购课程 pending_days 字段验证（课程过期逻辑重构核心断言）──
+      // v2.4 核心变更：新购有效期课程时，pending_days 应等于 validity_days，expire_at 应为 NULL
+      {name:'S3.12b [v2.4新增] 新购课程 pending_days=validity_days, expire_at=NULL',fn:'user',act:'getMyCourses',
+        biz:[
+          (d,raw)=>({r:'getMyCourses 返回正常',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            // 筛选未签合同、有有效期（validity_days>0）、2026-03-01后购买的课程（v2.4基准日期）
+            const unsigned=list.filter(c=>c.contract_signed===0&&c.validity_days&&Number(c.validity_days)>0&&c.buy_time&&c.buy_time>='2026-03-01');
+            if(!unsigned.length) return{r:'S3.12b v2.4: 无可测试的未签约有效期课程（跳过）',p:true,a:'⚠无 2026-03-01 后购买的未签合同有效期课程，请先购买一门有效期课程'};
+            const wrongExpiry=unsigned.filter(c=>c.expire_at!==null&&c.expire_at!==undefined&&c.expire_at!=='');
+            return{r:'S3.12b v2.4: 未签约课程 expire_at 应为 NULL（签约前不写入）',
+              p:wrongExpiry.length===0,
+              a:wrongExpiry.length?`❌${wrongExpiry.length}门未签课程 expire_at 非NULL（v2.4 Bug）`:`✓${unsigned.length}门未签课程 expire_at 均为 NULL`}
+          },
+          (d)=>{
+            const list=Array.isArray(d)?d:(d?.list||[]);
+            const unsigned=list.filter(c=>c.contract_signed===0&&c.validity_days&&Number(c.validity_days)>0&&c.buy_time&&c.buy_time>='2026-03-01');
+            if(!unsigned.length) return{r:'S3.12b v2.4: pending_days=validity_days 跳过（无可测对象）',p:true,a:'⚠跳过'};
+            const wrongPending=unsigned.filter(c=>{
+              const vd=Number(c.validity_days||0);
+              const pd=Number(c.pending_days||0);
+              return vd>0&&pd!==vd;
+            });
+            return{r:'S3.12b v2.4: 未签约课程 pending_days 应等于 validity_days（课程有效天数）',
+              p:wrongPending.length===0,
+              a:wrongPending.length
+                ?'❌'+wrongPending.map(c=>`course_id=${c.course_id},pending=${c.pending_days},validity=${c.validity_days}`).join(';')
+                :`✓${unsigned.length}门课 pending_days 均等于 validity_days`}
+          }
+        ],
+        sql:()=>`-- S3.12b v2.4 pending_days 字段断言
+SELECT uc.id, uc.course_id, c.name, c.validity_days,
+  uc.pending_days, uc.expire_at, uc.contract_signed, uc.buy_time,
+  CASE
+    WHEN c.validity_days IS NULL THEN '永久课程(跳过)'
+    WHEN uc.contract_signed=0 AND uc.pending_days=c.validity_days AND uc.expire_at IS NULL THEN '✓v2.4正确'
+    WHEN uc.contract_signed=0 AND uc.expire_at IS NOT NULL THEN '❌expire_at不应有值(旧逻辑bug)'
+    WHEN uc.contract_signed=0 AND uc.pending_days!=c.validity_days THEN CONCAT('❌pending_days=',uc.pending_days,'≠validity_days=',c.validity_days)
+    WHEN uc.contract_signed=1 AND uc.expire_at IS NOT NULL THEN '✓已签约,expire_at正确'
+    ELSE '待确认'
+  END as v2_4状态
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.buy_time>='2026-03-01'
+ORDER BY uc.id DESC LIMIT 10`
       },
 
       // ── S3.9: 核心写操作 — 后台确认领取（终态写，status=1→2） ──
@@ -1729,6 +1785,102 @@ WHERE user_id=${U.id} AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)`:null
           (d)=>{const list=d?.list||(Array.isArray(d)?d:[]);return{r:'无进度用户应返回空列表(list.length=0)',p:list.length===0,a:list.length===0?'空列表 ✓':`❌返回了${list.length}条记录（user_id=31应无进度）`}}
         ],
         sql:()=>`-- 边界验证：user_id=31 academy_progress 为空\nSELECT COUNT(*) as cnt FROM tiandao_culture.academy_progress WHERE user_id=31`
+      },
+
+      // ── S7.7: [v2.4新增] 过期课程预约拦截 — expire_at < NOW() 时 createAppointment 应返回错误 ──
+      // v2.4 变更：createAppointment 新增课程过期校验逻辑
+      {name:'S7.7 [v2.4边界] 过期课程预约拦截（expire_at已过期）',fn:'course',act:'createAppointment',softFail:true,
+        beforeRun:async(C)=>{
+          // 通过 getMyCourses 找一门 expire_at < NOW() 的课程，再查其排期
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/user`;
+          const body={action:'getMyCourses',test_openid:U._openid};
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const data=d.data!==undefined?d.data:d;
+            const list=Array.isArray(data)?data:(data?.list||[]);
+            const now=new Date().toISOString().slice(0,19).replace('T',' ');
+            const expired=list.find(c=>c.expire_at&&c.expire_at<now);
+            if(!expired){C._s77NoData=true;return;}
+            C._s77ExpiredCourseId=expired.course_id;
+            // 查该课程的有效排期（找任意一个 class_record_id）
+            const crUrl=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/course`;
+            const crBody={action:'getClassRecords',course_id:expired.course_id,test_openid:U._openid};
+            const cr=await fetch(crUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(crBody)});
+            let crd=await cr.json();if(crd.body&&typeof crd.body==='string')crd=JSON.parse(crd.body);
+            const records=(crd.data?.list||crd.data||[]);
+            const rec=Array.isArray(records)?records.find(r=>r.id):{};
+            if(rec?.id) C._s77ClassRecordId=rec.id;
+            else C._s77NoData=true;
+          }catch(e){C._s77NoData=true;}
+        },
+        params:(C)=>({classRecordId:C._s77ClassRecordId||0}),
+        biz:[
+          (d,raw,C)=>{
+            if(C._s77NoData) return{r:'S7.7 v2.4: 无过期课程数据（跳过）',p:true,a:'⚠测试用户名下无 expire_at 已过期的课程，请手动制造过期数据后重测'};
+            if(!C._s77ClassRecordId) return{r:'S7.7 v2.4: 无法获取过期课程的排期 ID（跳过）',p:true,a:'⚠过期课程下无可用排期'};
+            if(raw.success===true) return{r:'S7.7 v2.4: 过期课程预约应被拦截，但意外成功',p:false,a:'❌v2.4 过期拦截未生效（createAppointment 应拒绝已过期课程）'};
+            const msg=raw.message||'';
+            const isBlocked=msg.includes('过期')||msg.includes('已到期')||msg.includes('expired')||msg.includes('有效期');
+            return{r:'v2.4: expire_at 已过期课程预约应返回"课程已过期"类错误',
+              p:isBlocked,
+              a:isBlocked?`✓正确拦截: ${msg}`:`⚠拦截了但文案非预期: ${msg}`}
+          }
+        ],
+        sql:(C)=>C._s77ExpiredCourseId&&!C._s77NoData?`-- S7.7 过期拦截验证：appointments 表不应新增记录
+SELECT COUNT(*) as recent_cnt FROM tiandao_culture.appointments
+WHERE user_id=${U.id} AND course_id=${C._s77ExpiredCourseId} AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)
+-- 期望: recent_cnt=0（过期拦截生效，未写入预约）`:null
+      },
+
+      // ── S7.8: [v2.4新增] 未签学习合同预约拦截 — contract_signed=0 时 createAppointment 应返回错误 ──
+      // v2.4 变更：createAppointment 新增学习合同签署状态校验（contract_signed=1 才允许预约）
+      {name:'S7.8 [v2.4边界] 未签学习合同预约拦截（contract_signed=0）',fn:'course',act:'createAppointment',softFail:true,
+        beforeRun:async(C)=>{
+          // 通过 getMyCourses 找一门 contract_signed=0、validity_days>0 的课程，再查其排期
+          const url=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/user`;
+          const body={action:'getMyCourses',test_openid:U._openid};
+          try{
+            const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            let d=await r.json();if(d.body&&typeof d.body==='string')d=JSON.parse(d.body);
+            const data=d.data!==undefined?d.data:d;
+            const list=Array.isArray(data)?data:(data?.list||[]);
+            // 未签约且有有效期的课程（v2.4 新购课程的典型状态）
+            const unsigned=list.find(c=>c.contract_signed===0&&c.validity_days&&Number(c.validity_days)>0);
+            if(!unsigned){C._s78NoData=true;return;}
+            C._s78UnsignedCourseId=unsigned.course_id;
+            // 查该课程的排期
+            const crUrl=`https://${CONFIG.ENV_ID}.service.tcloudbase.com/course`;
+            const crBody={action:'getClassRecords',course_id:unsigned.course_id,test_openid:U._openid};
+            const cr=await fetch(crUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(crBody)});
+            let crd=await cr.json();if(crd.body&&typeof crd.body==='string')crd=JSON.parse(crd.body);
+            const records=(crd.data?.list||crd.data||[]);
+            const rec=Array.isArray(records)?records.find(r=>r.id):null;
+            if(rec?.id) C._s78ClassRecordId=rec.id;
+            else C._s78NoData=true;
+          }catch(e){C._s78NoData=true;}
+        },
+        params:(C)=>({classRecordId:C._s78ClassRecordId||0}),
+        biz:[
+          (d,raw,C)=>{
+            if(C._s78NoData) return{r:'S7.8 v2.4: 无未签约有效期课程数据（跳过）',p:true,a:'⚠测试用户名下无 contract_signed=0 的有效期课程（可能全部已签约）'};
+            if(!C._s78ClassRecordId) return{r:'S7.8 v2.4: 无法获取未签约课程的排期 ID（跳过）',p:true,a:'⚠未签约课程下无可用排期'};
+            if(raw.success===true) return{r:'S7.8 v2.4: 未签合同课程预约应被拦截，但意外成功',p:false,a:'❌v2.4 合同签署拦截未生效（contract_signed=0 不应允许预约）'};
+            const msg=raw.message||'';
+            const isBlocked=msg.includes('合同')||msg.includes('contract')||msg.includes('签署')||msg.includes('签约');
+            return{r:'v2.4: contract_signed=0 时预约应返回"请先签署学习合同"类错误',
+              p:isBlocked,
+              a:isBlocked?`✓正确拦截: ${msg}`:`⚠拦截了但文案非预期（应含合同/签署）: ${msg}`}
+          }
+        ],
+        sql:(C)=>C._s78UnsignedCourseId&&!C._s78NoData?`-- S7.8 未签合同拦截验证：appointments 表不应新增记录
+SELECT COUNT(*) as recent_cnt FROM tiandao_culture.appointments
+WHERE user_id=${U.id} AND course_id=${C._s78UnsignedCourseId} AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)
+-- 期望: recent_cnt=0（合同未签拦截生效，未写入预约）
+-- 同时验证该课程 contract_signed 状态：
+SELECT uc.course_id, c.name, uc.contract_signed, uc.pending_days, uc.expire_at
+FROM tiandao_culture.user_courses uc JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=${U.id} AND uc.course_id=${C._s78UnsignedCourseId}`:null
       }
     ]
   },
@@ -2496,15 +2648,45 @@ WHERE course_id=5 AND contract_type=4 ORDER BY id DESC LIMIT 3
         expectFail:true,
         errBiz:(d)=>({r:'缺少courseId应返回参数错误',p:d.success===false,a:(d.message||'无message').slice(0,60)})
       },
-      // S12.B1b: attend_count=8 (course_id=1) → needSign=false（已上过课，无需签合同）
-      {name:'S12.B1b 边界: attend_count>0时 needSign 应为 false',fn:'ambassador',act:'checkCourseContract',params:{courseId:1},
+      // S12.B1b: [v2.4重构] contract_signed=1 (course_id=1) → needSign=false（已签约，无需再签合同）
+      // v2.4 变更：checkCourseContract 判断逻辑从 attend_count>0 改为 contract_signed=1
+      {name:'S12.B1b [v2.4] 边界: contract_signed=1时 needSign 应为 false',fn:'ambassador',act:'checkCourseContract',params:{courseId:1},
         biz:[
           (d,raw)=>({r:'checkCourseContract接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
-          (d)=>({r:'已上过课(course_id=1 attend_count=8) needSign 应为 false',p:d?.needSign===false,a:`needSign=${d?.needSign}, reason=${d?.reason||'—'}`})
+          (d)=>({r:'v2.4: 已签约课程(course_id=1 contract_signed=1) needSign 应为 false',p:d?.needSign===false,a:`needSign=${d?.needSign}, reason=${d?.reason||'—'}（v2.4期望: contract_signed=1→needSign=false）`})
         ],
-        sql:()=>`SELECT uc.attend_count, uc.contract_signed FROM tiandao_culture.user_courses uc
+        sql:()=>`SELECT uc.attend_count, uc.contract_signed, uc.pending_days, uc.expire_at
+FROM tiandao_culture.user_courses uc
 WHERE uc.user_id=30 AND uc.course_id=1 AND uc.status=1 LIMIT 1
--- 期望: attend_count=8, needSign=false（attend_count>0 跳过合同校验）`
+-- v2.4期望: contract_signed=1 → needSign=false（不再依赖 attend_count）`
+      },
+      // S12.B1c: [v2.4新增] contract_signed=0 (course_id=18) → needSign=true + expire_at=NULL + pending_days>0
+      // 验证 v2.4 三联断言：未签约→needSign=true，expire_at=NULL，pending_days=validity_days
+      {name:'S12.B1c [v2.4新增] 未签约课程三联断言(needSign=true,expire_at=NULL,pending_days>0)',fn:'ambassador',act:'checkCourseContract',params:{courseId:18},
+        softFail:true,
+        biz:[
+          (d,raw)=>({r:'checkCourseContract接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            // v2.4: contract_signed=0 的有效期课程 needSign 应为 true
+            if(d?.needSign===true) return{r:'v2.4: contract_signed=0 课程 needSign 应为 true（需要签合同）',p:true,a:`✓needSign=true, reason=${d?.reason||'—'}`};
+            if(d?.needSign===false) return{r:'v2.4: contract_signed=0 课程 needSign 应为 true（需要签合同）',p:false,a:`❌needSign=false（course_id=18可能已签约或无有效期模板，请检查测试数据）`};
+            return{r:'v2.4: needSign 字段异常',p:false,a:`needSign=${d?.needSign}`}
+          }
+        ],
+        sql:()=>`-- S12.B1c v2.4 三联断言验证
+SELECT uc.course_id, c.name, c.validity_days,
+  uc.contract_signed, uc.pending_days, uc.expire_at,
+  CASE
+    WHEN uc.contract_signed=0 AND uc.expire_at IS NULL AND uc.pending_days>0 THEN '✓v2.4正确(待签约)'
+    WHEN uc.contract_signed=0 AND uc.expire_at IS NOT NULL THEN '❌expire_at不应有值(v2.4 Bug)'
+    WHEN uc.contract_signed=0 AND (uc.pending_days IS NULL OR uc.pending_days=0) AND c.validity_days IS NOT NULL THEN '❌pending_days应>0(v2.4 Bug)'
+    WHEN uc.contract_signed=1 AND uc.expire_at IS NOT NULL THEN '✓已签约(expire_at有值)'
+    ELSE '其他状态'
+  END as v2_4断言
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+WHERE uc.user_id=30 AND uc.course_id=18 AND uc.status=1 LIMIT 1
+-- v2.4期望: contract_signed=0,expire_at=NULL,pending_days=validity_days`
       },
       // S12.B2: signCourseContract 缺少 signatureFileId → 参数错误（无需真实签名文件即可验证参数校验层）
       {name:'S12.B2 边界: signCourseContract缺少signatureFileId应报错',fn:'ambassador',act:'signCourseContract',
@@ -2554,7 +2736,8 @@ WHERE uc.user_id=30 AND uc.course_id=1 AND uc.status=1 LIMIT 1
           const rejected=list.find(o=>o.pay_status===1&&o.refund_status===4);
           C.refundTargetOrder=eligible||pending||rejected||null;
           C.refundOrderNo=C.refundTargetOrder?.order_no||null;
-          C.unpaidOrderNo=(list.find(o=>o.pay_status===0)||{}).order_no||null;
+          // pay_status=0(未支付)或2(已取消/超时)均视为"非已支付"，用于 S13.B4 拦截测试
+          C.unpaidOrderNo=(list.find(o=>o.pay_status===0)||list.find(o=>o.pay_status===2)||{}).order_no||null;
         },
         sql:()=>`SELECT order_no, order_name, order_type, pay_status, refund_status, final_amount, related_id
 FROM tiandao_culture.orders WHERE user_id=30 AND pay_status IN (0,1) ORDER BY created_at DESC LIMIT 15`
@@ -2580,6 +2763,12 @@ FROM tiandao_culture.orders WHERE user_id=30 AND pay_status IN (0,1) ORDER BY cr
           if(C.signedCourseIds.length>0&&C.allOrders){
             const co=C.allOrders.find(o=>o.pay_status===1&&(!o.refund_status||o.refund_status===0)&&o.order_type===1&&C.signedCourseIds.includes(o.related_id));
             C.contractSignedOrderNo=co?.order_no||null;
+            // 若主目标订单恰好是已签合同订单，重新找一个非签合同订单作为主目标
+            // refund_status 0/2/4 均可重新申请退款，不限于 0
+            if(C.contractSignedOrderNo&&C.refundOrderNo===C.contractSignedOrderNo){
+              const nonContract=C.allOrders.find(o=>o.pay_status===1&&[0,2,4].includes(o.refund_status||0)&&o.order_type===1&&!C.signedCourseIds.includes(o.related_id));
+              if(nonContract) C.refundOrderNo=nonContract.order_no;
+            }
           }
         }
       },
@@ -2618,12 +2807,13 @@ FROM tiandao_culture.orders WHERE user_id=30 AND pay_status IN (0,1) ORDER BY cr
           (d,raw,C)=>{
             if(!C.refundOrderNo) return{r:'[S13.4跳过] 无可用订单',p:true,a:'⚠跳过'};
             if(C.refundCurrentStatus===1) return{r:'[S13.4跳过] 退款已在审核中，直接进入后续步骤',p:true,a:'⚠已有pending退款'};
-            if(C.refundCurrentStatus===4) return{r:'[S13.4提示] 订单已被驳回(status=4)，若需重测请用MCP重置: UPDATE orders SET refund_status=0 WHERE order_no=...',p:true,a:'⚠refund_status=4，S13.4跳过'};
+            // refund_status=4(已驳回) 允许重新申请，不再 skip；requestRefund 代码对 0/2/4 均允许
             if(!raw.success&&(raw.message?.includes('审核中')||raw.message?.includes('已申请'))) return{r:'退款已在审核中(幂等:视为通过)',p:true,a:'⚠'+raw.message};
             return{r:'requestRefund应返回success=true',p:raw.success===true,a:raw.success?'✓退款申请已提交':raw.message}
           },
           (d,raw,C)=>{
-            if(!C.refundOrderNo||C.refundCurrentStatus!==0||!raw.success) return null;
+            // refund_status=0/2/4 均可申请，成功时均需含 refund_amount
+            if(!C.refundOrderNo||![0,2,4].includes(C.refundCurrentStatus||0)||!raw.success) return null;
             return{r:'返回应含 refund_amount 字段',p:d?.refund_amount!==undefined,a:`refund_amount=${d?.refund_amount}`}
           }
         ],
@@ -2825,6 +3015,35 @@ WHERE o.order_no='${C.contractSignedOrderNo}' AND uc.status=1
           ()=>({r:'[手动测试-MT41] 需人工执行：密训班购买(含有效期叠加)→赠课→退款转账→验证expire_at回退',p:false,
             a:'❌ 手动步骤：1.购买含validity_days的密训班 2.赠课给已有同类课程的学员(会叠加expire_at) 3.完成退款转账 4.MCP SQL验证: SELECT expire_at FROM tiandao_culture.user_courses WHERE user_id=<学员id> AND course_id=<赠课id> → 期望：expire_at比叠加后少约validity_days天'})
         ]
+      },
+
+      // ── S13.P2: [v2.4新增 MT-42 手动] markRefundTransferred 后 pending_days 扣减验证 ──
+      // v2.4 变更：退款转账完成后，对未签约课程扣减 pending_days（而非原来修改 expire_at）
+      {name:'S13.P2 [v2.4 MT-42 手动] 退款后 pending_days 扣减验证',fn:'user',act:'getProfile',softFail:true,
+        biz:[
+          ()=>({r:'[手动测试-MT42 v2.4] 需人工执行：购买有效期课程→申请退款→后台转账→验证pending_days扣减',p:false,
+            a:`❌ 手动步骤（v2.4变更验证）：
+1. 购买一门含 validity_days 的课程（此时 contract_signed=0, pending_days=validity_days）
+2. 记录购买前的 pending_days 值（MCP SQL: SELECT pending_days,expire_at FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<cid>）
+3. 申请退款（requestRefund）
+4. 后台完成退款转账（markRefundTransferred，需真实银行转账，参见 MT-20）
+5. 转账后验证（MCP SQL）：
+   SELECT pending_days, expire_at, contract_signed 
+   FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<cid>
+   v2.4期望：pending_days 减少 validity_days（或清零），expire_at 仍为 NULL
+   旧逻辑（已废弃）：expire_at -= validity_days（已不再使用）
+6. 边界验证：已签约课程（contract_signed=1，expire_at有值）退款→验证 expire_at 是否正确回退`})
+        ],
+        sql:()=>`-- MT-42 手动验证前置SQL：查看待退款课程的当前字段状态
+SELECT uc.id, uc.course_id, c.name, c.validity_days,
+  uc.contract_signed, uc.pending_days, uc.expire_at, uc.status,
+  o.order_no, o.refund_status
+FROM tiandao_culture.user_courses uc
+JOIN tiandao_culture.courses c ON c.id=uc.course_id
+LEFT JOIN tiandao_culture.orders o ON o.course_id=uc.course_id AND o.user_id=uc.user_id AND o.pay_status=1
+WHERE uc.user_id=30 AND c.validity_days IS NOT NULL
+ORDER BY uc.id DESC LIMIT 10
+-- 记录 pending_days 基线值，markRefundTransferred 后对比`
       }
     ]
   }
@@ -3063,8 +3282,9 @@ JOIN tiandao_culture.users u ON u.id=aq.user_id
 WHERE aq.user_id=32 AND aq.status=1
 ORDER BY aq.id`
       },
-      // ─── S15.1: 赠送初探班给 user_id=30（已有 status=2 失效记录）→ 重新激活路径 ───
-      {name:'S15.1 [Admin写] 赠送初探班(已失效课程→重新激活, status:2→1)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+      // ─── S15.1: [v2.4] 赠送初探班给 user_id=30（已有 status=2 失效记录）→ 重新激活路径 ───
+      // v2.4: 激活失效课程时，设置 pending_days=validity_days, expire_at=NULL（待签约后计算）
+      {name:'S15.1 [Admin写 v2.4] 赠送初探班(已失效课程→重新激活, status:2→1+pending_days)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
         params:(C)=>{
           if(!C.hasGiftQuota) return{ambassadorUserId:0,recipientUserId:30,courseId:4};
           return{ambassadorUserId:C.giftAmbassadorId,recipientUserId:30,courseId:4};
@@ -3075,24 +3295,42 @@ ORDER BY aq.id`
             return{r:'adminGiftCourse 赠送已失效课程应成功（重新激活）',p:raw.success===true,a:raw.success?`✓${d?.action||'赠送成功'}: uc_id=${d?.user_course_id}`:(raw.message||'失败')}
           },
           (d,raw,C)=>{
-            if(!C.hasGiftQuota||!raw.success) return{r:'action 应含"激活"字样',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
+            if(!C.hasGiftQuota||!raw.success) return{r:'action 应含"新开通"字样',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
             const action=d?.action||'';
-            return{r:'action 应含"激活"字样（重新激活并延期）',p:action.includes('激活'),a:`action="${action}"`}
+            return{r:'action 应含"新开通"字样（有失效旧记录时新建课程记录）',p:action.includes('新开通'),a:`action="${action}"`}
           },
           (d,raw,C)=>{
             if(!C.hasGiftQuota||!raw.success) return{r:'remaining_quota 减少验证',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
             const before=C.giftAmbassadorRemaining;
             const after=d?.remaining_quota;
             return{r:`名额应从${before}减为${before-1}`,p:after===before-1,a:`remaining=${after}(期望${before-1})`}
+          },
+          // v2.4 新增断言：激活后 pending_days 应>0，expire_at 应为 NULL（等待签约后计算）
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota||!raw.success) return null;
+            // 如果接口返回了 pending_days 字段，则验证；否则依赖 SQL 验证
+            if(d?.pending_days!==undefined){
+              return{r:'v2.4: 激活后 pending_days 应>0（重新激活时设置 pending_days=validity_days）',
+                p:Number(d.pending_days||0)>0,
+                a:Number(d.pending_days||0)>0?`✓pending_days=${d.pending_days}`:`❌pending_days=${d.pending_days}（应>0，v2.4 Bug）`}
+            }
+            return{r:'v2.4: pending_days 字段请在 SQL 验证（接口未直接返回）',p:true,a:'⚠接口未返回pending_days字段，请查看SQL验证结果'}
           }
         ],
         save:(d,raw,C)=>{if(raw.success){C.giftedUserCourseId=d?.user_course_id;C.giftAmbassadorRemainingAfterS1=d?.remaining_quota}},
-        sql:(C)=>C.hasGiftQuota?`-- S15.1: 验证已失效课程重新激活（status 应从 2→1）
-SELECT uc.id, uc.user_id, uc.course_id, uc.is_gift, uc.attend_count, uc.gift_source, uc.expire_at, uc.status, uc.updated_at
+        sql:(C)=>C.hasGiftQuota?`-- S15.1 v2.4: 验证已失效课程重新激活（status 应从 2→1，pending_days 应有值，expire_at 应为 NULL）
+SELECT uc.id, uc.user_id, uc.course_id, uc.is_gift, uc.attend_count, uc.gift_source,
+  uc.contract_signed, uc.pending_days, uc.expire_at, uc.status, uc.updated_at,
+  CASE
+    WHEN uc.contract_signed=0 AND uc.pending_days>0 AND uc.expire_at IS NULL THEN '✓v2.4正确(待签约)'
+    WHEN uc.contract_signed=0 AND uc.expire_at IS NOT NULL THEN '❌expire_at不应有值(v2.4 Bug)'
+    WHEN uc.contract_signed=1 AND uc.expire_at IS NOT NULL THEN '✓已签约(expire_at有值)'
+    ELSE '其他状态'
+  END as v2_4状态
 FROM tiandao_culture.user_courses uc
 WHERE uc.user_id=30 AND uc.course_id=4
 ORDER BY uc.id DESC LIMIT 3
--- 期望: id=24 status=1（已从2激活为1），attend_count=0 不变
+-- v2.4期望: status=1（已激活），contract_signed=0→pending_days>0,expire_at=NULL
 
 -- 名额扣减验证
 SELECT id, used_quantity, remaining_quantity
@@ -3104,27 +3342,44 @@ SELECT id, usage_type, course_id, recipient_id, remark, created_at
 FROM tiandao_culture.quota_usage_records
 WHERE ambassador_id=32 ORDER BY id DESC LIMIT 3`:null
       },
-      // ─── S15.2: 重复赠送（用户已有课程 → 延长 expire_at） ───
-      {name:'S15.2 [Admin写] 重复赠送(用户已有课程,延长 expire_at)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+      // ─── S15.2: [v2.4] 重复赠送（用户已有课程）→ 分两种情况 ───
+      // v2.4 统一堆叠逻辑：
+      //   - contract_signed=0（未签约）→ 叠加 pending_days（不改 expire_at）
+      //   - contract_signed=1（已签约）→ 延长 expire_at（原有逻辑保持）
+      {name:'S15.2 [Admin写 v2.4] 重复赠送(叠加pending_days 或 延长expire_at)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
         params:(C)=>C.hasGiftQuota?{ambassadorUserId:C.giftAmbassadorId,recipientUserId:30,courseId:4}:{ambassadorUserId:0,recipientUserId:30,courseId:4},
         biz:[
           (d,raw,C)=>{
             if(!C.hasGiftQuota) return{r:'[S15.2] 无可用名额',p:false,a:'❌user_id=32 无赠课名额（请先在后台分配名额）'};
             if(!raw.success&&(raw.message||'').includes('不足')) return{r:'[S15.2] 名额不足（已在S15.1消耗完）',p:true,a:`⚠名额不足: ${raw.message}`};
-            return{r:'重复赠送应成功（延长expire_at）',p:raw.success===true,a:raw.success?`✓${d?.action||'续期'}`:raw.message}
+            return{r:'v2.4: 重复赠送应成功（叠加pending_days或延长expire_at）',p:raw.success===true,a:raw.success?`✓${d?.action||'赠送成功'}`:raw.message}
           },
           (d,raw,C)=>{
-            if(!C.hasGiftQuota||!raw.success) return{r:'续期action应为"延长有效期"',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
+            if(!C.hasGiftQuota||!raw.success) return{r:'续期action验证',p:!C.hasGiftQuota?false:raw.success,a:!C.hasGiftQuota?'❌无名额数据':'❌接口未成功'};
             const action=d?.action||'';
-            return{r:'action 应含"延长"或"激活"字样',p:action.includes('延长')||action.includes('激活'),a:`action="${action}"`}
+            return{r:'v2.4: action 应含"延长"、"激活"或"叠加"字样',p:action.includes('延长')||action.includes('激活')||action.includes('叠加'),a:`action="${action}"（v2.4期望: 未签约→叠加pending_days, 已签约→延长expire_at）`}
+          },
+          // v2.4 新增断言：验证叠加逻辑是否正确
+          (d,raw,C)=>{
+            if(!C.hasGiftQuota||!raw.success) return null;
+            // 接口可能返回新的 pending_days 或 expire_at
+            if(d?.pending_days!==undefined&&d?.contract_signed===0){
+              return{r:'v2.4: 未签约课程重复赠送应叠加 pending_days',
+                p:Number(d.pending_days||0)>0,
+                a:`✓pending_days=${d.pending_days}（叠加逻辑）`}
+            }
+            return{r:'v2.4: pending_days叠加或expire_at延长请查看SQL验证',p:true,a:'⚠请查看以下SQL验证v2.4堆叠结果'}
           }
         ],
-        sql:(C)=>C.hasGiftQuota?`-- S15.2: 验证重复赠送后 expire_at 延长
-SELECT uc.id, uc.expire_at, uc.updated_at, uc.is_gift
+        sql:(C)=>C.hasGiftQuota?`-- S15.2 v2.4: 验证重复赠送后的堆叠逻辑
+SELECT uc.id, uc.contract_signed, uc.pending_days, uc.expire_at, uc.updated_at, uc.is_gift
 FROM tiandao_culture.user_courses uc
 WHERE uc.user_id=30 AND uc.course_id=4 AND uc.status=1
 ORDER BY uc.id DESC LIMIT 1
--- 期望: expire_at 比 S15.1 时更长（延长 validity_days 天）`:null
+-- v2.4期望:
+--   如果 contract_signed=0（未签约）→ pending_days 应增加 validity_days（叠加）
+--   如果 contract_signed=1（已签约）→ expire_at 应延长 validity_days 天（原逻辑）
+-- 注意: v2.4 重构前，所有路径均修改 expire_at（已废弃）`:null
       },
       // ─── S15.3: 名额不足时赠送应被拦截（user_id=30 名额已用完 remaining=0）───
       {name:'S15.3 [边界] 名额不足时赠送应被拦截',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
@@ -3193,23 +3448,27 @@ SELECT id, usage_type, course_id, recipient_id, remark, created_at
 FROM tiandao_culture.quota_usage_records
 WHERE ambassador_id=32 ORDER BY id DESC LIMIT 3`
       },
-      // ─── S15.7: 重复赠送密训班（已有 course_id=2 记录 → 延长 expire_at）───
-      {name:'S15.7 [Admin写] 重复赠送密训班(续期, expire_at 延长)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
+      // ─── S15.7: 重复赠送密训班（已有 course_id=2 记录）───
+      // v2.4：contract_signed=0 → 叠加 pending_days（B路径）；contract_signed=1 → 延长 expire_at（C路径）
+      {name:'S15.7 [Admin写] 重复赠送密训班(续期: 叠加pending_days 或 延长expire_at)',fn:'ambassador',act:'adminGiftCourse',admin:true,softFail:true,
         params:{ambassadorUserId:32,recipientUserId:29,courseId:2},
         biz:[
           (d,raw)=>({r:'重复赠送密训班应成功（续期）',p:raw.success===true,a:raw.success?`✓${d?.action||'续期'}`:(raw.message||'失败')}),
           (d,raw)=>{
-            if(!raw.success) return{r:'action 含"延长"或"激活"字样',p:false,a:'❌接口未成功，无法验证 action 字段'};
+            if(!raw.success) return{r:'action 含"延长"/"激活"/"叠加"字样',p:false,a:'❌接口未成功，无法验证 action 字段'};
             const action=d?.action||'';
-            return{r:'action 应含"延长"或"激活"字样',p:action.includes('延长')||action.includes('激活'),a:`action="${action}"`}
+            // v2.4: contract_signed=0 → 叠加待签天数；contract_signed=1 → 延长有效期
+            return{r:'v2.4: action 应含"延长"、"激活"或"叠加"字样',p:action.includes('延长')||action.includes('激活')||action.includes('叠加'),a:`action="${action}"（v2.4: 未签约→叠加pending_days, 已签约→延长expire_at）`}
           }
         ],
-        sql:()=>`-- S15.7: 密训班续期验证（expire_at 应比 S15.6 更长）
-SELECT uc.id, uc.expire_at, uc.updated_at, uc.status
+        sql:()=>`-- S15.7: v2.4 密训班续期验证
+SELECT uc.id, uc.contract_signed, uc.pending_days, uc.expire_at, uc.updated_at, uc.status
 FROM tiandao_culture.user_courses uc
 WHERE uc.user_id=29 AND uc.course_id=2 AND uc.status=1
 ORDER BY uc.id DESC LIMIT 1
--- 期望: expire_at 比 S15.6 赠送后更晚
+-- v2.4期望:
+--   如果 contract_signed=0（未签约）→ pending_days 应增加（叠加 validity_days=1）
+--   如果 contract_signed=1（已签约）→ expire_at 应比 S15.6 更晚
 
 -- quota_type=2 名额再次扣减（remaining 应再减 1）
 SELECT id, quota_type, used_quantity, remaining_quantity

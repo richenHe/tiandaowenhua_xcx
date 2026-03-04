@@ -6,7 +6,7 @@
  * 环境变量依赖：MCH_API_V3_KEY（32位 APIv3 密钥，用于解密）
  */
 const crypto = require('crypto');
-const { formatDateTime } = require('../common/utils');
+const { formatDateTime, parseBeijingDateStr } = require('../common/utils');
 
 module.exports = async (event, context) => {
   try {
@@ -249,13 +249,9 @@ async function handleCoursePurchase(order, db) {
     return;
   }
 
-  // 计算课程有效期截止时间：validity_days 不为空时 = 购课时间 + validity_days 天
   const buyTime = new Date();
-  const expireAt = course.validity_days != null
-    ? formatDateTime(new Date(buyTime.getTime() + parseInt(course.validity_days) * 24 * 60 * 60 * 1000))
-    : null;
 
-  // 插入主课程
+  // 插入主课程：有效期从签合同起算，购买时 expire_at=NULL，pending_days 记录待签天数
   await db.from('user_courses').insert({
     user_id: order.user_id,
     _openid: order._openid || '',
@@ -266,7 +262,8 @@ async function handleCoursePurchase(order, db) {
     source_order_id: order.id,
     buy_price: order.final_amount,
     buy_time: formatDateTime(buyTime),
-    expire_at: expireAt,
+    expire_at: null,
+    pending_days: course.validity_days || 365,
     is_gift: 0,
     attend_count: 0,
     status: 1,
@@ -274,7 +271,7 @@ async function handleCoursePurchase(order, db) {
     updated_at: formatDateTime(buyTime)
   });
 
-  console.log('[Payment] 主课程记录已创建，有效期截止:', expireAt || '永久');
+  console.log('[Payment] 主课程记录已创建，待签合同天数:', course.validity_days || 365);
 
   // 密训班赠送课程（included_course_ids 为 JSON 字符串或数组）
   let giftCourseIds = course.included_course_ids;
@@ -294,21 +291,21 @@ async function handleCoursePurchase(order, db) {
         continue;
       }
 
-      // 查询用户是否已有该课程（status=1 的活跃记录）
-      const { data: existingCourses } = await db
+      const validityDays = giftCourse.validity_days || 365;
+      const giftNowStr = formatDateTime(buyTime);
+
+      // 统一叠加逻辑：查 status=1 的最新记录
+      const { data: existingList } = await db
         .from('user_courses')
-        .select('id, expire_at')
+        .select('id, contract_signed, pending_days, expire_at')
         .eq('user_id', order.user_id)
         .eq('course_id', giftCourseId)
         .eq('status', 1)
+        .order('created_at', { ascending: false })
         .limit(1);
 
-      if (!existingCourses || existingCourses.length === 0) {
-        // 用户无该课程 → 新建 is_gift=1 记录
-        const giftExpireAt = giftCourse.validity_days != null
-          ? formatDateTime(new Date(buyTime.getTime() + parseInt(giftCourse.validity_days) * 86400000))
-          : null;
-
+      if (!existingList || existingList.length === 0) {
+        // A. 无记录 → 新建（待签合同状态）
         await db.from('user_courses').insert({
           user_id: order.user_id,
           _openid: order._openid || '',
@@ -319,31 +316,42 @@ async function handleCoursePurchase(order, db) {
           source_order_id: order.id,
           source_course_id: course.id,
           buy_price: 0,
-          buy_time: formatDateTime(buyTime),
-          expire_at: giftExpireAt,
+          buy_time: giftNowStr,
+          expire_at: null,
+          pending_days: validityDays,
           is_gift: 1,
           gift_source: `购买${course.name}赠送`,
           attend_count: 0,
           status: 1,
-          created_at: formatDateTime(buyTime),
-          updated_at: formatDateTime(buyTime)
+          created_at: giftNowStr,
+          updated_at: giftNowStr
         });
-        console.log('[Payment] 赠送课程已创建:', giftCourse.name, '有效期截止:', giftExpireAt || '永久');
+        console.log('[Payment] 赠送课程已创建:', giftCourse.name, '待签合同天数:', validityDays);
       } else {
-        // 用户已有该课程 → 叠加有效期（不创建新记录，退款时通过"无 is_gift 记录"识别为叠加场景）
-        const existing = existingCourses[0];
-        if (giftCourse.validity_days != null) {
-          const days = parseInt(giftCourse.validity_days);
-          const baseDate = existing.expire_at && new Date(existing.expire_at) > new Date()
-            ? new Date(existing.expire_at) : new Date();
-          const newExpire = formatDateTime(new Date(baseDate.getTime() + days * 86400000));
+        const existing = existingList[0];
+        if (existing.contract_signed === 0) {
+          // B. 未签合同 → 叠加 pending_days
+          const newPendingDays = (existing.pending_days || 0) + validityDays;
+          await db.from('user_courses').update({
+            pending_days: newPendingDays,
+            updated_at: giftNowStr
+          }).eq('id', existing.id);
+          console.log('[Payment] 赠送课程叠加待签天数:', giftCourse.name, 'pending_days:', newPendingDays);
+        } else {
+          // C. 已签合同且未过期（status=1） → 双向延长有效期
+          const days = validityDays;
+          const currentExpire = parseBeijingDateStr(existing.expire_at);
+          const newExpire = formatDateTime(new Date(currentExpire.getTime() + days * 86400000));
           await db.from('user_courses').update({
             expire_at: newExpire,
-            updated_at: formatDateTime(new Date())
+            updated_at: giftNowStr
           }).eq('id', existing.id);
-          console.log('[Payment] 用户已有赠送课程，叠加有效期:', giftCourse.name, '新截止:', newExpire);
-        } else {
-          console.log('[Payment] 用户已有赠送课程且无有效期限制，跳过:', giftCourseId);
+          // 同步延长合同有效期
+          await db.from('contract_signatures').update({
+            contract_end: newExpire.split(' ')[0],
+            updated_at: giftNowStr
+          }).eq('user_id', order.user_id).eq('course_id', giftCourseId).eq('status', 1);
+          console.log('[Payment] 赠送课程叠加有效期:', giftCourse.name, '新截止:', newExpire);
         }
       }
     }

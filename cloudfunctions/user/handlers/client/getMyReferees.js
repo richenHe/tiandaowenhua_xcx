@@ -27,8 +27,12 @@ module.exports = async (event, context) => {
     // 查询推荐用户中已购课的 user_id 集合
     const refereeList = result.list || [];
     let purchasedSet = new Set();
+    let activityCountMap = new Map();
+
     if (refereeList.length > 0) {
       const userIds = refereeList.map(u => u.id);
+
+      // 批量查询已购课情况
       const { data: paidOrders } = await db
         .from('orders')
         .select('user_id')
@@ -36,6 +40,18 @@ module.exports = async (event, context) => {
         .eq('pay_status', 1);
       if (paidOrders) {
         paidOrders.forEach(o => purchasedSet.add(o.user_id));
+      }
+
+      // 批量查询每人的活动次数（status=1 有效记录，与活动记录页统计口径一致）
+      const { data: activityRecords } = await db
+        .from('ambassador_activity_records')
+        .select('user_id')
+        .in('user_id', userIds)
+        .eq('status', 1);
+      if (activityRecords) {
+        activityRecords.forEach(r => {
+          activityCountMap.set(r.user_id, (activityCountMap.get(r.user_id) || 0) + 1);
+        });
       }
     }
 
@@ -45,6 +61,7 @@ module.exports = async (event, context) => {
       phone: u.phone,
       avatar: u.avatar,
       ambassador_level: u.ambassador_level,
+      activity_count: activityCountMap.get(u.id) || 0,
       created_at: u.created_at,
       has_purchased: purchasedSet.has(u.id)
     }));

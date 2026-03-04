@@ -57,7 +57,7 @@ module.exports = async (event, context) => {
 
     for (const order of result.list || []) {
       if (order.pay_status === 0) {
-        const createdTime = new Date(order.created_at).getTime();
+        const createdTime = new Date(order.created_at.replace(' ', 'T') + '+08:00').getTime();
         if (now - createdTime >= timeout) {
           timeoutOrders.push(order.order_no);
           order.pay_status = 3; // 本地更新状态，用于返回

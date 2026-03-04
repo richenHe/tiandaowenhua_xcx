@@ -1539,23 +1539,53 @@ ELSE:
 ```
 
 ### 🔴 4.5 上课记录管理 - 创建
-**接口**: `POST /api/admin/class-record/create`
+
+- **action**: `createClassRecord`
+- **调用方**: 管理后台
 
 **请求参数**:
-```json
-{
-  "course_id": 1,
-  "class_date": "2024-02-01",
-  "class_time": "09:00-17:00",
-  "class_location": "深圳市南山区",
-  "teacher": "王老师",
-  "period": "第10期",
-  "total_quota": 30
-}
-```
 
-**业务逻辑**:
-- 自动根据课程消息配置生成提醒计划
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程 ID |
+| classDate | String | 是 | 开课日期（YYYY-MM-DD），不能早于今天 |
+| classEndDate | String | 否 | 结课日期（YYYY-MM-DD），默认等于 classDate |
+| classTime | String | 否 | 上课时段（如 "09:00-17:00"） |
+| classLocation | String | 否 | 上课地点 |
+| teacher | String | 否 | 主讲老师 |
+| totalQuota | Number | 否 | 总名额，默认 30 |
+| remark | String | 否 | 备注 |
+
+**业务规则**:
+- `classDate` 不能早于服务器当天日期（北京时间），否则返回参数错误
+- `classEndDate` 不能早于 `classDate`
+- 沙龙课程（type=4）只允许存在一个有效排期，重复创建返回错误
+
+---
+
+### 🔴 4.5b 上课记录管理 - 更新
+
+- **action**: `updateClassRecord`
+- **调用方**: 管理后台
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| id | Number | 是 | 排期 ID |
+| courseId | Number | 否 | 课程 ID |
+| classDate | String | 否 | 开课日期（YYYY-MM-DD），修改时不能早于今天 |
+| classEndDate | String | 否 | 结课日期（YYYY-MM-DD） |
+| classTime | String | 否 | 上课时段 |
+| classLocation | String | 否 | 上课地点 |
+| teacher | String | 否 | 主讲老师 |
+| totalQuota | Number | 否 | 总名额 |
+| remark | String | 否 | 备注 |
+| status | Number | 否 | 状态：0取消 / 1正常 / 2已结束 |
+
+**业务规则**:
+- 若传入 `classDate`，则不能早于服务器当天日期（北京时间）
+- 若传入 `classDate` 未传 `classEndDate`，且原排期为单天课（结课日期=开课日期），结课日期自动同步为新开课日期
 
 ### 🔴 4.6 签到管理 - 签到
 **接口**: `POST /api/admin/attendance/checkin`
@@ -4229,11 +4259,13 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | reason | String | 不需要签约的原因说明（needSign=false 时有值） |
 | template | Object\|null | 合同模板信息（needSign=true 时返回） |
 
-**业务规则**
-- `attend_count ≥ 1` → needSign=false，reason="已上过课"
-- `attend_count = 0` 且无合同模板 → needSign=false，reason="该课程未配置合同模板"
-- `attend_count = 0` 且有合同模板且 contract_signed=0 → needSign=true
-- `contract_signed = 1` → needSign=false，reason="已签约"
+**业务规则**（v2.4 更新）
+- 查 `user_courses`（`status=1, 按 created_at DESC`）取最新有效记录
+- `contract_signed=1`（已签且 status=1）→ needSign=false，reason="已签约"
+- `contract_signed=0` 且无合同模板 → needSign=false，reason="该课程未配置合同模板"
+- `contract_signed=0` 且有合同模板 → needSign=true（需要签约，返回 templateId 和 userCourseId）
+- 无 status=1 记录 → needSign=false，reason="未购买该课程或课程已过期"
+- 不再依赖 `attend_count`（已移除该判断）
 
 ---
 
@@ -4286,10 +4318,11 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **业务规则**
 - `agreed=false` → 返回参数错误："缺少必要参数或未同意协议"
 - `signatureFileId` 缺失 → 返回参数错误："缺少手写签名文件（signatureFileId）"
-- 签约成功后：写入 `contract_signatures`，更新 `user_courses.contract_signed=1`
+- 签约成功后：写入 `contract_signatures`，更新 `user_courses.contract_signed=1, pending_days=0, expire_at=合同截止日 23:59:59`
 - **奖励延迟发放**：若 `orders.referee_id` 不为空且 `is_reward_granted=0`，签约成功触发奖励发放逻辑（`is_reward_granted=1, reward_granted_at=now()`）；无推荐人时不报错
 - **docx 签名注入**：使用 `insertAfterLabelSmart` 精确注入签名到甲方位置；当标签与其他内容共享同一个 `<w:r>` run 时，自动拆分 run 确保签名/姓名/证件号插入到正确标签之后
-- **合同期限计算**：`contract_end = signDate + validity_years` 年，直接取北京时间日期，避免双重 UTC+8 偏移
+- **合同期限计算**（v2.4 更新）：`contract_end = signDate + user_courses.pending_days 天`（原 `validity_years` 已废弃）；`expire_at = contract_end 23:59:59`；`pending_days` 签约后清零
+- 合同期限来源：`courses.validity_days`（唯一权威来源），不再使用 `contract_templates.validity_years`
 
 ---
 
@@ -5310,6 +5343,67 @@ cash_rate>0 → 发 cash_rate 比例的积分到 available → 结束
 第11次推荐初探班    → frozen=0 → cash_rate=0.30 → 积分=1688×30%到available
 推荐密训班          → cash_rate=0.20 → 积分=38888×20%到available（不消耗frozen）
 ```
+
+---
+
+### 时区处理规范（2026-03-03 修复）
+
+所有云函数中数据库日期字符串的处理必须遵循以下规范：
+
+- **存储格式**: 数据库中的时间字段（expire_at、buy_time、created_at 等）统一存储为北京时间(UTC+8) `YYYY-MM-DD HH:mm:ss`
+- **读取时**: 从数据库读取日期字符串后，必须使用 `parseBeijingDateStr(str)` 解析，不得直接 `new Date(str)`
+- **写入时**: 使用 `formatDateTime(dateObj)` 将 UTC Date 对象转为北京时间字符串
+- **比较时**: 将 DB 日期字符串用 `parseBeijingDateStr()` 转为 Date 对象后，再与 `new Date()` 比较
+
+---
+
+## 课程过期处理接口（v2.4 新增）
+
+### 定时任务：标记过期课程和合同
+
+- **action**: `checkExpiredCourses`
+- **云函数**: `system`
+- **调用方**: 管理后台（每日定时任务调用，也可手动触发）
+- **描述**: 将已到期的课程和合同状态更新为"已过期"
+
+**请求参数**
+
+无
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| expired_courses | Number | 本次标记的过期课程数量 |
+| expired_contracts | Number | 本次标记的过期合同数量 |
+
+**业务规则**
+- 将 `user_courses.status=1 + contract_signed=1 + expire_at < NOW()` 的记录 → `status=3`（已过期）
+- 将 `contract_signatures.status=1 + contract_end < CURDATE()` 的记录 → `status=2`（已过期）
+- 建议每日凌晨 0 点执行
+
+---
+
+## 课程过期逻辑说明（v2.4）
+
+### 核心规则
+
+| 规则 | 说明 |
+|---|---|
+| 有效期起点 | 从签订合同当日开始，不从购买日算 |
+| 唯一有效期来源 | `courses.validity_days`（必填正整数），废弃 `contract_templates.validity_years` |
+| 双向同步 | `user_courses.expire_at` = `contract_signatures.contract_end` 当天 23:59:59，任何延长操作必须同时更新两张表 |
+| 过期判断 | 统一用 `user_courses.status=3`（由定时任务写入），不用 `expire_at < NOW()` 实时判断 |
+| pending_days | 购买/兑换/赠送时积累待签天数，签合同时消耗并写入 expire_at；未签合同时前端显示"待签合同"标签 |
+
+### user_courses.status 枚举
+
+| 值 | 含义 |
+|---|---|
+| 0 | 无效 |
+| 1 | 有效（未过期） |
+| 2 | 已退款 |
+| 3 | 已过期（定时任务标记） |
 
 ---
 

@@ -18,6 +18,7 @@ module.exports = async (event, context) => {
     const finalPageSize = pageSize || page_size || 10;
 
     // 构建查询（利用外键 fk_user_courses_course）
+    // 返回 status=1（有效）和 status=3（已过期）的记录，均展示
     let queryBuilder = db
       .from('user_courses')
       .select(`
@@ -38,7 +39,7 @@ module.exports = async (event, context) => {
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
-      .eq('status', 1)
+      .in('status', [1, 3])
       .order('id', { ascending: false });
 
     // 执行分页查询
@@ -54,6 +55,7 @@ module.exports = async (event, context) => {
       attend_count: uc.attend_count,
       expire_at: uc.expire_at,
       contract_signed: uc.contract_signed || 0,
+      pending_days: uc.pending_days || 0,
       status: uc.status,
       created_at: uc.created_at,
       // 课程信息

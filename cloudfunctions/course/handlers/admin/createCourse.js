@@ -60,8 +60,8 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
-    // 非沙龙课程：有效期必填且为正整数；沙龙课程：跳过，写入 NULL
-    let validityDaysParsed = null;
+    // 非沙龙课程：有效期必填且为正整数；沙龙课程：默认365天（上完课硬删除，有效期无实际影响）
+    let validityDaysParsed = isSalon ? 365 : null;
     if (!isSalon) {
       validityDaysParsed = validityDays != null ? parseInt(validityDays) : null;
       if (!validityDaysParsed || validityDaysParsed <= 0) {
