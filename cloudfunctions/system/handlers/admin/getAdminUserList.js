@@ -7,7 +7,7 @@
  * - page_size: 每页数量（默认20）
  * - status: 状态筛选（可选）
  */
-const { db } = require('../../common/db');
+const { db, query: dbQuery } = require('../../common/db');
 const { response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -17,32 +17,31 @@ module.exports = async (event, context) => {
   try {
     console.log(`[admin:getAdminUserList] 管理员 ${admin.id} 获取管理员列表`);
 
-    // 兼容 pageSize 参数
     const finalPageSize = pageSize || page_size || 20;
 
-    // 构建查询
     let queryBuilder = db
       .from('admin_users')
       .select('id, username, real_name, role, permissions, status, last_login_time, created_at', { count: 'exact' })
       .order('id', { ascending: true });
 
-    // 状态筛选
     if (status !== undefined && status !== null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
     }
 
-    // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 处理数据（permissions 是 JSON 类型，无需解析）
-    // keyword 搜索过滤（DB 查询未加 LIKE，在内存中过滤）
+    // 从 admin_roles 表动态获取角色名称映射
+    const roles = await dbQuery('admin_roles', { columns: 'role_key, role_name' });
+    const roleMap = {};
+    (roles || []).forEach(r => { roleMap[r.role_key] = r.role_name; });
+
     const keyword = event.keyword || '';
     const processedList = (result.list || []).map(a => ({
       ...a,
       permissions: a.permissions || [],
-      role_text: getRoleText(a.role),
+      role_text: roleMap[a.role] || a.role || '未知',
       status_text: a.status === 1 ? '启用' : '禁用',
-      last_login_at: a.last_login_time || null    // 前端使用 last_login_at
+      last_login_at: a.last_login_time || null
     })).filter(a => {
       if (!keyword) return true;
       return (a.username || '').includes(keyword) || (a.real_name || '').includes(keyword);
@@ -58,13 +57,3 @@ module.exports = async (event, context) => {
     return response.error('获取管理员列表失败', error);
   }
 };
-
-// 获取角色文本
-function getRoleText(role) {
-  const roleMap = {
-    'super_admin': '超级管理员',
-    'admin': '管理员',
-    'operator': '运营人员'
-  };
-  return roleMap[role] || '未知';
-}

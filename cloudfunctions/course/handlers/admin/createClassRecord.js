@@ -4,17 +4,18 @@
  * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
  *
  * DB 表：class_records
- * 关键字段：class_date（开课日期）、class_end_date（结课日期）、class_time（上课时段）、class_location、total_quota
+ * 关键字段：class_date（开课日期）、class_end_date（结课日期）、class_time（上课时段）、class_location、total_quota、cancel_deadline_days
  *
  * @param {Object} event
- * @param {number} event.courseId      - 课程 ID（必填）
- * @param {string} event.classDate     - 开课日期（如 "2026-03-01"）（必填）
- * @param {string} event.classEndDate  - 结课日期（如 "2026-03-05"），单天课与 classDate 相同
- * @param {string} event.classTime     - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
- * @param {string} event.classLocation - 上课地点，对应 DB 字段 class_location
- * @param {string} event.teacher       - 讲师
- * @param {number} event.totalQuota    - 总名额，对应 DB 字段 total_quota（默认 30）
- * @param {string} event.remark        - 备注，对应 DB 字段 remark
+ * @param {number} event.courseId              - 课程 ID（必填）
+ * @param {string} event.classDate             - 开课日期（如 "2026-03-01"）（必填）
+ * @param {string} event.classEndDate          - 结课日期（如 "2026-03-05"），单天课与 classDate 相同
+ * @param {string} event.classTime             - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
+ * @param {string} event.classLocation         - 上课地点，对应 DB 字段 class_location
+ * @param {string} event.teacher               - 讲师
+ * @param {number} event.totalQuota            - 总名额，对应 DB 字段 total_quota（默认 30）
+ * @param {number} event.cancelDeadlineDays    - 取消预约截止天数（必填，上课前X天不可取消）
+ * @param {string} event.remark                - 备注，对应 DB 字段 remark
  */
 const { db, insert, findOne } = require('../../common/db');
 const { response } = require('../../common');
@@ -29,15 +30,21 @@ module.exports = async (event, context) => {
   const classLocation = event.classLocation || event.class_location;
   const teacher = event.teacher;
   const totalQuota = event.totalQuota || event.total_quota;
+  const cancelDeadlineDays = event.cancelDeadlineDays ?? event.cancel_deadline_days;
   const remark = event.remark;
 
   try {
     const validation = validateRequired(
-      { courseId, classDate },
-      ['courseId', 'classDate']
+      { courseId, classDate, cancelDeadlineDays },
+      ['courseId', 'classDate', 'cancelDeadlineDays']
     );
     if (!validation.valid) {
       return response.paramError(validation.message);
+    }
+
+    const parsedDays = parseInt(cancelDeadlineDays, 10);
+    if (isNaN(parsedDays) || parsedDays < 1) {
+      return response.paramError('取消预约截止天数必须为大于 0 的整数');
     }
 
     // 取服务器今天日期（北京时间 UTC+8，YYYY-MM-DD 格式）
@@ -73,6 +80,7 @@ module.exports = async (event, context) => {
       teacher: teacher || null,
       total_quota: totalQuota || 30,
       booked_quota: 0,
+      cancel_deadline_days: parsedDays,
       remark: remark || null,
       status: 1
     });

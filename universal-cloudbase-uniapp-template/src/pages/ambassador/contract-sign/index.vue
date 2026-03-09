@@ -23,7 +23,7 @@
               <text class="info-label">合同期限：</text>
               <text class="info-value">{{ contractTemplate.validity_years || 1 }}年</text>
             </view>
-            <view v-if="!isCourseMode && contractTemplate.level_name" class="info-row">
+            <view v-if="contractTemplate.level_name" class="info-row">
               <text class="info-label">大使等级：</text>
               <text class="info-value">{{ contractTemplate.level_name }}</text>
             </view>
@@ -222,23 +222,15 @@ const idNumber = ref('')
 // 协议模板数据
 const contractTemplate = ref<ContractTemplate | null>(null)
 
-// 目标等级（从路由参数获取，大使合同模式使用）
+// 目标等级（从路由参数获取）
 const targetLevel = ref(2)
-// 课程合同模式的参数
-const courseId = ref(0)
-const routeTemplateId = ref(0)
-const isCourseMode = ref(false)
 
 onMounted(() => {
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const options = currentPage.options || {}
 
-  if (options.courseId) {
-    isCourseMode.value = true
-    courseId.value = parseInt(options.courseId)
-    if (options.templateId) routeTemplateId.value = parseInt(options.templateId)
-  } else if (options.upgradeType) {
+  if (options.upgradeType) {
     targetLevel.value = parseInt(options.upgradeType)
   }
 
@@ -259,16 +251,11 @@ function onSignatureCompleted(data: { fileId: string }) {
   signaturePreviewUrl.value = cloudFileIDToURL(data.fileId)
 }
 
-// 加载协议模板（区分课程合同/大使合同）
+// 加载大使协议模板
 const loadContractTemplate = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
-    let result: any
-    if (isCourseMode.value) {
-      result = await AmbassadorApi.getContractTemplateByCourse(courseId.value)
-    } else {
-      result = await AmbassadorApi.getContractTemplate(targetLevel.value)
-    }
+    const result: any = await AmbassadorApi.getContractTemplate(targetLevel.value)
     contractTemplate.value = result.template ?? result
     uni.hideLoading()
   } catch (error) {
@@ -334,39 +321,20 @@ const handleSign = async () => {
   }
 
   try {
-    let result: any
-    if (isCourseMode.value) {
-      result = await AmbassadorApi.signCourseContract({
-        courseId: courseId.value,
-        templateId: contractTemplate.value.id,
-        signatureFileId: signatureFileId.value,
-        idNumber: idNumber.value.trim(),
-        agreed: true
+    const result: any = await AmbassadorApi.signContract({
+      templateId: contractTemplate.value.id,
+      signatureFileId: signatureFileId.value,
+      idNumber: idNumber.value.trim(),
+      agreed: true
+    })
+
+    const successMsg = result.message || `升级${result.level_name || ''}成功`
+    uni.showToast({ title: successMsg, icon: 'success', duration: 2000 })
+    setTimeout(() => {
+      uni.redirectTo({
+        url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
       })
-      uni.showToast({ title: '签署成功', icon: 'success', duration: 1500 })
-      setTimeout(() => {
-        if (result?.signature_id) {
-          uni.redirectTo({
-            url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
-          })
-        } else {
-          uni.navigateBack()
-        }
-      }, 1500)
-    } else {
-      result = await AmbassadorApi.signContract({
-        templateId: contractTemplate.value.id,
-        signatureFileId: signatureFileId.value,
-        idNumber: idNumber.value.trim(),
-        agreed: true
-      })
-      uni.showToast({ title: '签署成功', icon: 'success', duration: 2000 })
-      setTimeout(() => {
-        uni.redirectTo({
-          url: `/pages/ambassador/contract-detail/index?id=${result.signature_id}`
-        })
-      }, 2000)
-    }
+    }, 2000)
   } catch (error) {
     console.error('签署协议失败:', error)
   }

@@ -217,7 +217,7 @@
 
 <script src="./assets/libs/vue.global.js"></script>
 <script src="./assets/libs/tdesign.min.js"></script>
-<script src="./assets/js/config.js?v=20260227"></script>
+<script src="./assets/js/config.js?v=20260305"></script>
 <script>
 const {createApp,ref,reactive,computed,nextTick,onMounted}=Vue;
 
@@ -1410,11 +1410,9 @@ FROM tiandao_culture.users u WHERE u.referee_id=${U.id} ORDER BY u.created_at DE
         biz:[
           (d,raw)=>({r:'level=2查询target=3应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{if(!d)return{r:'应返回current_level.level=2',p:true,a:'无数据'};const lv=d.current_level?.level??d.current_level;return{r:'应返回current_level.level=2',p:lv===2,a:`current_level=${lv}`}},
-          (d)=>{if(!d)return{r:'升级选项含contract类型',p:true,a:'无数据'};const opts=d.upgrade_options||[];const hasC=opts.some(o=>o.type==='contract');return{r:'升级选项含contract类型',p:hasC,a:`${opts.length}个选项,contract=${hasC}`}},
-          (d)=>{if(!d)return{r:'需求3.1.7: requirements.upgrade_payment_amount=9800',p:true,a:'无数据'};const fee=Number(d.requirements?.upgrade_payment_amount||0);return{r:'需求3.1.7: requirements.upgrade_payment_amount=9800',p:fee===9800,a:`upgrade_payment_amount=${fee}`}},
-          (d)=>{if(!d)return{r:'需求3.1.7: requirements.frozen_points=16880',p:true,a:'无数据'};const fp=Number(d.requirements?.frozen_points||0);return{r:'需求3.1.7: requirements.frozen_points=16880',p:fp===16880,a:`frozen_points=${fp}`}}
+          (d)=>{if(!d)return{r:'升级选项含contract类型',p:true,a:'无数据'};const opts=d.upgrade_options||[];const hasC=opts.some(o=>o.type==='contract');return{r:'升级选项含contract类型',p:hasC,a:`${opts.length}个选项,contract=${hasC}`}}
         ],
-        sql:()=>`SELECT level, level_name, upgrade_payment_amount, frozen_points FROM tiandao_culture.ambassador_level_configs WHERE level=3`
+        sql:()=>`SELECT level, level_name FROM tiandao_culture.ambassador_level_configs WHERE level=3`
       },
       {name:'S5D.2 名额查询(remaining=0边界)',fn:'ambassador',act:'getMyQuotas',
         biz:[

@@ -60,8 +60,18 @@
           </view>
 
           <view class="t-card__footer">
+            <!-- 管理员录入的线下合同：显示"查看合同照片" -->
             <button
-              v-if="contract.contract_file_url"
+              v-if="contract.sign_type === 3 && contract.contract_images && contract.contract_images.length > 0"
+              class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
+              style="margin-right: 16rpx;"
+              @click.stop="handlePreviewContractImages(contract)"
+            >
+              <text class="t-button__text">查看合同照片</text>
+            </button>
+            <!-- 电子签署合同：显示"查看电子版合同" -->
+            <button
+              v-else-if="contract.contract_file_url"
               class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
               style="margin-right: 16rpx;"
               @click.stop="handleViewContract(contract)"
@@ -159,6 +169,16 @@ const handleViewContract = (contract: Contract) => {
     return
   }
   openContractDocument(url, contract.title)
+}
+
+// 预览合同照片
+const handlePreviewContractImages = (contract: Contract) => {
+  const images = contract.contract_images
+  if (!images?.length) return
+  uni.previewImage({
+    urls: images,
+    current: images[0]
+  })
 }
 
 // 计算剩余天数（基于纯日期比较，避免时区/时间分量导致多算一天）

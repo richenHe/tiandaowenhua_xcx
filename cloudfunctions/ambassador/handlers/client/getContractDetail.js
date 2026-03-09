@@ -45,6 +45,16 @@ module.exports = async (event, context) => {
     const fileId = signature.contract_file_id || signature.template?.contract_file_id || null;
     const contractFileUrl = fileId ? cloudFileIDToURL(fileId) : null;
 
+    // 解析线下合同照片
+    let contractImages = [];
+    try {
+      const raw = signature.contract_images;
+      if (raw) {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        contractImages = (Array.isArray(parsed) ? parsed : []).map(id => cloudFileIDToURL(id));
+      }
+    } catch (e) { /* 解析失败忽略 */ }
+
     const contractName = signature.template?.contract_name || signature.contract_name;
 
     return response.success({
@@ -56,6 +66,8 @@ module.exports = async (event, context) => {
         ambassador_level: signature.ambassador_level,
         contract_version: signature.contract_version,
         contract_file_url: contractFileUrl,
+        contract_images: contractImages,
+        sign_type: signature.sign_type || 1,
         sign_time: signature.sign_time,
         contract_start: signature.contract_start,
         contract_end: signature.contract_end,

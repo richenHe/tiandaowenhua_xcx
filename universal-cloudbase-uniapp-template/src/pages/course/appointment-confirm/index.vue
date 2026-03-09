@@ -17,17 +17,24 @@
         </view>
 
         <!-- 复训费提示（attend_count >= 1 且非沙龙时显示） -->
-        <view v-if="needRetrainFee" class="retrain-card">
+        <view v-if="needRetrainFee && !hasRetrainCredit" class="retrain-card">
           <view class="retrain-title">💰 复训费用</view>
           <view class="retrain-price">¥{{ courseInfo.retrainPrice }}</view>
-          <view class="retrain-notice">上过一次课后，课程有效期内每次上课需缴纳复训费，费用支付后无法取消预约且费用不退，请确定好来上课再预约</view>
+          <view class="retrain-notice">上过一次课后，课程有效期内每次上课需缴纳复训费，取消预约后复训费将保留至下期使用</view>
+        </view>
+
+        <!-- 复训资格抵扣提示 -->
+        <view v-if="needRetrainFee && hasRetrainCredit" class="retrain-card retrain-card--credit">
+          <view class="retrain-title">✅ 复训资格</view>
+          <view class="retrain-notice">您有保留的复训资格，本次无需支付复训费</view>
         </view>
 
         <!-- 温馨提示 -->
         <view class="tips-card tips-card--warning">
           <view class="tips-title">⚠️ 温馨提示</view>
           <view class="tips-content">
-            <view class="tips-item">预约成功后无法取消，请确认好时间再预约。</view>
+            <view class="tips-item">预约成功后可在上课前取消预约（具体取消截止日期以排期设置为准）。</view>
+            <view v-if="needRetrainFee" class="tips-item">复训用户取消预约后，复训费将保留至下次同课程预约使用。</view>
           </view>
         </view>
       </view>
@@ -55,20 +62,34 @@ import { CourseApi, UserApi } from '@/api';
 
 const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
 
-/** 请求订阅消息授权（仅微信小程序环境，无论结果如何都不阻塞预约流程） */
-const requestSubscribe = (): Promise<void> => {
-  return new Promise((resolve) => {
-    // #ifdef MP-WEIXIN
-    uni.requestSubscribeMessage({
-      tmplIds: [COURSE_REMINDER_TMPL_ID],
-      complete: () => resolve()
-    })
-    // #endif
-    // #ifndef MP-WEIXIN
-    resolve()
-    // #endif
-  })
-}
+/**
+ * 显示预约确认弹窗并创建预约（订阅授权完成后调用）
+ * 从 handleSubmit 中抽离，避免 async 函数影响微信手势上下文判断
+ */
+const showConfirmAndBook = () => {
+  uni.showModal({
+    title: '预约确认',
+    content: '预约成功后无法取消，确认要预约吗？',
+    confirmText: '确认预约',
+    cancelText: '再想想',
+    success: async (res) => {
+      if (res.confirm) {
+        isSubmitted.value = true;
+        try {
+          await CourseApi.createAppointment({
+            class_record_id: courseInfo.value.classRecordId
+          });
+          uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 });
+          setTimeout(() => { uni.navigateBack(); }, 2000);
+        } catch (error: any) {
+          isSubmitted.value = false;
+          const msg = error?.message || '预约失败，请稍后重试';
+          uni.showModal({ title: '提示', content: msg, showCancel: false });
+        }
+      }
+    },
+  });
+};
 
 const courseInfo = ref({
   classRecordId: 0,
@@ -97,8 +118,14 @@ const isSubmitted = ref(false)
 // 是否已预约该排期
 const alreadyBooked = ref(false)
 
+// 是否拥有可抵用的复训资格
+const hasRetrainCredit = ref(false)
+
 const buttonText = computed(() => {
   if (alreadyBooked.value) return '您已预约该排期';
+  if (needRetrainFee.value && hasRetrainCredit.value) {
+    return '立即预约（使用保留复训资格）';
+  }
   if (needRetrainFee.value) {
     return `立即预约并支付复训费 ¥${courseInfo.value.retrainPrice}`;
   }
@@ -148,6 +175,12 @@ const loadUserCourseInfo = async (courseId: number) => {
 
 
 /**
+ * 检查课程合同状态
+ * - needSign=true：未签合同 → 展示"请先签约"
+ * - auditPending=true：已签但审核中 → 禁用预约按钮
+ * - 沙龙课程（courseType=4）无需合同检查
+ */
+/**
  * 检查当前排期是否已有有效预约（status !== 3 即非已取消）
  * 避免用户重复进入订单页才报错
  */
@@ -163,18 +196,47 @@ const checkAlreadyBooked = async (classRecordId: number) => {
   }
 };
 
-const handleSubmit = async () => {
-  if (isSubmitted.value || alreadyBooked.value) return
+const loadRetrainCreditStatus = async (courseId: number) => {
+  try {
+    const result = await CourseApi.checkRetrainCredit({ courseId });
+    hasRetrainCredit.value = result?.has_credit === true;
+  } catch (error) {
+    console.error('检查复训资格失败:', error);
+    hasRetrainCredit.value = false;
+  }
+};
 
-  if (needRetrainFee.value) {
+/**
+ * 预约按钮点击处理
+ * 必须是非 async 函数：微信真机要求 requestSubscribeMessage 在用户 tap 的同步调用栈内触发，
+ * async 函数会破坏该上下文导致真机不弹订阅弹窗（开发者工具检测更宽松因此不受影响）
+ */
+const handleSubmit = () => {
+  if (isSubmitted.value || alreadyBooked.value) return;
+
+  if (needRetrainFee.value && hasRetrainCredit.value) {
+    // 有复训资格，直接预约无需支付
+    // #ifdef MP-WEIXIN
+    uni.requestSubscribeMessage({
+      tmplIds: [COURSE_REMINDER_TMPL_ID],
+      success: (res) => { console.log('[订阅授权-复训资格预约] success:', JSON.stringify(res)); },
+      fail: (err) => { console.log('[订阅授权-复训资格预约] fail:', JSON.stringify(err)); },
+      complete: () => { showConfirmAndBook(); }
+    });
+    // #endif
+    // #ifndef MP-WEIXIN
+    showConfirmAndBook();
+    // #endif
+  } else if (needRetrainFee.value) {
+    // 需要支付复训费，跳转订单页
     uni.showModal({
       title: '预约确认',
-      content: `预约成功后无法取消。确认要预约并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？`,
+      content: `确认要预约并支付复训费 ¥${courseInfo.value.retrainPrice} 吗？取消预约后复训费将保留至下期使用。`,
       confirmText: '确认预约',
       cancelText: '再想想',
       success: (res) => {
         if (res.confirm) {
-          isSubmitted.value = true
+          isSubmitted.value = true;
           const q = [
             `courseId=${courseInfo.value.courseId}`,
             `classRecordId=${courseInfo.value.classRecordId}`,
@@ -188,30 +250,21 @@ const handleSubmit = async () => {
       },
     });
   } else {
-    // 非复训费场景：在按钮点击的同步上下文中请求订阅授权
-    await requestSubscribe();
-
-    uni.showModal({
-      title: '预约确认',
-      content: '预约成功后无法取消，确认要预约吗？',
-      confirmText: '确认预约',
-      cancelText: '再想想',
-      success: async (res) => {
-        if (res.confirm) {
-          isSubmitted.value = true
-          try {
-            await CourseApi.createAppointment({
-              class_record_id: courseInfo.value.classRecordId
-            });
-            uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 });
-            setTimeout(() => { uni.navigateBack(); }, 2000);
-          } catch (error) {
-            isSubmitted.value = false
-            console.error('预约失败:', error);
-          }
-        }
-      },
+    // 非复训费场景：在 tap 同步上下文中直接调用 requestSubscribeMessage，complete 后弹确认框
+    // #ifdef MP-WEIXIN
+    uni.requestSubscribeMessage({
+      tmplIds: [COURSE_REMINDER_TMPL_ID],
+      success: (res) => { console.log('[订阅授权-预约] success:', JSON.stringify(res)); },
+      fail: (err) => { console.log('[订阅授权-预约] fail:', JSON.stringify(err)); },
+      complete: (res) => {
+        console.log('[订阅授权-预约] complete:', JSON.stringify(res));
+        showConfirmAndBook();
+      }
     });
+    // #endif
+    // #ifndef MP-WEIXIN
+    showConfirmAndBook();
+    // #endif
   }
 };
 
@@ -247,12 +300,13 @@ onLoad(async (options: any) => {
     loading.value = false;
   }
 
-  // 加载用户课程信息（attend_count + retrain_price）并检查是否已预约
+  // 加载用户课程信息、检查已预约状态、复训资格
   if (courseInfo.value.courseId) {
     uni.showLoading({ title: '加载中...' });
     await Promise.all([
       loadUserCourseInfo(courseInfo.value.courseId),
       checkAlreadyBooked(courseInfo.value.classRecordId),
+      loadRetrainCreditStatus(courseInfo.value.courseId),
     ]);
     uni.hideLoading();
   }
@@ -311,6 +365,10 @@ onLoad(async (options: any) => {
   background-color: #FFF3F0;
   border-radius: var(--td-radius-default);
   padding: 32rpx;
+
+  &--credit {
+    background-color: #E6F7FF;
+  }
 }
 
 .retrain-title {

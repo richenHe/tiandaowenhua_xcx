@@ -298,6 +298,10 @@ export interface Contract {
   expiry_date?: string
   /** 电子合同文件 URL（PDF/Word，用于下载查看） */
   contract_file_url?: string | null
+  /** 签署类型（1=用户电子签署, 3=管理员录入线下合同） */
+  sign_type?: number
+  /** 合同照片 URL 数组（管理员录入时上传的线下合同照片） */
+  contract_images?: string[]
 }
 
 /**
@@ -321,6 +325,10 @@ export interface ContractDetail {
     sign_ip?: string
     sign_device?: string
     effective_time?: string
+    /** 签署类型（1=用户电子签署, 3=管理员录入线下合同） */
+    sign_type?: number
+    /** 合同照片 URL 数组（管理员录入时上传的线下合同照片） */
+    contract_images?: string[]
   }
 }
 

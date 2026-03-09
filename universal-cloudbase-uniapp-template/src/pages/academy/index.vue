@@ -3,242 +3,199 @@
     <!-- 页面头部 -->
     <TdPageHeader title="商学院" :show-back="false" />
 
-    <!-- Hero Banner -->
-    <view class="hero-banner">
-      <view class="hero-icon">🏛️</view>
-      <view class="hero-title">孙膑道天道文化商学院</view>
-      <view class="hero-subtitle">传承国学智慧 · 弘扬天道文化</view>
+    <!-- 加载中 -->
+    <view v-if="loading" class="loading-container">
+      <text class="loading-text">加载中...</text>
     </view>
 
-    <!-- 页面内容 -->
-    <view class="page-content">
-      <!-- 快捷入口 -->
-      <view class="quick-access-section">
-        <view 
-          v-for="(item, index) in quickAccessList" 
-          :key="index"
-          class="quick-access-card"
-          @tap="handleQuickAccess(item.type)"
-        >
-          <view class="quick-access-body">
-            <text class="quick-access-icon">{{ item.icon }}</text>
-            <text class="quick-access-title">{{ item.title }}</text>
-          </view>
-        </view>
+    <template v-else>
+      <!-- Hero Banner（从接口读取） -->
+      <view v-if="heroSection" class="hero-banner" :style="{ background: heroSection.content?.background || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }">
+        <view class="hero-icon">{{ heroSection.content?.icon || '🏛️' }}</view>
+        <view class="hero-title">{{ heroSection.content?.title || '' }}</view>
+        <view class="hero-subtitle">{{ heroSection.content?.subtitle || '' }}</view>
       </view>
 
-      <!-- 商学院简介 -->
-      <view class="t-card t-card--bordered section-card">
-        <view class="t-card__header">
-          <text class="t-card__title">📖 商学院简介</text>
-        </view>
-        <view class="t-card__body">
-          <text class="intro-text">
-            孙膑道天道文化商学院，致力于传承和弘扬中华优秀传统文化，特别是兵法文化和天道智慧。我们以孙膑兵法为核心，结合现代商业实践，为学员提供系统的国学教育和商业智慧培训。
-          </text>
-          <text class="intro-text">
-            商学院秉承"修身、齐家、治企、平天下"的教育理念，通过初探班、密训班等多层次课程体系，帮助学员掌握天道智慧，提升人生格局，实现事业腾飞。
-          </text>
-        </view>
-      </view>
-
-      <!-- 核心理念 -->
-      <view class="t-section-title t-section-title--simple">💡 核心理念</view>
-      <view class="concepts-list">
-        <view 
-          v-for="(concept, index) in concepts" 
-          :key="index"
-          class="concept-card t-card t-card--bordered"
-        >
-          <view class="t-card__body">
-            <view class="concept-content">
-              <view class="concept-icon" :class="concept.iconClass">
-                <text>{{ concept.icon }}</text>
-              </view>
-              <view class="concept-info">
-                <text class="concept-name">{{ concept.name }}</text>
-                <text class="concept-desc">{{ concept.description }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 讲师团队 -->
-      <view class="t-section-title t-section-title--simple">👨‍🏫 讲师团队</view>
-      <view class="t-card t-card--bordered section-card">
-        <view class="t-card__body">
-          <view 
-            v-for="(teacher, index) in teachers" 
-            :key="index"
-            class="teacher-item"
-            :class="{ 'teacher-item--last': index === teachers.length - 1 }"
+      <!-- 页面内容 -->
+      <view class="page-content">
+        <!-- 快捷入口（从接口读取） -->
+        <view v-if="quickAccessSection && quickAccessSection.content?.items?.length" class="quick-access-section">
+          <view
+            v-for="(item, index) in quickAccessSection.content.items"
+            :key="'qa-' + index"
+            class="quick-access-card"
+            :style="{ background: item.gradient || '' }"
+            @tap="handleQuickAccess(item.link)"
           >
-            <view class="teacher-avatar" :class="`teacher-avatar--${teacher.theme}`">
-              <text class="teacher-avatar-text">{{ teacher.name.charAt(0) }}</text>
-            </view>
-            <view class="teacher-info">
-              <text class="teacher-name">{{ teacher.name }}</text>
-              <text class="teacher-role">{{ teacher.role }}</text>
-              <text class="teacher-desc">{{ teacher.description }}</text>
+            <view class="quick-access-body">
+              <text class="quick-access-icon">{{ item.icon }}</text>
+              <text class="quick-access-title">{{ item.title }}</text>
             </view>
           </view>
         </view>
-      </view>
 
-      <!-- 发展历程 -->
-      <view class="t-section-title t-section-title--simple">📅 发展历程</view>
-      <view class="t-card t-card--bordered section-card">
-        <view class="t-card__body">
-          <view class="timeline">
-            <view 
-              v-for="(item, index) in timeline" 
-              :key="index"
-              class="timeline-item"
-            >
-              <view class="timeline-dot" :style="{ background: item.color }"></view>
-              <view class="timeline-content">
-                <text class="timeline-year">{{ item.year }}</text>
-                <text class="timeline-desc">{{ item.description }}</text>
+        <!-- 动态板块渲染 -->
+        <template v-for="section in contentSections" :key="section.id">
+
+          <!-- 商学院简介 -->
+          <template v-if="section.section_type === 'intro'">
+            <view class="t-card t-card--bordered section-card">
+              <view class="t-card__header">
+                <text class="t-card__title">{{ section.icon }} {{ section.title }}</text>
+              </view>
+              <view class="t-card__body">
+                <text
+                  v-for="(p, pi) in (section.content?.paragraphs || [])"
+                  :key="'intro-' + section.id + '-' + pi"
+                  class="intro-text"
+                >{{ p }}</text>
               </view>
             </view>
-          </view>
-        </view>
-      </view>
+          </template>
 
-      <!-- 荣誉资质 -->
-      <view class="t-section-title t-section-title--simple">🏆 荣誉资质</view>
-      <view class="honors-grid">
-        <view 
-          v-for="(honor, index) in honors" 
-          :key="index"
-          class="honor-card t-card t-card--bordered"
-        >
-          <view class="t-card__body honor-card-body">
-            <text class="honor-icon">{{ honor.icon }}</text>
-            <text class="honor-name">{{ honor.name }}</text>
-          </view>
-        </view>
-      </view>
+          <!-- 核心理念 -->
+          <template v-if="section.section_type === 'concepts'">
+            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="concepts-list">
+              <view
+                v-for="(concept, ci) in (section.content?.items || [])"
+                :key="'concept-' + section.id + '-' + ci"
+                class="concept-card t-card t-card--bordered"
+              >
+                <view class="t-card__body">
+                  <view class="concept-content">
+                    <view class="concept-icon" :style="{ background: concept.color || '#667eea' }">
+                      <text>{{ concept.icon }}</text>
+                    </view>
+                    <view class="concept-info">
+                      <text class="concept-name">{{ concept.name }}</text>
+                      <text class="concept-desc">{{ concept.description }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </template>
 
-    </view>
+          <!-- 讲师团队 -->
+          <template v-if="section.section_type === 'teachers'">
+            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-card t-card--bordered section-card">
+              <view class="t-card__body">
+                <view
+                  v-for="(teacher, ti) in (section.content?.items || [])"
+                  :key="'teacher-' + section.id + '-' + ti"
+                  class="teacher-item"
+                  :class="{ 'teacher-item--last': ti === (section.content?.items || []).length - 1 }"
+                >
+                  <!-- 真实头像 -->
+                  <image
+                    v-if="teacher.avatar"
+                    class="teacher-avatar-img"
+                    :src="teacher.avatar"
+                    mode="aspectFill"
+                  />
+                  <!-- 文字头像 fallback -->
+                  <view v-else class="teacher-avatar" :class="`teacher-avatar--${teacher.theme || 'primary'}`">
+                    <text class="teacher-avatar-text">{{ teacher.name?.charAt(0) || '' }}</text>
+                  </view>
+                  <view class="teacher-info">
+                    <text class="teacher-name">{{ teacher.name }}</text>
+                    <text class="teacher-role">{{ teacher.role }}</text>
+                    <text class="teacher-desc">{{ teacher.description }}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </template>
+
+          <!-- 发展历程 -->
+          <template v-if="section.section_type === 'timeline'">
+            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-card t-card--bordered section-card">
+              <view class="t-card__body">
+                <view class="timeline">
+                  <view
+                    v-for="(item, ii) in (section.content?.items || [])"
+                    :key="'timeline-' + section.id + '-' + ii"
+                    class="timeline-item"
+                  >
+                    <view class="timeline-dot" :style="{ background: item.color }"></view>
+                    <view class="timeline-content">
+                      <text class="timeline-year">{{ item.year }}</text>
+                      <text class="timeline-desc">{{ item.description }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </template>
+
+          <!-- 荣誉资质 -->
+          <template v-if="section.section_type === 'honors'">
+            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="honors-grid">
+              <view
+                v-for="(honor, hi) in (section.content?.items || [])"
+                :key="'honor-' + section.id + '-' + hi"
+                class="honor-card t-card t-card--bordered"
+              >
+                <view class="t-card__body honor-card-body">
+                  <image v-if="honor.image" class="honor-image" :src="honor.image" mode="aspectFit" />
+                  <text v-else class="honor-icon">{{ honor.icon }}</text>
+                  <text class="honor-name">{{ honor.name }}</text>
+                </view>
+              </view>
+            </view>
+          </template>
+
+        </template>
+      </view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import { CourseApi } from '@/api/modules/course';
 
-// 快捷入口数据
-const quickAccessList = ref([
-  {
-    icon: '📱',
-    title: '朋友圈素材',
-    desc: '获取精美素材，一键分享推广',
-    type: 'moments'
-  },
-  {
-    icon: '🏆',
-    title: '学员成功案例',
-    desc: '见证成长故事，激励学习动力',
-    type: 'cases'
-  }
-]);
+const loading = ref(true);
+const sections = ref<any[]>([]);
 
-// 快捷入口点击事件
-const handleQuickAccess = (type: string) => {
-  if (type === 'moments') {
-    uni.navigateTo({
-      url: '/pages/academy/materials/index'
-    });
-  } else if (type === 'cases') {
-    uni.navigateTo({
-      url: '/pages/academy/cases/index'
-    });
+const heroSection = computed(() =>
+  sections.value.find(s => s.section_type === 'hero') || null
+);
+
+const quickAccessSection = computed(() =>
+  sections.value.find(s => s.section_type === 'quick_access') || null
+);
+
+const contentSections = computed(() =>
+  sections.value.filter(s => !['hero', 'quick_access'].includes(s.section_type))
+);
+
+const handleQuickAccess = (link: string) => {
+  if (link) {
+    uni.navigateTo({ url: link });
   }
 };
 
-// 核心理念数据
-const concepts = ref([
-  {
-    icon: '☯️',
-    iconClass: 'concept-icon--purple',
-    name: '天道思维',
-    description: '遵循自然规律，顺应天道运行，以天道智慧指导人生和事业'
-  },
-  {
-    icon: '⚔️',
-    iconClass: 'concept-icon--pink',
-    name: '兵法智慧',
-    description: '学习孙膑兵法，掌握战略思维，在商业竞争中运筹帷幄'
-  },
-  {
-    icon: '🌱',
-    iconClass: 'concept-icon--orange',
-    name: '知行合一',
-    description: '理论结合实践，学以致用，在实际生活和工作中践行天道智慧'
-  },
-  {
-    icon: '🤝',
-    iconClass: 'concept-icon--aqua',
-    name: '传承弘扬',
-    description: '传承中华文化，弘扬天道精神，让更多人受益于国学智慧'
+const loadSections = async () => {
+  try {
+    loading.value = true;
+    const res = await CourseApi.getAcademySections();
+    sections.value = res?.list || [];
+  } catch (e) {
+    console.error('加载商学院板块失败:', e);
+  } finally {
+    loading.value = false;
   }
-]);
+};
 
-// 讲师团队数据
-const teachers = ref([
-  {
-    name: '张教授',
-    role: '创始人 · 首席讲师',
-    description: '国学大师，孙膑兵法研究专家，从事国学教育30余年，培养学员逾万人',
-    theme: 'primary'
-  },
-  {
-    name: '李老师',
-    role: '特聘讲师 · 商业导师',
-    description: '资深企业家，成功创办多家企业，擅长将天道智慧应用于商业实践',
-    theme: 'success'
-  },
-  {
-    name: '王老师',
-    role: '特聘讲师 · 心理导师',
-    description: '心理学博士，专注于国学智慧与心理健康结合，帮助学员修身养性',
-    theme: 'warning'
-  }
-]);
-
-// 发展历程数据
-const timeline = ref([
-  {
-    year: '2024年',
-    description: '推出线上课程体系，建立传播大使制度，学员突破5000人',
-    color: '#0052D9'
-  },
-  {
-    year: '2023年',
-    description: '开设密训班课程，深度培养核心学员，成功案例不断涌现',
-    color: '#00A870'
-  },
-  {
-    year: '2022年',
-    description: '正式成立商学院，推出初探班课程，吸引首批学员',
-    color: '#D4AF37'
-  },
-  {
-    year: '2021年',
-    description: '筹备阶段，组建教研团队，开发课程体系',
-    color: '#BBBBBB'
-  }
-]);
-
-// 荣誉资质数据
-const honors = ref([
-  { icon: '🏅', name: '优秀国学教育机构' },
-  { icon: '⭐', name: '年度最佳课程奖' },
-  { icon: '📜', name: '文化传承贡献奖' },
-  { icon: '💼', name: '企业培训示范单位' }
-]);
+onMounted(() => {
+  loadSections();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -248,6 +205,19 @@ const honors = ref([
   width: 100%;
   min-height: 100vh;
   background-color: $td-bg-color-page;
+}
+
+// 加载状态
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: $td-text-color-secondary;
 }
 
 // Hero Banner
@@ -298,13 +268,9 @@ const honors = ref([
   border-radius: 16rpx;
   overflow: hidden;
   transition: transform 0.2s;
-  
+
   &:active {
     transform: scale(0.98);
-  }
-  
-  &:first-child {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   }
 }
 
@@ -336,22 +302,22 @@ const honors = ref([
   background-color: $td-bg-color-container;
   border-radius: $td-radius-large;
   overflow: hidden;
-  
+
   &--bordered {
     border: 2rpx solid $td-border-level-1;
   }
-  
+
   &__header {
     padding: 32rpx;
     border-bottom: 2rpx solid $td-border-level-1;
   }
-  
+
   &__title {
     font-size: $td-font-size-m;
     font-weight: $td-font-weight-semibold;
     color: $td-text-color-primary;
   }
-  
+
   &__body {
     padding: 32rpx;
   }
@@ -368,13 +334,12 @@ const honors = ref([
   color: $td-text-color-secondary;
   font-size: $td-font-size-base;
   margin-bottom: 32rpx;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
 }
 
-// 分节标题
 // 核心理念列表
 .concepts-list {
   display: flex;
@@ -405,22 +370,6 @@ const honors = ref([
   font-size: 40rpx;
   color: white;
   flex-shrink: 0;
-  
-  &--purple {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  }
-  
-  &--pink {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  }
-  
-  &--orange {
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  }
-  
-  &--aqua {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  }
 }
 
 .concept-info {
@@ -449,11 +398,11 @@ const honors = ref([
   gap: 24rpx;
   padding-bottom: 32rpx;
   border-bottom: 2rpx solid $td-border-level-1;
-  
+
   &:not(&--last) {
     margin-bottom: 32rpx;
   }
-  
+
   &--last {
     padding-bottom: 0;
     border-bottom: none;
@@ -469,18 +418,25 @@ const honors = ref([
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  
+
   &--primary {
     background-color: $td-brand-color;
   }
-  
+
   &--success {
     background-color: $td-success-color;
   }
-  
+
   &--warning {
     background-color: $td-warning-color;
   }
+}
+
+.teacher-avatar-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .teacher-avatar-text {
@@ -525,7 +481,7 @@ const honors = ref([
   align-items: flex-start;
   gap: 24rpx;
   padding-bottom: 32rpx;
-  
+
   &:last-child {
     padding-bottom: 0;
   }
@@ -538,7 +494,7 @@ const honors = ref([
   margin-top: 4rpx;
   flex-shrink: 0;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -549,7 +505,7 @@ const honors = ref([
     height: 80rpx;
     background-color: $td-border-level-1;
   }
-  
+
   .timeline-item:last-child &::after {
     display: none;
   }
@@ -593,10 +549,15 @@ const honors = ref([
   margin-bottom: 16rpx;
 }
 
+.honor-image {
+  width: 72rpx;
+  height: 72rpx;
+  margin-bottom: 16rpx;
+}
+
 .honor-name {
   display: block;
   font-size: 24rpx;
   color: $td-text-color-secondary;
 }
 </style>
-

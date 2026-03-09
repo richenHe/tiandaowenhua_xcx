@@ -12,6 +12,7 @@
  * 触发方式：cloudfunction.json 的 timer trigger，event 无 action 字段
  */
 const { db, response, formatDateTime, formatBeijingDate } = require('../../common');
+const { getActivityTypeByPosition } = require('../../constants/activityType');
 
 module.exports = async (event, context) => {
   try {
@@ -198,15 +199,3 @@ module.exports = async (event, context) => {
     return response.error('自动更新活动状态失败', error);
   }
 };
-
-/**
- * 根据岗位名称推断活动类型
- */
-function getActivityTypeByPosition(positionName) {
-  if (!positionName) return 4;
-  const name = positionName.trim();
-  if (name.includes('辅导员')) return 1;
-  if (name.includes('义工') || name.includes('会务')) return 2;
-  if (name.includes('沙龙')) return 3;
-  return 4;
-}

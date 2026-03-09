@@ -5,8 +5,9 @@
  * 判断逻辑（按优先级）：
  * 1. 查 status=1（有效）的最新 user_courses 记录
  * 2. contract_signed=1 → 不需要签（已签约且有效）
- * 3. contract_signed=0 → 检查是否配置了合同模板，有则需要签约
- * 4. 未配置合同模板 → 不需要签
+ * 3. 检查 contract_signatures 中是否有 status=5（待审核）记录 → 告知等待审核
+ * 4. contract_signed=0 → 检查是否配置了合同模板，有则需要签约
+ * 5. 未配置合同模板 → 不需要签
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
@@ -45,6 +46,27 @@ module.exports = async (event, context) => {
     // 已签合同（且 status=1 未过期）→ 不需要签
     if (contractSigned === 1) {
       return response.success({ needSign: false, hasTemplate: true, reason: '已签约' });
+    }
+
+    // 检查是否有待审核的签署记录（status=5），禁止重复提交
+    const { data: pendingSignatures } = await db
+      .from('contract_signatures')
+      .select('id, sign_time')
+      .eq('user_id', user.id)
+      .eq('course_id', Number(courseId))
+      .eq('status', 5)
+      .order('id', { ascending: false })
+      .limit(1);
+
+    if (pendingSignatures && pendingSignatures.length > 0) {
+      return response.success({
+        needSign: false,
+        hasTemplate: true,
+        auditPending: true,
+        reason: '合同已提交，等待管理员审核',
+        pendingSignatureId: pendingSignatures[0].id,
+        signedAt: pendingSignatures[0].sign_time
+      });
     }
 
     // 未签合同 → 查该课程是否配了合同模板

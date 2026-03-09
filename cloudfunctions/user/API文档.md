@@ -678,6 +678,61 @@ wx.cloud.callFunction({
 
 ---
 
+### 18. admin:getUserRefereeInfo - 查询伯乐与千里马
+
+**接口概述**: 管理端按用户名字/ID/手机号查询其伯乐（推荐人）和千里马（我推荐的人）列表
+
+**请求参数**:
+```json
+{
+  "action": "admin:getUserRefereeInfo",
+  "keyword": "张三"  // 用户名字、ID 或手机号
+}
+```
+
+**查询规则**:
+- 纯数字且 ≤11 位：优先按 id 精确匹配，其次按 phone 精确匹配
+- 纯数字且 >11 位：按 id 精确匹配
+- 非纯数字：按 real_name 模糊匹配（LIKE %keyword%）
+
+**响应数据**:
+```json
+{
+  "user": {
+    "id": 1,
+    "uid": "cloud-uid-xxx",
+    "real_name": "张三",
+    "phone": "13800138000",
+    "avatar": "https://...",
+    "referee_code": "ABC123",
+    "ambassador_level": 2
+  },
+  "referee": {
+    "id": 10,
+    "real_name": "李四",
+    "phone": "13700137000",
+    "avatar": "https://...",
+    "ambassador_level": 1
+  },
+  "referrals": [
+    {
+      "id": 2,
+      "real_name": "王五",
+      "phone": "13600136000",
+      "avatar": "https://...",
+      "ambassador_level": 0,
+      "created_at": "2026-02-09 10:00:00"
+    }
+  ]
+}
+```
+
+**说明**:
+- `referee` 为 null 表示该用户无推荐人
+- `referrals` 为空数组表示该用户未推荐任何人
+
+---
+
 ## 数据库表
 
 ### users 表

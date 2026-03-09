@@ -69,7 +69,7 @@
               <view v-else-if="item.refund_status === 4" class="status-tag status-rejected">
                 <text class="status-tag-text">退款被驳回</text>
               </view>
-              <view v-else-if="item.contract_signed === 1" class="status-tag status-contract">
+              <view v-else-if="isContractLocked(item)" class="status-tag status-contract">
                 <text class="status-tag-text">已签合同</text>
               </view>
               <!-- 驳回/失败原因 -->
@@ -87,8 +87,8 @@
               </view>
               <!-- 申请中：显示时钟图标 -->
               <text v-else-if="item.refund_status === 1" class="status-icon-right">🕐</text>
-              <!-- 已签合同：锁图标 -->
-              <text v-else-if="item.contract_signed === 1" class="lock-icon">🔒</text>
+              <!-- 已签合同（含赠课已签）：锁图标 -->
+              <text v-else-if="isContractLocked(item)" class="lock-icon">🔒</text>
               <!-- 失败/驳回：重新申请箭头 -->
               <text v-else class="status-icon-right">→</text>
             </view>
@@ -207,6 +207,7 @@ import { formatPrice } from '@/utils'
 import { cloudFileIDToURL } from '@/api/modules/storage'
 
 interface RefundableItem {
+  id: number
   order_no: string
   order_type: number
   order_name: string
@@ -215,6 +216,8 @@ interface RefundableItem {
   pay_time: string | null
   created_at: string
   contract_signed: number
+  /** 是否被合同锁定（自身已签 或 赠课已签），在 loadData 构建时计算，避免 Vue 响应式时序问题 */
+  is_locked: boolean
   cover_image: string
   refund_status: number
   refund_reason: string
@@ -229,6 +232,9 @@ const allItems = ref<RefundableItem[]>([])
 const selectedOrderNo = ref('')
 const refundReason = ref('')
 const activeTab = ref<string | number>('pending')
+// 因赠课已签合同而被锁定的父订单 ID 集合（精确匹配 source_order_id，避免锁定所有同类课程订单）
+// 赠课合同锁定集合（已改为直接写入 item.is_locked，此处保留以兼容旧引用）
+const giftContractLockedSet = ref(new Set<number>())
 
 const tabOptions = [
   { label: '未退款', value: 'pending' },
@@ -252,11 +258,17 @@ const canSubmit = computed(() =>
 )
 
 /**
+ * 判断该订单是否因合同被锁定（自身已签 或 赠课已签）
+ * is_locked 在 loadData 构建 allItems 时已计算好，直接读取避免响应式时序问题
+ */
+const isContractLocked = (item: RefundableItem): boolean => item.is_locked
+
+/**
  * 判断该订单是否可以选中申请退款
- * 仅 refund_status=0/2/4 且未签合同可选
+ * 仅 refund_status=0/2/4 且未被合同锁定可选
  */
 const canSelectItem = (item: RefundableItem): boolean => {
-  if (item.contract_signed === 1) return false
+  if (isContractLocked(item)) return false
   return [0, 2, 4].includes(item.refund_status)
 }
 
@@ -283,12 +295,18 @@ const loadData = async () => {
 
     const contractMap = new Map<number, number>()
     const coverMap = new Map<number, string>()
+    const lockedOrderIds = new Set<number>()
     for (const c of courses) {
       contractMap.set(c.course_id, c.contract_signed || 0)
       if (c.cover_image) {
         coverMap.set(c.course_id, cloudFileIDToURL(c.cover_image))
       }
+      // 赠课已签合同 → 精确锁定创建该赠课的那一笔订单（source_order_id），而非锁定所有同类课程订单
+      if (c.is_gift === 1 && c.contract_signed === 1 && c.source_order_id) {
+        lockedOrderIds.add(c.source_order_id)
+      }
     }
+    giftContractLockedSet.value = lockedOrderIds
 
     // 也加载已退款订单（pay_status=4）
     let refundedOrders: any[] = []
@@ -301,10 +319,15 @@ const loadData = async () => {
 
     const allOrders = [...orders, ...refundedOrders]
 
-    // 筛选课程类订单（order_type 1/2/3），排除大使升级(4)
+    // 仅展示普通课程订单（order_type=1）
     allItems.value = allOrders
-      .filter((o: any) => [1, 2, 3].includes(o.order_type))
-      .map((o: any) => ({
+      .filter((o: any) => o.order_type === 1)
+      .map((o: any) => {
+        const isLocked = (contractMap.get(o.related_id) ?? 0) === 1 || lockedOrderIds.has(o.id)
+        // 调试：输出每条订单的锁定判断详情
+        console.log(`[lock] id=${o.id}(${typeof o.id}) name=${o.order_name} locked=${isLocked} hasInSet=${lockedOrderIds.has(o.id)}`)
+        return {
+        id: o.id,
         order_no: o.order_no,
         order_type: o.order_type,
         order_name: o.order_name,
@@ -313,6 +336,8 @@ const loadData = async () => {
         pay_time: o.pay_time,
         created_at: o.created_at,
         contract_signed: contractMap.get(o.related_id) ?? 0,
+        // 合同锁定状态：自身已签 或 该订单是某赠课的 source_order_id 且赠课已签合同
+        is_locked: isLocked,
         cover_image: coverMap.get(o.related_id) || '',
         refund_status: o.refund_status || 0,
         refund_reason: o.refund_reason || '',
@@ -320,7 +345,8 @@ const loadData = async () => {
         refund_amount: o.refund_amount || 0,
         refund_time: o.refund_time || null,
         invoice_url: o.invoice_url || ''
-      }))
+        }
+      })
   } catch (error) {
     console.error('加载数据失败:', error)
     uni.showToast({ title: '加载失败，请重试', icon: 'none' })
@@ -335,8 +361,8 @@ const onTabChange = () => {
 }
 
 const handleCardClick = (item: RefundableItem) => {
-  // 已签合同不可操作
-  if (item.contract_signed === 1) {
+  // 已签合同（含赠课已签）不可操作
+  if (isContractLocked(item)) {
     uni.showModal({
       title: '无法退款',
       content: '该课程已签署学习合同，无法申请退款。如有疑问请联系客服。',

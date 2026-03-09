@@ -1,37 +1,19 @@
 /**
- * 更新上课排期（管理端接口）
+ * 取消上课排期（管理端接口）
  *
- * 接收 camelCase 参数（前端规范），内部转换为 snake_case 存入数据库
+ * 排期创建后不可编辑，仅支持取消操作（status → 0）
+ * 取消时自动处理：批量取消该排期下所有待上课预约，复训预约触发复训资格保留
  *
  * @param {Object} event
- * @param {number} event.id           - 排期 ID（必填）
- * @param {number} event.courseId     - 课程 ID
- * @param {string} event.classDate    - 开课日期（如 "2026-03-01"）
- * @param {string} event.classEndDate - 结课日期（如 "2026-03-05"），单天课与 classDate 相同
- * @param {string} event.classTime    - 上课时段（如 "09:00-17:00"），对应 DB 字段 class_time
- * @param {string} event.classLocation- 上课地点，对应 DB 字段 class_location
- * @param {number} event.totalQuota   - 总名额，对应 DB 字段 total_quota
- * @param {string} event.remark       - 备注，对应 DB 字段 remark
- * @param {string} event.teacher      - 讲师
- * @param {number} event.status       - 状态：0取消/1正常/2已结束
+ * @param {number} event.id     - 排期 ID（必填）
+ * @param {number} event.status - 必须为 0（取消）
  */
-const { findOne, update } = require('../../common/db');
-const { response } = require('../../common');
+const { db, findOne, update } = require('../../common/db');
+const { response, formatDateTime } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
 module.exports = async (event, context) => {
-  const {
-    id,
-    courseId,
-    classDate,
-    classEndDate,
-    classTime,
-    classLocation,
-    totalQuota,
-    remark,
-    teacher,
-    status
-  } = event;
+  const { id, status } = event;
 
   try {
     const validation = validateRequired({ id }, ['id']);
@@ -44,51 +26,66 @@ module.exports = async (event, context) => {
       return response.notFound('上课排期不存在');
     }
 
-    // 修改了开课日期时，校验不能早于今天（北京时间 UTC+8）
-    if (classDate !== undefined) {
-      const nowBJ = new Date(Date.now() + 8 * 60 * 60 * 1000);
-      const todayStr = nowBJ.toISOString().slice(0, 10);
-      if (classDate < todayStr) {
-        return response.paramError('上课日期不能早于今天');
+    // 排期创建后不可编辑，仅允许取消（status=0）
+    if (status !== 0) {
+      return response.error('排期创建后不可编辑，如需修改请取消后重新创建');
+    }
+
+    if (record.status === 0) {
+      return response.error('该排期已取消');
+    }
+
+    const now = formatDateTime(new Date());
+
+    // 1. 查询该排期下所有待上课的预约
+    const { data: pendingAppointments } = await db
+      .from('appointments')
+      .select('id, is_retrain, order_no')
+      .eq('class_record_id', parseInt(id))
+      .eq('status', 0);
+
+    const cancelledCount = pendingAppointments ? pendingAppointments.length : 0;
+
+    if (cancelledCount > 0) {
+      // 2. 批量取消所有待上课预约
+      await db
+        .from('appointments')
+        .update({ status: 3, cancel_time: now })
+        .eq('class_record_id', parseInt(id))
+        .eq('status', 0);
+
+      // 3. 复训预约 → 保留复训资格（retrain_credit_status=1）
+      const retrainOrderNos = pendingAppointments
+        .filter(a => a.is_retrain === 1 && a.order_no)
+        .map(a => a.order_no);
+
+      for (const orderNo of retrainOrderNos) {
+        await db
+          .from('orders')
+          .update({ retrain_credit_status: 1 })
+          .eq('order_no', orderNo)
+          .eq('order_type', 2)
+          .eq('pay_status', 1);
+      }
+
+      if (retrainOrderNos.length > 0) {
+        console.log(`[Course/updateClassRecord] 已保留 ${retrainOrderNos.length} 笔复训资格`);
       }
     }
 
-    if (classDate !== undefined && classEndDate !== undefined && classEndDate && classEndDate < classDate) {
-      return response.paramError('结课日期不能早于上课时间');
-    }
+    // 4. 更新排期状态为已取消，booked_quota 归零
+    await update('class_records', { status: 0, booked_quota: 0 }, { id });
 
-    const fieldsToUpdate = {};
-    if (courseId !== undefined) fieldsToUpdate.course_id = courseId;
-    if (classDate !== undefined) fieldsToUpdate.class_date = classDate;
-    // 未传 classEndDate 但传了 classDate 时，同步更新结课日期为开课日期（单天课保持同步）
-    if (classEndDate !== undefined) {
-      fieldsToUpdate.class_end_date = classEndDate || classDate || record.class_date;
-    } else if (classDate !== undefined) {
-      // 只改了开课日期但没传结课日期：若原结课日期=原开课日期（单天课），同步跟随
-      if (record.class_end_date === record.class_date) {
-        fieldsToUpdate.class_end_date = classDate;
-      }
-    }
-    if (classTime !== undefined) fieldsToUpdate.class_time = classTime || null;
-    if (classLocation !== undefined) fieldsToUpdate.class_location = classLocation;
-    if (totalQuota !== undefined) fieldsToUpdate.total_quota = totalQuota;
-    if (remark !== undefined) fieldsToUpdate.remark = remark;
-    if (teacher !== undefined) fieldsToUpdate.teacher = teacher;
-    if (status !== undefined) fieldsToUpdate.status = status;
-
-    if (Object.keys(fieldsToUpdate).length === 0) {
-      return response.paramError('没有需要更新的字段');
-    }
-
-    await update('class_records', fieldsToUpdate, { id });
+    console.log(`[Course/updateClassRecord] 排期 ${id} 已取消，连带取消 ${cancelledCount} 条预约`);
 
     return response.success({
       success: true,
-      message: '上课排期更新成功'
+      cancelled_appointments: cancelledCount,
+      message: `排期已取消，${cancelledCount} 条待上课预约已自动取消`
     });
 
   } catch (error) {
-    console.error('[Course/updateClassRecord] 更新失败:', error);
-    return response.error('更新上课排期失败', error);
+    console.error('[Course/updateClassRecord] 取消失败:', error);
+    return response.error('取消排期失败', error);
   }
 };

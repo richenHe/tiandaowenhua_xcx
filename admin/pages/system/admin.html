@@ -1,60 +1,158 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><title>管理员管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}.t{font-size:20px;font-weight:600;margin-bottom:24px}.b{display:flex;gap:12px;margin-bottom:20px}
+  <link rel="icon" href="data:,"><title>管理员管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260306"><style>.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}.t{font-size:20px;font-weight:600;margin-bottom:24px}.b{display:flex;gap:12px;margin-bottom:20px}
     .avatar-upload-placeholder{width:80px;height:80px;border:2px dashed #dcdcdc;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:12px;gap:4px;transition:all 0.3s;}
     .avatar-upload-placeholder:hover{border-color:#0052d9;color:#0052d9;}
     .avatar-preview-wrap{position:relative;display:inline-block;}
     .avatar-preview-wrap img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid #dcdcdc;}
     .avatar-actions{margin-top:6px;display:flex;gap:6px;}
     .upload-tips{font-size:12px;color:#999;margin-top:4px;}
+    .perm-tree{border:1px solid #dcdcdc;border-radius:6px;padding:16px;max-height:400px;overflow-y:auto;}
+    .perm-group{margin-bottom:12px;}
+    .perm-group-header{display:flex;align-items:center;gap:8px;padding:6px 0;font-weight:500;font-size:14px;cursor:pointer;}
+    .perm-group-children{padding-left:28px;display:flex;flex-direction:column;gap:4px;}
+    .perm-item{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer;}
+    .perm-item:hover,.perm-group-header:hover{background:#f5f7fa;border-radius:4px;}
   </style></head><body>
   <div id="app">
     <t-layout style="height: 100vh;">
-      <!-- 顶部导航 -->
-      <t-header height="64px" style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 24px;
-        background: #fff;
-        border-bottom: 1px solid #dcdcdc;
-      ">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+      <t-header height="64px" style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:18px;font-weight:600;color:#333;">🎨 天道文化后台管理</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display:flex;align-items:center;gap:16px;">
           <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
           <t-button size="small" @click="handleLogout">退出</t-button>
         </div>
       </t-header>
-      
       <t-layout>
-        <!-- 侧边菜单 -->
         <sidebar-menu active-key="admin-list"></sidebar-menu>
-        
-        <!-- 主内容区 -->
-        <t-content class="page-content"><div class="c"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h1 class="t" style="margin:0;">管理员管理</h1><t-button theme="success" @click="add">+ 添加管理员</t-button></div><div class="b" style="flex-wrap:wrap;align-items:center;"><div style="width:200px;flex:0 0 200px;"><t-input v-model="k" placeholder="用户名/姓名" clearable /></div><t-button theme="primary" @click="ld">查询</t-button><t-button @click="rs">重置</t-button></div><t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" row-key="id" bordered stripe><template #role="{row}"><t-tag v-if="row.role==='super_admin'" theme="danger">超级管理员</t-tag><t-tag v-else-if="row.role==='admin'" theme="primary">管理员</t-tag><t-tag v-else-if="row.role==='operator'" theme="default">操作员</t-tag></template><template #status="{row}"><t-tag v-if="row.status===1" theme="success">正常</t-tag><t-tag v-else theme="danger">禁用</t-tag></template><template #op="{row}"><t-space><t-button size="small" variant="text" @click="edit(row)">编辑</t-button><t-button size="small" variant="text" theme="warning" @click="toggle(row)">{{row.status===1?'禁用':'启用'}}</t-button><t-button v-if="row.role!=='super'" size="small" variant="text" theme="danger" @click="del(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="v" :header="m==='add'?'添加管理员':'编辑管理员'" @confirm="save">
-  <t-form :data="f" :rules="rules" label-width="100px">
-    <t-form-item label="头像">
-      <input type="file" ref="avatarFileInput" accept="image/*" @change="handleAvatarChange" style="display:none;">
-      <div v-if="!f.avatarDisplay" class="avatar-upload-placeholder" @click="triggerAvatarUpload">
-        <t-icon name="user-circle" style="font-size:24px;"/>
-        <span>上传头像</span>
-      </div>
-      <div v-else class="avatar-preview-wrap">
-        <img :src="f.avatarDisplay" alt="头像预览">
-        <div class="avatar-actions">
-          <t-button size="small" variant="outline" @click="triggerAvatarUpload" :loading="avatarUploading">更换</t-button>
-          <t-button size="small" theme="danger" variant="outline" @click="removeAvatar">删除</t-button>
-        </div>
-      </div>
-      <p class="upload-tips">支持 JPG/PNG，不超过 2MB</p>
-    </t-form-item>
-    <t-form-item label="用户名" name="username"><t-input v-model="f.username" :disabled="m==='edit'"/></t-form-item>
-    <t-form-item label="姓名" name="real_name"><t-input v-model="f.real_name"/></t-form-item>
-    <t-form-item v-if="m==='add'" label="密码" name="password"><t-input v-model="f.password" type="password"/></t-form-item>
-    <t-form-item label="角色" name="role"><t-select v-model="f.role" :options="roleOpts"/></t-form-item>
-  </t-form>
-</t-dialog>        </t-content>
+        <t-content class="page-content"><div class="c">
+          <h1 class="t" style="margin:0 0 16px 0;">管理员管理</h1>
+          <t-tabs v-model="activeTab">
+            <!-- ===================== Tab 1：管理员列表 ===================== -->
+            <t-tab-panel value="admin" label="管理员列表">
+              <div style="padding-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                  <div class="b" style="margin-bottom:0;flex-wrap:wrap;align-items:center;">
+                    <div style="width:200px;flex:0 0 200px;"><t-input v-model="k" placeholder="用户名/姓名" clearable /></div>
+                    <t-button theme="primary" @click="ld">查询</t-button>
+                    <t-button @click="rs">重置</t-button>
+                  </div>
+                  <t-button theme="success" @click="add">+ 添加管理员</t-button>
+                </div>
+                <t-table :data="d" :columns="cols" :loading="lg" :pagination="pg" @page-change="chg" row-key="id" bordered stripe>
+                  <template #role="{row}">
+                    <t-tag :theme="getRoleTagTheme(row.role)">{{ row.role_text || row.role }}</t-tag>
+                  </template>
+                  <template #status="{row}">
+                    <t-tag v-if="row.status===1" theme="success">正常</t-tag>
+                    <t-tag v-else theme="danger">禁用</t-tag>
+                  </template>
+                  <template #op="{row}">
+                    <t-space>
+                      <t-button size="small" variant="text" @click="edit(row)">编辑</t-button>
+                      <t-button size="small" variant="text" theme="warning" @click="toggle(row)">{{row.status===1?'禁用':'启用'}}</t-button>
+                      <t-button v-if="row.role!=='super_admin'" size="small" variant="text" theme="danger" @click="del(row)">删除</t-button>
+                    </t-space>
+                  </template>
+                </t-table>
+              </div>
+            </t-tab-panel>
+
+            <!-- ===================== Tab 2：角色管理 ===================== -->
+            <t-tab-panel value="role" label="角色管理">
+              <div style="padding-top:16px;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+                  <t-button theme="success" @click="addRole">+ 添加角色</t-button>
+                </div>
+                <t-table :data="roleList" :columns="roleCols" :loading="roleLoading" row-key="id" bordered stripe>
+                  <template #is_system="{row}">
+                    <t-tag v-if="row.is_system===1" theme="warning" variant="light">内置</t-tag>
+                    <t-tag v-else theme="default" variant="light">自定义</t-tag>
+                  </template>
+                  <template #perm_count="{row}">
+                    <span v-if="row.permissions && row.permissions[0]==='*'">全部权限</span>
+                    <span v-else>{{ (row.permissions || []).length }} 个页面</span>
+                  </template>
+                  <template #status="{row}">
+                    <t-tag v-if="row.status===1" theme="success">启用</t-tag>
+                    <t-tag v-else theme="danger">禁用</t-tag>
+                  </template>
+                  <template #role_op="{row}">
+                    <t-space>
+                      <t-button size="small" variant="text" @click="editRole(row)" :disabled="row.role_key==='super_admin'">编辑权限</t-button>
+                      <t-button v-if="row.is_system!==1" size="small" variant="text" theme="danger" @click="delRole(row)">删除</t-button>
+                    </t-space>
+                  </template>
+                </t-table>
+              </div>
+            </t-tab-panel>
+          </t-tabs>
+
+          <!-- ===================== 管理员新增/编辑弹窗 ===================== -->
+          <t-dialog v-model:visible="v" :header="m==='add'?'添加管理员':'编辑管理员'" @confirm="save">
+            <t-form :data="f" :rules="rules" label-width="100px">
+              <t-form-item label="头像">
+                <input type="file" ref="avatarFileInput" accept="image/*" @change="handleAvatarChange" style="display:none;">
+                <div v-if="!f.avatarDisplay" class="avatar-upload-placeholder" @click="triggerAvatarUpload">
+                  <t-icon name="user-circle" style="font-size:24px;"/>
+                  <span>上传头像</span>
+                </div>
+                <div v-else class="avatar-preview-wrap">
+                  <img :src="f.avatarDisplay" alt="头像预览">
+                  <div class="avatar-actions">
+                    <t-button size="small" variant="outline" @click="triggerAvatarUpload" :loading="avatarUploading">更换</t-button>
+                    <t-button size="small" theme="danger" variant="outline" @click="removeAvatar">删除</t-button>
+                  </div>
+                </div>
+                <p class="upload-tips">支持 JPG/PNG，不超过 2MB</p>
+              </t-form-item>
+              <t-form-item label="用户名" name="username"><t-input v-model="f.username" :disabled="m==='edit'"/></t-form-item>
+              <t-form-item label="姓名" name="real_name"><t-input v-model="f.real_name"/></t-form-item>
+              <t-form-item v-if="m==='add'" label="密码" name="password"><t-input v-model="f.password" type="password"/></t-form-item>
+              <t-form-item label="角色" name="role"><t-select v-model="f.role" :options="roleOpts"/></t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- ===================== 角色新增/编辑弹窗 ===================== -->
+          <t-dialog v-model:visible="roleDialogVisible" :header="roleMode==='add'?'添加角色':'编辑角色'" width="640px" @confirm="saveRole">
+            <t-form :data="roleForm" label-width="100px">
+              <t-form-item label="角色标识" required>
+                <t-input v-model="roleForm.role_key" :disabled="roleMode==='edit'" placeholder="字母数字下划线，如 finance"/>
+              </t-form-item>
+              <t-form-item label="角色名称" required>
+                <t-input v-model="roleForm.role_name" placeholder="如：财务"/>
+              </t-form-item>
+              <t-form-item label="描述">
+                <t-input v-model="roleForm.description" placeholder="角色描述（可选）"/>
+              </t-form-item>
+              <t-form-item label="页面权限">
+                <div class="perm-tree">
+                  <div v-for="group in permissionTree" :key="group.key" class="perm-group">
+                    <template v-if="group.children && group.children.length > 0">
+                      <div class="perm-group-header" @click="toggleGroup(group)">
+                        <t-checkbox :checked="isGroupAllChecked(group)" :indeterminate="isGroupIndeterminate(group)" @change="val => onGroupChange(group, val)" />
+                        <span>{{ group.label }}</span>
+                      </div>
+                      <div class="perm-group-children">
+                        <div v-for="item in group.children" :key="item.key" class="perm-item">
+                          <t-checkbox :checked="roleForm.permissions.includes(item.key)" @change="val => onPermItemChange(item.key, val)" />
+                          <span>{{ item.label }}</span>
+                        </div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="perm-item">
+                        <t-checkbox :checked="roleForm.permissions.includes(group.key)" @change="val => onPermItemChange(group.key, val)" />
+                        <span>{{ group.label }}</span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+        </div></t-content>
       </t-layout>
     </t-layout>
   </div>
@@ -62,122 +160,304 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
+  <script src="../../assets/js/config.js?v=20260306"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260306"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
-      setup() {
-        // 引入侧边栏导航功能
-        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
-        const lg = ref(false);
-        const d = ref([]);
-        const v = ref(false);
-        const m = ref('add');
-        const f = ref({});
-        const k = ref('');
-        const pg = ref({ current: 1, pageSize: 20, total: 0 });
-        // admin_users.role: super_admin超级管理员/admin管理员/operator操作员
-        const roleOpts = [{ label: '超级管理员', value: 'super_admin' }, { label: '管理员', value: 'admin' }, { label: '操作员', value: 'operator' }];
-        const cols = [
-          { colKey: 'username', title: '用户名', width: 150 },
-          { colKey: 'real_name', title: '姓名', width: 120 },
-          { colKey: 'role', title: '角色', width: 150, cell: 'role' },
-          { colKey: 'last_login_at', title: '最后登录', width: 160 },
-          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
-          { colKey: 'op', title: '操作', width: 200, cell: 'op' }
-        ];
-        const rules = {
-          username: [{ required: true, message: '请输入用户名' }],
-          real_name: [{ required: true, message: '请输入姓名' }],
-          password: [{ required: true, message: '请输入密码' }],
-          role: [{ required: true, message: '请选择角色' }]
-        };
+  <script src="../../assets/js/admin-api.js?v=20260306"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
+  <script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-        // 头像上传
-        const avatarFileInput = ref(null);
-        const avatarUploading = ref(false);
-        const triggerAvatarUpload = () => avatarFileInput.value && avatarFileInput.value.click();
-        const handleAvatarChange = async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const valid = CloudStorageHelper.validateFile(file, { maxSize: 2 * 1024 * 1024, accept: ['image/jpeg', 'image/png'] });
-          if (!valid.valid) { TDesign.MessagePlugin.error(valid.message); return; }
-          avatarUploading.value = true;
-          try {
-            const cloudPath = CloudStorageHelper.generateCloudPath('admins/avatars', file.name);
-            const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
-            f.value.avatar = result.fileID;
-            const tempUrl = await CloudStorageHelper.getSingleTempURL(result.fileID);
-            f.value.avatarDisplay = tempUrl;
-          } catch (error) {
-            TDesign.MessagePlugin.error('头像上传失败：' + error.message);
-          } finally {
-            avatarUploading.value = false;
-            e.target.value = '';
-          }
-        };
-        const removeAvatar = () => { f.value.avatar = ''; f.value.avatarDisplay = ''; };
+// 页面权限树结构（与侧边栏菜单一一对应）
+const PERMISSION_TREE = [
+  { key: 'dashboard', label: '数据概览', children: [] },
+  { key: 'user', label: '用户管理', children: [
+    { key: 'user-list', label: '学员列表' },
+    { key: 'user-referee', label: '推荐关系查询' }
+  ]},
+  { key: 'order', label: '订单管理', children: [
+    { key: 'order-list', label: '订单列表' },
+    { key: 'order-refund', label: '退款管理' },
+    { key: 'withdraw-audit', label: '提现审核' },
+    { key: 'mall-goods', label: '商城商品' },
+    { key: 'exchange-records', label: '兑换管理' }
+  ]},
+  { key: 'course', label: '课程管理', children: [
+    { key: 'course-list', label: '课程列表' },
+    { key: 'schedule-list', label: '排期管理' },
+    { key: 'appointment-list', label: '预约管理' },
+    { key: 'case-list', label: '案例管理' },
+    { key: 'material-list', label: '素材管理' }
+  ]},
+  { key: 'ambassador', label: '大使管理', children: [
+    { key: 'ambassador-list', label: '大使列表' },
+    { key: 'application-audit', label: '申请审核' },
+    { key: 'activity-list', label: '活动管理' },
+    { key: 'contract-list', label: '合约管理' },
+    { key: 'contract-audit', label: '合约审核' }
+  ]},
+  { key: 'system', label: '系统管理', children: [
+    { key: 'admin-list', label: '管理员管理' },
+    { key: 'config', label: '系统配置' },
+    { key: 'banner-list', label: '轮播图管理' },
+    { key: 'announcement-list', label: '公告管理' },
+    { key: 'feedback-list', label: '反馈管理' },
+    { key: 'notification-list', label: '通知管理' },
+    { key: 'level-config', label: '等级配置' }
+  ]}
+];
 
-        const ld = async () => {
-          lg.value = true;
-          try {
-            const data = await AdminAPI.getAdminUserList({ page: pg.value.current, page_size: pg.value.pageSize, keyword: k.value });
-            d.value = data.list;
-            pg.value.total = data.total;
-          } catch (e) { TDesign.MessagePlugin.error(e.message); }
-          finally { lg.value = false; }
-        };
-        const rs = () => { k.value = ''; ld(); };
-        const chg = pi => { pg.value.current = pi.current; pg.value.pageSize = pi.pageSize; ld(); };
+createApp({
+  setup() {
+    const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+    const activeTab = ref('admin');
 
-        const add = () => { m.value = 'add'; f.value = { role: 'admin', avatar: '', avatarDisplay: '' }; v.value = true; };
+    // ==================== 管理员列表 ====================
+    const lg = ref(false);
+    const d = ref([]);
+    const v = ref(false);
+    const m = ref('add');
+    const f = ref({});
+    const k = ref('');
+    const pg = ref({ current: 1, pageSize: 20, total: 0 });
+    const roleOpts = ref([]);
+    const cols = [
+      { colKey: 'username', title: '用户名', width: 150 },
+      { colKey: 'real_name', title: '姓名', width: 120 },
+      { colKey: 'role', title: '角色', width: 150, cell: 'role' },
+      { colKey: 'last_login_at', title: '最后登录', width: 160 },
+      { colKey: 'status', title: '状态', width: 100, cell: 'status' },
+      { colKey: 'op', title: '操作', width: 200, cell: 'op' }
+    ];
+    const rules = {
+      username: [{ required: true, message: '请输入用户名' }],
+      real_name: [{ required: true, message: '请输入姓名' }],
+      password: [{ required: true, message: '请输入密码' }],
+      role: [{ required: true, message: '请选择角色' }]
+    };
 
-        const edit = async (row) => {
-          m.value = 'edit';
-          f.value = { ...row, avatar: row.avatar || '', avatarDisplay: '' };
-          v.value = true;
-          if (row.avatar) {
-            try {
-              const tempUrl = await CloudStorageHelper.getSingleTempURL(row.avatar);
-              f.value.avatarDisplay = tempUrl;
-            } catch (e) { console.error('获取头像URL失败', e); }
-          }
-        };
+    // 角色 Tag 主题映射
+    const roleThemeMap = { super_admin: 'danger', admin: 'primary', operator: 'default' };
+    const getRoleTagTheme = (roleKey) => roleThemeMap[roleKey] || 'primary';
 
-        const toggle = async (row) => {
-          try { await AdminAPI.toggleAdminStatus({ adminId: row.id }); TDesign.MessagePlugin.success('操作成功'); ld(); }
-          catch (e) { TDesign.MessagePlugin.error(e.message); }
-        };
+    // 头像上传
+    const avatarFileInput = ref(null);
+    const avatarUploading = ref(false);
+    const triggerAvatarUpload = () => avatarFileInput.value && avatarFileInput.value.click();
+    const handleAvatarChange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const valid = CloudStorageHelper.validateFile(file, { maxSize: 2 * 1024 * 1024, accept: ['image/jpeg', 'image/png'] });
+      if (!valid.valid) { TDesign.MessagePlugin.error(valid.message); return; }
+      avatarUploading.value = true;
+      try {
+        const cloudPath = CloudStorageHelper.generateCloudPath('admins/avatars', file.name);
+        const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+        f.value.avatar = result.fileID;
+        const tempUrl = await CloudStorageHelper.getSingleTempURL(result.fileID);
+        f.value.avatarDisplay = tempUrl;
+      } catch (error) {
+        TDesign.MessagePlugin.error('头像上传失败：' + error.message);
+      } finally {
+        avatarUploading.value = false;
+        e.target.value = '';
+      }
+    };
+    const removeAvatar = () => { f.value.avatar = ''; f.value.avatarDisplay = ''; };
 
-        const del = async (row) => {
-          try { await AdminAPI.deleteAdmin({ adminId: row.id }); TDesign.MessagePlugin.success('删除成功'); ld(); }
-          catch (e) { TDesign.MessagePlugin.error(e.message); }
-        };
+    // 加载角色列表（用于下拉框和角色管理 Tab）
+    const roleList = ref([]);
+    const roleLoading = ref(false);
+    const loadRoles = async () => {
+      roleLoading.value = true;
+      try {
+        const data = await AdminAPI.getRoleList({ status: '' });
+        roleList.value = data.list || [];
+        // 构建角色下拉选项：super_admin 仅当前登录者也是 super_admin 时显示
+        const currentRole = adminInfo.value?.role;
+        roleOpts.value = (data.list || [])
+          .filter(r => r.status === 1)
+          .filter(r => r.role_key !== 'super_admin' || currentRole === 'super_admin')
+          .map(r => ({ label: r.role_name, value: r.role_key }));
+      } catch (e) { TDesign.MessagePlugin.error('加载角色失败：' + e.message); }
+      finally { roleLoading.value = false; }
+    };
 
-        const save = async () => {
-          try {
-            const payload = { ...f.value };
-            delete payload.avatarDisplay;
-            if (m.value === 'add') await AdminAPI.createAdmin(payload);
-            else await AdminAPI.updateAdmin(payload);
-            TDesign.MessagePlugin.success('保存成功');
-            v.value = false; ld();
-          } catch (e) { TDesign.MessagePlugin.error(e.message); }
-        };
+    const ld = async () => {
+      lg.value = true;
+      try {
+        const data = await AdminAPI.getAdminUserList({ page: pg.value.current, page_size: pg.value.pageSize, keyword: k.value });
+        d.value = data.list;
+        pg.value.total = data.total;
+      } catch (e) { TDesign.MessagePlugin.error(e.message); }
+      finally { lg.value = false; }
+    };
+    const rs = () => { k.value = ''; ld(); };
+    const chg = pi => { pg.value.current = pi.current; pg.value.pageSize = pi.pageSize; ld(); };
 
-        onMounted(ld);
-        return {
-          activeMenuKey: 'admin-list',adminInfo, handleMenuChange, handleLogout,
-          lg, d, v, m, f, k, pg, roleOpts, cols, rules,
-          ld, rs, chg, add, edit, toggle, del, save,
-          avatarFileInput, avatarUploading, triggerAvatarUpload, handleAvatarChange, removeAvatar
-        };}}).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');</script></body></html>
+    const add = () => { m.value = 'add'; f.value = { role: 'admin', avatar: '', avatarDisplay: '' }; v.value = true; };
+    const edit = async (row) => {
+      m.value = 'edit';
+      f.value = { ...row, avatar: row.avatar || '', avatarDisplay: '' };
+      v.value = true;
+      if (row.avatar) {
+        try {
+          const tempUrl = await CloudStorageHelper.getSingleTempURL(row.avatar);
+          f.value.avatarDisplay = tempUrl;
+        } catch (e) { console.error('获取头像URL失败', e); }
+      }
+    };
+    const toggle = async (row) => {
+      try { await AdminAPI.toggleAdminStatus({ adminId: row.id }); TDesign.MessagePlugin.success('操作成功'); ld(); }
+      catch (e) { TDesign.MessagePlugin.error(e.message); }
+    };
+    const del = async (row) => {
+      try { await AdminAPI.deleteAdmin({ adminId: row.id }); TDesign.MessagePlugin.success('删除成功'); ld(); }
+      catch (e) { TDesign.MessagePlugin.error(e.message); }
+    };
+    const save = async () => {
+      try {
+        const payload = { ...f.value };
+        delete payload.avatarDisplay;
+        if (m.value === 'add') await AdminAPI.createAdmin(payload);
+        else await AdminAPI.updateAdmin(payload);
+        TDesign.MessagePlugin.success('保存成功');
+        v.value = false; ld();
+      } catch (e) { TDesign.MessagePlugin.error(e.message); }
+    };
 
+    // ==================== 角色管理 ====================
+    const roleCols = [
+      { colKey: 'role_name', title: '角色名称', width: 120 },
+      { colKey: 'role_key', title: '角色标识', width: 130 },
+      { colKey: 'is_system', title: '类型', width: 80, cell: 'is_system' },
+      { colKey: 'perm_count', title: '权限', width: 100, cell: 'perm_count' },
+      { colKey: 'description', title: '描述', ellipsis: true },
+      { colKey: 'status', title: '状态', width: 80, cell: 'status' },
+      { colKey: 'role_op', title: '操作', width: 160, cell: 'role_op' }
+    ];
+    const roleDialogVisible = ref(false);
+    const roleMode = ref('add');
+    const roleForm = ref({ role_key: '', role_name: '', description: '', permissions: [] });
+    const permissionTree = ref(PERMISSION_TREE);
 
+    const addRole = () => {
+      roleMode.value = 'add';
+      roleForm.value = { role_key: '', role_name: '', description: '', permissions: [] };
+      roleDialogVisible.value = true;
+    };
 
+    const editRole = (row) => {
+      roleMode.value = 'edit';
+      let perms = row.permissions || [];
+      if (typeof perms === 'string') { try { perms = JSON.parse(perms); } catch(e) { perms = []; } }
+      roleForm.value = {
+        id: row.id,
+        role_key: row.role_key,
+        role_name: row.role_name,
+        description: row.description || '',
+        permissions: [...perms]
+      };
+      roleDialogVisible.value = true;
+    };
 
+    const delRole = async (row) => {
+      const confirmDia = await TDesign.DialogPlugin.confirm({
+        header: '确认删除',
+        body: `确定要删除角色「${row.role_name}」吗？`,
+      });
+      confirmDia.onConfirm = async () => {
+        try {
+          await AdminAPI.deleteRole(row.id);
+          TDesign.MessagePlugin.success('删除成功');
+          confirmDia.destroy();
+          loadRoles();
+        } catch (e) { TDesign.MessagePlugin.error(e.message); }
+      };
+    };
 
+    const saveRole = async () => {
+      if (!roleForm.value.role_key || !roleForm.value.role_name) {
+        TDesign.MessagePlugin.warning('请填写角色标识和名称');
+        return;
+      }
+      try {
+        if (roleMode.value === 'add') {
+          await AdminAPI.createRole({
+            roleKey: roleForm.value.role_key,
+            roleName: roleForm.value.role_name,
+            permissions: roleForm.value.permissions,
+            description: roleForm.value.description
+          });
+        } else {
+          await AdminAPI.updateRole({
+            id: roleForm.value.id,
+            roleName: roleForm.value.role_name,
+            permissions: roleForm.value.permissions,
+            description: roleForm.value.description
+          });
+        }
+        TDesign.MessagePlugin.success('保存成功');
+        roleDialogVisible.value = false;
+        loadRoles();
+      } catch (e) { TDesign.MessagePlugin.error(e.message); }
+    };
 
+    // ==================== 权限树复选框逻辑 ====================
+    const isGroupAllChecked = (group) => {
+      if (!group.children || group.children.length === 0) return false;
+      return group.children.every(c => roleForm.value.permissions.includes(c.key));
+    };
 
+    const isGroupIndeterminate = (group) => {
+      if (!group.children || group.children.length === 0) return false;
+      const checkedCount = group.children.filter(c => roleForm.value.permissions.includes(c.key)).length;
+      return checkedCount > 0 && checkedCount < group.children.length;
+    };
 
+    const onGroupChange = (group, checked) => {
+      const perms = [...roleForm.value.permissions];
+      if (group.children && group.children.length > 0) {
+        group.children.forEach(c => {
+          const idx = perms.indexOf(c.key);
+          if (checked && idx === -1) perms.push(c.key);
+          if (!checked && idx !== -1) perms.splice(idx, 1);
+        });
+      }
+      roleForm.value.permissions = perms;
+    };
+
+    const toggleGroup = (group) => {
+      // 点击行文字时切换整组
+    };
+
+    const onPermItemChange = (key, checked) => {
+      const perms = [...roleForm.value.permissions];
+      const idx = perms.indexOf(key);
+      if (checked && idx === -1) perms.push(key);
+      if (!checked && idx !== -1) perms.splice(idx, 1);
+      roleForm.value.permissions = perms;
+    };
+
+    onMounted(async () => {
+      await loadRoles();
+      ld();
+    });
+
+    return {
+      activeTab, adminInfo, handleMenuChange, handleLogout,
+      // 管理员列表
+      lg, d, v, m, f, k, pg, roleOpts, cols, rules,
+      ld, rs, chg, add, edit, toggle, del, save,
+      avatarFileInput, avatarUploading, triggerAvatarUpload, handleAvatarChange, removeAvatar,
+      getRoleTagTheme,
+      // 角色管理
+      roleList, roleLoading, roleCols, roleDialogVisible, roleMode, roleForm,
+      permissionTree, loadRoles,
+      addRole, editRole, delRole, saveRole,
+      isGroupAllChecked, isGroupIndeterminate, onGroupChange, toggleGroup, onPermItemChange
+    };
+  }
+}).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
+  </script>
+</body></html>

@@ -1,19 +1,54 @@
 /**
  * 批量签到（管理端接口）
+ *
+ * attend_count 从 0 变为 1 时，若课程 need_contract=0，自动触发后续业务逻辑
  */
 const { db } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired, formatDateTime } = require('../../common/utils');
+const { triggerPostContractLogic } = require('../../common/triggerPostContractLogic');
+
+/**
+ * 更新单个预约的 attend_count，并在 0→1 时自动触发"不需要合同"课程的后续逻辑
+ */
+async function updateAttendCountAndCheck(appointment) {
+  const { data: userCourse } = await db
+    .from('user_courses')
+    .select('id, attend_count, contract_signed')
+    .eq('user_id', appointment.user_id)
+    .eq('course_id', appointment.course_id)
+    .single();
+
+  if (!userCourse) return;
+
+  const oldCount = userCourse.attend_count || 0;
+  const newCount = oldCount + 1;
+
+  await db
+    .from('user_courses')
+    .update({ attend_count: newCount })
+    .eq('user_id', appointment.user_id)
+    .eq('course_id', appointment.course_id);
+
+  // attend_count 0→1 且尚未签合同：检查课程是否 need_contract=0
+  if (newCount === 1 && oldCount === 0 && userCourse.contract_signed === 0) {
+    const { data: course } = await db
+      .from('courses')
+      .select('need_contract')
+      .eq('id', appointment.course_id)
+      .single();
+
+    if (course && course.need_contract === 0) {
+      await triggerPostContractLogic(appointment.user_id, appointment.course_id, userCourse.id);
+    }
+  }
+}
 
 module.exports = async (event, context) => {
   const { class_record_id, user_ids, appointment_ids } = event;
 
   try {
-    let appointmentsQuery;
-
-    // 支持两种调用方式：
     // 方式1（推荐）：直接传 appointment_ids 预约ID数组
-    // 方式2（旧版）：传 class_record_id + user_ids
     if (appointment_ids && Array.isArray(appointment_ids) && appointment_ids.length > 0) {
       const { data: appointments, error: queryError } = await db
         .from('appointments')
@@ -37,22 +72,8 @@ module.exports = async (event, context) => {
 
       if (updateError) throw updateError;
 
-      // 更新用户课程上课次数
       for (const appointment of appointments) {
-        const { data: userCourse } = await db
-          .from('user_courses')
-          .select('attend_count')
-          .eq('user_id', appointment.user_id)
-          .eq('course_id', appointment.course_id)
-          .single();
-
-        if (userCourse) {
-          await db
-            .from('user_courses')
-            .update({ attend_count: (userCourse.attend_count || 0) + 1 })
-            .eq('user_id', appointment.user_id)
-            .eq('course_id', appointment.course_id);
-        }
+        await updateAttendCountAndCheck(appointment);
       }
 
       return response.success({
@@ -62,7 +83,7 @@ module.exports = async (event, context) => {
       });
     }
 
-    // 旧版方式：通过 class_record_id + user_ids
+    // 方式2（旧版）：通过 class_record_id + user_ids
     const validation = validateRequired({ class_record_id, user_ids }, ['class_record_id', 'user_ids']);
     if (!validation.valid) {
       return response.paramError(validation.message);
@@ -72,7 +93,6 @@ module.exports = async (event, context) => {
       return response.paramError('user_ids 必须是非空数组');
     }
 
-    // 查询待签到的预约记录（status=0 为待上课）
     const { data: appointments, error: queryError } = await db
       .from('appointments')
       .select('id, user_id, course_id')
@@ -88,10 +108,9 @@ module.exports = async (event, context) => {
       return response.error('没有找到待签到的预约记录');
     }
 
-    // 批量更新签到状态（注意：字段是 checkin_time 而非 checkin_at）
     const appointmentIds = appointments.map(a => a.id);
-    const now = formatDateTime(new Date());  // 使用 MySQL 格式而非 ISO 格式
-    
+    const now = formatDateTime(new Date());
+
     const { error: updateError } = await db
       .from('appointments')
       .update({
@@ -104,24 +123,8 @@ module.exports = async (event, context) => {
       throw updateError;
     }
 
-    // 更新用户课程上课次数
     for (const appointment of appointments) {
-      const { data: userCourse } = await db
-        .from('user_courses')
-        .select('attend_count')
-        .eq('user_id', appointment.user_id)
-        .eq('course_id', appointment.course_id)
-        .single();
-
-      if (userCourse) {
-        await db
-          .from('user_courses')
-          .update({
-            attend_count: (userCourse.attend_count || 0) + 1
-          })
-          .eq('user_id', appointment.user_id)
-          .eq('course_id', appointment.course_id);
-      }
+      await updateAttendCountAndCheck(appointment);
     }
 
     return response.success({

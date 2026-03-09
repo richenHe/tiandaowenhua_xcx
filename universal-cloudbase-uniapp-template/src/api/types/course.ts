@@ -98,18 +98,38 @@ export interface Appointment {
   id: number
   /** 上课排期ID */
   class_record_id: number
+  /** 课程ID */
+  course_id?: number
   /** 课程名称 */
   course_name: string
+  /** 课程类型 */
+  course_type?: number
   /** 开始时间 */
   start_time: string
+  /** 上课时段 */
+  class_time?: string
+  /** 上课日期 */
+  class_date?: string
+  /** 结课日期 */
+  class_end_date?: string
   /** 上课地点 */
   location: string
-  /** 状态（1-待确认，2-已签到，3-已取消） */
+  /** 授课老师 */
+  teacher?: string
+  /** 是否沙龙课程 */
+  is_salon?: boolean
+  /** 状态：非沙龙 0进行中/1已结课/3已取消；沙龙 0待上课/1已签到/2缺席/3已取消 */
   status: number
   /** 状态文本 */
-  status_text: string
+  status_name?: string
+  /** 状态文本（兼容旧字段） */
+  status_text?: string
   /** 签到时间 */
-  checkin_time: string | null
+  checkin_time?: string | null
+  /** 今日是否已签到（非沙龙课程） */
+  today_checked_in?: boolean
+  /** 是否有过任何签到记录（非沙龙课程） */
+  has_ever_checked_in?: boolean
 }
 
 /**

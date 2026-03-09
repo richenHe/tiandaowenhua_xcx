@@ -70,6 +70,11 @@ const adminHandlers = {
   updateAdminUser: require('./handlers/admin/updateAdminUser'),
   deleteAdminUser: require('./handlers/admin/deleteAdminUser'),
   getAdminUserList: require('./handlers/admin/getAdminUserList'),
+  // 角色管理
+  getRoleList: require('./handlers/admin/getRoleList'),
+  createRole: require('./handlers/admin/createRole'),
+  updateRole: require('./handlers/admin/updateRole'),
+  deleteRole: require('./handlers/admin/deleteRole'),
   // 轮播图管理
   getAdminBannerList: require('./handlers/admin/getAdminBannerList'),
   createBanner: require('./handlers/admin/createBanner'),

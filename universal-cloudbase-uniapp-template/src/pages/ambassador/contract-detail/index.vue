@@ -58,43 +58,71 @@
           </view>
         </view>
 
-        <!-- 电子版合同 -->
-        <view v-if="contractDetail" class="t-section-title t-section-title--simple">📄 协议内容</view>
-        <view v-if="contractDetail" class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
-          <view class="t-card__body">
-            <view
-              v-if="contractDetail.signature.contract_file_url"
-              :style="{
-                padding: '32rpx',
-                background: '#F5F5F5',
-                borderRadius: '12rpx',
-                textAlign: 'center'
-              }"
-            >
-              <view :style="{ fontSize: '48rpx', marginBottom: '16rpx' }">📄</view>
-              <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '24rpx' }">
-                下载并查看电子版合同
+        <!-- 合同照片（管理员录入的线下合同） -->
+        <template v-if="contractDetail && hasContractImages">
+          <view class="t-section-title t-section-title--simple">📷 合同照片</view>
+          <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+            <view class="t-card__body">
+              <view class="contract-images-grid">
+                <view
+                  v-for="(imgUrl, idx) in contractDetail.signature.contract_images"
+                  :key="idx"
+                  class="contract-image-item"
+                  @tap="previewContractImage(idx)"
+                >
+                  <image :src="imgUrl" mode="aspectFill" class="contract-image-thumb" />
+                </view>
               </view>
-              <button
-                class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
-                @tap="handleViewContract"
-              >
-                查看电子版合同
-              </button>
-            </view>
-            <view
-              v-else
-              :style="{
-                padding: '32rpx',
-                textAlign: 'center',
-                color: '#999',
-                fontSize: '26rpx'
-              }"
-            >
-              该协议暂无电子版文件
             </view>
           </view>
-        </view>
+        </template>
+
+        <!-- 电子版合同 -->
+        <template v-if="contractDetail && contractDetail.signature.contract_file_url">
+          <view class="t-section-title t-section-title--simple">📄 协议内容</view>
+          <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+            <view class="t-card__body">
+              <view
+                :style="{
+                  padding: '32rpx',
+                  background: '#F5F5F5',
+                  borderRadius: '12rpx',
+                  textAlign: 'center'
+                }"
+              >
+                <view :style="{ fontSize: '48rpx', marginBottom: '16rpx' }">📄</view>
+                <view :style="{ fontSize: '28rpx', color: '#333', marginBottom: '24rpx' }">
+                  下载并查看电子版合同
+                </view>
+                <button
+                  class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
+                  @tap="handleViewContract"
+                >
+                  查看电子版合同
+                </button>
+              </view>
+            </view>
+          </view>
+        </template>
+
+        <!-- 无合同文件提示 -->
+        <template v-if="contractDetail && !hasContractImages && !contractDetail.signature.contract_file_url">
+          <view class="t-section-title t-section-title--simple">📄 协议内容</view>
+          <view class="t-card t-card--bordered" :style="{ marginBottom: '48rpx' }">
+            <view class="t-card__body">
+              <view
+                :style="{
+                  padding: '32rpx',
+                  textAlign: 'center',
+                  color: '#999',
+                  fontSize: '26rpx'
+                }"
+              >
+                暂无合同文件
+              </view>
+            </view>
+          </view>
+        </template>
 
         <!-- 底部留白 -->
         <view :style="{ height: '120rpx' }"></view>
@@ -168,6 +196,22 @@ const formatDate = (dateStr: string) => {
   return dateStr.split(' ')[0]
 }
 
+// 是否有合同照片
+const hasContractImages = computed(() => {
+  const images = contractDetail.value?.signature?.contract_images
+  return Array.isArray(images) && images.length > 0
+})
+
+// 预览合同照片
+const previewContractImage = (index: number) => {
+  const images = contractDetail.value?.signature?.contract_images
+  if (!images?.length) return
+  uni.previewImage({
+    urls: images,
+    current: images[index]
+  })
+}
+
 // 查看电子版合同（下载并打开 PDF/Word）
 const handleViewContract = () => {
   const url = contractDetail.value?.signature?.contract_file_url
@@ -200,6 +244,26 @@ const handleViewContract = () => {
 .empty-text {
   font-size: 28rpx;
   color: #999;
+}
+
+// 合同照片网格
+.contract-images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.contract-image-item {
+  width: calc((100% - 32rpx) / 3);
+  aspect-ratio: 1;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background-color: #F5F5F5;
+}
+
+.contract-image-thumb {
+  width: 100%;
+  height: 100%;
 }
 </style>
 

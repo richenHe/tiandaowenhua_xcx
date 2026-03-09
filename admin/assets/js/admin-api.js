@@ -69,6 +69,9 @@ class AdminAPI {
     if (result.token) {
       localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, result.token);
       localStorage.setItem(CONFIG.STORAGE_KEYS.ADMIN_INFO, JSON.stringify(result.admin));
+      // 存储角色权限（侧边栏和页面级权限校验使用）
+      const perms = result.admin?.permissions || [];
+      localStorage.setItem('admin_permissions', JSON.stringify(perms));
     }
     return result;
   }
@@ -102,6 +105,23 @@ class AdminAPI {
 
   static async deleteAdminUser(id) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'deleteAdminUser', { id });
+  }
+
+  // 角色管理
+  static async getRoleList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'getRoleList', params);
+  }
+
+  static async createRole(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'createRole', data);
+  }
+
+  static async updateRole(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'updateRole', data);
+  }
+
+  static async deleteRole(id) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.SYSTEM, 'deleteRole', { id });
   }
 
   // 系统配置
@@ -213,6 +233,16 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserDetail', { userId });
   }
 
+  /** 用户课程列表 */
+  static async getUserCourseList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserCourseList', params);
+  }
+
+  /** 手动新增用户课程 */
+  static async adminAddUserCourse(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'adminAddUserCourse', data);
+  }
+
   static async updateUserReferee(userId, newRefereeId, reason) {
     // 云函数期望 remark，前端传的是 reason，做映射
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'updateUserReferee', { userId, newRefereeId, remark: reason });
@@ -220,6 +250,32 @@ class AdminAPI {
 
   static async getRefereeChangeLogs(userId, params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getRefereeChangeLogs', { userId, ...params });
+  }
+
+  // ==================== 表现分与评估名单 (6个接口) ====================
+
+  static async addPerformanceScore(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'addPerformanceScore', data);
+  }
+
+  static async deductPerformanceScore(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'deductPerformanceScore', data);
+  }
+
+  static async getEvaluationList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getEvaluationList', params);
+  }
+
+  static async setBlacklist(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'setBlacklist', data);
+  }
+
+  static async removeBlacklist(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'removeBlacklist', data);
+  }
+
+  static async updateBlacklistConfig(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'updateBlacklistConfig', data);
   }
 
   // ==================== 订单模块 (4个接口) ====================
@@ -370,6 +426,15 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCheckinQRCode', data);
   }
 
+  // 每日签到管理（非沙龙课程）
+  static async getDailyCheckins(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getDailyCheckins', params);
+  }
+
+  static async manageDailyCheckin(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'manageDailyCheckin', data);
+  }
+
   // 案例管理
   static async getCaseList(params = {}) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getCaseList', params);
@@ -411,6 +476,11 @@ class AdminAPI {
   // 学院内容
   static async manageAcademyContent(data) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'manageAcademyContent', data);
+  }
+
+  // 商学院板块管理
+  static async manageAcademySections(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'manageAcademySections', data);
   }
 
   // 排期管理（别名方法，向后兼容）
@@ -629,6 +699,16 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'terminateContract', data);
   }
 
+  /** 管理员录入课程线下合约 */
+  static async adminCreateCourseContract(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminCreateCourseContract', data);
+  }
+
+  /** 获取用户已购买且未签合同的课程列表 */
+  static async adminGetUserPaidCourses(userId) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminGetUserPaidCourses', { userId });
+  }
+
   // ==================== 商城商品模块 ====================
 
   static async getMallGoodsList(params = {}) {
@@ -676,6 +756,12 @@ class AdminAPI {
 
   static async getLevelConfig() {
     return this.getAmbassadorLevelConfigs();
+  }
+
+  /** 按等级编号获取单个等级配置（level: 0普通/1准青鸾/2青鸾/3鸿鹄） */
+  static async getLevelConfigByLevel(level) {
+    const configs = await this.getAmbassadorLevelConfigs();
+    return (configs || []).find(c => Number(c.level) === Number(level)) || null;
   }
 
   static async updateLevelConfig(data) {
@@ -765,11 +851,11 @@ class AdminAPI {
     throw new Error('删除通知配置功能暂未开放');
   }
 
-  // ==================== 用户关系别名方法 ====================
+  // ==================== 用户关系 ====================
 
-  /** 获取推荐关系树 — 后端暂无此 action */
-  static async getReferralTree(params = {}) {
-    throw new Error('推荐关系树功能暂未开放');
+  /** 按用户名字/ID/手机号查询伯乐（推荐人）和千里马（我推荐的人）列表 */
+  static async getUserRefereeInfo(keyword) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserRefereeInfo', { keyword });
   }
 }
 

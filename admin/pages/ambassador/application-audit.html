@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>申请审核</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>申请审核</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305"><style>
   </style></head><body>
   <div id="app">
     <t-layout style="height: 100vh;">
@@ -61,13 +61,29 @@
   </div>
 </t-dialog>
 
+<!-- 通过审核弹窗：设置冻结积分 -->
+<t-dialog v-model:visible="approveVisible" header="审核通过 — 设置冻结积分" @confirm="confirmApprove" :confirm-btn="{ content: '确认通过', theme: 'primary' }">
+  <div style="padding:8px 0;">
+    <p style="color:#666;font-size:13px;margin:0 0 16px;">该冻结积分将在用户签署协议升级时发放，可以填 0 表示不发放。</p>
+    <t-form label-width="120px">
+      <t-form-item label="冻结积分">
+        <t-input-number v-model="approveFrozenPoints" :min="0" :step="100" style="width:100%;" placeholder="请输入冻结积分金额"/>
+      </t-form-item>
+      <t-form-item label="单次解冻积分">
+        <div style="font-size:14px;color:#333;line-height:32px;">{{ approveUnfreezePerReferral > 0 ? approveUnfreezePerReferral : '未配置' }}</div>
+      </t-form-item>
+    </t-form>
+    <div v-if="approveFrozenPointsError" style="color:#d54941;font-size:13px;margin-top:8px;">{{ approveFrozenPointsError }}</div>
+  </div>
+</t-dialog>
+
 <t-dialog v-model:visible="rejectVisible" header="驳回申请" @confirm="confirmReject"><t-textarea v-model="rejectReason" placeholder="请输入驳回原因" :maxlength="200" :autosize="{minRows:4}"/></t-dialog>        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
-  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js?v=20260227"></script><script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+  <script src="../../assets/libs/vue.global.js"></script><script src="../../assets/libs/tdesign.min.js"></script><script src="../../assets/js/config.js?v=20260305"></script><script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
       setup() {
         const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
 
@@ -126,24 +142,60 @@
         /** 打开详情弹窗 */
         const handleView = (row) => { detailRow.value = row; detailVisible.value = true; };
 
-        /** 直接通过 */
+        // ── 通过审核弹窗相关 ──
+        const approveVisible = ref(false);
+        const approveTarget = ref(null);
+        const approveFrozenPoints = ref(0);
+        const approveUnfreezePerReferral = ref(0);
+        const approveFrozenPointsError = ref('');
+
+        /** 打开通过弹窗（从列表） */
         const handleApprove = async (row) => {
+          approveTarget.value = row;
+          approveFrozenPoints.value = 0;
+          approveFrozenPointsError.value = '';
           try {
-            await AdminAPI.approveAmbassadorApplication({ applicationId: row.id });
-            TDesign.MessagePlugin.success('已通过');
-            fetchData();
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '操作失败');
+            const config = await AdminAPI.getLevelConfigByLevel(row.target_level);
+            approveUnfreezePerReferral.value = parseFloat(config?.unfreeze_per_referral) || 0;
+          } catch (e) {
+            approveUnfreezePerReferral.value = 0;
           }
+          approveVisible.value = true;
         };
 
         /** 详情弹窗内点击通过 */
         const handleApproveFromDetail = async () => {
           if (!detailRow.value) return;
+          detailVisible.value = false;
+          handleApprove(detailRow.value);
+        };
+
+        /** 确认通过（含冻结积分校验） */
+        const confirmApprove = async () => {
+          const frozen = Number(approveFrozenPoints.value) || 0;
+          const unfreeze = approveUnfreezePerReferral.value;
+
+          if (frozen > 0 && unfreeze <= 0) {
+            approveFrozenPointsError.value = '该等级尚未配置单次解冻积分，请先在等级配置中设置';
+            return;
+          }
+          if (frozen > 0 && unfreeze > 0) {
+            const frozenCents = Math.round(frozen * 100);
+            const unfreezeCents = Math.round(unfreeze * 100);
+            if (frozenCents % unfreezeCents !== 0) {
+              approveFrozenPointsError.value = `冻结积分(${frozen})必须是单次解冻积分(${unfreeze})的整数倍`;
+              return;
+            }
+          }
+          approveFrozenPointsError.value = '';
+
           try {
-            await AdminAPI.approveAmbassadorApplication({ applicationId: detailRow.value.id });
+            await AdminAPI.approveAmbassadorApplication({
+              applicationId: approveTarget.value.id,
+              frozenPoints: frozen
+            });
             TDesign.MessagePlugin.success('已通过');
-            detailVisible.value = false;
+            approveVisible.value = false;
             fetchData();
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '操作失败');
@@ -181,6 +233,7 @@
           handleSearch, handleReset, handlePageChange,
           handleApprove, handleReject, confirmReject,
           rejectVisible, rejectReason,
+          approveVisible, approveFrozenPoints, approveUnfreezePerReferral, approveFrozenPointsError, confirmApprove,
           detailVisible, detailRow,
           handleView, handleApproveFromDetail, handleRejectFromDetail
         };

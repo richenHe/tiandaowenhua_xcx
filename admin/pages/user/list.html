@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
   
   <style>
   </style>
@@ -89,6 +89,8 @@
         <template #action="{ row }">
           <t-space>
             <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">详情</t-button>
+            <t-button theme="success" size="small" variant="text" @click="openAddScore(row)">加分</t-button>
+            <t-button theme="danger" size="small" variant="text" @click="openDeductScore(row)">扣分</t-button>
             <t-button theme="default" size="small" variant="text" @click="editReferee(row)">修改推荐人</t-button>
           </t-space>
         </template>
@@ -144,6 +146,59 @@
       </t-form>
     </t-dialog>
 
+    <!-- 加分对话框 -->
+    <t-dialog
+      v-model:visible="addScoreVisible"
+      header="加表现分"
+      width="500px"
+      @confirm="submitAddScore"
+      :confirm-btn="{ loading: addScoreLoading }"
+    >
+      <t-form :data="addScoreForm" label-width="100px">
+        <t-form-item label="学员">
+          <t-input :value="addScoreForm.userName" disabled></t-input>
+        </t-form-item>
+        <t-form-item label="岗位类型" required>
+          <t-select v-model="addScoreForm.positionTypeId" placeholder="请选择岗位" style="width:100%;" @change="onPositionChange">
+            <t-option v-for="pt in positionTypes" :key="pt.id" :value="pt.id" :label="pt.name"></t-option>
+          </t-select>
+        </t-form-item>
+        <t-form-item label="加分分值" required>
+          <t-input-number v-model="addScoreForm.score" :min="0.01" :max="9999" :decimal-places="2" theme="normal" style="width:100%;"></t-input-number>
+        </t-form-item>
+        <t-form-item label="备注">
+          <t-textarea v-model="addScoreForm.reason" placeholder="请输入加分原因（可选）" :maxlength="200"></t-textarea>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
+    <!-- 扣分对话框 -->
+    <t-dialog
+      v-model:visible="deductScoreVisible"
+      header="扣表现分"
+      width="500px"
+      @confirm="submitDeductScore"
+      :confirm-btn="{ loading: deductScoreLoading }"
+    >
+      <t-form :data="deductScoreForm" label-width="100px">
+        <t-form-item label="学员">
+          <t-input :value="deductScoreForm.userName" disabled></t-input>
+        </t-form-item>
+        <t-form-item label="扣分类型" required>
+          <t-radio-group v-model="deductScoreForm.deductType">
+            <t-radio :value="2">学员扣分</t-radio>
+            <t-radio :value="3">活动扣分</t-radio>
+          </t-radio-group>
+        </t-form-item>
+        <t-form-item label="扣分分值" required>
+          <t-input-number v-model="deductScoreForm.score" :min="0.01" :max="9999" :decimal-places="2" theme="normal" style="width:100%;"></t-input-number>
+        </t-form-item>
+        <t-form-item label="备注">
+          <t-textarea v-model="deductScoreForm.reason" placeholder="请输入扣分原因（可选）" :maxlength="200"></t-textarea>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
     <!-- 新增学员对话框 -->
     <t-dialog
       v-model:visible="addUserVisible"
@@ -184,10 +239,10 @@
   <!-- CloudBase SDK（本地）-->
   <script src="../../assets/libs/tcb.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260227"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
   <!-- API -->
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -387,6 +442,113 @@
           return new Date(datetime).toLocaleString('zh-CN');
         };
 
+        // 加分相关
+        const addScoreVisible = ref(false);
+        const addScoreLoading = ref(false);
+        const positionTypes = ref([]);
+        const addScoreForm = reactive({
+          userId: '',
+          userName: '',
+          positionTypeId: null,
+          positionName: '',
+          score: null,
+          reason: '',
+        });
+
+        const loadPositionTypes = async () => {
+          try {
+            const result = await AdminAPI.getPositionTypeList();
+            positionTypes.value = result.list || result || [];
+          } catch (e) {
+            console.error('加载岗位类型失败:', e);
+          }
+        };
+
+        const onPositionChange = (val) => {
+          const pt = positionTypes.value.find(p => p.id === val);
+          addScoreForm.positionName = pt ? pt.name : '';
+        };
+
+        const openAddScore = (row) => {
+          addScoreForm.userId = row.id;
+          addScoreForm.userName = `${row.real_name || '-'}（ID: ${row.id}）`;
+          addScoreForm.positionTypeId = null;
+          addScoreForm.positionName = '';
+          addScoreForm.score = null;
+          addScoreForm.reason = '';
+          if (positionTypes.value.length === 0) loadPositionTypes();
+          addScoreVisible.value = true;
+        };
+
+        const submitAddScore = async () => {
+          if (!addScoreForm.positionTypeId) {
+            TDesign.MessagePlugin.warning('请选择岗位类型');
+            return;
+          }
+          if (!addScoreForm.score || addScoreForm.score <= 0) {
+            TDesign.MessagePlugin.warning('请输入加分分值');
+            return;
+          }
+          addScoreLoading.value = true;
+          try {
+            await AdminAPI.addPerformanceScore({
+              userId: addScoreForm.userId,
+              positionTypeId: addScoreForm.positionTypeId,
+              positionName: addScoreForm.positionName,
+              score: addScoreForm.score,
+              reason: addScoreForm.reason,
+            });
+            TDesign.MessagePlugin.success('加分成功');
+            addScoreVisible.value = false;
+          } catch (error) {
+            TDesign.MessagePlugin.error('加分失败: ' + error.message);
+          } finally {
+            addScoreLoading.value = false;
+          }
+        };
+
+        // 扣分相关
+        const deductScoreVisible = ref(false);
+        const deductScoreLoading = ref(false);
+        const deductScoreForm = reactive({
+          userId: '',
+          userName: '',
+          deductType: 2,
+          score: null,
+          reason: '',
+        });
+
+        const openDeductScore = (row) => {
+          deductScoreForm.userId = row.id;
+          deductScoreForm.userName = `${row.real_name || '-'}（ID: ${row.id}）`;
+          deductScoreForm.deductType = 2;
+          deductScoreForm.score = null;
+          deductScoreForm.reason = '';
+          deductScoreVisible.value = true;
+        };
+
+        const submitDeductScore = async () => {
+          if (!deductScoreForm.score || deductScoreForm.score <= 0) {
+            TDesign.MessagePlugin.warning('请输入扣分分值');
+            return;
+          }
+          deductScoreLoading.value = true;
+          try {
+            await AdminAPI.deductPerformanceScore({
+              userId: deductScoreForm.userId,
+              deductType: deductScoreForm.deductType,
+              score: deductScoreForm.score,
+              reason: deductScoreForm.reason,
+            });
+            TDesign.MessagePlugin.success('扣分成功');
+            deductScoreVisible.value = false;
+          } catch (error) {
+            TDesign.MessagePlugin.error('扣分失败: ' + error.message);
+          } finally {
+            deductScoreLoading.value = false;
+          }
+        };
+
         // 新增学员
         const addUserVisible = ref(false);
         const addUserLoading = ref(false);
@@ -455,6 +617,18 @@
           editReferee,
           submitReferee,
           formatDateTime,
+          addScoreVisible,
+          addScoreLoading,
+          addScoreForm,
+          positionTypes,
+          onPositionChange,
+          openAddScore,
+          submitAddScore,
+          deductScoreVisible,
+          deductScoreLoading,
+          deductScoreForm,
+          openDeductScore,
+          submitDeductScore,
         };
       }
     });

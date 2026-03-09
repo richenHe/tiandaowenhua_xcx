@@ -27,10 +27,10 @@
 
   | 流程 | 状态 | 最后验证日期 |
   |------|------|-------------|
-  | F1 用户资料 · 推荐人 · 资格验证 | ✅ 已完成（6/6 全通过；S1.6 边界验证通过「推荐码不能为空」合法拦截；DB 交叉验证全部一致） | 2026-03-02 |
+  | F1 用户资料 · 推荐人 · 资格验证 | ⏳ 重测（2026-03-06 修复：login.js 老用户扫码不自动更新推荐人 Bug，需补测 MT-03b） | 2026-03-06 |
   | F1B 边界验证 · 未完善资料 · 无推荐人 · 功德分=0 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
   | F2 课程浏览 · 详情 · 购买条件验证 | ✅ 已完成（**11/11 全通过**；S2.2 修正课程 id=6（"测试课程"，type=1，user_id=30 未购买），is_purchased=false✓；S2.2b 密训班 included_course_ids=[1]✓；S2.2d 已购课程 is_purchased=true✓；S2.4 日历 4 天排期，status=0 关闭排期已过滤✓；S2.5 案例 2 条 HTTPS URL✓；DB 交叉验证全部一致） | 2026-03-03 |
-  | F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成（**19/19 全通过**；v2.4 课程过期逻辑重构验证通过：S3.11 双字段 pending_days+expire_at✓、S3.12b pending_days=validity_days✓；S3.6/S3.6b 兑换+撤销✓；S3.9 确认领取✓；DB 交叉验证一致） | 2026-03-04 |
+  | F3 订单 · 商城兑换 · 多表数据一致性 | ⏳ 重测（2026-03-06 orders 新增 retrain_credit_status 字段，需验证复训订单状态流转：默认0→预约后2→取消预约后1；need_contract 相关逻辑） | 2026-03-06 |
   | F4 功德分 · 积分 · 提现 · 余额一致性 | ✅ 已完成（7/7；S4.3 测试脚本修复 `\|\|`→`??` 消除零值误报；S4.6 功德分余额vs明细差额-447属测试数据手动修改痕迹，非系统Bug；S4.5无提现记录正常；S4.7积分全0一致） | 2026-03-02 |
   | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
   | F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（**8/8 全通过**；S5.1 申请状态 status=0(待审核)✓；S5.2 5级配置齐全，青鸾frozen_points=1688✓、鸿鹄frozen_points=16880✓；S5.3 升级指南 current=1，含1个升级选项✓；S5.4 名额 total=5/used=5/available=0，remaining不为负✓；S5.5 活动记录4条均正常✓；S5.6 活动统计✓；S5.7 推荐学员✓；S5.8 二维码✓；DB交叉全部一致；⚠️ MT-34导航栈手动验证登记为MT项不阻塞流程完成） | 2026-03-03 |
@@ -40,17 +40,22 @@
   | F5E 流程5-E: 申请被拒绝(status=2) · 拒绝原因返回验证 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
   | F5F 流程5-F: 申请待审核(status=0) · 升级指南审核中状态 | ✅ 已完成（全通过 3/3；getApplicationStatus排序修复✓；eligible=false✓；重复申请文案"您已有待审核的申请"✓） | 2026-03-02 |
   | F6 协议模板 · 我的协议 · 签署验证 | ✅ 已完成（**10/10 全通过**；S6.1 level=1/2/3/4模板均含名称✓，电子版✓；S6.2 7条协议status全合法(0/1/2/3)✓，有效期end>start✓；S6.3 id=10合同期366天（跨2028闰年，属正常，非bug）；S6.6 无模板报错✓；S6.7 不存在signature_id报错✓；S6.8 重复签署"您已签署过该协议"拦截✓；S6.10 status=2已过期展示✓；DB交叉全部一致；⚠️ 签名注入位置（insertAfterLabelSmart）需手动打开PDF验证签名在乙方侧，登记MT项） | 2026-03-03 |
-  | F7 预约 · 排期 · 学习进度 · 签到 | ✅ 已完成（**10/12 pass，2 warn（均为 v2.4 合同拦截正确生效，非 Bug）**；S7.1b warn：course_id=18 contract_signed=0 被合同拦截"请先签署学习合同后再预约"✓（v2.4 新前置校验，预约必须先签合同）；S7.4c warn：attend_count=9 课程合同检查优先于复训费检查，拦截文案为合同提示而非复训费提示✓（v2.4 优先级正确）；S7.7 跳过（无过期数据）；S7.8 跳过（beforeRun 条件未命中，S7.1b 已隐式验证合同拦截）；DB 验证：class_record id=38 booked_quota=2 未变化✓，预约拦截未写库✓；user_courses contract_signed=0/pending_days=365/expire_at=NULL(course_id=18) 状态正确✓） | 2026-03-04 |
+  | F7 预约 · 排期 · 学习进度 · 签到 | ⏳ 重测（2026-03-06 排期/取消预约/复训资格改造：createClassRecord 新增 cancelDeadlineDays 必填、updateClassRecord 仅允许 status=0 取消并自动取消预约、cancelAppointment 恢复可用需校验截止日期、新增 checkRetrainCredit 接口、复训资格 retrain_credit_status 状态流转、getMyAppointments/getClassRecordList 返回新字段） | 2026-03-06 |
   | F8 反馈 · 类型联动 · 课程关联 | ✅ 已完成（8/8 全通过；getMyFeedback 修复降序排列；S8.5 feedback_type 5种全覆盖✓、status 全合法✓、reply验证✓；DB交叉4项全一致） | 2026-03-02 |
   | F9 系统公共 · 公告 · Banner · 配置 · 通知 | ✅ 已完成（全通过 7/7；S9.6修复：公告id从1改为2（id=1已下架）；客服电话/通知配置/Banner均正常） | 2026-03-02 |
   | F10 跨模块数据完整性终极验证 | ✅ 已完成（5/6通过，1 warn：S10.3密训班赠课验证；S10.1循环引用检测全✓(4用户无循环)；S10.2订单→课程记录通过；S10.3 warn：密训班订单ORD202602221434438312的user_courses无is_gift=1赠课记录（主课程记录也为NULL），MT密训班赠课手动测试待验证（MT-36~38）；S10.4推荐人锁定✓(referee_confirmed_at=2026-02-24)；S10.5奖励发放基本一致（TST订单referee_level=3但无积分记录，历史测试数据差异）；S10.6变更日志完整✓(user=30有多条订单修改日志)) | 2026-03-03 |
   | F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ✅ 已完成（**16/16 全通过 100%**；含新增 S11.2c 重复报名拦截✓、S11.7b 幂等发放✓；S11.12b softFail+null biz 修复✓；api() 30s 超时保护✓；DB 交叉验证全部一致：activity_id=13 merit_distributed=1/status=0✓；user_id=30 merit_points 162→242(+80)✓；dup_count=0 无重复报名✓；source=7 功德分记录 activity_name 正确写入✓；activity_records type1=1/type2=3 共4条 merit=260✓） | 2026-03-02 |
-  | F12 课程学习合同 · 签署拦截 · 合同配置 · 签约流程 · 奖励延迟发放 · 上架校验 | ✅ 已完成（**21/21 全通过**；v2.4 重构验证：S12.B1b contract_signed→needSign=false✓；S12.B1c 三联断言 needSign=true+expire_at=NULL+pending_days=365✓；DB: course_id=18 contract_signed=0/pending_days=365/expire_at=NULL✓；course_id=1 contract_signed=0/attend_count=9✓；模板id=26(course_id=18)、id=27(course_id=5)均正确入库✓；course_id=5 清理后 status=0✓；DB 交叉验证全部一致） | 2026-03-04 |
-  | F13 退款申请 · 合同拦截 · 审核流转 · 业务回滚 | ✅ 自动化 **17/17 全通过**（S13.B4✓；4 warn 均为手动步骤 MT-39/40/41/42）；v2.4 source_order_id 合同拦截✓；主流程 申请→重复拦截→列表统计→驳回 完整验证✓；DB交叉全部一致：TST202603040002 contract_signed=1/refund_status=0✓，TST202603040003 refund_status=4/refund_audit_time有值✓；MT-39~42 手动待测 | 2026-03-04 |
+  | F12 课程学习合同 · 签署拦截 · 合同配置 · 签约流程 · 奖励延迟发放 · 上架校验 | ⏳ 重测（合同流程改造：checkCourseContract/signCourseContract/auditContractSignature 已废弃；新增 adminCreateCourseContract 管理员录入、adminGetUserPaidCourses 待签列表；need_contract 字段与上架校验、batchCheckin 签到联动） | 2026-03-06 |
+  | F13 退款申请 · 合同拦截 · 审核流转 · 业务回滚 | ⏳ 重测（合同流程改造：合同拦截逻辑不变，需回归验证） | 2026-03-06 |
   | F14 沙龙课程 · 免费预约 · 自动签到 · 结束清理 | ✅ 已完成（**8/8 全通过**；S14.1~S14.6 自动化全通过；S14.7 MCP验证：排期→进行中+沙龙自动签到 checkin_time=2026-03-03 11:50:08✓；S14.8 MCP验证：salonCleanedCourses=1+courses硬删除cnt=0✓；修复3项Bug：S14.2传参courseId→id、appointments外键CASCADE→SET NULL、S14.7/S14.8定时任务MCP直接触发验证） | 2026-03-03 |
   | F15 管理端大使赠送课程 · 名额扣减 · 课程开通/续期 | ✅ 已完成（**9/10 pass，1 warn**；S15.1 激活路径(status:2→1+pending_days)✓；S15.2 叠加 pending_days✓；S15.3 名额不足拦截✓；S15.4 课程类型拦截✓；S15.5 缺参拦截✓；S15.6 密训班激活✓；S15.8/S15.9 边界✓；⚠️ S15.7 WARN（已知限制）：S15.7 续期"延长 expire_at"(C路径)在自动化序列中不可达——S15.6激活后 contract_signed=0，S15.7 正确走 B路径叠加 pending_days，逻辑无 Bug；修复：adminGiftCourse 新增激活路径（status=2→1），代码已部署；DB 交叉验证全部一致） | 2026-03-04 |
+  | F16 合同审核流程 · 待审核拦截 · 通过/驳回 · 业务触发 | ⏳ 重测（合同流程改造：auditContractSignature 已废弃；课程合同改为管理员录入直接生效；大使合同 signContract 直接生效无待审核） | 2026-03-06 |
+| F17 表现分与评估名单 | ⏳ 待测 | |
+  | F20 用户课程管理 · 手动新增 · 调整积分修复 | ⏳ 待测 | |
+  | F18 角色权限管理 | ⏳ 待测 | |
+  | F19 商学院板块管理 | ⏳ 待测 | |
 
-  > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
+> AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
   ---
 
@@ -83,7 +88,10 @@
   | P3 | 后台标记已转账 | 后台→退款管理→找到该订单→上传一张测试发票图→点"标记已转账" | orders.refund_status=3，pay_status=4 |
   | P4 | 验证 pending_days 扣减 | 无需操作，AI 自动验证 | user_courses id=30：pending_days 从 365→0，expire_at 仍为 NULL，status=2 |
 
-  **状态**：⏳ 待测
+  **状态**：✅ 通过（2026-03-04）
+  - orders.pay_status=4，refund_status=3，refund_time=2026-03-04 18:00:51，invoice 已上传 ✓
+  - user_courses id=30：pending_days 365→0，expire_at=NULL，status=2 ✓
+  - v2.4 核心验证：退款后扣减 pending_days 而非 expire_at，逻辑正确 ✓
 
   ---
 
@@ -99,7 +107,7 @@
   | D3 | MT-39 | 后台→大使赠课→赠送初探班给测试学员→学员签学习合同；然后在小程序对该密训班申请退款 | requestRefund 返回错误"赠送课程已签署学习合同，无法退款"（MT-39✓） |
   | D4 | MT-40 | 跳过 MT-39 拦截场景，直接用 D1 的密训班订单申请退款（赠课 contract_signed=0）→ 后台标记已转账 | user_courses is_gift=1 记录 status=2（失效）（MT-40✓） |
 
-  **状态**：⏳ 待测（需真实微信支付后开始）
+  **状态**：✅ 已通过（2026-03-04，order_id=109，is_gift=1 赠课记录 id=37 → status=2，is_gift=0 主课记录 id=36 → status=2，pending_days 均归零）
 
   ---
 
@@ -107,13 +115,13 @@
 
   | 编号 | 场景 | 操作入口 | 期望结果 | 状态 |
   |------|------|---------|---------|------|
-  | MT-42 | 课程上架后编辑字段应置灰 | 后台→课程列表→点击已上架课程"编辑" | 所有字段 disabled，显示"课程已上架"提示 | ⏳ 待测 |
-  | MT-43 | 课程上架弹出确认框 | 后台→课程列表→点击下架课程"上架" | 弹出"上架后不能修改"确认框 | ⏳ 待测 |
-  | MT-44 | 新课程默认 status=0 | 后台→课程列表→新增课程→保存 | `SELECT status FROM tiandao_culture.courses ORDER BY id DESC LIMIT 1` → status=0 | ⏳ 待测 |
-  | MT-51 | 排期日期前端拦截 | 后台→排期管理→新增排期→选昨天日期→保存 | 前端报错"上课日期不能早于今天"，不发请求 | ⏳ 待测 |
-  | MT-53 | 排期日期云函数拦截 | 直接调用 `updateClassRecord {classDate:"2025-01-01"}` | 返回 paramError | ⏳ 待测 |
-  | MT-13 | 等级配置互斥校验 | 后台→等级配置→功德率和积分率同时填>0 | 报错"不能同时大于0" | ⏳ 待测 |
-  | MT-14 | 等级配置倍数校验 | 后台→等级配置→设置非整数倍关系 | 报错"必须是整数倍" | ⏳ 待测 |
+  | MT-42 | 课程上架后编辑字段应置灰 | 后台→课程列表→点击已上架课程"编辑" | 所有字段 disabled，显示"课程已上架"提示 | ✅ 通过（2026-03-04）橙色提示+字段全置灰 |
+  | MT-43 | 课程上架弹出确认框 | 后台→课程列表→点击下架课程"上架" | 弹出"上架后不能修改"确认框 | ✅ 通过（2026-03-04）|
+  | MT-44 | 新课程默认 status=0 | 后台→课程列表→新增课程→保存 | `SELECT status FROM tiandao_culture.courses ORDER BY id DESC LIMIT 1` → status=0 | ✅ 已通过（2026-03-04，id=42 "aaa" status=0） |
+  | MT-51 | 排期日期前端拦截 | 后台→排期管理→新增排期→选昨天日期→保存 | 前端报错"上课日期不能早于今天"，不发请求 | ✅ 已通过（2026-03-04，前端拦截弹出提示，无接口请求） |
+  | MT-53 | ~~排期日期云函数拦截~~（已变更）取消排期+自动取消预约 | 调用 `updateClassRecord {id:<排期id>, status:0}` | 排期 status=0，关联预约 status=3，复训预约释放资格 | ⏳ 重测（2026-03-06 updateClassRecord 仅允许 status=0） |
+  | MT-13 | 等级配置互斥校验 | 后台→等级配置→功德率和积分率同时填>0 | 报错"不能同时大于0" | ✅ 已通过（2026-03-04） |
+  | MT-14 | 等级配置倍数校验 | 后台→等级配置→设置非整数倍关系 | 报错"必须是整数倍" | ✅ 已通过（2026-03-04） |
 
   ---
 
@@ -121,13 +129,15 @@
 
   | 编号 | 场景 | 说明 | 状态 |
   |------|------|------|------|
-  | MT-49 | 列表分页加载 | 我的订单/预约/课程向下滚动，最多 99 条 | ⏳ 待测 |
-  | MT-50 | 协议列表 99 条截取 | 我的协议底部显示"已加载全部" | ⏳ 待测 |
-  | MT-31 | 支付成功后导航栈 | 支付成功→返回→不应回到订单确认页 | ⏳ 待测 |
-  | MT-32 | 取消支付后导航栈 | 取消支付→应跳到待支付页而非确认页 | ⏳ 待测 |
-  | MT-07c | 新购课 attend_count 初始值 | 购课后 user_courses.attend_count=0 | ⏳ 待测 |
-  | MT-02 | 扫码绑定推荐人 | 新微信账号扫码注册 → referee_id 绑定 | ⏳ 待测（需新微信账号） |
-  | MT-04 | 微信支付回调全链路 | 真实支付后 is_reward_granted=1 | ⏳ 待测（依赖阶段二） |
+  | MT-49 | 列表分页加载 | 我的订单/预约/课程向下滚动，最多 99 条 | ✅ 已通过（2026-03-04） |
+  | MT-50 | 协议列表 99 条截取 | 我的协议底部显示"已加载全部" | ✅ 已通过（2026-03-04） |
+  | MT-51 | 订阅消息弹窗真机验证（普通预约） | 预约确认页点击"立即预约"时，真机弹出「订阅课程开课提醒」弹窗 | ✅ 已通过（2026-03-04） |
+  | MT-52 | 订阅消息弹窗真机验证（复训支付） | 支付页点击"立即支付"时，真机弹出「订阅课程开课提醒」弹窗，授权后继续支付流程 | ✅ 已通过（2026-03-04） |
+  | MT-31 | 支付成功后导航栈 | 支付成功→返回→不应回到订单确认页 | ✅ 已通过（2026-03-04） |
+  | MT-32 | 取消支付后导航栈 | 取消支付→应跳到待支付页而非确认页 | ✅ 已通过（2026-03-04） |
+  | MT-07c | 新购课 attend_count 初始值 | 购课后 user_courses.attend_count=0 | ✅ 已通过（2026-03-04） |
+  | MT-02 | 扫码绑定推荐人 | 新微信账号扫码注册 → referee_id 绑定 | ✅ 已通过（2026-03-04） |
+  | MT-04 | 微信支付回调全链路 | 真实支付后 is_reward_granted=1 | ✅ 已通过（2026-03-04） |
 
   ---
 
@@ -139,8 +149,8 @@
   | 第二批 | F12 课程合同 | ✅ 已完成 | S12.B1b contract_signed 逻辑、S12.B1c 三联断言 |
   | 第二批 | F7 预约 | ✅ 已完成 | S7.1b/S7.4c warn（v2.4 合同拦截正确优先，非 Bug）；S7.7/S7.8 无过期数据跳过；合同拦截逻辑✓ |
   | 第二批 | F15 赠课 | ✅ 已完成 | 9/10 pass；激活路径✓、pending_days叠加✓、quota扣减✓；S15.7 C路径 WARN（设计限制，非 Bug） |
-  | 第二批 | F13 退款 | ✅ 自动化完成（16/17 pass）；MT-42 手动待测 | S13.P2 MT-42 手动 pending_days 扣减（TST202603020001 → user_courses id=17） |
-  | 第三批 | MT-42 | 手动 | markRefundTransferred 后 pending_days 扣减验证 |
+  | 第二批 | F13 退款 | ✅ 全部完成（自动化 17/17 + MT-42 手动通过） | S13.P2 MT-42 pending_days 365→0，expire_at=NULL，status=2 ✓（2026-03-04） |
+  | 第三批 | MT-42 | ✅ 手动完成（2026-03-04） | markRefundTransferred 后 pending_days 365→0，expire_at=NULL，v2.4 逻辑正确 |
   | 第三批 | MT-30 | 手动 | F12 签约流程（真实手写签名） |
 
   **执行顺序**：F3 → F12 → F7 → F15 → F13（自动化）→ MT-42/MT-30（手动）
@@ -422,61 +432,71 @@
   | 编号 | 场景 | 流程 | 前置条件 | 验证步骤 | 验证 SQL | 状态 |
   |------|------|------|---------|---------|---------|------|
   | MT-01 | **generateQRCode 真实写 DB**：真机生成推广二维码后 `users.qrcode_url` 应回写 cloud:// fileID | F5 S5.8 | 用 level≥1 大使账号登录小程序 | 进入大使中心→我的推广码→点击生成 | `SELECT id, referee_code, qrcode_url FROM tiandao_culture.users WHERE id=30` | ✅ 通过（2026-02-27，id=32 真机验证，qrcode_url 写入 cloud://fileID） |
-  | MT-02 | **新用户扫码绑定推荐人**：新用户扫大使二维码注册后 `users.referee_id` 应绑定到该大使 | F1 扫码场景 | 准备一个从未注册过的新微信账号 | 用新账号手机扫大使推广码，完成登录注册 | `SELECT id, referee_id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=32 ORDER BY created_at DESC LIMIT 3` | ⏳ 待测（需新微信账号；`login.js` 代码逻辑已审查确认正确） |
-  | MT-03 | **已购课+已有推荐人用户扫码不可修改推荐人** | F1 扫码边界 | 准备已购课且已有 referee_id 的用户 | 用该用户扫其他大使的推广码并登录 | `SELECT id, referee_id FROM tiandao_culture.users WHERE id=<该用户id>` — referee_id 应不变 | ⏳ 待测 |
-  | MT-04 | **微信支付回调全链路**：真实支付后 is_reward_granted=1、推荐人积分入账 | F3 S3.2 / F4 奖励验证 | 使用真实微信支付购买课程（user_id=30 或测试账号） | 完成支付 → 等待支付回调 | `SELECT o.order_no, o.is_reward_granted, o.pay_status FROM tiandao_culture.orders o WHERE o.user_id=30 AND o.pay_status=1 ORDER BY o.pay_time DESC LIMIT 3` | ⏳ 待测 |
-  | MT-05 | **预约操作后 booked_quota 递增**：调用 createAppointment 后 class_records.booked_quota 应+1，且 appointments 新增 status=0 记录 | F7 S7.1/S7.2 | user_id=30 有 user_courses，选 status=1 排期 | 小程序进入课程详情→选择排期→点击预约 | `SELECT cr.id, cr.booked_quota, (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN(0,1)) as cnt FROM tiandao_culture.class_records cr WHERE cr.id=<排期id>` | ⏳ 待测 |
+  | MT-02 | **新用户扫码绑定推荐人**：新用户扫大使二维码注册后 `users.referee_id` 应绑定到该大使 | F1 扫码场景 | 准备一个从未注册过的新微信账号 | 用新账号手机扫大使推广码，完成登录注册 | `SELECT id, referee_id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=32 ORDER BY created_at DESC LIMIT 3` | ✅ 已通过（2026-03-04） |
+  | MT-03 | **已购课+已有推荐人用户扫码不可修改推荐人** | F1 扫码边界 | 准备已购课且已有 referee_id 的用户 | 用该用户扫其他大使的推广码并登录 | `SELECT id, referee_id FROM tiandao_culture.users WHERE id=<该用户id>` — referee_id 应不变 | ✅ 已通过（2026-03-04） |
+  | MT-03b | **未购课+已有推荐人用户扫码可自动更换推荐人**（2026-03-06 修复：login.js 老用户流程以前忽略 scene 参数）| F1 扫码边界 | 准备有 referee_id 但 referee_confirmed_at 为 NULL 的用户 | 用该用户扫其他大使推广码→完成登录 | `SELECT id, referee_id, referee_uid, referee_updated_at FROM tiandao_culture.users WHERE id=<该用户id>` — referee_id 应变为新推荐人的 id | ⏳ 待测 |
+  | MT-04 | **微信支付回调全链路**：真实支付后 is_reward_granted=1、推荐人积分入账 | F3 S3.2 / F4 奖励验证 | 使用真实微信支付购买课程（user_id=30 或测试账号） | 完成支付 → 等待支付回调 | `SELECT o.order_no, o.is_reward_granted, o.pay_status FROM tiandao_culture.orders o WHERE o.user_id=30 AND o.pay_status=1 ORDER BY o.pay_time DESC LIMIT 3` | ✅ 已通过（2026-03-04，user_id=32 购买道天密训班¥0.01，pay_status=1，is_reward_granted=1） |
+  | MT-05 | **预约操作后 booked_quota 递增**：调用 createAppointment 后 class_records.booked_quota 应+1，且 appointments 新增 status=0 记录 | F7 S7.1/S7.2 | user_id=30 有 user_courses，选 status=1 排期 | 小程序进入课程详情→选择排期→点击预约 | `SELECT cr.id, cr.booked_quota, (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN(0,1)) as cnt FROM tiandao_culture.class_records cr WHERE cr.id=<排期id>` | ✅ 已通过（2026-03-04，user_id=32，312课程，class_record_id=51，booked_quota 0→1，appointment id=54 status=0） |
   | MT-06 | ~~**取消预约后 booked_quota 递减**~~ **已废弃**（2026-03-02：取消预约功能已移除） | F7 | — | — | — | ❌ 废弃 |
-  | MT-07 | **后台批量签到**：batchCheckin 后 appointments.status 从 0→1，checkin_time 有值，attend_count+1 | F7 S7.2d | 存在 status=0 的预约记录 | 后台→预约管理→勾选多条待上课→批量签到 | `SELECT a.id, a.status, a.checkin_time, uc.attend_count FROM tiandao_culture.appointments a JOIN tiandao_culture.user_courses uc ON uc.user_id=a.user_id AND uc.course_id=a.course_id WHERE a.user_id=30 AND a.status=1 ORDER BY a.checkin_time DESC LIMIT 5` | ✅ 已通过（2026-03-04 MCP JWT触发 batchCheckin appointment_ids=[50]：success_count=1✓；DB验证 id=50 status=0→1，checkin_time=2026-03-04 13:02:31，attend_count=0→1✓） |
-  | MT-07b | **后台单次签到**：点击签到按钮后 appointments.status=1，checkin_time 有值，attend_count+1（修复前 Bug：attend_count 不更新） | F7 S7.2c | 存在 status=0 的预约记录 | 后台→预约管理→找到单条待上课记录→点击"签到" | `SELECT a.id, a.status, a.checkin_time, uc.attend_count FROM tiandao_culture.appointments a JOIN tiandao_culture.user_courses uc ON uc.user_id=a.user_id AND uc.course_id=a.course_id WHERE a.user_id=30 AND a.status=1 ORDER BY a.checkin_time DESC LIMIT 3` | ✅ 已通过（2026-03-04 MCP JWT触发 updateAppointmentStatus id=36 status=1：attend_count=8→9✓；DB验证 status=0→1，checkin_time=2026-03-04 13:02:04，attend_count 日志 new_count=9✓） |
-  | MT-07c | **attend_count 初始值验证**：新购买课程后 user_courses.attend_count=0（修复前 Bug：初始值为 1） | F3 S3.10 | 有新购买课程记录（buy_time ≥ 2026-03-01） | 购买任意课程→支付回调触发→查询 user_courses | `SELECT id, course_id, attend_count, buy_time FROM tiandao_culture.user_courses WHERE user_id=30 ORDER BY id DESC LIMIT 3` — attend_count 应为 0 | ⏳ 待测 |
-  | MT-08 | **推荐初探班奖励-解冻场景**：推荐人有frozen>0时购买初探班，应解冻unfreeze_per_referral到available，不发功德分/积分 | 奖励验证 | 推荐人frozen>0，购买初探班 | 小程序购买初探班→等待支付回调 | `SELECT u.cash_points_frozen, u.cash_points_available, u.merit_points FROM tiandao_culture.users u WHERE u.id=<推荐人id>` + `SELECT type, amount FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>' AND user_id=<推荐人id>` — type应为2(解冻) | ⏳ 待测 |
-  | MT-09 | **推荐初探班奖励-功德分场景**：推荐人frozen=0且merit_rate_basic>0时购买初探班，应按比例发功德分 | 奖励验证 | 推荐人frozen=0，等级配置merit_rate_basic>0 | 小程序购买初探班→等待支付回调 | `SELECT merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` + `SELECT source, amount FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` | ⏳ 待测 |
-  | MT-10 | **推荐密训班奖励-不消耗冻结**：推荐人有frozen>0时购买密训班，应按比例发奖励（功德分或积分），frozen不变 | 奖励验证 | 推荐人frozen>0，购买密训班 | 小程序购买密训班→等待支付回调 | `SELECT cash_points_frozen, cash_points_available, merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` — frozen应不变 | ⏳ 待测 |
-  | MT-11 | **奖励互斥验证**：不应同时产生功德分记录和积分记录 | 奖励验证 | 任意等级推荐人，购买任意课程 | 支付完成后查询 | `SELECT COUNT(*) as merit_cnt FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` + `SELECT COUNT(*) as cash_cnt FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>'` — 两者不应同时>0 | ⏳ 待测 |
-  | MT-12 | **密训班赠课验证**：购买密训班后user_courses应同时有is_gift=1的初探班记录 | 赠课验证 | 购买密训班(type=2, included_course_ids=[1]) | 小程序购买密训班→等待支付回调 | `SELECT course_id, is_gift, source_order_id FROM tiandao_culture.user_courses WHERE user_id=<uid> ORDER BY id DESC LIMIT 5` — 应有is_gift=1,course_id=1 | ⏳ 待测 |
-  | MT-13 | **后台等级配置互斥校验**：初探班功德率和积分率同时>0时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→同时填功德率和积分率→保存 | 应提示"不能同时大于0" | ⏳ 待测 |
-  | MT-14 | **后台等级配置倍数校验**：frozen_points不是unfreeze_per_referral整数倍时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→设置非倍数关系→保存 | 应提示"必须是整数倍" | ⏳ 待测 |
-  | MT-15 | **大使申请写操作（F5B apply）**：调用 `ambassador.apply` 应创建 status=0 申请，has_application 变为 true | F5B `apply` | user_id=34 (level=0，无待审核申请) | 使用 F5B openid 调用 apply (targetLevel=1, real_name='孙海荣', phone填真实值) | `SELECT id, user_id, target_level, status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — 应出现 status=0 记录 | ⏳ 待测 |
-  | MT-16 | **还原 MT-15 数据（驳回申请）**：驳回 MT-15 产生的申请，使 user_id=34 回到无申请状态，F5B 方可再次正常运行 | F5B 数据还原 | MT-15 完成后 | 后台→大使管理→申请列表→找 user_id=34 待审核→驳回 | `SELECT status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — status 应为 2 | ⏳ 待测 |
+  | MT-07 | **后台批量签到（仅沙龙课程）**：batchCheckin 后沙龙课程 appointments.status 从 0→1，checkin_time 有值（非沙龙课程不使用此功能） | F7 S7.2d | 存在 status=0 的预约记录 | 后台→预约管理→勾选多条待上课→批量签到 | `SELECT a.id, a.status, a.checkin_time, uc.attend_count FROM tiandao_culture.appointments a JOIN tiandao_culture.user_courses uc ON uc.user_id=a.user_id AND uc.course_id=a.course_id WHERE a.user_id=30 AND a.status=1 ORDER BY a.checkin_time DESC LIMIT 5` | ✅ 已通过（2026-03-04 MCP JWT触发 batchCheckin appointment_ids=[50]：success_count=1✓；DB验证 id=50 status=0→1，checkin_time=2026-03-04 13:02:31，attend_count=0→1✓） |
+  | MT-07b | **后台单次签到（仅沙龙课程）**：沙龙课程点击签到按钮后 appointments.status=1，checkin_time 有值（非沙龙课程在详情中使用每日签到） | F7 S7.2c | 存在 status=0 的预约记录 | 后台→预约管理→找到单条待上课记录→点击"签到" | `SELECT a.id, a.status, a.checkin_time, uc.attend_count FROM tiandao_culture.appointments a JOIN tiandao_culture.user_courses uc ON uc.user_id=a.user_id AND uc.course_id=a.course_id WHERE a.user_id=30 AND a.status=1 ORDER BY a.checkin_time DESC LIMIT 3` | ✅ 已通过（2026-03-04 MCP JWT触发 updateAppointmentStatus id=36 status=1：attend_count=8→9✓；DB验证 status=0→1，checkin_time=2026-03-04 13:02:04，attend_count 日志 new_count=9✓） |
+  | MT-07c | **attend_count 初始值验证**：新购买课程后 user_courses.attend_count=0（修复前 Bug：初始值为 1） | F3 S3.10 | 有新购买课程记录（buy_time ≥ 2026-03-01） | 购买任意课程→支付回调触发→查询 user_courses | `SELECT id, course_id, attend_count, buy_time FROM tiandao_culture.user_courses WHERE user_id=30 ORDER BY id DESC LIMIT 3` — attend_count 应为 0 | ✅ 已通过（2026-03-04，user_id=32 购买道天密训班，user_courses.attend_count=0） |
+  | MT-08 | **推荐初探班奖励-解冻场景**：推荐人有frozen>0时购买初探班，应解冻unfreeze_per_referral到available，不发功德分/积分 | 奖励验证 | 推荐人frozen>0，购买初探班 | 小程序购买初探班→等待支付回调 | `SELECT u.cash_points_frozen, u.cash_points_available, u.merit_points FROM tiandao_culture.users u WHERE u.id=<推荐人id>` + `SELECT type, amount FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>' AND user_id=<推荐人id>` — type应为2(解冻) | ✅ 已通过（2026-03-05；user_id=33 frozen:1688→0，available:1688→3376，merit_points=1.10不变；cash_points_records type=2 amount=1688✓；奖励触发路径：支付→待签约→合同审核通过→grantRefereeRewardAfterSign） |
+  | MT-09 | **推荐初探班奖励-功德分场景**：推荐人frozen=0且merit_rate_basic>0时购买初探班，应按比例发功德分 | 奖励验证 | 推荐人frozen=0，等级配置merit_rate_basic>0 | 小程序购买初探班→等待支付回调 | `SELECT merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` + `SELECT source, amount FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` | ✅ 已通过（2026-03-05；user_id=33 merit_points:0.80→1.10，+0.30=1.00×30%；merit_points_records source=1 amount=0.30✓；frozen不变=0✓；奖励触发路径：支付→待签约→合同审核通过→grantRefereeRewardAfterSign） |
+  | MT-10 | **推荐密训班奖励-不消耗冻结**：推荐人有frozen>0时购买密训班，应按比例发奖励（功德分或积分），frozen不变 | 奖励验证 | 推荐人frozen>0，购买密训班 | 小程序购买密训班→等待支付回调 | `SELECT cash_points_frozen, cash_points_available, merit_points FROM tiandao_culture.users WHERE id=<推荐人id>` — frozen应不变 | ✅ 已通过（2026-03-05；user_id=33 frozen=1688在密训班购买(order_id=121)后保持不变✓；无cash_points_records解冻记录✓；代码审查：解冻条件`course.type===1`明确排除type=2密训班；备注：密训班¥0.01×20%=0.002→四舍五入=0，merit_records未插入但is_reward_granted=1，逻辑正确） |
+  | MT-11 | **奖励互斥验证**：不应同时产生功德分记录和积分记录 | 奖励验证 | 任意等级推荐人，购买任意课程 | 支付完成后查询 | `SELECT COUNT(*) as merit_cnt FROM tiandao_culture.merit_points_records WHERE order_no='<订单号>'` + `SELECT COUNT(*) as cash_cnt FROM tiandao_culture.cash_points_records WHERE order_no='<订单号>'` — 两者不应同时>0 | ✅ 已通过（2026-03-05；MT-09订单merit_cnt=1/cash_cnt=0✓；MT-08订单merit_cnt=0/cash_cnt=1✓；两者均不同时>0，互斥逻辑正确） |
+  | MT-12 | **密训班赠课验证**：购买密训班后user_courses应同时有is_gift=1的初探班记录 | 赠课验证 | 购买密训班(type=2, included_course_ids=[1]) | 小程序购买密训班→等待支付回调 | `SELECT course_id, is_gift, source_order_id FROM tiandao_culture.user_courses WHERE user_id=<uid> ORDER BY id DESC LIMIT 5` — 应有is_gift=1,course_id=1 | ✅ 已通过（2026-03-04，user_id=32，order_id=109，user_courses id=37 is_gift=1 course_id=1） |
+  | MT-13 | **后台等级配置互斥校验**：初探班功德率和积分率同时>0时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→同时填功德率和积分率→保存 | 应提示"不能同时大于0" | ✅ 已通过（2026-03-04） |
+  | MT-14 | **后台等级配置倍数校验**：frozen_points不是unfreeze_per_referral整数倍时应报错 | 后台校验 | 登录admin后台 | 等级配置→编辑→设置非倍数关系→保存 | 应提示"必须是整数倍" | ✅ 已通过（2026-03-04） |
+  | MT-15 | **大使申请写操作（F5B apply）**：调用 `ambassador.apply` 应创建 status=0 申请，has_application 变为 true | F5B `apply` | user_id=34 (level=0，无待审核申请) | 使用 F5B openid 调用 apply (targetLevel=1, real_name='孙海荣', phone填真实值) | `SELECT id, user_id, target_level, status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — 应出现 status=0 记录 | ✅ 已通过（2026-03-04） |
+  | MT-16 | **还原 MT-15 数据（驳回申请）**：驳回 MT-15 产生的申请，使 user_id=34 回到无申请状态，F5B 方可再次正常运行 | F5B 数据还原 | MT-15 完成后 | 后台→大使管理→申请列表→找 user_id=34 待审核→驳回 | `SELECT status FROM tiandao_culture.ambassador_applications WHERE user_id=34 ORDER BY id DESC LIMIT 1` — status 应为 2 | ✅ 已通过（2026-03-04） |
 
-  | MT-17 | **小程序申请退款（未签合同）**：用户在智能客服页点击"退款"→ 选择已支付未签合同的课程 → 填写原因 → 提交，`orders.refund_status` 应变为 1 | F13 S13.1 | user_id=30，存在 pay_status=1 且 contract_signed=0 的课程订单 | 小程序智能客服页→退款→选课程→填原因→提交 | `SELECT order_no, refund_status, refund_reason, refund_amount FROM tiandao_culture.orders WHERE user_id=30 AND refund_status=1 ORDER BY id DESC LIMIT 3` | ⏳ 待测 |
-  | MT-18 | **退款合同拦截验证**：已签署学习合同的课程申请退款应被拦截，`refund_status` 不变 | F13 S13.2 | user_id=30，存在 contract_signed=1 的 user_courses | 小程序退款申请页→选择已签合同的课程 | 应弹出提示"已签署学习合同，无法退款"；`SELECT refund_status FROM tiandao_culture.orders WHERE user_id=30 AND order_no='<该订单号>'` — refund_status 应仍为 0 | ⏳ 待测 |
-  | MT-19 | **后台驳回退款**：管理员在退款管理页驳回 refund_status=1 的申请，`refund_status` 变为 4，小程序状态页显示"已驳回" | F13 S13.3 | 存在 refund_status=1 的订单（依赖 MT-17） | 后台→订单管理→退款管理→找到待审核记录→驳回→填写驳回原因 | `SELECT refund_status, refund_reject_reason, refund_audit_admin_id, refund_audit_time FROM tiandao_culture.orders WHERE refund_status=4 ORDER BY refund_audit_time DESC LIMIT 3` | ⏳ 待测 |
-  | MT-20 | **后台标记已转账（完成退款）**：上传发票后标记已转账，`refund_status=3`、`pay_status=4`，业务数据自动回滚（user_courses 失效） | F13 S13.4 | 存在 refund_status=1 的订单（依赖 MT-17），准备一张测试发票图片/PDF | 后台→退款管理→找到待审核记录→标记已转账→上传发票→保存 | `SELECT refund_status, pay_status, refund_time, refund_invoice_file_id FROM tiandao_culture.orders WHERE order_no='<订单号>'` + `SELECT status FROM tiandao_culture.user_courses WHERE order_id=<order_id>` — refund_status=3, pay_status=4, user_courses.status=2 | ⏳ 待测 |
-  | MT-21 | **退款后业务回滚验证**：course_type=1 退款后 user_courses.status 应变为 2，待上课预约 appointments.status 应变为 4（已取消） | F13 S13.5 | MT-20 完成后 | 执行 MT-20 后立即查询 | `SELECT uc.status, uc.course_id FROM tiandao_culture.user_courses uc WHERE uc.order_id=(SELECT id FROM tiandao_culture.orders WHERE order_no='<订单号>')` + `SELECT a.id, a.status FROM tiandao_culture.appointments a WHERE a.user_id=30 AND a.status=4 ORDER BY a.id DESC LIMIT 5` | ⏳ 待测 |
+  | MT-17 | **小程序申请退款（未签合同）**：用户在智能客服页点击"退款"→ 选择已支付未签合同的课程 → 填写原因 → 提交，`orders.refund_status` 应变为 1 | F13 S13.1 | user_id=30，存在 pay_status=1 且 contract_signed=0 的课程订单 | 小程序智能客服页→退款→选课程→填原因→提交 | `SELECT order_no, refund_status, refund_reason, refund_amount FROM tiandao_culture.orders WHERE user_id=30 AND refund_status=1 ORDER BY id DESC LIMIT 3` | ✅ 已通过（2026-03-04，user_id=32，order_id=61「更新课程_测试」¥1，refund_status=1，refund_reason="测试退"） |
+  | MT-18 | **退款合同拦截验证**：已签署学习合同的课程申请退款应被拦截，`refund_status` 不变 | F13 S13.2 | user_id=30，存在 contract_signed=1 的 user_courses | 小程序退款申请页→选择已签合同的课程 | 应弹出提示"已签署学习合同，无法退款"；`SELECT refund_status FROM tiandao_culture.orders WHERE user_id=30 AND order_no='<该订单号>'` — refund_status 应仍为 0 | ✅ 已通过（2026-03-04，user_id=32，order_id=81「312」已签合同，弹出"无法退款"提示，refund_status 仍为 0） |
+  | MT-19 | **后台驳回退款**：管理员在退款管理页驳回 refund_status=1 的申请，`refund_status` 变为 4，小程序状态页显示"已驳回" | F13 S13.3 | 存在 refund_status=1 的订单（依赖 MT-17） | 后台→订单管理→退款管理→找到待审核记录→驳回→填写驳回原因 | `SELECT refund_status, refund_reject_reason, refund_audit_admin_id, refund_audit_time FROM tiandao_culture.orders WHERE refund_status=4 ORDER BY refund_audit_time DESC LIMIT 3` | ✅ 已通过（2026-03-04，order_id=61，refund_status=4，reject_reason="没为什么"，audit_admin_id=5） |
+  | MT-20 | **后台标记已转账（完成退款）**：上传发票后标记已转账，`refund_status=3`、`pay_status=4`，业务数据自动回滚（user_courses 失效） | F13 S13.4 | 存在 refund_status=1 的订单（依赖 MT-17），准备一张测试发票图片/PDF | 后台→退款管理→找到待审核记录→标记已转账→上传发票→保存 | `SELECT refund_status, pay_status, refund_time, refund_invoice_file_id FROM tiandao_culture.orders WHERE order_no='<订单号>'` + `SELECT status FROM tiandao_culture.user_courses WHERE order_id=<order_id>` — refund_status=3, pay_status=4, user_courses.status=2 | ✅ 已通过（2026-03-04，order_id=54，refund_status=3，pay_status=4，发票已上传，refund_time=2026-03-04 20:01:58） |
+  | MT-21 | **退款后业务回滚验证**：course_type=1 退款后 user_courses.status 应变为 2，待上课预约 appointments.status 应变为 4（已取消），booked_quota 归零 | F13 S13.5 | MT-20 完成后 | 执行 MT-20 后立即查询 | `SELECT uc.status, uc.course_id FROM tiandao_culture.user_courses uc WHERE uc.source_order_id=<order_id>` + `SELECT a.status, a.cancel_reason FROM tiandao_culture.appointments a WHERE a.user_id=32 AND a.status=4 ORDER BY a.id DESC LIMIT 5` | ✅ 已通过（2026-03-04，order_id=52，补充实现了预约取消+booked_quota回退逻辑；appointment status=4，cancel_reason="订单退款"，booked_quota 1→0，user_courses status=2） |
   | MT-22 | **排课状态自动更新（定时任务）**：`autoUpdateScheduleStatus` 每天 0 点触发，验证排课状态流转：未开始(1)→进行中(2)、进行中(2)→已结束(3)，以及已结束排期中待上课预约自动标记为缺席(status=2) | 定时任务验证 | 存在 `class_date <= 今天` 且 `status=1` 的排期；存在 `class_date < 今天` 且 `status=2` 的排期；存在对应的 `status=0` 预约记录 | 等待次日 0 点后查询，或后台手动触发 `autoUpdateScheduleStatus` 云函数一次 | `SELECT id, class_date, class_end_date, status FROM tiandao_culture.class_records WHERE class_date <= CURDATE() ORDER BY id DESC LIMIT 10` — status 应已更新；`SELECT a.id, a.status FROM tiandao_culture.appointments a JOIN tiandao_culture.class_records cr ON a.class_record_id=cr.id WHERE cr.status=3 AND a.status=2 ORDER BY a.id DESC LIMIT 5` — 应有缺席记录 | ✅ 已通过（2026-03-04 MCP触发验证：cr36 class_date=今天 status=1→2✓；cr25 class_end_date=2026-03-03 status=2→3✓；cr37 class_end_date=2026-03-03 status=2→3✓；幂等性验证通过（第二次触发 toOngoing=toEnded=0）） |
-  | MT-23 | **订单级推荐人修改（支付前）**：在订单确认页修改推荐人，`orders.referee_id` 应更新，`referee_change_logs` 新增一条 change_type=3 的记录，支付后奖励发给**订单推荐人** | F3 支付前改推荐人 | user_id=30，存在 pay_status=0 的待支付订单（或先创建一个）；准备两个 level≥1 的大使账号作为推荐人A和B | 小程序订单确认页→点击更换推荐人→选择新推荐人B→确认 | `SELECT order_no, referee_id FROM tiandao_culture.orders WHERE user_id=30 AND pay_status=0 ORDER BY id DESC LIMIT 1` — referee_id 应已变为 B 的 id；`SELECT change_type, old_referee_id, new_referee_id FROM tiandao_culture.referee_change_logs WHERE user_id=30 AND change_type=3 ORDER BY id DESC LIMIT 3` — 应有 change_type=3 记录 | ⏳ 待测 |
-  | MT-24 | **推荐人资格验证失败（准青鸾推荐密训班）**：level=1（准青鸾）大使作为推荐人，用户尝试购买 type=2（密训班）课程，系统应拒绝创建订单并提示"该推荐人暂时只能推荐初探班课程" | F3 / F1 资格验证边界 | 存在 ambassador_level=1 的大使账号（可用 user_id=34，需先升至 level=1）；user_id=30 的 referee_id 设为该准青鸾大使 | 小程序→密训班课程详情→立即购买→系统验证推荐人资格 | 应弹出错误提示，`orders` 表不应新增任何记录：`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND order_no LIKE 'ORD%' ORDER BY id DESC LIMIT 1`（条数不变）| ⏳ 待测 |
+  | MT-23 | **订单级推荐人修改（支付前）**：在订单确认页修改推荐人，`orders.referee_id` 应更新，`referee_change_logs` 新增一条 change_type=3 的记录，支付后奖励发给**订单推荐人** | F3 支付前改推荐人 | user_id=30，存在 pay_status=0 的待支付订单（或先创建一个）；准备两个 level≥1 的大使账号作为推荐人A和B | 小程序订单确认页→点击更换推荐人→选择新推荐人B→确认 | `SELECT order_no, referee_id FROM tiandao_culture.orders WHERE user_id=30 AND pay_status=0 ORDER BY id DESC LIMIT 1` — referee_id 应已变为 B 的 id；`SELECT change_type, old_referee_id, new_referee_id FROM tiandao_culture.referee_change_logs WHERE user_id=30 AND change_type=3 ORDER BY id DESC LIMIT 3` — 应有 change_type=3 记录 | ✅ 已通过（2026-03-04） |
+  | MT-24 | **推荐人资格验证失败（准青鸾推荐密训班）**：level=1（准青鸾）大使作为推荐人，用户尝试购买 type=2（密训班）课程，系统应拒绝创建订单并提示"该推荐人暂时只能推荐初探班课程" | F3 / F1 资格验证边界 | 存在 ambassador_level=1 的大使账号（可用 user_id=34，需先升至 level=1）；user_id=30 的 referee_id 设为该准青鸾大使 | 小程序→密训班课程详情→立即购买→系统验证推荐人资格 | 应弹出错误提示，`orders` 表不应新增任何记录：`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND order_no LIKE 'ORD%' ORDER BY id DESC LIMIT 1`（条数不变）| ✅ 已通过（2026-03-04） |
   | MT-25 | **课程续期兑换（exchangeCourse）**：使用功德分兑换课程复训名额，`quota_exchange_records` 表新增记录，`users.merit_points` 相应减少 | 商城兑换-课程 | user_id=30 功德分余额充足（`merit_points >= 兑换价格`）；商城中存在课程类型商品（`mall_goods.goods_type=2`） | 小程序商学院→商城→选择课程续期商品→确认兑换 | `SELECT * FROM tiandao_culture.quota_exchange_records WHERE user_id=30 ORDER BY id DESC LIMIT 3` — 应有新记录；`SELECT merit_points FROM tiandao_culture.users WHERE id=30` — 余额减少 | ⏳ 待测 |
-  | MT-26 | **签到二维码生成与扫码签到全链路（管理员+学员）**：管理员为排期生成签到二维码，学员扫码后 `appointments.status=1`，`checkin_qrcodes` 表有生成记录，`user_courses.attend_count+1` | F7 签到二维码 | 存在 status=1（招募中）的排期；user_id=30 对该排期有 status=0 的预约记录 | ① 后台→排课管理→选择排期→生成签到码→下载；② 学员扫码进入小程序签到页→确认签到 | `SELECT id, class_record_id, qrcode_url, status FROM tiandao_culture.checkin_qrcodes ORDER BY id DESC LIMIT 3` — 应有新记录；`SELECT status, checkin_time FROM tiandao_culture.appointments WHERE user_id=30 AND status=1 ORDER BY checkin_time DESC LIMIT 3` — status=1，checkin_time 非 NULL | ⏳ 待测 |
+  | MT-26 | **签到二维码覆盖式生成（改造后）**：管理员为排期生成签到码，重新生成时覆盖旧记录而非新增。`checkin_qrcodes` 每个排期只保留一条记录 | F7 签到二维码 | 存在 status=1 的排期 | 后台→排课管理→选排期→生成签到码→再次生成签到码 | `SELECT COUNT(*) FROM tiandao_culture.checkin_qrcodes WHERE class_record_id=<id>` — 应为1；第二次生成后 qrcode_url 应更新 | ⏳ 重测（日签到改造后逻辑变更） |
+  | MT-26b | **非沙龙扫码日签到**：学员扫码后在 `appointment_checkins` 插入当日签到记录，`appointments.status` 保持 0 不变 | F7 日签到 | 非沙龙排期(type≠4)，有 status=0 的预约，当天在排期日期范围内 | 学员扫码→小程序签到页→显示"今日签到成功" | `SELECT * FROM tiandao_culture.appointment_checkins WHERE appointment_id=<id> AND checkin_date=CURDATE()` — 应有1条记录 checkin_type=1；`SELECT status FROM tiandao_culture.appointments WHERE id=<id>` — 应仍为 0 | ⏳ 待测 |
+  | MT-26c | **非沙龙重复扫码签到**：同一天重复扫码，应返回"今日已签到"而非报错 | F7 日签到 | 同一天已有签到记录 | 学员同一天再次扫码 | 返回 `already_checked=true`，`appointment_checkins` 表无重复记录（唯一索引保护） | ⏳ 待测 |
+  | MT-26d | **排期外扫码忽略**：排期日期范围外扫码，返回"不在签到时间内" | F7 日签到 | 当天不在 class_date~class_end_date 范围内 | 学员扫码 | 返回错误"不在签到时间内"，无签到记录插入 | ⏳ 待测 |
+  | MT-26e | **后台补签与取消签到**：管理员在预约详情中为学员特定日期补签/取消签到 | F7 日签到 | 非沙龙预约，存在排期日期范围 | 后台→预约管理→查看详情→点击未签到日期的"补签"按钮→确认；然后点击"取消签到" | 补签后 `appointment_checkins` 新增 checkin_type=2 记录；取消后该记录被删除 | ⏳ 待测 |
+  | MT-26f | **预约创建时 attend_count+1（改造后）**：创建预约后 `user_courses.attend_count` 立即+1 | F7 attend_count | 用户已购课程 | 小程序→预约课程排期 | `SELECT attend_count FROM tiandao_culture.user_courses WHERE user_id=? AND course_id=?` — 预约前后 attend_count 增加1 | ⏳ 待测 |
+  | MT-26g | **取消预约时 attend_count-1（改造后）**：管理员取消非沙龙预约后 attend_count-1，同时清理该预约的所有签到记录 | F7 attend_count | 存在非沙龙预约 | 后台→预约管理→取消预约 | attend_count 减少1；`appointment_checkins` 中该预约的所有记录被删除 | ⏳ 待测 |
+  | MT-26h | **签到不触发积分解冻（BUG修复确认）**：扫码签到后不应触发推荐人积分解冻 | F7 BUG修复 | 有推荐人的用户 | 学员扫码签到 | `cash_points_records` 无新增 type=2 记录（解冻只在合同审批时触发） | ⏳ 待测 |
   | MT-27 | **复训预约流程**：`attend_count >= 1` 的用户再次预约同一课程，应触发复训费支付（`is_retrain=1`），支付成功后 `appointments` 新增记录，`attend_count` 再次 +1 | F7 复训预约 | user_id=30 对某课程已有 `attend_count >= 1`（已上过课）；存在该课程的 status=1 排期；课程设置了 `retrain_price > 0` | 小程序→课程计划→选择已上过课的课程排期→点击预约→系统提示需支付复训费→完成支付 | `SELECT attend_count FROM tiandao_culture.user_courses WHERE user_id=30 AND course_id=<course_id>` — attend_count 增加；`SELECT is_retrain, status FROM tiandao_culture.appointments WHERE user_id=30 ORDER BY id DESC LIMIT 3` — 应有 is_retrain=1 记录 | ✅ 已通过（2026-03-03 user_id=32；course_id=2 密训班；复训订单 ORD202603030916390868 pay_status=1；回调创建 appointments is_retrain=1；attend_count=1→2 待签到后触发；订阅授权弹窗在支付页 tap 上下文触发✓） |
-  | MT-28 | **预览模式功能拦截验证**：`profile_completed=0` 的用户尝试购买课程/预约/申请大使，系统应拒绝并提示"请先完善个人资料" | F1 预览模式边界 | 准备一个 profile_completed=0 的测试账号（或将某账号临时设为0）| 用预览模式账号：① 点击购买课程→应被拦截；② 点击预约→应被拦截；③ 点击申请大使→应被拦截 | 三个操作均应弹出"请先完善个人资料"提示；`orders`、`appointments`、`ambassador_applications` 表均无新增记录 | ⏳ 待测 |
-  | MT-29 | **协议到期与续约**：管理员在协议管理页查看 30 天内到期的大使协议，并为到期大使手动续签 1 年，`contract_signatures.contract_end` 应更新，发送续签成功通知 | 协议到期管理 | 存在 `contract_end` 在未来 30 天内的 `contract_signatures` 记录 | 后台→协议管理→到期提醒→找到即将到期记录→点击"手动续签"→确认 1 年 | `SELECT id, user_id, contract_end, status FROM tiandao_culture.contract_signatures WHERE user_id=<大使id> ORDER BY id DESC LIMIT 1` — contract_end 应延长约 365 天 | ⏳ 待测 |
-  | MT-30 | **F12 S12.6a 奖励延迟发放验证**：用户签署学习服务协议后，系统应自动触发推荐人奖励发放（`orders.is_reward_granted=1`）；若无推荐人则保持 0 不报错 | F12 S12.6a | user_id=30，course_id=18（attend_count=0，contract_signed=0）；先通过 F12 自动化测试创建合同模板；小程序真实签署学习服务协议 | 小程序→我的课程→课程"312"(id=18)→预约→系统提示先签合同→进入签约页→完成签名→提交 | `SELECT order_no, is_reward_granted, reward_granted_at, referee_id FROM tiandao_culture.orders WHERE user_id=30 AND related_id=18 AND order_type=1 AND pay_status=1 ORDER BY id DESC LIMIT 1` — 若有推荐人且配置了奖励：is_reward_granted=1，reward_granted_at 非 NULL | ✅ 已通过（user_id=32 何日琛；contract_signatures id=12✓；contract_signed=1✓；referee_id=33 is_reward_granted=0→1✓；reward_granted_at=2026-03-02 23:09:45，签约后1秒触发✓） |
-  | MT-31 | **支付成功后返回不可重复支付（导航栈修复）**：支付成功→跳转订单详情→点击返回，应回到课程详情页（非订单确认页），不可再次创建订单 | F3 导航修复 | user_id=30，选择一个可购买的课程 | 小程序→课程详情→立即购买→确认订单→支付→支付成功→订单详情→点击返回 | 返回目标页应为课程详情或首页，而非订单确认页；`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条新订单，不应有重复创建 | ⏳ 待测 |
-  | MT-32 | **取消支付后跳转待支付页（导航栈修复）**：在支付页取消微信支付弹窗→应跳转到待支付页面（可重新发起支付），不应回到订单确认页 | F3 导航修复 | user_id=30，创建待支付订单 | 小程序→课程详情→立即购买→确认订单→支付页→取消微信支付弹窗 | 应自动跳转到待支付页面，显示订单号和"立即支付"按钮；从待支付页返回不应回到订单确认页 | ⏳ 待测 |
-  | MT-33 | **合同签署成功后返回不可重复签署（导航栈修复）**：大使合同签署成功→跳转合同详情→点击返回，应回到大使中心（非签署页面），不可再次签署 | F6/F12 导航修复 | user_id=30，存在待签署的大使合同或课程合同 | 小程序→进入合同签署页→完成签名→确认签署→签署成功→合同详情→点击返回 | 返回目标页应为大使中心或课程详情，而非合同签署页；`SELECT COUNT(*) FROM tiandao_culture.contract_signatures WHERE user_id=30 AND signed_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条新签署记录 | ⏳ 待测 |
-  | MT-34 | **大使升级支付后返回不可重复下单（导航栈修复）**：升级指南页创建升级订单→跳转支付→支付成功/取消→返回，不应回到升级指南页重新创建订单 | F5 导航修复 | user_id=30，满足大使升级条件（如 level=1→2） | 小程序→大使中心→升级指南→支付升级费→支付成功→订单详情→返回 | 返回目标页应为大使中心（非升级指南页）；`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND order_type=4 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条升级订单 | ⏳ 待测 |
-  | MT-35 | **预约确认后不可重复提交（防双击 + 复训路径导航栈修复）**：首次预约/复训预约流程中，提交后不可重复提交 | F7 导航修复 | user_id=30，选择一个可预约的排期 | 小程序→课程详情→选排期→预约确认→确定预约→快速连续点击确定按钮 | 应只创建 1 条预约记录；`SELECT COUNT(*) FROM tiandao_culture.appointments WHERE user_id=30 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应为 1 | ⏳ 待测 |
-  | MT-36 | **密训班赠课-用户无该课程**：购买密训班后，赠送课程应以 is_gift=1 新建 user_courses 记录，expire_at 按赠送课程 validity_days 计算 | F3 赠课新建 | 购买 type=2 密训班（included_course_ids 有值），用户尚未拥有赠送课程 | 小程序→密训班课程详情→购买→完成支付 | `SELECT id, course_id, is_gift, source_order_id, expire_at, status FROM tiandao_culture.user_courses WHERE user_id=<uid> AND is_gift=1 ORDER BY id DESC LIMIT 3` — 应有 is_gift=1 记录 | ⏳ 待测 |
-  | MT-37 | **密训班赠课-用户已有该课程（有效期叠加）**：用户已有赠送课程记录时，不新建记录，仅在原 expire_at 上叠加 validity_days 天 | F3 赠课叠加 | 用户已有赠送课程的 user_courses 记录（status=1）；购买 type=2 密训班 | 记录原 expire_at → 购买密训班 → 比较 expire_at 变化 | `SELECT id, expire_at FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<赠送课程id> AND status=1` — expire_at 应增加约 validity_days 天 | ⏳ 待测 |
+  | MT-28 | **预览模式功能拦截验证**：`profile_completed=0` 的用户尝试购买课程/预约/申请大使，系统应拒绝并提示"请先完善个人资料" | F1 预览模式边界 | 准备一个 profile_completed=0 的测试账号（或将某账号临时设为0）| 用预览模式账号：① 点击购买课程→应被拦截；② 点击预约→应被拦截；③ 点击申请大使→应被拦截 | 三个操作均应弹出"请先完善个人资料"提示；`orders`、`appointments`、`ambassador_applications` 表均无新增记录 | ✅ 已通过（2026-03-04 user_id=32；① 购买拦截✓（order/createOrder 后端 403）；② 预约拦截：测试发现沙龙课程（type=4，没上过课的）未被拦截——已修复：`createAppointment.js` 新增 profile_completed 检查，所有预约均返回 403；③ 申请大使前端已拦截✓；`appointments` 表无新增记录✓；⚠️ 注：路由守卫 `installRouteGuard` 函数定义但从未调用，拦截全依赖后端 API 403 返回） |
+  | MT-29 | **协议到期与续约**：管理员在协议管理页查看 30 天内到期的大使协议，并为到期大使手动续签 1 年，`contract_signatures.contract_end` 应更新，发送续签成功通知 | 协议到期管理 | 存在 `contract_end` 在未来 30 天内的 `contract_signatures` 记录 | 后台→协议管理→到期提醒→找到即将到期记录→点击"手动续签"→确认 1 年 | `SELECT id, user_id, contract_end, status FROM tiandao_culture.contract_signatures WHERE user_id=<大使id> ORDER BY id DESC LIMIT 1` — contract_end 应延长约 365 天 | ✅ 已通过（2026-03-04） |
+  | MT-30 | **F12 奖励发放验证（合同流程改造后）**：⚠️ 原流程已废弃（用户线上签署课程合同→奖励触发）。改为后台管理员录入合约（`adminCreateCourseContract`）后自动触发推荐人奖励发放。需在后台"合约管理→录入合约"中操作。 | F12 S12.N2 | user_id=30，course_id=18；后台选择用户+课程+上传合同照片 | 后台→合约管理→录入合约Tab→选用户→选课程→上传照片→提交 | `SELECT order_no, is_reward_granted, reward_granted_at, referee_id FROM tiandao_culture.orders WHERE user_id=30 AND related_id=18 AND order_type=1 AND pay_status=1 ORDER BY id DESC LIMIT 1` — 若有推荐人且配置了奖励：is_reward_granted=1，reward_granted_at 非 NULL | ⏳ 重测（合同流程改造后需重新验证） |
+  | MT-31 | **支付成功后返回不可重复支付（导航栈修复）**：支付成功→跳转订单详情→点击返回，应回到课程详情页（非订单确认页），不可再次创建订单 | F3 导航修复 | user_id=30，选择一个可购买的课程 | 小程序→课程详情→立即购买→确认订单→支付→支付成功→订单详情→点击返回 | 返回目标页应为课程详情或首页，而非订单确认页；`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条新订单，不应有重复创建 | ✅ 已通过（2026-03-04） |
+  | MT-32 | **取消支付后跳转待支付页（导航栈修复）**：在支付页取消微信支付弹窗→应跳转到待支付页面（可重新发起支付），不应回到订单确认页 | F3 导航修复 | user_id=30，创建待支付订单 | 小程序→课程详情→立即购买→确认订单→支付页→取消微信支付弹窗 | 应自动跳转到待支付页面，显示订单号和"立即支付"按钮；从待支付页返回不应回到订单确认页 | ✅ 已通过（2026-03-04） |
+  | MT-33 | **合同签署成功后返回不可重复签署（导航栈修复）**：大使合同签署成功→跳转合同详情→点击返回，应回到大使中心（非签署页面），不可再次签署 | F6/F12 导航修复 | user_id=30，存在待签署的大使合同或课程合同 | 小程序→进入合同签署页→完成签名→确认签署→签署成功→合同详情→点击返回 | 返回目标页应为大使中心或课程详情，而非合同签署页；`SELECT COUNT(*) FROM tiandao_culture.contract_signatures WHERE user_id=30 AND signed_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条新签署记录 | ✅ 已通过（2026-03-04 user_id=32） |
+  | MT-34 | **大使升级支付后返回不可重复下单（导航栈修复）**：升级指南页创建升级订单→跳转支付→支付成功/取消→返回，不应回到升级指南页重新创建订单 | F5 导航修复 | user_id=30，满足大使升级条件（如 level=1→2） | 小程序→大使中心→升级指南→支付升级费→支付成功→订单详情→返回 | 返回目标页应为大使中心（非升级指南页）；`SELECT COUNT(*) FROM tiandao_culture.orders WHERE user_id=30 AND order_type=4 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应只有 1 条升级订单 | ✅ 已通过（2026-03-04 user_id=32） |
+  | MT-35 | **预约确认后不可重复提交（防双击 + 复训路径导航栈修复）**：首次预约/复训预约流程中，提交后不可重复提交 | F7 导航修复 | user_id=30，选择一个可预约的排期 | 小程序→课程详情→选排期→预约确认→确定预约→快速连续点击确定按钮 | 应只创建 1 条预约记录；`SELECT COUNT(*) FROM tiandao_culture.appointments WHERE user_id=30 AND created_at >= NOW() - INTERVAL 5 MINUTE` — 应为 1 | ✅ 已通过（2026-03-04） |
+  | MT-36 | **密训班赠课-用户无该课程**：购买密训班后，赠送课程应以 is_gift=1 新建 user_courses 记录，expire_at 按赠送课程 validity_days 计算 | F3 赠课新建 | 购买 type=2 密训班（included_course_ids 有值），用户尚未拥有赠送课程 | 小程序→密训班课程详情→购买→完成支付 | `SELECT id, course_id, is_gift, source_order_id, expire_at, status FROM tiandao_culture.user_courses WHERE user_id=<uid> AND is_gift=1 ORDER BY id DESC LIMIT 3` — 应有 is_gift=1 记录 | ✅ 已通过（2026-03-04，user_id=32，user_courses id=37 is_gift=1 source_order_id=109 pending_days=1） |
+  | MT-37 | **密训班赠课-用户已有该课程（有效期叠加）**：用户已有赠送课程记录时，不新建记录，仅在原 expire_at 上叠加 validity_days 天 | F3 赠课叠加 | 用户已有赠送课程的 user_courses 记录（status=1）；购买 type=2 密训班 | 记录原 expire_at → 购买密训班 → 比较 expire_at 变化 | `SELECT id, expire_at FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<赠送课程id> AND status=1` — expire_at 应增加约 validity_days 天 | ✅ 已通过（2026-03-05，user_id=32，user_courses id=43 expire_at 2026-04-04→2026-04-05 +1天） |
   | MT-38 | **密训班兑换赠课**：用功德分/积分兑换密训班后，赠送课程逻辑应与购买一致（新建或叠加有效期） | F3 兑换赠课 | 用户功德分/积分充足，商城有密训班课程 | 小程序→商城→兑换密训班课程 | 同 MT-36/MT-37 验证SQL | ⏳ 待测 |
   | MT-39 | **退款校验-赠送课程合同拦截**：赠送课程已签合同时，密训班退款应被拦截 | F13 赠课退款拦截 | 用户购买密训班且赠送课程 contract_signed=1 | 小程序→申请退款 | 应提示"赠送课程已签署学习合同，无法退款" | ⏳ 待测 |
-  | MT-40 | **退款回滚-赠送课程新建记录失效**：退款后 is_gift=1 的赠送 user_courses 应 status=0 | F13 赠课退款回滚A | MT-36 完成后，对该密训班订单执行退款 | 后台→退款管理→标记已转账 | `SELECT status FROM tiandao_culture.user_courses WHERE is_gift=1 AND source_order_id=<order_id>` — status=0 | ⏳ 待测 |
-  | MT-41 | **退款回滚-赠送课程有效期回退**：用户已有赠送课程+叠加有效期后退款，expire_at 应减回 validity_days 天 | F13 赠课退款回滚B | MT-37 完成后，记录叠加后 expire_at，对密训班订单退款 | 后台→退款管理→标记已转账 | `SELECT expire_at FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<赠送课程id> AND status=1` — expire_at 应减少约 validity_days 天 | ⏳ 待测 |
-  | MT-42 | **课程上架锁定验证**：课程上架后，后台编辑对话框所有字段应置灰不可编辑 | 后台功能 | 后台存在 status=1 的课程 | 后台→课程列表→点击上架课程的"编辑" | 所有表单项应 disabled，显示"课程已上架"警告 | ⏳ 待测 |
-  | MT-43 | **课程上架确认弹窗验证**：课程从下架切换到上架时应弹出确认框 | 后台功能 | 后台存在 status=0 的课程 | 后台→课程列表→点击下架课程的"上架" | 应弹出"课程上架后不能修改任何字段，确定好再上架"确认框 | ⏳ 待测 |
-  | MT-44 | **新课程默认下架验证**：新创建的课程 status 应为 0 | 后台功能 | 登录admin后台 | 后台→课程列表→新增课程→填写信息→保存 | `SELECT status FROM tiandao_culture.courses ORDER BY id DESC LIMIT 1` — status=0 | ⏳ 待测 |
-  | MT-45 | **课程详情页赠送课程 tab 展示**：密训班课程详情页应显示"赠送+课程名称" tab | 小程序展示 | 存在 included_course_ids 有值的上架密训班 | 小程序→密训班课程详情页 | 应在标签页中看到"赠送XXX"tab，点击后展示赠送课程信息 | ⏳ 待测 |
+  | MT-40 | **退款回滚-赠送课程新建记录失效**：退款后 is_gift=1 的赠送 user_courses 应 status=2 | F13 赠课退款回滚A | MT-36 完成后，对该密训班订单执行退款 | 后台→退款管理→标记已转账 | `SELECT status FROM tiandao_culture.user_courses WHERE is_gift=1 AND source_order_id=<order_id>` — status=2 | ✅ 已通过（order_id=109，id=37 status=2）|
+  | MT-41 | **退款回滚-赠送课程有效期回退**：用户已有赠送课程+叠加有效期后退款，expire_at 应减回 validity_days 天 | F13 赠课退款回滚B | MT-37 完成后，记录叠加后 expire_at，对密训班订单退款 | 后台→退款管理→标记已转账 | `SELECT expire_at FROM tiandao_culture.user_courses WHERE user_id=<uid> AND course_id=<赠送课程id> AND status=1` — expire_at 应减少约 validity_days 天 | ✅ 已通过（2026-03-05，order_id=127，user_courses id=43 从 2026-04-05 回退到 2026-04-04；markRefundTransferred Path C 生效） |
+  | MT-42 | **课程上架锁定验证**：课程上架后，后台编辑对话框所有字段应置灰不可编辑 | 后台功能 | 后台存在 status=1 的课程 | 后台→课程列表→点击上架课程的"编辑" | 所有表单项应 disabled，显示"课程已上架"警告 | ✅ 已通过（2026-03-04） |
+  | MT-43 | **课程上架确认弹窗验证**：课程从下架切换到上架时应弹出确认框 | 后台功能 | 后台存在 status=0 的课程 | 后台→课程列表→点击下架课程的"上架" | 应弹出"课程上架后不能修改任何字段，确定好再上架"确认框 | ✅ 已通过（2026-03-04） |
+  | MT-44 | **新课程默认下架验证**：新创建的课程 status 应为 0 | 后台功能 | 登录admin后台 | 后台→课程列表→新增课程→填写信息→保存 | `SELECT status FROM tiandao_culture.courses ORDER BY id DESC LIMIT 1` — status=0 | ✅ 已通过（2026-03-04，id=42 "aaa" status=0） |
+  | MT-45 | **课程详情页赠送课程 tab 展示**：密训班课程详情页应显示"赠送+课程名称" tab | 小程序展示 | 存在 included_course_ids 有值的上架密训班 | 小程序→密训班课程详情页 | 应在标签页中看到"赠送XXX"tab，点击后展示赠送课程信息 | ✅ 已通过（2026-03-04 user_id=32；赠送课程 tab 显示✓；发现 tab 内重复展示了课程介绍（gc.description）文案——已修复：`detail/index.vue` 删除赠送 tab 内的"📖 课程介绍"block，仅保留课程卡片和大纲） |
   | MT-46 | **沙龙开课当天自动签到验证**：将沙龙排期 class_date 改为今天后触发 `autoUpdateScheduleStatus`，`appointments.status` 应从 0 自动变为 1（已签到），`checkin_time` 有值 | F14 S14.7 | 存在沙龙排期（course.type=4），appointments.status=0 | ① MCP 执行：`UPDATE tiandao_culture.class_records SET class_date=CURDATE(), class_end_date=CURDATE() WHERE id=<排期id>` ② 后台手动触发云函数 `autoUpdateScheduleStatus` | `SELECT a.id, a.status, a.checkin_time FROM tiandao_culture.appointments a WHERE a.class_record_id=<排期id> AND a.user_id=30` — status=1，checkin_time 非 NULL | ✅ 已通过（2026-03-04 当日 0 点定时触发验证：沙龙 cr42（course_id=41）当日 class_date=2026-03-02 ≤ today，触发 status=1→2→自动签到→status=3；本次手动触发幂等验证 salonAutoCheckin=0（已全部处理）；F14 S14.7 历史验证 checkin_time=2026-03-03 11:50:08✓；⚠️ 注：appointments 因 fk_appointments_user_course CASCADE 级联删除，无法事后查询 checkin_time） |
   | MT-47 | **沙龙结束后硬删除清理验证**：排期 class_end_date 过期后触发 `autoUpdateScheduleStatus`，`courses`/`class_records`/`user_courses` 应被硬删除，`appointments` 保留 | F14 S14.8 | MT-46 完成后；class_end_date 改为昨天 | ① MCP 执行：`UPDATE tiandao_culture.class_records SET class_date=DATE_SUB(CURDATE(),INTERVAL 2 DAY), class_end_date=DATE_SUB(CURDATE(),INTERVAL 1 DAY) WHERE id=<排期id>` ② 触发 `autoUpdateScheduleStatus` | `SELECT COUNT(*) FROM tiandao_culture.courses WHERE id=<课程id>` — 应为 0；`SELECT COUNT(*) FROM tiandao_culture.appointments WHERE course_id=<课程id>` — 应 ≥1 | ✅ 已通过（2026-03-04 MCP触发验证：salonCleanedCourses=1、salonCleanedRecords=1；course_id=41 已删除✓；class_records id=42 已删除✓；user_courses course_id=41 已删除✓；**设计修复（2026-03-04）**：`fk_appointments_user_course` 已从 CASCADE 改为 SET NULL，`user_course_id` 字段允许 NULL，今后沙龙清理时 appointments 将保留，user_course_id 置 NULL） |
-  | MT-48 | **"我的"首页统计数字 99+ 显示**：订单/预约/课程/协议数量超过 99 时，首页统计数字应显示"99+"而非实际数字 | 前端展示 | user_id 在各表有 >99 条记录（需临时插入测试数据或确认显示逻辑） | 小程序→"我的"首页→查看统计数字 | 若数量 >99 应显示"99+"；若 ≤99 显示实际数字 | ⏳ 待测 |
-  | MT-49 | **列表页滚动分页加载**：我的订单/预约/课程列表每次加载 20 条，滑到底部自动加载下一页，最多 99 条。加载完毕显示"已加载全部" | 前端分页 | user_id=30，各列表有数据 | 小程序→我的订单/预约/课程→向下滚动 | 初始加载 20 条→滑到底部加载更多→最多 99 条后显示"已加载全部" | ⏳ 待测 |
-  | MT-50 | **协议列表最多 99 条展示**：我的协议页一次性加载但客户端截取前 99 条，底部显示"已加载全部" | 前端展示 | user_id=30 有协议记录 | 小程序→我的→我的协议 | 列表正常展示，底部有"已加载全部"提示 | ⏳ 待测 |
-  | MT-51 | **创建排期：上课日期不能早于今天（前端拦截）**：后台排期管理，新增排期时选择昨天或更早的上课日期，提交前前端应弹出"上课日期不能早于今天"校验错误，不发送接口请求 | F7 排期管理 | 进入后台排期管理页面，点击"新增排期" | 上课日期选择昨天（`CURDATE()-1`），点击保存 | 前端表单校验提示"上课日期不能早于今天"，不调用 createClassRecord 接口 | ⏳ 待测 |
+  | MT-48 | **"我的"首页统计数字 99+ 显示**：订单/预约/课程/协议数量超过 99 时，首页统计数字应显示"99+"而非实际数字 | 前端展示 | user_id 在各表有 >99 条记录（需临时插入测试数据或确认显示逻辑） | 小程序→"我的"首页→查看统计数字 | 若数量 >99 应显示"99+"；若 ≤99 显示实际数字 | ✅ 已通过（2026-03-04） |
+  | MT-49 | **列表页滚动分页加载**：我的订单/预约/课程列表每次加载 20 条，滑到底部自动加载下一页，最多 99 条。加载完毕显示"已加载全部" | 前端分页 | user_id=30，各列表有数据 | 小程序→我的订单/预约/课程→向下滚动 | 初始加载 20 条→滑到底部加载更多→最多 99 条后显示"已加载全部" | ✅ 已通过（2026-03-04） |
+  | MT-50 | **协议列表最多 99 条展示**：我的协议页一次性加载但客户端截取前 99 条，底部显示"已加载全部" | 前端展示 | user_id=30 有协议记录 | 小程序→我的→我的协议 | 列表正常展示，底部有"已加载全部"提示 | ✅ 已通过（2026-03-04） |
+  | MT-51 | **订阅消息弹窗真机验证（普通预约路径）**：`appointment-confirm` 页点击"立即预约"（非复训费场景），真机应弹出「订阅一次以下消息通知 · 订阅课程开课提醒」弹窗；修复背景：原 `handleSubmit` 为 async 函数导致微信点击态丢失，改为同步函数后修复 | 前端真机 | 存在 attend_count=0 的课程（首次预约）且已登录 | 真机小程序→课程详情→选择排期→进入预约确认页→点击"立即预约" | 应弹出订阅消息授权弹窗；控制台日志 `[订阅授权-预约] complete:` 含 `"accept"` 或 `"reject"`，无 errCode | ✅ 已通过（2026-03-04） |
+  | MT-52 | **订阅消息弹窗真机验证（复训支付路径）**：`payment` 页点击"立即支付"（isRetrain=1），真机应弹出订阅弹窗后继续发起支付；修复背景：原 `handlePay` 为 async 函数导致微信点击态丢失，改为同步函数后修复 | 前端真机 | 存在 attend_count≥1 的课程（复训场景）且已登录 | 真机小程序→选排期→预约确认→确认复训费→支付确认页→点击"立即支付" | 先弹出订阅授权弹窗，用户操作后继续弹出微信支付收银台；控制台日志 `[订阅授权] complete:` 含 `"accept"`，`requestSubscribeMessage:ok` | ✅ 已通过（2026-03-04） |
+  | MT-51 | **创建排期：上课日期不能早于今天（前端拦截）**：后台排期管理，新增排期时选择昨天或更早的上课日期，提交前前端应弹出"上课日期不能早于今天"校验错误，不发送接口请求 | F7 排期管理 | 进入后台排期管理页面，点击"新增排期" | 上课日期选择昨天（`CURDATE()-1`），点击保存 | 前端表单校验提示"上课日期不能早于今天"，不调用 createClassRecord 接口 | ✅ 已通过（2026-03-04，前端拦截弹出提示，无接口请求） |
   | MT-52 | **创建排期：上课日期不能早于今天（云函数兜底拦截）**：绕过前端直接调用 `createClassRecord`，传入 `classDate` 早于今天，接口应返回参数错误 | F7 排期管理 | 直接调用云函数 | 调用 `course.createClassRecord { courseId: 1, classDate: "2025-01-01" }` | 返回 `paramError: 上课日期不能早于今天` | ✅ 已通过（2026-03-04 MCP JWT触发 createClassRecord classDate=2025-01-01：code=400，message="上课日期不能早于今天"✓） |
-  | MT-53 | **编辑排期：修改上课日期不能早于今天（云函数兜底拦截）**：调用 `updateClassRecord`，传入 `classDate` 早于今天，接口应返回参数错误 | F7 排期管理 | 存在任意一条 class_records 记录 | 调用 `course.updateClassRecord { id: <排期id>, classDate: "2025-01-01" }` | 返回 `paramError: 上课日期不能早于今天` | ⏳ 待测 |
+  | MT-53 | **~~编辑排期：修改上课日期~~（已变更）取消排期验证**：`updateClassRecord` 现仅允许 `status=0`（取消排期），其他修改操作已禁止。取消排期后应自动取消所有待上课预约，复训预约应释放资格（retrain_credit_status=1） | F7 排期管理 | 存在至少一条 status=1 的排期，且有关联预约 | 调用 `course.updateClassRecord { id: <排期id>, status: 0 }` | 排期 status=0；关联预约全部 status=3；复训预约的订单 retrain_credit_status=1 | ⏳ 重测（2026-03-06 updateClassRecord 仅允许 status=0 取消，需重测） |
 
   > ⚠️ **为什么 F5 apply 不自动化**：`ambassador.apply` 创建的申请需要管理员人工审批才能还原状态，无法自动清理。若自动化运行，第一次执行后 user_id=34 就会处于"待审核"状态，导致 F5B S5B.1 断言 `has_application===false` 永久失败。凡写操作无自动清理路径的场景，均应登记为 MT 手动项而非强行自动化。
 
@@ -1059,6 +1079,7 @@
   | 19 | [S3.7x] cancelExchange 对已取消(status=3)记录二次撤销，应被拦截返回错误 | §6.13b |
   | 20 | [S3.9x] confirmPickup 对已领取(status=2)记录重复确认，应被幂等拦截 | §6.21 |
   | 21 | [S3.9y] confirmPickup 对已取消(status=3)记录确认，应被拒绝返回错误 | §6.21 |
+  | 22 | 复训订单 order_type=2：retrain_credit_status 新创建默认 0；支付成功并创建预约后 2；取消预约后 1 | 2026-03-06 复训费保留与取消预约 |
 
   **多表验证 SQL**：
   ```sql
@@ -1101,6 +1122,15 @@
   SELECT exchange_no, status, pickup_admin_id, pickup_time, remark
   FROM tiandao_culture.mall_exchange_records
   WHERE status=2 ORDER BY pickup_time DESC LIMIT 5
+
+  -- ✏️ S3.10b [2026-03-06 新增] 复训订单 retrain_credit_status 状态流转验证
+  SELECT o.id, o.order_no, o.order_type, o.pay_status, o.retrain_credit_status,
+    o.class_record_id, o.related_id as user_course_id
+  FROM tiandao_culture.orders o
+  WHERE o.order_type = 2
+  ORDER BY o.id DESC LIMIT 10
+  -- 期望：retrain_credit_status 值为 0（新建）/1（可用，预约已取消）/2（已使用，预约已创建）
+  -- 状态流转：新建订单 0 → 支付成功并创建预约 2 → 取消预约 1 → 再次使用资格 2
 
   -- ✏️ S3.10 [2026-03-01 新增] 购买课程后 attend_count 初始值验证（初始值应为 0）
   SELECT uc.id, uc.user_id, uc.course_id, uc.attend_count, uc.is_gift, uc.buy_time
@@ -1301,19 +1331,21 @@
 
   ### 流程 7: 📅 预约 · 排期 · 学习进度 · 签到验证
 
-  > ⚠️ **跨流程依赖（F12 课程合同）**：小程序端 `handleAppointment` 现在会先调用 `checkCourseContract` 检查合同状态。如果课程配置了合同模板且用户未签署，会拦截跳转到签约页面。自动化测试直接调用 API 不受影响，但**手动测试预约流程前需确保 F12 测试通过**或该课程未配置合同模板。
+  > ⚠️ **跨流程依赖更新（2026-03-06 合同流程改造）**：预约课程不再有合同签署拦截，购买课程后即可直接预约。`checkCourseContract` 接口已废弃。课程合同改为管理员后台手动录入，不影响预约流程。
 
   ```
   getClassRecords(course_id=1) → getClassRecords(course_id=18) → [写]createAppointment(首次)
-  → [边界]cancelAppointment废弃 → getMyAppointments
-  → getAcademyProgress → getMyCourses(attend_count) → [边界]复训拦截 → 无预约/无进度边界
+  → [写]cancelAppointment(截止日期前) → [边界]cancelAppointment(截止日期后) → getMyAppointments
+  → getAcademyProgress → getMyCourses(attend_count) → [边界]复训拦截
+  → [写]createClassRecord(含cancelDeadlineDays) → [写]updateClassRecord(status=0取消排期)
+  → [读]checkRetrainCredit → [写]createAppointment(使用复训资格) → 无预约/无进度边界
   ```
 
-  **测试目的**：验证预约系统完整链路——排期查询、首次预约写操作、复训费拦截、学习进度，以及 `class_records.booked_quota` 与实际预约数的一致性。
+  **测试目的**：验证预约系统完整链路——排期查询（含 cancel_deadline_days）、首次预约写操作、客户端取消预约（截止日期校验）、复训费拦截、复训资格检查与使用（retrain_credit_status 状态流转 0→2→1）、后台排期管理（新增/取消排期联动取消预约）、学习进度，以及 `class_records.booked_quota` 与实际预约数的一致性。
 
-  > ℹ️ `booking_deadline` / `retrain_deadline` 字段确认**未使用**：当前报名截止逻辑为前端展示 `class_date`，排期 `status` 变为进行中（2）时不再可预约，无独立截止时间字段，两个字段已废弃。
+  > ℹ️ `booking_deadline` / `retrain_deadline` 字段确认**未使用**：取消预约截止日期改为使用 `class_records.cancel_deadline_days` 字段（从排期的上课日期往前推 N 天计算截止日期）。
 
-  **涉及表**：`class_records`, `appointments`, `user_courses`, `academy_progress`
+  **涉及表**：`class_records`, `appointments`, `user_courses`, `academy_progress`, `orders`（retrain_credit_status 字段）
 
   **测试步骤说明（2026-03-02 重构）**：
 
@@ -1322,15 +1354,24 @@
   | S7.1 | 📖 读 | `getClassRecords(course_id=1)` | 获取初探班排期，保存 classRecordId 供复训拦截测试（S7.4c）使用 |
   | S7.1a | 📖 读 | `getClassRecords(course_id=18)` | 获取 attend_count=0 课程排期，保存 firstAppointClassRecordId（id=38） |
   | S7.1b | ✏️ 写 | `createAppointment(firstAppointClassRecordId)` | **首次预约成功**：attend_count=0 课程，应返回 appointment_id，is_retrain=0 |
-  | S7.1c | ❌ 边界 | `cancelAppointment` | **取消废弃**：应返回"当前不支持取消预约"错误 |
-  | S7.2 | 📖 读 | `getMyAppointments` | 我的预约列表，status 枚举合法性验证 |
+  | S7.1c | ✏️ 写 | `cancelAppointment` | **客户端取消预约（已恢复）**：截止日期前可取消（S7.12）；截止日期后不可取消（S7.13） |
+  | S7.2 | 📖 读 | `getMyAppointments` | 我的预约列表，status 枚举合法性验证；**新增字段验证**：is_retrain（0/1）、cancel_deadline_days（≥0） |
   | S7.3 | 📖 读 | `getAcademyProgress` | 学习进度 |
   | S7.4a | 📖 读 | `getMyCourses` | 验证 attend_count、retrain_price 字段存在 |
-  | S7.4c | ❌ 边界 | `createAppointment(classRecordId)` | **复训拦截**：attend_count≥1 且非沙龙 → 应返回"需先支付复训费" |
+  | S7.4c | ❌ 边界 | `createAppointment(classRecordId)` | **复训拦截**：attend_count≥1 且非沙龙 且无可用复训资格（retrain_credit_status≠1）→ 应返回"需先支付复训费" |
   | S7.5 | 📖 边界 | `getMyAppointments(user_id=31)` | 无预约用户应返回空列表 |
   | S7.6 | 📖 边界 | `getAcademyProgress(user_id=31)` | 无进度用户应返回空列表 |
   | S7.7 | ❌ 边界 [v2.4新增] | `createAppointment` | **过期课程拦截**：expire_at 已过期 → 应返回"课程已过期"类错误（条件执行：无过期数据则跳过） |
   | S7.8 | ❌ 边界 [v2.4新增] | `createAppointment` | **未签合同拦截**：contract_signed=0 且 validity_days>0 → 应返回"请先签署学习合同"类错误（条件执行） |
+  | S7.9 | ✏️ 写 | `createClassRecord`（含 cancelDeadlineDays 必填） | **后台新增排期**：验证 class_records.cancel_deadline_days 已写入 |
+  | S7.10 | ✏️ 写 | 后台取消排期 | **后台取消排期**：验证所有待上课预约 status=3，booked_quota=0 |
+  | S7.11 | ✏️ 写 | 后台取消排期（含复训预约） | **复训预约取消后保留资格**：验证 orders.retrain_credit_status=1 |
+  | S7.12 | ✏️ 写 | `cancelAppointment`（截止日期前） | **客户端取消预约**：验证 appointments.status=3，booked_quota 减 1 |
+  | S7.13 | ❌ 边界 | `cancelAppointment`（截止日期后） | **客户端取消预约（超期）**：返回错误，无法取消 |
+  | S7.14 | ✏️ 写 | `cancelAppointment`（复训用户） | **复训用户取消预约**：验证 orders.retrain_credit_status=1 |
+  | S7.15 | 📖 读 | `checkRetrainCredit` | **检查复训资格**：验证 has_credit=true |
+  | S7.16 | ✏️ 写 | `createAppointment`（使用复训资格） | **使用复训资格预约**：验证 appointments 记录创建，orders.retrain_credit_status=2 |
+  | S7.17 | ❌ 边界 | 复训资格用户缺席 | **复训资格用户缺席**：验证 retrain_credit_status 保持为 2（资格已消耗） |
 
   **测试数据说明（2026-03-02）**：
 
@@ -1355,8 +1396,9 @@
 
   **★ 核心验证 SQL**：
   ```sql
-  -- 排期预约数一致性
+  -- 排期预约数一致性（含 cancel_deadline_days 新字段）
   SELECT cr.id, cr.class_date, cr.class_time, cr.class_location, cr.booked_quota,
+    cr.cancel_deadline_days,
     (SELECT COUNT(*) FROM tiandao_culture.appointments a
     WHERE a.class_record_id=cr.id AND a.status IN (0,1)) as 实际预约数
   FROM tiandao_culture.class_records cr WHERE cr.status=1
@@ -1371,12 +1413,172 @@
   FROM tiandao_culture.user_courses uc JOIN tiandao_culture.courses c ON c.id=uc.course_id
   WHERE uc.user_id=30 AND uc.contract_signed=0 AND c.validity_days IS NOT NULL AND uc.status=1
   -- 期望：对这些未签约有效期课程，createAppointment 应被拦截
+
+  -- S7.9 [2026-03-06新增] 新增排期后 cancel_deadline_days 写入验证
+  SELECT id, course_id, class_date, cancel_deadline_days, status
+  FROM tiandao_culture.class_records
+  ORDER BY id DESC LIMIT 5
+  -- 期望：最新排期 cancel_deadline_days 等于创建时传入的 cancelDeadlineDays 值
+
+  -- S7.10/S7.11 [2026-03-06新增] 取消排期后预约状态验证
+  SELECT a.id, a.class_record_id, a.status, a.is_retrain, a.order_no,
+    cr.status as 排期状态
+  FROM tiandao_culture.appointments a
+  JOIN tiandao_culture.class_records cr ON cr.id = a.class_record_id
+  WHERE cr.status = 0
+  -- 期望：所有关联预约 status=3（已取消）
+
+  -- S7.11 [2026-03-06新增] 复训预约取消后 retrain_credit_status 验证
+  SELECT o.id, o.order_no, o.order_type, o.retrain_credit_status
+  FROM tiandao_culture.orders o
+  WHERE o.order_type = 2
+  ORDER BY o.id DESC LIMIT 5
+  -- 期望：被取消排期关联的复训订单 retrain_credit_status=1（资格已释放）
+
+  -- S7.12/S7.14 [2026-03-06新增] 客户端取消预约验证
+  SELECT a.id, a.status, a.is_retrain, a.class_record_id,
+    cr.booked_quota, cr.cancel_deadline_days, cr.class_date,
+    DATE_SUB(cr.class_date, INTERVAL cr.cancel_deadline_days DAY) as cancel_deadline
+  FROM tiandao_culture.appointments a
+  JOIN tiandao_culture.class_records cr ON cr.id = a.class_record_id
+  WHERE a.status = 3 AND a.user_id = 30
+  ORDER BY a.id DESC LIMIT 5
+  -- 期望：status=3，booked_quota 已减 1
+
+  -- S7.15/S7.16 [2026-03-06新增] 复训资格检查与使用验证
+  SELECT o.id, o.order_no, o.order_type, o.retrain_credit_status,
+    o.class_record_id, o.related_id as user_course_id
+  FROM tiandao_culture.orders o
+  WHERE o.user_id = 30 AND o.order_type = 2 AND o.pay_status = 1
+  ORDER BY o.id DESC LIMIT 5
+  -- 期望：checkRetrainCredit 有资格时 retrain_credit_status=1；使用后 retrain_credit_status=2
   ```
 
   > **v2.4 变更说明（createAppointment 双重校验）**：
   > - v2.4 前：仅检查 `attend_count` 是否需要复训费
   > - v2.4 后：新增 `expire_at < NOW()` 过期检查 + `contract_signed=0` 合同未签检查
   > - 拦截顺序：过期 → 未签合同 → 复训费检查（按优先级拦截）
+  > - **2026-03-06 新增**：复训资格检查（retrain_credit_status=1 时直接创建预约，无需再支付复训费）
+
+  ---
+
+  ### ✏️ 流程 7 排期管理·取消预约·复训资格验证步骤（2026-03-06 新增）
+
+  > **背景**：本次改造涉及排期管理（cancelDeadlineDays 字段）、取消预约恢复（截止日期校验）、复训资格状态流转（retrain_credit_status 0→2→1）。
+  >
+  > **变更清单**：
+  > - class_records 新增 `cancel_deadline_days` 字段（创建排期时必填）
+  > - orders 新增 `retrain_credit_status` 字段（0=默认/1=可用/2=已使用）
+  > - `updateClassRecord` 仅允许 status=0 取消操作，自动取消所有待上课预约
+  > - `cancelAppointment` 恢复可用，校验截止日期（class_date - cancel_deadline_days）
+  > - 新增 `checkRetrainCredit` 接口，检查 retrain_credit_status=1 的可用资格
+  > - `createAppointment` 增加复训资格自动使用逻辑
+
+  **S7.9 · 后台新增排期（cancelDeadlineDays 必填验证）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.9a | ❌ 异常拦截 | `createClassRecord`（缺少 cancelDeadlineDays） | 缺少必填参数 cancelDeadlineDays，返回参数错误 |
+  | | 期望 | 返回错误 | 包含"cancelDeadlineDays"相关提示 |
+  | S7.9b | ✏️ 写操作 | `createClassRecord`（含 cancelDeadlineDays=3） | 正常创建排期，cancel_deadline_days=3 |
+  | | 期望 | 成功返回 | 返回新排期 id |
+  | | 验证 SQL | `SELECT id, course_id, class_date, cancel_deadline_days, status FROM tiandao_culture.class_records ORDER BY id DESC LIMIT 1` | cancel_deadline_days=3，status=1 |
+  | S7.9c | 📖 读操作 | `getClassRecordList` | 验证返回新增 cancel_deadline_days 字段 |
+  | | 期望 | 返回字段 | 包含 `cancel_deadline_days`（值为 3） |
+
+  **S7.10 · 后台取消排期（自动取消待上课预约）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.10a | ✏️ 写操作 | `updateClassRecord { id: <排期id>, status: 0 }` | 取消排期（status=0） |
+  | | 期望 | 成功 | 排期 status 变为 0 |
+  | | 验证 SQL | `SELECT id, status, booked_quota FROM tiandao_culture.class_records WHERE id=<排期id>` | status=0 |
+  | S7.10b | 📖 验证 | DB 查询 | 所有关联的待上课预约（原 status=0）应被自动取消为 status=3 |
+  | | 验证 SQL | `SELECT a.id, a.status, a.is_retrain FROM tiandao_culture.appointments WHERE a.class_record_id=<排期id>` | 所有 status=3 |
+
+  **S7.11 · 取消排期后复训预约的 retrain_credit_status 验证**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.11a | 📖 验证 | DB 查询 | 被取消的复训预约（is_retrain=1）关联的订单 retrain_credit_status 应恢复为 1 |
+  | | 验证 SQL | `SELECT o.id, o.order_no, o.retrain_credit_status FROM tiandao_culture.orders o WHERE o.order_no IN (SELECT a.order_no FROM tiandao_culture.appointments a WHERE a.class_record_id=<排期id> AND a.is_retrain=1)` | retrain_credit_status=1（资格已释放，可再次使用） |
+
+  **S7.12 · 客户端取消预约（截止日期前）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.12a | ✏️ 写操作 | `cancelAppointment { appointmentId: <id> }` | 截止日期前取消预约 |
+  | | 前提条件 | 排期的 class_date - cancel_deadline_days > 当前日期 | 确保在截止日期前 |
+  | | 期望 | 成功 | 返回成功 |
+  | | 验证 SQL | `SELECT id, status FROM tiandao_culture.appointments WHERE id=<appointmentId>` | status=3（已取消） |
+  | S7.12b | 📖 验证 | DB 查询 | 取消后 booked_quota 应减 1 |
+  | | 验证 SQL | `SELECT cr.id, cr.booked_quota, (SELECT COUNT(*) FROM tiandao_culture.appointments a WHERE a.class_record_id=cr.id AND a.status IN (0,1)) as 实际预约数 FROM tiandao_culture.class_records cr WHERE cr.id=<class_record_id>` | booked_quota 减 1，与实际预约数一致 |
+
+  **S7.13 · 客户端取消预约（超过截止日期）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.13a | ❌ 异常拦截 | `cancelAppointment { appointmentId: <id> }` | 超过截止日期的预约不可取消 |
+  | | 前提条件 | 排期的 class_date - cancel_deadline_days ≤ 当前日期 | 确保已超过截止日期 |
+  | | 期望 | 返回错误 | 包含"超过取消截止日期"或"无法取消"相关提示 |
+  | | 验证 SQL | `SELECT id, status FROM tiandao_culture.appointments WHERE id=<appointmentId>` | status 仍为 0（未变更） |
+
+  **S7.14 · 复训用户取消预约（retrain_credit_status 恢复）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.14a | ✏️ 写操作 | `cancelAppointment { appointmentId: <id> }` | 复训预约（is_retrain=1）取消 |
+  | | 前提条件 | 预约为复训预约（is_retrain=1），在截止日期前 | 确保可取消 |
+  | | 期望 | 成功 | appointment.status=3 |
+  | | 验证 SQL | `SELECT a.id, a.status, a.is_retrain, a.order_no FROM tiandao_culture.appointments WHERE id=<appointmentId>` | status=3, is_retrain=1 |
+  | S7.14b | 📖 验证 | DB 查询 | 复训订单的 retrain_credit_status 应恢复为 1 |
+  | | 验证 SQL | `SELECT o.id, o.order_no, o.retrain_credit_status FROM tiandao_culture.orders WHERE order_no=<预约的order_no>` | retrain_credit_status=1（资格释放，可再次使用） |
+
+  **S7.15 · 检查复训资格（checkRetrainCredit）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.15a | 📖 读操作 | `checkRetrainCredit { courseId: <id> }` | 有可用复训资格的用户（retrain_credit_status=1） |
+  | | 期望 | 返回 | `has_credit=true` |
+  | | 验证 SQL | `SELECT o.id, o.order_no, o.retrain_credit_status FROM tiandao_culture.orders WHERE user_id=<userId> AND order_type=2 AND pay_status=1 AND retrain_credit_status=1` | 至少 1 条记录 |
+  | S7.15b | 📖 读操作 | `checkRetrainCredit { courseId: <id> }` | 无可用复训资格的用户（无 retrain_credit_status=1 记录） |
+  | | 期望 | 返回 | `has_credit=false` |
+
+  **S7.16 · 使用复训资格预约（retrain_credit_status 2）**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.16a | ✏️ 写操作 | `createAppointment { classRecordId: <id> }` | 有复训资格用户预约（自动使用 retrain_credit_status=1 资格） |
+  | | 前提条件 | attend_count≥1，有 retrain_credit_status=1 的订单 | 确保有可用资格 |
+  | | 期望 | 成功 | 返回 appointment_id |
+  | | 验证 SQL | `SELECT id, status, is_retrain, order_no FROM tiandao_culture.appointments WHERE user_id=<userId> ORDER BY id DESC LIMIT 1` | status=0, is_retrain=1 |
+  | S7.16b | 📖 验证 | DB 查询 | 使用的复训订单 retrain_credit_status 应变为 2 |
+  | | 验证 SQL | `SELECT o.id, o.order_no, o.retrain_credit_status FROM tiandao_culture.orders WHERE order_no=<预约的order_no>` | retrain_credit_status=2（资格已消耗） |
+
+  **S7.17 · 缺席时复训资格消耗验证**：
+
+  | 编号 | 类型 | 接口/操作 | 描述 |
+  |------|------|-----------|------|
+  | S7.17a | ❌ 边界 | `updateAppointmentStatus { id: <id>, status: 2 }` | 复训预约标记缺席（status=2） |
+  | | 前提条件 | 预约为复训预约（is_retrain=1），已通过 S7.16 使用资格 | retrain_credit_status=2 |
+  | | 期望 | 缺席成功 | appointment.status=2 |
+  | | 验证 SQL | `SELECT o.id, o.order_no, o.retrain_credit_status FROM tiandao_culture.orders WHERE order_no=<预约的order_no>` | retrain_credit_status 保持为 2（资格已消耗，缺席不退还） |
+
+  **关键业务规则（排期管理·取消预约·复训资格部分）**：
+  | # | 规则 | 来源 |
+  |---|------|------|
+  | 1 | createClassRecord 必须传入 cancelDeadlineDays，写入 class_records.cancel_deadline_days | 2026-03-06 需求 |
+  | 2 | updateClassRecord 仅允许 status=0（取消排期），其他状态修改已禁止 | 2026-03-06 变更 |
+  | 3 | 取消排期自动取消所有待上课预约（status=0→3），booked_quota 归零 | 2026-03-06 变更 |
+  | 4 | 取消排期时复训预约的订单 retrain_credit_status 从 2 恢复为 1 | 2026-03-06 变更 |
+  | 5 | cancelAppointment 校验截止日期：class_date - cancel_deadline_days > 当前日期 | 2026-03-06 变更 |
+  | 6 | 取消预约后 appointment.status=3，booked_quota-1 | 2026-03-06 变更 |
+  | 7 | 复训用户取消预约 → retrain_credit_status 从 2 恢复为 1 | 2026-03-06 变更 |
+  | 8 | checkRetrainCredit：查询 retrain_credit_status=1 的已支付复训订单 | 2026-03-06 新增 |
+  | 9 | createAppointment 自动使用复训资格：retrain_credit_status 从 1 变为 2 | 2026-03-06 新增 |
+  | 10 | 缺席不退还复训资格：retrain_credit_status 保持为 2 | 2026-03-06 确认 |
+  | 11 | getMyAppointments 返回 is_retrain 和 cancel_deadline_days 新字段 | 2026-03-06 新增 |
+  | 12 | getClassRecordList 返回 cancel_deadline_days 新字段 | 2026-03-06 新增 |
 
   ---
 
@@ -1518,11 +1720,14 @@
   > **背景**：新增复训费功能。attend_count >= 1 的非沙龙课程必须先支付复训费才能预约。
   > 
   > **变更摘要**：
-  > - `createAppointment.js`：新增复训校验（非沙龙 + attend_count >= 1 → 查 orders 是否有已支付复训订单）
+  > - `createAppointment.js`：新增复训校验（非沙龙 + attend_count >= 1 → 查 orders 是否有已支付复训订单）；**2026-03-06 新增**：增加复训资格检查（retrain_credit_status=1 可直接预约并标记为已使用 retrain_credit_status=2）
   > - `payment.js handleRetrainPayment`：修复 course_id Bug（从 class_records 取，不再用 order.related_id）；补充 user_course_id 字段
-  > - `cancelAppointment.js`：已废弃，始终返回"当前不支持取消预约"
+  > - `cancelAppointment.js`：**2026-03-06 已恢复**，支持客户端取消预约；校验截止日期（class_date - cancel_deadline_days）；取消后 appointment.status=3、booked_quota-1；复训预约取消后设 retrain_credit_status=1
   > - `order.js business-logic`：修复 attend_count 初始值 1 → 0
-  > - 前端：预约确认页重写（attend_count 改从 getMyCourses 获取）；订单确认页支持 isRetrain 分支；我的预约页移除取消按钮和"已取消"Tab
+  > - `createClassRecord.js`：**2026-03-06 新增** cancelDeadlineDays 必填参数，写入 class_records.cancel_deadline_days
+  > - `updateClassRecord.js`：**2026-03-06 变更** 仅允许 status=0（取消），取消时自动取消所有待上课预约，复训预约触发 retrain_credit_status=1
+  > - `checkRetrainCredit.js`：**2026-03-06 新增** 检查用户是否有可抵用的复训资格（retrain_credit_status=1）
+  > - 前端：预约确认页重写（attend_count 改从 getMyCourses 获取）；订单确认页支持 isRetrain 分支；我的预约列表新增 is_retrain、cancel_deadline_days 字段展示
 
   | 编号 | 类型 | 接口/操作 | 描述 |
   |------|------|-----------|------|
@@ -1542,10 +1747,11 @@
   | | 期望 | appointments 自动创建 | is_retrain=1, order_no 有值, user_course_id 有值 |
   | | 验证 SQL | `SELECT a.id, a.is_retrain, a.order_no, a.user_course_id, a.course_id FROM tiandao_culture.appointments a WHERE a.order_no IS NOT NULL ORDER BY a.id DESC LIMIT 1` | course_id 正确（非 user_course_id），user_course_id 有值 |
   | | ✅ 已通过 | 2026-03-03 user_id=32 | 三笔支付回调均创建预约（appointment id=46/47/48，后因重测删除）；is_retrain=1 ✅，order_no 有值 ✅，course_id=2（非 user_course_id=28）✅ |
-  | S7.4f | ✏️ 写操作 | `cancelAppointment` | 调用取消预约应返回错误 |
-  | | 期望 | 返回错误 | "当前不支持取消预约" |
+  | S7.4f | ✏️ 写操作 | `cancelAppointment` | **已恢复（2026-03-06）**：截止日期前可取消 → status=3、booked_quota-1；截止日期后返回错误 |
+  | | 期望 | 截止日期前 | 成功取消，appointment.status=3 |
+  | | 期望 | 截止日期后 | 返回错误"已超过取消截止日期" |
   | S7.4g | 🔍 前端验证 | 预约确认页 | 沙龙课程（type=4）不显示复训费，按钮文案为"立即预约" |
-  | S7.4h | 🔍 前端验证 | 我的预约列表 | 无"取消预约"按钮，Tab 无"已取消"选项 |
+  | S7.4h | 🔍 前端验证 | 我的预约列表 | **已恢复（2026-03-06）**：截止日期前显示"取消预约"按钮；超过截止日期按钮隐藏或禁用；展示 is_retrain 和 cancel_deadline_days 字段 |
   | S7.4i | 🔍 前端验证 | 预约确认页 `checkAlreadyBooked` | 进入预约确认页时自动检查该排期是否已有有效预约（status≠3），若已预约则按钮禁用显示"您已预约该排期"，不可进入订单页 |
   | | 期望 | 按钮禁用 | `alreadyBooked=true` 时按钮变灰、`handleSubmit` 直接 return |
   | | 验证 SQL | `SELECT id, class_record_id, status FROM tiandao_culture.appointments WHERE user_id=? AND class_record_id=? AND status != 3` | 有记录则应禁用 |
@@ -1584,7 +1790,10 @@
   | 3 | 沙龙课程（type=4）免复训费 | 需求 3.1.4 |
   | 4 | 复训订单 order_type=2，item_id=user_course_id | 订单模块 |
   | 5 | 支付回调自动创建预约（handleRetrainPayment） | payment.js |
-  | 6 | 所有预约不可取消，cancelAppointment 已废弃 | 2026-03-02 变更 |
+  | 6 | cancelAppointment **已恢复（2026-03-06）**：截止日期前可取消（class_date - cancel_deadline_days），超期拒绝 | 2026-03-06 变更 |
+  | 7b | 复训用户取消预约 → retrain_credit_status 从 2 恢复为 1（资格释放） | 2026-03-06 新增 |
+  | 7c | checkRetrainCredit 接口：检查是否有 retrain_credit_status=1 的订单 | 2026-03-06 新增 |
+  | 7d | 使用复训资格预约：retrain_credit_status 从 1 变为 2（资格已消耗），直接创建预约 | 2026-03-06 新增 |
   | 7 | 支付成功后跳转我的预约页（非订单详情页） | 前端逻辑 |
 
   ---
@@ -1949,6 +2158,9 @@
   | `cancelActivityRegistration` 限制 | 活动 status=0（已结束）时不可取消，报名 status≠1 时无记录可取消 |
   | `applyForActivity` 重复报名拦截 | 同一用户对同一活动已有 status=1 报名时，再次报名返回"已报名"错误（S11.2c 自动覆盖） |
   | `distributeActivityMeritPoints` 幂等 | 已发放（merit_distributed=1）的活动再次调用返回"已发放"错误（S11.7b 自动覆盖） |
+  | `getPositionTypeList` 返回 `is_fixed` | 辅导员/会务义工/沙龙组织为固定岗位，is_fixed=true，前端用于隐藏删除、禁用名称编辑 |
+  | `deletePositionType` 固定岗位不可删 | 辅导员/会务义工/沙龙组织删除时返回"固定岗位，不可删除"错误 |
+  | `updatePositionType` 固定岗位不可改名称 | 辅导员/会务义工/沙龙组织修改名称时返回"固定岗位，不可修改名称"错误 |
   | `signContract` 签名注入 | 仅 .docx 模板支持注入签名图片，PDF 直接使用原模板作为快照 |
   | `auditApplication` 不自动升级 | 审核通过后仅改申请状态，升级在用户签署协议后自动发生 |
 
@@ -1958,6 +2170,8 @@
   |----|------|---------|---------|
   | MT-F11-1 | 等级不足时报名应被拒绝 | 需要一个 status=1 活动，其某岗位 required_level > 测试用户的 ambassador_level | `applyForActivity` 返回"等级不足"类错误 |
   | MT-F11-2 | 名额已满时报名应被拒绝 | 需要一个岗位 quota=1 且 registered_count=1（已满）的 status=1 活动 | `applyForActivity` 返回"名额已满"类错误 |
+  | MT-F11-3 | 固定岗位不可删除 | 辅导员/会务义工/沙龙组织任一岗位 | `deletePositionType` 返回"固定岗位，不可删除"错误 |
+  | MT-F11-4 | 固定岗位不可改名称 | 辅导员/会务义工/沙龙组织任一岗位 | `updatePositionType` 传不同 name 时返回"固定岗位，不可修改名称"错误 |
 
   ### 跨流程依赖
 
@@ -1979,7 +2193,7 @@
   | 流程 | 核心写操作 | 自动化状态 | 备注 |
   |------|-----------|-----------|------|
   | F3 | `exchangeGoods` + `cancelExchange` + `confirmPickup` | ✅ S3.6/S3.7/S3.9 | S3.9 为条件写（依赖 status=1 记录） |
-  | F7 | `createAppointment`（cancelAppointment 已废弃） | ✅ S7.1b/S7.4f | 创建后无法取消，cancelAppointment 返回错误 |
+  | F7 | `createAppointment` + `cancelAppointment`（已恢复） | ✅ S7.1b/S7.4f/S7.12 | 截止日期前可取消；截止日期后返回错误 |
   | F8 | `submitFeedback` | ✅ S8.4 | 每次产生新记录，无 cleanup |
   | F11 | **`applyForActivity`** + `cancelActivityRegistration` | ✅ S11.2b/S11.12b | 创建后流程末尾清理，幂等 |
   | F5 | `apply`（申请大使） | ❌ MT-15 | 无自动清理路径，登记为手动项 |
@@ -2001,7 +2215,7 @@
 
   | 写操作类型 | Cleanup 方式 | 示例 |
   |-----------|------------|------|
-  | 创建记录（有对应删除/取消接口） | 立即调用 cancel/delete 清理 | ~~S7.1b createAppointment → S7.1c cancelAppointment~~（cancelAppointment 已废弃，需手动清理测试数据） |
+  | 创建记录（有对应删除/取消接口） | 立即调用 cancel/delete 清理 | S7.1b createAppointment → S7.12 cancelAppointment（**已恢复**，截止日期前可取消） |
   | 状态流转（终态不可逆，如 status 2/3） | 接受终态，biz 允许幂等通过 | S3.9 confirmPickup（status=1→2，终态） |
   | 余额/计数变更（有反向接口） | 调用反向操作还原 | S11.2b applyForActivity → S11.12b cancelActivityRegistration |
   | 无清理路径（需管理员审批） | 登记为 MT 手动项 | MT-15 apply（需后台驳回还原） |
@@ -2050,78 +2264,119 @@
 
   ---
 
-  ## 流程 F12：课程学习合同 · 签署拦截 · 合同配置 · 签约流程 · 奖励延迟 · 上架校验
+  ## 流程 F12：课程合同管理 · 管理员录入 · 合同模板 · 奖励触发 · 上架校验
 
-  > **功能说明**：课程购买后首次预约上课（attend_count=0）时，若该课程配置了学习服务协议且用户未签署（contract_signed=0），需先签署合同才能预约。签约后才触发推荐人奖励发放。
+  > **功能说明（2026-03-06 合同流程改造）**：
+  > - 课程合同改为管理员后台手动录入线下合同（上传照片），录入后直接生效（status=1, sign_type=3）
+  > - 预约课程不再需要合同拦截，购买即可预约
+  > - 大使合同保留电子签署，签署后直接生效（无审核环节）
+  > - 已废弃接口：`checkCourseContract`、`signCourseContract`、`getContractTemplateByCourse`、`auditContractSignature`
   >
-  > **测试用户**：user_id=30，course_id=18（attend_count=0，contract_signed=0，course_id=1 的 attend_count=8 故用 18 测 needSign=true 路径）
+  > **测试用户**：user_id=30，course_id=18（attend_count=0，contract_signed=0）
   >
-  > **涉及表**：user_courses（contract_signed）、contract_templates（course_id + contract_type=4）、contract_signatures、courses
+  > **涉及表**：user_courses（contract_signed, expire_at）、contract_templates（course_id + contract_type=4）、contract_signatures（contract_images, sign_type）、courses
   >
-  > **涉及云函数**：ambassador（checkCourseContract、getContractTemplateByCourse、signCourseContract、adminGetCourseContractTemplate、createContractTemplate、updateContractTemplate、deleteContractTemplate）、course（updateCourse）
+  > **涉及云函数**：ambassador（adminCreateCourseContract、adminGetUserPaidCourses、adminGetCourseContractTemplate、createContractTemplate、updateContractTemplate、deleteContractTemplate、signContract）、course（updateCourse、createAppointment）
 
-  ### 自动化测试步骤（共 20 步）
+  ### 自动化测试步骤
 
-  | 步骤 | 类型 | Action | 描述 | 自动化 |
-  |------|------|--------|------|--------|
-  | S12.0a | 🧹 前置清理 | `adminGetCourseContractTemplate` | 查询 course_id=18 现有测试合同模板 | ✅ |
-  | S12.0b | 🧹 前置清理 | `deleteContractTemplate` | 删除 course_id=18 旧测试合同（保证基线干净） | ✅ |
-  | S12.1 | 📖 读操作 | `checkCourseContract` | 基线：清理后无模板，courseId=18，期望 needSign=false | ✅ |
-  | S12.2 | 📖 读操作（Admin） | `adminGetCourseContractTemplate` | 查询 course_id=18 模板（期望 null 或跳过） | ✅ |
-  | S12.3 | ✏️ 写操作（Admin） | `createContractTemplate` | 为 course_id=18 创建合同模板（条件执行，已有则跳过） | ✅ |
+  | 步骤 | 类型 | Action | 描述 | 状态 |
+  |------|------|--------|------|------|
+  | S12.0a | 🧹 前置清理 | `adminGetCourseContractTemplate` | 查询 course_id=18 现有测试合同模板 | ⏳ 重测 |
+  | S12.0b | 🧹 前置清理 | `deleteContractTemplate` | 删除 course_id=18 旧测试合同（保证基线干净） | ⏳ 重测 |
+  | S12.2 | 📖 读操作（Admin） | `adminGetCourseContractTemplate` | 查询 course_id=18 模板（期望 null 或跳过） | ⏳ 重测 |
+  | S12.3 | ✏️ 写操作（Admin） | `createContractTemplate` | 为 course_id=18 创建合同模板（条件执行，已有则跳过） | ⏳ 重测 |
   | | 参数 | `contract_name`（snake_case）, `contractType:'course'`, `courseId:18` | ⚠️ 参数为 snake_case | |
   | | 验证 SQL | `SELECT id, contract_name, contract_type, course_id, status FROM tiandao_culture.contract_templates WHERE course_id=18 AND contract_type=4 ORDER BY id DESC LIMIT 3` | status=1 | |
-  | S12.4 | 📖 读操作 | `checkCourseContract` | 有模板+attend_count=0+未签约 → needSign=true | ✅ |
-  | | 期望 | `needSign=true`, `templateId` 非空 | | |
-  | S12.5 | 📖 读操作 | `getContractTemplateByCourse` (client) | 客户端获取合同模板，含 signed=false | ✅ |
-  | S12.6 | 📖 读操作（Admin） | `adminGetCourseContractTemplate` | 管理端验证模板入库，contract_type=4，course_id=18 | ✅ |
-  | S12.7 | ✏️ 写操作（Admin） | `updateContractTemplate` | 更新 course_id=18 合同模板名称/有效期 | ✅ |
+  | S12.6 | 📖 读操作（Admin） | `adminGetCourseContractTemplate` | 管理端验证模板入库，contract_type=4，course_id=18 | ⏳ 重测 |
+  | S12.7 | ✏️ 写操作（Admin） | `updateContractTemplate` | 更新 course_id=18 合同模板名称/有效期 | ⏳ 重测 |
   | | 验证 SQL | `SELECT id, contract_name, validity_years FROM tiandao_culture.contract_templates WHERE id=?` | 字段已更新 | |
-  | S12.10a | 🧹 前置清理 | `adminGetCourseContractTemplate` | 查询 course_id=5 现有测试合同模板 | ✅ |
-  | S12.10b | 🧹 前置清理 | `deleteContractTemplate` | 删除 course_id=5 旧测试合同（保证 S12.11 拦截有效） | ✅ |
-  | S12.11 | ✏️ 写操作（Admin） | `updateCourse` | 无合同模板的 course_id=5 上架应被拦截 | ✅ |
+  | S12.10a | 🧹 前置清理 | `adminGetCourseContractTemplate` | 查询 course_id=5 现有测试合同模板 | ⏳ 重测 |
+  | S12.10b | 🧹 前置清理 | `deleteContractTemplate` | 删除 course_id=5 旧测试合同（保证 S12.11 拦截有效） | ⏳ 重测 |
+  | S12.11 | ✏️ 写操作（Admin） | `updateCourse` | 无合同模板的 course_id=5 上架应被拦截 | ⏳ 重测 |
   | | 期望 | `success: false`，错误含"必须配置学习服务协议模板" | | |
   | | 验证 SQL | `SELECT id, name, status FROM tiandao_culture.courses WHERE id=5` | status 仍为 0 | |
-  | S12.11b | ✏️ 写操作（Admin） | `createContractTemplate` | 为 course_id=5 创建合同模板（S12.12 前置） | ✅ |
-  | S12.12 | ✏️ 写操作（Admin） | `updateCourse` | 有合同模板的 course_id=5 上架应成功 | ✅ |
+  | S12.11b | ✏️ 写操作（Admin） | `createContractTemplate` | 为 course_id=5 创建合同模板（S12.12 前置） | ⏳ 重测 |
+  | S12.12 | ✏️ 写操作（Admin） | `updateCourse` | 有合同模板的 course_id=5 上架应成功 | ⏳ 重测 |
   | | 验证 SQL | `SELECT id, name, status FROM tiandao_culture.courses WHERE id=5` | status=1 | |
-  | S12.12b | 🧹 测试清理 | `updateCourse` | 恢复 course_id=5 为下架（status=0） | ✅ |
-  | S12.B1 | 📖 边界 | `checkCourseContract` | 缺少 courseId → 参数错误 | ✅ |
-  | S12.B1b | 📖 边界 [v2.4重构] | `checkCourseContract` | course_id=1 **contract_signed=1** → needSign=false（v2.4：改为判断 contract_signed，不再用 attend_count） | ⏳ 重测 |
-  | | v2.4期望 | `needSign=false` | v2.4: contract_signed=1 → needSign=false（旧逻辑: attend_count>0→needSign=false，已废弃） | |
-  | | 验证 SQL | `SELECT uc.contract_signed, uc.pending_days, uc.expire_at FROM tiandao_culture.user_courses uc WHERE uc.user_id=30 AND uc.course_id=1 AND uc.status=1 LIMIT 1` | 期望: contract_signed=1 | |
-  | S12.B1c | 📖 边界 [v2.4新增] | `checkCourseContract` | course_id=18 **contract_signed=0** → needSign=true，expire_at=NULL，pending_days>0（三联断言） | ⏳ 重测 |
-  | | v2.4期望 | `needSign=true` | contract_signed=0+validity_days>0 → needSign=true | |
-  | | 验证 SQL | `SELECT uc.contract_signed, uc.pending_days, uc.expire_at FROM tiandao_culture.user_courses uc JOIN tiandao_culture.courses c ON c.id=uc.course_id WHERE uc.user_id=30 AND uc.course_id=18 AND uc.status=1 LIMIT 1` | 期望: contract_signed=0,pending_days=validity_days,expire_at=NULL | |
-  | S12.B2 | 📖 边界 | `signCourseContract` | 缺少 signatureFileId → 参数错误 | ✅ |
-  | S12.B3 | 📖 边界 | `signCourseContract` | agreed=false → 参数错误 | ✅ |
-  | S12.B7 | 📖 边界 | `updateCourse` | course_id=18 已上架再次 status=1，跳过模板校验 | ✅ |
+  | S12.12b | 🧹 测试清理 | `updateCourse` | 恢复 course_id=5 为下架（status=0） | ⏳ 重测 |
+  | S12.B7 | 📖 边界 | `updateCourse` | course_id=18 已上架再次 status=1，跳过模板校验 | ⏳ 重测 |
 
-  ### 手动测试步骤（依赖真实签名，见 MT 清单）
+  ### 新增测试步骤（合同流程改造）
 
-  | 步骤 | 内容 | 手动测试编号 |
-  |------|------|------------|
-  | S12.MT1 | `signCourseContract`：小程序真实手写签名 + agreed=true 提交签约 | MT-30 |
-  | S12.MT2 | 签约成功后验证 `contract_signatures` 新增记录、`user_courses.contract_signed=1` | MT-30 |
-  | S12.MT3 | 签约后调 `checkCourseContract` → needSign=false（contract_signed=1） | MT-30 |
-  | S12.MT4 | 重复签约应被拦截（success=false） | MT-30 |
-  | S12.MT5 | 若有推荐人：验证 `orders.is_reward_granted=1, reward_granted_at` 非 NULL | MT-30 |
-  | S12.MT6 | 若无推荐人：is_reward_granted 保持 0，不报错 | MT-30 |
+  | 步骤 | 类型 | Action | 描述 | 状态 |
+  |------|------|--------|------|------|
+  | S12.N1 | 📖 读操作（Admin） | `adminGetUserPaidCourses` | 查询用户待签合同课程列表，期望返回 contract_signed=0 的课程 | ⏳ 待测 |
+  | | 期望 | 返回列表 | 只包含 status=1 且 contract_signed=0 的课程 | |
+  | | 验证 SQL | `SELECT course_id, contract_signed FROM tiandao_culture.user_courses WHERE user_id=30 AND status=1 AND contract_signed=0` | 包含 course_id=18 | |
+  | S12.N2 | ✏️ 写操作（Admin） | `adminCreateCourseContract` | 管理员为用户录入课程线下合约（userId, courseId, contractImages） | ⏳ 待测 |
+  | | 期望 | `contract_signatures.status` | 1（直接生效） | |
+  | | 期望 | `contract_signatures.sign_type` | 3（管理员录入） | |
+  | | 期望 | `contract_signatures.contract_images` | 非空 JSON 数组 | |
+  | | 期望 | `user_courses.contract_signed` | 1 | |
+  | | 期望 | `user_courses.expire_at` | 非 NULL | |
+  | | 验证 SQL | `SELECT contract_signed, expire_at FROM tiandao_culture.user_courses WHERE user_id=30 AND course_id=18 AND status=1` | contract_signed=1, expire_at 非空 | |
+  | | 验证 SQL | `SELECT status, sign_type, contract_images FROM tiandao_culture.contract_signatures WHERE user_id=30 AND course_id=18 ORDER BY id DESC LIMIT 1` | status=1, sign_type=3, contract_images 非空 | |
+  | S12.N3 | ✏️ 写操作（Admin） | `adminCreateCourseContract` | 重复录入拦截：已有有效合约的课程不可再次录入 | ⏳ 待测 |
+  | | 期望 | `success: false` | 错误含"已存在有效合约" | |
+  | S12.N4 | ✏️ 写操作（Admin） | `adminCreateCourseContract` | 缺少 contractImages 参数 → 参数错误 | ⏳ 待测 |
+  | | 期望 | `success: false` | 错误含"请上传至少一张" | |
+  | S12.N5 | ✏️ 写操作（Admin） | `adminCreateCourseContract` | 用户未购买该课程 → 报错 | ⏳ 待测 |
+  | | 期望 | `success: false` | 错误含"未找到" | |
+  | S12.N6 | 📖 读操作 | `createAppointment` | 预约课程无合同拦截：未签合同用户也可预约 | ⏳ 待测 |
+  | | 期望 | 预约成功或返回正常错误（非合同相关） | 只校验 user_courses.status=1 | |
+  | S12.N7 | 📖 读操作 | `getContractDetail` | 查看已录入合约详情，返回 contract_images 和 sign_type | ⏳ 待测 |
+  | | 期望 | `contract_images` | 非空数组，URL 格式 | |
+  | | 期望 | `sign_type` | 3 | |
+  | S12.N8 | 📖 读操作 | `getMyContracts` | 合约列表包含 sign_type 和 contract_images 字段 | ⏳ 待测 |
+  | | 期望 | 列表中 sign_type=3 的记录 | contract_images 非空 | |
+  | S12.N9 | ✏️ 写操作 | `signContract` (大使合同) | 大使合同签署直接生效，无待审核 | ⏳ 待测 |
+  | | 期望 | `contract_signatures.status` | 1（直接生效，非5待审核） | |
+  | | 期望 | `users.ambassador_level` | 升级到对应等级 | |
+  | | 期望 | 返回无 `audit_pending` 字段 | 不再有待审核状态 | |
 
-  ### 暂未覆盖的自动化场景
+  ### need_contract 字段与上架校验 · 签到联动
 
-  | 步骤 | 描述 | 原因 |
-  |------|------|------|
-  | S12.B5 | 购买后、签约前验证 `is_reward_granted=0`（奖励未立即发放） | 测试用户 id=30 无 course_id=18 的已支付订单，待补充购课数据后可加 |
-  | S12.B6 | 无 referee_id 用户签约不报错 | 需特定无推荐人测试用户，暂不补充 |
+  | 步骤 | 类型 | Action | 描述 | 状态 |
+  |------|------|--------|------|------|
+  | S12.N10 | ✏️ 写操作 | `createCourse` | 新增课程，needContract=1（需要合同） | ⏳ 待测 |
+  | | 期望 | `need_contract` | 1 | |
+  | | 验证 SQL | `SELECT need_contract FROM tiandao_culture.courses WHERE id=?` | 结果应为 1 | |
+  | S12.N11 | ✏️ 写操作 | `createCourse` | 新增课程，needContract=0（不需要合同） | ⏳ 待测 |
+  | | 期望 | `need_contract` | 0 | |
+  | S12.N12 | ✏️ 写操作 | `updateCourse` | 修改课程 needContract=0，尝试上架 | ⏳ 待测 |
+  | | 期望 | 上架成功（无需合同模板） | | |
+  | S12.N13 | ✏️ 写操作 | `updateCourse` | needContract=1 课程无合同模板时尝试上架 | ⏳ 待测 |
+  | | 期望 | 报错"课程上架前必须配置学习服务协议模板" | | |
+  | S12.N14 | 📖 读操作 | `adminGetUserPaidCourses` | 查询用户已购课程列表 | ⏳ 待测 |
+  | | 期望 | need_contract=0 的课程不出现在列表中 | | |
+  | S12.N15 | ✏️ 写操作 | `batchCheckin` | need_contract=0 课程首次签到（attend_count 0→1） | ⏳ 待测 |
+  | | 期望 | contract_signed 自动变为 1，expire_at 自动设置，推荐人奖励发放 | | |
+  | | 验证 SQL | `SELECT contract_signed, expire_at, pending_days FROM tiandao_culture.user_courses WHERE user_id=? AND course_id=?` | contract_signed=1, expire_at 非空, pending_days=0 | |
+  | S12.N16 | ✏️ 写操作 | `batchCheckin` | need_contract=1 课程首次签到（attend_count 0→1） | ⏳ 待测 |
+  | | 期望 | contract_signed 保持 0（不自动触发，等管理员录入合约） | | |
+
+  ### 已废弃的测试步骤（合同流程改造后不再适用）
+
+  | 原步骤 | 原 Action | 废弃原因 |
+  |--------|----------|---------|
+  | S12.1 | `checkCourseContract` | 接口已废弃，预约不再需要合同拦截 |
+  | S12.4 | `checkCourseContract` | 接口已废弃 |
+  | S12.5 | `getContractTemplateByCourse` (client) | 客户端接口已废弃，课程合同改为管理员录入 |
+  | S12.B1 | `checkCourseContract` | 接口已废弃 |
+  | S12.B1b | `checkCourseContract` | 接口已废弃 |
+  | S12.B1c | `checkCourseContract` | 接口已废弃 |
+  | S12.B2 | `signCourseContract` | 接口已废弃 |
+  | S12.B3 | `signCourseContract` | 接口已废弃 |
+  | S12.MT1~MT6 | `signCourseContract` 手动签名 | 课程合同不再线上签署 |
 
   ### 清理说明
 
   自动化测试内置清理步骤（S12.0a/0b、S12.10a/10b、S12.12b），无需手动清理合同模板。
 
-  手动测试（MT-30）完成后需清理：
+  新增测试（S12.N2）完成后需清理：
   - `DELETE FROM tiandao_culture.contract_signatures WHERE user_id=30 AND course_id=18`
-  - `UPDATE tiandao_culture.user_courses SET contract_signed=0 WHERE user_id=30 AND course_id=18`
+  - `UPDATE tiandao_culture.user_courses SET contract_signed=0, expire_at=NULL WHERE user_id=30 AND course_id=18`
   - `UPDATE tiandao_culture.orders SET is_reward_granted=0, reward_granted_at=NULL WHERE user_id=30 AND related_id=18 AND order_type=1`（如测试了奖励发放）
 
   ---
@@ -2211,8 +2466,8 @@
   | S13.8 | 驳回后 refund_status=4 | refund_status=4 | ✅ DB验证：TST202603020001 refund_status=4✓ |
   | S13.8 | 驳回后 refund_reject_reason 有值 | 非空 | ✅ 集成测试自动驳回（数据还原）；DB验证✓ |
   | S13.8 | 驳回后 refund_audit_time 有值 | 非空 | ✅ 2026-03-04 17:18:20；refund_audit_admin_id=5✓ |
-  | **S13.P2** | **[v2.4 MT-42 手动]** markRefundTransferred 后 pending_days 扣减 | v2.4：退款转账后对未签约课程扣减 pending_days（非 expire_at） | ⏳ 待手动（MT-42） |
-  | | v2.4期望 | pending_days 减少 validity_days（365→0），expire_at 仍为 NULL | 待测：TST202603020001（refund_status=4）→重新申请→markRefundTransferred→验证 user_courses id=17 pending_days |
+  | **S13.P2** | **[v2.4 MT-42 手动]** markRefundTransferred 后 pending_days 扣减 | v2.4：退款转账后对未签约课程扣减 pending_days（非 expire_at） | ✅ 已通过（2026-03-04） |
+  | | v2.4期望 | pending_days 减少 validity_days（365→0），expire_at 仍为 NULL | 验证：何日琛 ORD202603030704123642 → user_courses id=30 pending_days 365→0，expire_at=NULL，status=2 ✓ |
   | S13.B1 | 空 refund_reason 应报错 | success=false | ✅ 请填写退款原因 |
   | S13.B2 | 缺少 order_no 应报错 | success=false | ✅ 缺少订单号 |
   | S13.B3 | 合同拦截应返回含"合同"错误 | success=false + 合同拦截 | ✅ TST202603040002 contract_signed=1；DB验证：refund_status=0未被改变✓ |
@@ -2521,16 +2776,18 @@
 
   | 组别 | MT 编号 | 描述 | 状态 |
   |---|---|---|---|
-  | MT-A | MT-34 | 升级指南→支付导航栈 | ⏳ 待测 |
-  | MT-A | MT-35 | 预约确认防双击导航栈 | ⏳ 待测 |
-  | MT-A | MT-45 | 密训班详情赠课 tab | ⏳ 待测 |
-  | MT-B | MT-36 (B1) | 密训班购买→赠课新建 | ⏳ 待测 |
-  | MT-B | MT-37 (B2) | 密训班购买→赠课有效期叠加 | ⏳ 待测 |
-  | MT-B | MT-40 (B3) | 退款→赠课新建回滚（status=0） | ⏳ 待测 |
-  | MT-B | MT-41 (B3) | 退款→赠课叠加回滚（expire_at 回退） | ⏳ 待测 |
+  | MT-A | MT-34 | 升级指南→支付导航栈 | ✅ 已通过 |
+  | MT-A | MT-35 | 预约确认防双击导航栈 | ✅ 已通过 |
+  | MT-A | MT-45 | 密训班详情赠课 tab | ✅ 已通过 |
+  | MT-B | MT-36 (B1) | 密训班购买→赠课新建 | ✅ 已通过 |
+  | MT-B | MT-37 (B2) | 密训班购买→赠课有效期叠加 | ✅ 已通过 |
+  | MT-B | MT-40 (B3) | 退款→赠课新建回滚（status=2） | ✅ 已通过 |
+  | MT-B | MT-41 (B3) | 退款→赠课叠加回滚（expire_at 回退） | ✅ 已通过（2026-03-05） |
   | MT-B | MT-39 | 密训班退款-赠课合同拦截 | ⏳ 待测 |
   | MT-B | MT-38 | 商城兑换密训班赠课 | ⏳ 待测 |
-  | MT-C | MT-SIG | PDF 签名位置验证 | ⏳ 待测 |
+  | MT-C | MT-SIG | PDF 签名位置验证 | ✅ 已通过（2026-03-04） |
+  | MT-D | MT-51 | 订阅弹窗真机验证（普通预约） | ✅ 已通过（2026-03-04） |
+  | MT-D | MT-52 | 订阅弹窗真机验证（复训支付） | ✅ 已通过（2026-03-04 真机日志 accept✓） |
 
   ---
 
@@ -2556,8 +2813,148 @@
   | | 期望 | 返回错误："您还未购买该课程或课程已过期" |
   | S16.6 | ✏️ 写操作 | 尝试对未签合同课程预约 → 应提示先签合同 |
   | | 期望 | 返回错误："请先签署学习合同后再预约" |
-  | S16.7 | ✏️ 写操作 | 退款：验证未签合同课程 pending_days 扣减，status 变为 2 |
-  | | 期望 | `pending_days` 减少 validity_days，若 ≤ 0 则 `status=2` |
-  | | 验证 SQL | `SELECT status, pending_days FROM tiandao_culture.user_courses WHERE source_order_id=?` |
+| S16.7 | ✏️ 写操作 | 退款：验证未签合同课程 pending_days 扣减，status 变为 2 |
+| | 期望 | `pending_days` 减少 validity_days，若 ≤ 0 则 `status=2` |
+| | 验证 SQL | `SELECT status, pending_days FROM tiandao_culture.user_courses WHERE source_order_id=?` |
 
- 
+---
+
+## F17 表现分与评估名单
+
+> **测试范围**：表现分加分/扣分、评估名单查询、黑名单阈值配置、课程/活动拉黑与解除、拉黑拦截验证、异常参数与重复操作边界测试。
+
+| 步骤 | 类型 | 接口/操作 | 描述 |
+|------|------|-----------|------|
+| S17.1 | ✏️ 写 | `addPerformanceScore` | 管理端给用户加表现分（选择岗位类型+分值） |
+| | 期望 | 返回 `success: true` | 记录ID存在 |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.performance_scores WHERE user_id=? ORDER BY id DESC LIMIT 1` | type=1, score>0, position_name 有值 |
+| S17.2 | ✏️ 写 | `deductPerformanceScore` | 管理端给用户扣学员分（deductType=2） |
+| | 期望 | 返回 `success: true` | 扣分记录 |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.performance_scores WHERE user_id=? AND type=2 ORDER BY id DESC LIMIT 1` | score 为负数 |
+| S17.3 | ✏️ 写 | `deductPerformanceScore` | 管理端给用户扣活动分（deductType=3） |
+| | 期望 | 返回 `success: true` | 扣分记录 |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.performance_scores WHERE user_id=? AND type=3 ORDER BY id DESC LIMIT 1` | score 为负数 |
+| S17.4 | 📖 读 | `getEvaluationList` | 查询评估名单列表 |
+| | 期望 | 返回 `list`, `positionTypes`, `config` | 列表中包含目标用户，各岗位加分和扣分汇总正确 |
+| S17.5 | ✏️ 写 | `updateBlacklistConfig` | 更新阈值配置（4个配置项） |
+| | 期望 | 返回 `success: true` | |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.blacklist_config` | 4条记录值已更新 |
+| S17.6 | ✏️ 写 | `setBlacklist` | 拉黑用户课程（blacklistType=1） |
+| | 期望 | 返回 `success: true, months` | |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.user_blacklist WHERE user_id=? AND blacklist_type=1 AND status=1` | 记录存在，end_time = start_time + months |
+| S17.7 | ✏️ 写 | `setBlacklist` | 拉黑用户活动（blacklistType=2） |
+| | 期望 | 返回 `success: true, months` | |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.user_blacklist WHERE user_id=? AND blacklist_type=2 AND status=1` | 记录存在 |
+| S17.8 | ❌ 异常 | `createAppointment` | 被课程拉黑的用户尝试预约课程 |
+| | 期望 | 返回错误 | 包含"无法报名复训"文案 |
+| S17.9 | ❌ 异常 | `applyForActivity` | 被活动拉黑的用户尝试报名活动 |
+| | 期望 | 返回错误 | 包含"无法报名活动"文案 |
+| S17.10 | ✏️ 写 | `removeBlacklist` | 解除课程拉黑（blacklistType=1） |
+| | 期望 | 返回 `success: true` | |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.user_blacklist WHERE user_id=? AND blacklist_type=1` | status=0, released_at 有值 |
+| S17.11 | ✏️ 写 | `removeBlacklist` | 解除活动拉黑（blacklistType=2） |
+| | 期望 | 返回 `success: true` | |
+| S17.12 | ✅ 正向 | `createAppointment` | 解除拉黑后用户可正常预约 |
+| | 期望 | 预约成功或报其他非黑名单错误 | |
+| S17.13 | ❌ 异常 | `addPerformanceScore` | 缺少必填参数测试 |
+| | 期望 | 返回参数错误 | |
+| S17.14 | ❌ 异常 | `setBlacklist` | 重复拉黑测试 |
+| | 期望 | 返回"已在拉黑状态中" | |
+
+---
+
+## F18 角色权限管理流程
+
+> **测试范围**：超级管理员创建/更新/删除自定义角色、角色列表查询、修改 super_admin 权限拦截、删除系统内置角色拦截、删除有管理员使用的角色拦截、普通管理员权限不足拦截。
+
+| 步骤 | 类型 | Action / 操作 | 描述 | 状态 |
+|------|------|---------------|------|------|
+| S18.1 | ✏️ 写操作 | `createRole` | 超级管理员创建自定义角色（roleKey=test_role, roleName=测试角色, permissions=["dashboard","user-list"]） | ⏳ 待测 |
+| | 期望 | `success` | true |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.admin_roles WHERE role_key='test_role'` | 应返回1条记录 |
+| S18.2 | 📖 读操作 | `getRoleList` | 获取角色列表 | ⏳ 待测 |
+| | 期望 | `list` | 应包含 super_admin、admin、operator 和 test_role |
+| S18.3 | ✏️ 写操作 | `updateRole` | 更新测试角色权限（增加 order-list） | ⏳ 待测 |
+| | 期望 | `success` | true |
+| | 验证 SQL | `SELECT permissions FROM tiandao_culture.admin_roles WHERE role_key='test_role'` | 应包含 dashboard、user-list、order-list |
+| S18.4 | ❌ 异常测试 | `updateRole` | 尝试修改 super_admin 的 permissions | ⏳ 待测 |
+| | 期望 | `success` | false，返回"超级管理员的权限不可修改" |
+| S18.5 | ❌ 异常测试 | `deleteRole` | 尝试删除系统内置角色（admin） | ⏳ 待测 |
+| | 期望 | `success` | false，返回"系统内置角色不可删除" |
+| S18.6 | ❌ 异常测试 | `deleteRole` | 尝试删除有管理员使用的角色 | ⏳ 待测 |
+| | 期望 | `success` | false，返回"该角色下还有N个管理员" |
+| S18.7 | ✏️ 写操作 | `deleteRole` | 删除无人使用的自定义角色 test_role | ⏳ 待测 |
+| | 期望 | `success` | true |
+| | 验证 SQL | `SELECT * FROM tiandao_culture.admin_roles WHERE role_key='test_role'` | 应返回0条记录 |
+| S18.8 | ❌ 异常测试 | `createRole`（非超管调用） | 普通管理员尝试创建角色 | ⏳ 待测 |
+| | 期望 | `success` | false，返回权限不足 |
+
+---
+
+## F19 商学院板块管理
+
+### 测试目标
+验证商学院板块的增删改查、排序、显示/隐藏功能
+
+### 前置条件
+- 管理员已登录后台
+
+### 测试步骤
+
+| 步骤 | 类型 | Action/操作 | 描述 |
+|---|---|---|---|
+| S1 | 📖 读操作 | `getAcademySections` | 小程序端获取板块列表，验证返回 7 条初始数据 |
+| | 期望 | list.length | >= 7 |
+| S2 | ✏️ 写操作 | `manageAcademySections` operation=list | 后台获取全部板块列表（含隐藏） |
+| | 期望 | list.length | >= 7 |
+| S3 | ✏️ 写操作 | `manageAcademySections` operation=create | 新增一个 intro 类型板块 |
+| | 期望 | 返回新板块 id | > 0 |
+| | 验证 SQL | `SELECT COUNT(*) FROM tiandao_culture.academy_sections WHERE section_type='intro'` | >= 2 |
+| S4 | ✏️ 写操作 | `manageAcademySections` operation=update | 修改板块标题 |
+| | 期望 | 返回成功 | message 包含"更新成功" |
+| S5 | ✏️ 写操作 | `manageAcademySections` operation=toggleStatus | 切换板块显示/隐藏 |
+| | 期望 | status | 从 1 变 0 或从 0 变 1 |
+| S6 | ✏️ 写操作 | `manageAcademySections` operation=updateSort | 批量更新排序 |
+| | 期望 | 返回成功 | message 包含"排序更新成功" |
+| S7 | ✏️ 写操作 | `manageAcademySections` operation=delete | 删除 S3 创建的板块 |
+| | 期望 | 返回成功 | message 包含"删除成功" |
+| S8 | 📖 读操作 | `getAcademySections` | 再次获取板块列表，验证被隐藏的板块不出现 |
+| | 期望 | 列表中不包含被隐藏的板块 | status=0 的板块不返回 |
+
+## F20 用户课程管理 · 手动新增 · 调整积分修复
+
+### 测试目标
+验证后台用户课程列表查询、手动新增用户课程、以及大使调整积分功能
+
+### 前置条件
+- 管理员已登录后台
+- 数据库中有可用的用户和课程记录
+
+### 测试步骤
+
+| 步骤 | 类型 | Action/操作 | 描述 |
+|---|---|---|---|
+| S20.1 | 📖 读操作 | `getUserCourseList` | 后台获取用户课程列表，验证分页返回 |
+| | 期望 | `list` | 数组，含 user_name、user_phone、course_name、status 字段 |
+| S20.2 | 📖 读操作 | `getUserCourseList` keyword | 按用户姓名/手机号搜索，验证筛选结果 |
+| | 期望 | 所有结果 user_name 或 user_phone | 包含搜索关键词 |
+| S20.3 | 📖 读操作 | `getUserCourseList` status=1 | 按状态筛选，只返回有效课程 |
+| | 期望 | 所有结果 status | 均为 1 |
+| S20.4 | ✏️ 写操作 | `adminAddUserCourse` | 为用户手动新增课程（validityDays=180，needContract=false） |
+| | 期望 | `user_course_id` | > 0 |
+| | 期望 | `expire_at` | 约为今天 + 180 天 |
+| | 期望 | `signature_id` | null（未创建合同） |
+| | 验证 SQL | `SELECT attend_count, contract_signed, status, pending_days FROM tiandao_culture.user_courses WHERE id=?` | attend_count=1, contract_signed=1, status=1, pending_days=0 |
+| S20.5 | ✏️ 写操作 | `adminAddUserCourse` 重复 | 再次为同一用户同一课程新增，验证拒绝 |
+| | 期望 | 返回错误 | 包含"已拥有此课程" |
+| S20.6 | ✏️ 写操作 | `adminAddUserCourse` needContract=true | 为用户新增另一课程并创建合同（需该课程有合同模板） |
+| | 期望 | `signature_id` | 不为 null（如有模板） |
+| | 验证 SQL | `SELECT sign_type, status FROM tiandao_culture.contract_signatures WHERE id=?` | sign_type=3, status=1 |
+| S20.7 | ✏️ 写操作 | `adjustPoints` type=merit | 大使列表调整功德分（修复后），增加 10 分 |
+| | 期望 | 返回成功 | message 包含"调整成功" |
+| | 验证 SQL | `SELECT merit_points FROM tiandao_culture.users WHERE id=?` | 增加了 10 |
+| S20.8 | ✏️ 写操作 | `adjustPoints` type=cash, action=subtract | 大使列表扣除现金积分 5 分 |
+| | 期望 | 返回成功 | message 包含"调整成功" |
+| | 验证 SQL | `SELECT cash_points_available FROM tiandao_culture.users WHERE id=?` | 减少了 5 |
+
+  

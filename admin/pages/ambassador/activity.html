@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305"><style>
     .container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;}
     .title{font-size:20px;font-weight:600;margin-bottom:8px;}
     .desc{color:#999;margin-bottom:24px;}
@@ -103,7 +103,7 @@
               <template #pt_op="{row}">
                 <t-space>
                   <t-button size="small" variant="text" theme="primary" @click="openEditPositionType(row)">编辑</t-button>
-                  <t-button size="small" variant="text" theme="danger" @click="delPositionType(row)">删除</t-button>
+                  <t-button v-if="!row.is_fixed" size="small" variant="text" theme="danger" @click="delPositionType(row)">删除</t-button>
                 </t-space>
               </template>
             </t-table>
@@ -114,7 +114,8 @@
             :on-confirm="savePtForm" confirm-btn="保存" cancel-btn="取消">
             <t-form :data="ptForm" label-width="100px">
               <t-form-item label="岗位名称">
-                <t-input v-model="ptForm.name" placeholder="请输入岗位名称" />
+                <t-input v-model="ptForm.name" placeholder="请输入岗位名称"
+                  :disabled="ptForm.isFixed" :title="ptForm.isFixed ? '辅导员、会务义工、沙龙组织为固定岗位，名称不可修改' : ''" />
               </t-form-item>
               <t-form-item label="门槛等级">
                 <t-select v-model="ptForm.requiredLevel" placeholder="无限制（所有人可报名）" clearable style="width:100%;">
@@ -247,11 +248,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260227"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227g"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
   <script>
   const { createApp, ref, computed, onMounted } = Vue;
   createApp({
@@ -359,10 +360,10 @@
 
       // 新增/编辑岗位类型
       const showPtForm = ref(false);
-      const ptForm = ref({ id: null, name: '', requiredLevel: null, meritPointsDefault: 0, description: '', sortOrder: 0, status: 1 });
+      const ptForm = ref({ id: null, name: '', requiredLevel: null, meritPointsDefault: 0, description: '', sortOrder: 0, status: 1, isFixed: false });
 
       const openAddPositionType = () => {
-        ptForm.value = { id: null, name: '', requiredLevel: null, meritPointsDefault: 0, description: '', sortOrder: 0, status: 1 };
+        ptForm.value = { id: null, name: '', requiredLevel: null, meritPointsDefault: 0, description: '', sortOrder: 0, status: 1, isFixed: false };
         showPtForm.value = true;
       };
 
@@ -374,7 +375,8 @@
           meritPointsDefault: Number(row.merit_points_default),
           description: row.description || '',
           sortOrder: row.sort_order,
-          status: row.status
+          status: row.status,
+          isFixed: !!row.is_fixed
         };
         showPtForm.value = true;
       };

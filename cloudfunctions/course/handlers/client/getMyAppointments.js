@@ -1,25 +1,28 @@
 /**
  * 获取我的预约列表（客户端接口）
+ *
+ * 非沙龙课程返回 today_checked_in / has_ever_checked_in 用于前端状态展示
  */
 const { db, response, executePaginatedQuery } = require('../../common');
+const { formatDateTime } = require('../../common/utils');
 
 module.exports = async (event, context) => {
   const { status, page = 1, page_size = 10, pageSize } = event;
   const { user } = context;
 
   try {
-    console.log(`[Course/getMyAppointments] 收到请求:`, { user_id: user.id, status, page });
+    console.log(`[getMyAppointments] 收到请求:`, { user_id: user.id, status, page });
 
-    // 兼容 pageSize 参数
     const finalPageSize = pageSize || page_size || 10;
 
-    // 构建基础查询 - 使用外键 JOIN
     let queryBuilder = db
       .from('appointments')
       .select(`
         id,
         course_id,
         class_record_id,
+        is_retrain,
+        order_no,
         status,
         checkin_code,
         checkin_time,
@@ -32,61 +35,94 @@ module.exports = async (event, context) => {
         ),
         class_record:class_records!fk_appointments_class_record(
           class_date,
+          class_end_date,
           class_time,
           class_location,
-          teacher
+          teacher,
+          cancel_deadline_days
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .order('id', { ascending: false });
 
-    // 添加状态过滤
     if (status !== undefined && status !== null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
 
-    // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化数据
-    const getStatusName = (status) => {
-      const statusMap = {
-        0: '待上课',
-        1: '已签到',
-        2: '缺席',
-        3: '已取消'
-      };
-      return statusMap[status] || '未知';
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 收集非沙龙预约 ID，批量查询签到记录
+    const rawList = result.list || [];
+    const nonSalonIds = rawList
+      .filter(a => a.course?.type !== 4)
+      .map(a => a.id);
+
+    // 批量查询所有非沙龙预约的签到记录
+    let checkinMap = {};
+    if (nonSalonIds.length > 0) {
+      const { data: allCheckins } = await db
+        .from('appointment_checkins')
+        .select('appointment_id, checkin_date')
+        .in('appointment_id', nonSalonIds);
+
+      if (allCheckins) {
+        for (const c of allCheckins) {
+          if (!checkinMap[c.appointment_id]) {
+            checkinMap[c.appointment_id] = { dates: [], todayChecked: false };
+          }
+          checkinMap[c.appointment_id].dates.push(c.checkin_date);
+          if (c.checkin_date === today) {
+            checkinMap[c.appointment_id].todayChecked = true;
+          }
+        }
+      }
+    }
+
+    const getStatusName = (s, isSalon) => {
+      if (isSalon) return { 0: '待上课', 1: '已签到', 2: '已结课', 3: '已取消' }[s] || '未知';
+      return { 0: '进行中', 1: '已结课', 3: '已取消', 4: '缺席' }[s] || '未知';
     };
 
-    const list = (result.list || []).map(a => ({
-      id: a.id,
-      course_id: a.course_id,
-      course_name: a.course?.name,
-      course_type: a.course?.type,
-      class_record_id: a.class_record_id,
-      class_date: a.class_record?.class_date,
-      start_time: a.class_record?.class_time,
-      class_time: a.class_record?.class_time,
-      location: a.class_record?.class_location,
-      teacher: a.class_record?.teacher,
-      status: a.status,
-      status_name: getStatusName(a.status),
-      checkin_code: a.checkin_code,
-      checkin_at: a.checkin_time,
-      appointed_at: a.created_at,
-      cancelled_at: a.cancel_time
-    }));
+    const list = rawList.map(a => {
+      const courseType = a.course?.type;
+      const isSalon = courseType === 4;
+      const checkinInfo = checkinMap[a.id];
 
-    console.log(`[Course/getMyAppointments] 查询成功，共 ${result.total} 条预约`);
-
-    return response.success({
-      ...result,
-      list
+      return {
+        id: a.id,
+        course_id: a.course_id,
+        course_name: a.course?.name,
+        course_type: courseType,
+        class_record_id: a.class_record_id,
+        class_date: a.class_record?.class_date,
+        class_end_date: a.class_record?.class_end_date || a.class_record?.class_date,
+        start_time: a.class_record?.class_time,
+        class_time: a.class_record?.class_time,
+        location: a.class_record?.class_location,
+        teacher: a.class_record?.teacher,
+        status: a.status,
+        status_name: getStatusName(a.status, isSalon),
+        is_salon: isSalon,
+        is_retrain: a.is_retrain || 0,
+        cancel_deadline_days: a.class_record?.cancel_deadline_days || 0,
+        checkin_code: a.checkin_code,
+        checkin_at: a.checkin_time,
+        appointed_at: a.created_at,
+        cancelled_at: a.cancel_time,
+        // 非沙龙专用：今日签到状态
+        today_checked_in: isSalon ? undefined : !!(checkinInfo && checkinInfo.todayChecked),
+        has_ever_checked_in: isSalon ? undefined : !!(checkinInfo && checkinInfo.dates.length > 0)
+      };
     });
 
+    console.log(`[getMyAppointments] 查询成功，共 ${result.total} 条预约`);
+
+    return response.success({ ...result, list });
+
   } catch (error) {
-    console.error('[Course/getMyAppointments] 查询失败:', error);
+    console.error('[getMyAppointments] 查询失败:', error);
     return response.error('查询预约列表失败', error);
   }
 };

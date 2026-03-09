@@ -12,6 +12,7 @@
  *   6. 将报名状态更新为 status=2（已发放）
  */
 const { db, response, formatDateTime } = require('../../common');
+const { getActivityTypeByPosition } = require('../../constants/activityType');
 
 module.exports = async (event, context) => {
   const { admin } = context;
@@ -138,15 +139,3 @@ module.exports = async (event, context) => {
     return response.error('发放功德分失败', error);
   }
 };
-
-/**
- * 根据岗位名称推断活动类型
- */
-function getActivityTypeByPosition(positionName) {
-  if (!positionName) return 4;
-  const name = positionName.trim();
-  if (name.includes('辅导员')) return 1;
-  if (name.includes('义工') || name.includes('会务')) return 2;
-  if (name.includes('沙龙')) return 3;
-  return 4;
-}

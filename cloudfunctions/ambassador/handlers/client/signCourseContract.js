@@ -261,17 +261,22 @@ module.exports = async (event, context) => {
       return response.error('该协议模板未配置电子合同文件，请联系管理员');
     }
 
-    // 检查是否已签署（查最新 status=1 的有效合同）
-    const { data: existing } = await db
+    // 检查是否已签署有效合同（status=1）或有待审核合同（status=5），防止重复提交
+    const { data: existingList } = await db
       .from('contract_signatures')
-      .select('id')
+      .select('id, status')
       .eq('user_id', user.id)
       .eq('course_id', Number(courseId))
-      .eq('status', 1)
-      .single();
+      .in('status', [1, 5])
+      .order('id', { ascending: false })
+      .limit(1);
 
-    if (existing) {
-      // 已签过，确保 user_courses 标记一致后直接返回
+    if (existingList && existingList.length > 0) {
+      const s = existingList[0].status;
+      if (s === 5) {
+        return response.error('您已提交合同，正在等待管理员审核通过，请勿重复提交');
+      }
+      // status=1 已有效合同，确保 user_courses 标记一致
       await db.from('user_courses').update({ contract_signed: 1 })
         .eq('user_id', user.id).eq('course_id', Number(courseId)).eq('contract_signed', 0).eq('status', 1);
       return response.error('您已签署过该课程的学习服务协议');
@@ -356,15 +361,16 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 创建签署记录
+    // 创建签署记录（status=5 待审核，管理员审核通过后才生效）
     const { data: newSignature, error: insertError } = await db
       .from('contract_signatures')
       .insert({
-        user_id: user.id,
-        _openid: OPENID || '',
+        user_id:              user.id,
+        user_name:            userRealName || '',
+        _openid:              OPENID || '',
         contract_template_id: finalTemplateId,
-        ambassador_level: user.ambassador_level || 0,
-        course_id: Number(courseId),
+        ambassador_level:     user.ambassador_level || 0,
+        course_id:            Number(courseId),
         contract_name: template.contract_name,
         contract_version: template.version,
         contract_content: '',
@@ -373,7 +379,7 @@ module.exports = async (event, context) => {
         contract_start: contractStart,
         contract_end: contractEnd,
         sign_time: formatDateTime(signDate),
-        status: 1,
+        status: 5, // 待审核，管理员通过后变为 status=1 并更新 user_courses
         sign_ip: event.ip_address || '',
         sign_device: event.device_info || null
       })
@@ -385,33 +391,16 @@ module.exports = async (event, context) => {
       throw insertError;
     }
 
-    // 更新 user_courses：回写 expire_at，标记已签，清零 pending_days
-    if (userCourseRecord) {
-      await db.from('user_courses').update({
-        contract_signed: 1,
-        expire_at: expireAt,
-        pending_days: 0,
-        updated_at: formatDateTime(new Date())
-      }).eq('id', userCourseRecord.id);
-    } else {
-      // 兜底：按 user_id + course_id 更新（不应出现此情况）
-      await db.from('user_courses').update({
-        contract_signed: 1,
-        expire_at: expireAt,
-        pending_days: 0,
-        updated_at: formatDateTime(new Date())
-      }).eq('user_id', user.id).eq('course_id', Number(courseId)).eq('contract_signed', 0).eq('status', 1);
-    }
-    console.log(`[signCourseContract] user_courses 已更新 expire_at=${expireAt}, pending_days=0, user_id=${user.id}, course_id=${courseId}`);
-
-    // 签约后触发推荐人奖励（支付时已跳过即时发放）
-    await grantRefereeRewardAfterSign(user.id, Number(courseId), db);
+    // user_courses 更新推迟到管理员审核通过（auditContractSignature）后执行
+    // 签约后推荐人奖励同样推迟到审核通过后发放
+    console.log(`[signCourseContract] 签署记录已创建(status=5待审核) signatureId=${newSignature?.id} user_id=${user.id} course_id=${courseId}`);
 
     return response.success({
       signature_id: newSignature.id,
       signed_at: newSignature.sign_time,
-      message: '学习服务协议签署成功'
-    }, '签署成功');
+      status: 5,
+      message: '协议签署成功，等待管理员审核通过后生效'
+    }, '签署成功，等待审核');
 
   } catch (error) {
     console.error('[signCourseContract] 失败:', error);

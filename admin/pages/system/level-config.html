@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><title>等级配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301"><style>.c{max-width:1200px;margin:0 auto;background:white;border-radius:8px;padding:24px}
+  <link rel="icon" href="data:,"><title>等级配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305"><style>.c{max-width:1200px;margin:0 auto;background:white;border-radius:8px;padding:24px}
 
     /* 详情入口按钮网格 */
     .detail-panel-grid {
@@ -169,8 +169,6 @@
           <t-dialog v-model:visible="v" header="编辑等级配置" width="700px" @confirm="save">
             <t-form v-if="f" :data="f" label-width="150px">
               <t-form-item label="等级名称"><t-input v-model="f.level_name" disabled/></t-form-item>
-              <t-form-item label="升级费用"><t-input-number v-model="f.upgrade_payment_amount" :min="0"/></t-form-item>
-              <t-form-item label="冻结积分"><t-input-number v-model="f.frozen_points" :min="0"/></t-form-item>
               <t-form-item label="单次解冻积分"><t-input-number v-model="f.unfreeze_per_referral" :min="0"/></t-form-item>
 
               <t-form-item label="提成类型">
@@ -193,8 +191,9 @@
                 <t-input-number v-model="f.cash_rate_advanced" :min="0" :max="1" :step="0.01"/>
               </t-form-item>
 
-              <t-form-item label="初探班赠课配额"><t-input-number v-model="f.gift_quota_basic" :min="0"/></t-form-item>
-              <t-form-item label="密训班赠课配额"><t-input-number v-model="f.gift_quota_advanced" :min="0"/></t-form-item>
+              <!-- 赠课配额功能已隐藏，配置值保留在数据库中 -->
+              <!-- <t-form-item label="初探班赠课配额"><t-input-number v-model="f.gift_quota_basic" :min="0"/></t-form-item> -->
+              <!-- <t-form-item label="密训班赠课配额"><t-input-number v-model="f.gift_quota_advanced" :min="0"/></t-form-item> -->
             </t-form>
           </t-dialog>
 
@@ -452,11 +451,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260301"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260301"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260301"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260301"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
   <script>
   const { createApp, ref, onMounted, nextTick } = Vue;
   createApp({
@@ -482,8 +481,6 @@
             return h('span', { style: 'max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;' }, div.textContent || '');
           }
         },
-        { colKey: 'upgrade_payment_amount', title: '升级费用', width: 100 },
-        { colKey: 'frozen_points', title: '冻结积分', width: 100 },
         { colKey: 'unfreeze_per_referral', title: '单次解冻', width: 100 },
         { colKey: 'merit_rate_basic', title: '初探功德率', width: 100 },
         { colKey: 'cash_rate_basic', title: '初探现金率', width: 100 },
@@ -525,12 +522,6 @@
 
       const save = async () => {
         const d = f.value;
-        const unfreeze = parseFloat(d.unfreeze_per_referral) || 0;
-        const frozen = parseFloat(d.frozen_points) || 0;
-        if (unfreeze > 0 && frozen > 0 && frozen % unfreeze !== 0) {
-          TDesign.MessagePlugin.error('冻结积分必须是单次解冻积分的整数倍');
-          return;
-        }
         const hasMerit = (parseFloat(d.merit_rate_basic) || 0) > 0 || (parseFloat(d.merit_rate_advanced) || 0) > 0;
         const hasCash = (parseFloat(d.cash_rate_basic) || 0) > 0 || (parseFloat(d.cash_rate_advanced) || 0) > 0;
         if (hasMerit && hasCash) {

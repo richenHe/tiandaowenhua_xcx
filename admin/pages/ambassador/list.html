@@ -7,7 +7,7 @@
   <title>大使列表 - 天道文化后台</title>
   
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
   
   <style>
     .detail-section {
@@ -208,50 +208,7 @@
                   </t-descriptions>
                 </div>
                 
-                <!-- 赠课名额 -->
-                <div class="detail-section">
-                  <h3 class="detail-section-title">赠课名额</h3>
-                  <div class="stat-grid">
-                    <div class="stat-card">
-                      <div class="stat-value" :style="{color: '#0052d9'}">{{ currentAmbassador.quota_summary?.basic?.total || 0 }}</div>
-                      <div class="stat-label">初探班 · 总名额</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-value" :style="{color: '#e34d59'}">{{ currentAmbassador.quota_summary?.basic?.used || 0 }}</div>
-                      <div class="stat-label">初探班 · 已赠出</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-value" :style="{color: '#00a870'}">{{ currentAmbassador.quota_summary?.basic?.remaining || 0 }}</div>
-                      <div class="stat-label">初探班 · 剩余</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-value" :style="{color: '#00a870'}">{{ currentAmbassador.quota_summary?.advanced?.remaining || 0 }}</div>
-                      <div class="stat-label">密训班 · 剩余</div>
-                    </div>
-                  </div>
-                  <!-- 名额明细列表（仅在有多条记录时展示） -->
-                  <div v-if="currentAmbassador.quota_list?.length > 1" style="margin-top:12px;">
-                    <t-table
-                      :data="currentAmbassador.quota_list"
-                      :columns="[
-                        {colKey:'quota_type',title:'类型',cell:(h,{row})=>h('span',row.quota_type===2?'密训班':'初探班')},
-                        {colKey:'total_quantity',title:'总数量'},
-                        {colKey:'used_quantity',title:'已使用'},
-                        {colKey:'remaining_quantity',title:'剩余'},
-                        {colKey:'expire_date',title:'到期日期'},
-                      ]"
-                      row-key="expire_date"
-                      size="small"
-                      :bordered="true"
-                    />
-                  </div>
-                  <div style="margin-top: 12px;">
-                    <t-button theme="primary" variant="base" @click="openGiftCourse"
-                      :disabled="!((currentAmbassador.quota_summary?.basic?.remaining || 0) + (currentAmbassador.quota_summary?.advanced?.remaining || 0))">
-                      赠送课程
-                    </t-button>
-                  </div>
-                </div>
+                <!-- 赠课名额功能已隐藏 -->
 
                 <!-- 合约信息 -->
                 <div class="detail-section" v-if="currentAmbassador.contract">
@@ -338,58 +295,7 @@
             </t-form>
           </t-dialog>
 
-          <!-- 赠送课程对话框 -->
-          <t-dialog
-            v-model:visible="giftCourseVisible"
-            header="赠送课程"
-            width="700px"
-            :footer="false"
-          >
-            <!-- Step 1: 搜索用户 -->
-            <div v-if="giftStep === 1">
-              <div style="margin-bottom: 16px;">
-                <t-space style="width: 100%;">
-                  <t-input v-model="giftSearchKeyword" placeholder="输入用户姓名或手机号搜索" @enter="searchGiftUsers" style="width: 320px;"></t-input>
-                  <t-button theme="primary" @click="searchGiftUsers" :loading="giftSearchLoading">搜索</t-button>
-                </t-space>
-              </div>
-              <t-table
-                v-if="giftUserList.length"
-                :data="giftUserList"
-                :columns="giftUserColumns"
-                row-key="id"
-                size="small"
-                :bordered="true"
-                :loading="giftSearchLoading"
-                max-height="360"
-              />
-              <div v-if="!giftUserList.length && !giftSearchLoading" style="text-align:center; padding: 40px 0; color:#999;">
-                请输入关键词搜索用户
-              </div>
-            </div>
-
-            <!-- Step 2: 选择课程 -->
-            <div v-if="giftStep === 2">
-              <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <t-button variant="text" theme="default" @click="giftStep = 1" style="padding-left:0;">← 返回选择用户</t-button>
-                <t-divider layout="vertical"></t-divider>
-                <span>接收人：<strong>{{ giftSelectedUser?.real_name || '-' }}</strong>（{{ giftSelectedUser?.phone }}）</span>
-              </div>
-              <t-table
-                v-if="giftCourseList.length"
-                :data="giftCourseList"
-                :columns="giftCourseColumns"
-                row-key="id"
-                size="small"
-                :bordered="true"
-                :loading="giftCourseLoading"
-                max-height="360"
-              />
-              <div v-if="!giftCourseList.length && !giftCourseLoading" style="text-align:center; padding: 40px 0; color:#999;">
-                该大使没有可用的赠课名额对应的课程
-              </div>
-            </div>
-          </t-dialog>
+          <!-- 赠送课程对话框已隐藏 -->
 
         </t-content>
       </t-layout>
@@ -398,9 +304,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -576,7 +482,9 @@
           try {
             await AdminAPI.adjustAmbassadorPoints({
               userId: currentAmbassador.value.id || currentAmbassador.value.user_id,
-              ...pointsForm,
+              point_type: pointsForm.type,
+              amount: pointsForm.action === 'subtract' ? -pointsForm.amount : pointsForm.amount,
+              reason: pointsForm.reason,
             });
             TDesign.MessagePlugin.success('调整成功');
             pointsVisible.value = false;

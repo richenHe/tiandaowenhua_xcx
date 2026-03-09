@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>评估名单 - 天道文化后台</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260306">
+  <style>
+    .page-container { max-width: 1600px; margin: 0 auto; }
+    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end; }
+    .score-cell { font-weight: 500; }
+    .score-cell.negative { color: #e34d59; }
+    .score-cell.positive { color: #00a870; }
+    .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    .status-badge.active { background: #e34d59; color: #fff; }
+    .status-badge.normal { background: #e8f8f2; color: #00a870; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <t-header height="64px" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; background: #fff; border-bottom: 1px solid #dcdcdc;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+
+      <t-layout>
+        <sidebar-menu active-key="evaluation-list"></sidebar-menu>
+
+        <t-content class="page-content">
+          <div class="page-container">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h1 class="page-title">评估名单</h1>
+              <t-button theme="default" @click="openConfigDialog">
+                <template #icon><t-icon name="setting" /></template>阈值设置
+              </t-button>
+            </div>
+
+            <div class="search-bar">
+              <t-form layout="inline">
+                <t-form-item label="关键词">
+                  <t-input v-model="keyword" placeholder="姓名/手机号" clearable style="width: 200px;" @enter="loadData"></t-input>
+                </t-form-item>
+                <t-form-item>
+                  <t-space>
+                    <t-button theme="primary" @click="loadData">查询</t-button>
+                    <t-button theme="default" @click="keyword=''; loadData()">重置</t-button>
+                  </t-space>
+                </t-form-item>
+              </t-form>
+            </div>
+
+            <div class="table-card">
+              <t-table
+                :data="tableData"
+                :columns="tableColumns"
+                :loading="loading"
+                row-key="id"
+                :pagination="pagination"
+                @page-change="onPageChange"
+                bordered
+                stripe
+                hover
+              >
+                <template #avatar="{ row }">
+                  <t-avatar :image="row.avatar" size="40px"></t-avatar>
+                </template>
+                <template #total_add="{ row }">
+                  <span :class="['score-cell', (row.total_add || 0) >= 0 ? 'positive' : 'negative']">{{ row.total_add || 0 }}</span>
+                </template>
+                <template #student_deduction="{ row }">
+                  <span :class="['score-cell', 'negative']">{{ row.student_deduction || 0 }}</span>
+                </template>
+                <template #activity_deduction="{ row }">
+                  <span :class="['score-cell', 'negative']">{{ row.activity_deduction || 0 }}</span>
+                </template>
+                <template #course_status="{ row }">
+                  <t-tag v-if="row.course_blacklist && row.course_blacklist.active" theme="danger" size="small">已拉黑</t-tag>
+                  <t-tag v-else-if="canBlacklistCourse(row)" theme="warning" size="small">可拉黑</t-tag>
+                  <t-tag v-else theme="success" size="small">正常</t-tag>
+                </template>
+                <template #activity_status="{ row }">
+                  <t-tag v-if="row.activity_blacklist && row.activity_blacklist.active" theme="danger" size="small">已拉黑</t-tag>
+                  <t-tag v-else-if="canBlacklistActivity(row)" theme="warning" size="small">可拉黑</t-tag>
+                  <t-tag v-else theme="success" size="small">正常</t-tag>
+                </template>
+                <template #action="{ row }">
+                  <t-space size="small">
+                    <t-button theme="success" size="small" variant="text" @click="openAddScore(row)">加分</t-button>
+                    <t-button theme="danger" size="small" variant="text" @click="openDeductScore(row)">扣分</t-button>
+                    <t-button v-if="row.course_blacklist && row.course_blacklist.active" theme="default" size="small" variant="text" @click="handleRemoveBlacklist(row, 1)">解除课程拉黑</t-button>
+                    <t-button v-else-if="canBlacklistCourse(row)" theme="warning" size="small" variant="text" @click="handleSetBlacklist(row, 1)">拉黑课程</t-button>
+                    <t-button v-if="row.activity_blacklist && row.activity_blacklist.active" theme="default" size="small" variant="text" @click="handleRemoveBlacklist(row, 2)">解除活动拉黑</t-button>
+                    <t-button v-else-if="canBlacklistActivity(row)" theme="warning" size="small" variant="text" @click="handleSetBlacklist(row, 2)">拉黑活动</t-button>
+                  </t-space>
+                </template>
+              </t-table>
+            </div>
+          </div>
+
+          <!-- 阈值设置弹窗 -->
+          <t-dialog v-model:visible="configVisible" header="阈值设置" width="500px" @confirm="submitConfig" :confirm-btn="{ loading: configLoading }">
+            <t-form :data="configForm" label-width="160px">
+              <t-form-item label="学员扣分阈值">
+                <t-input-number v-model="configForm.student_deduction_threshold" :min="-999" :max="0" theme="normal" style="width:100%;" placeholder="如 -30 表示低于此值可拉黑课程"></t-input-number>
+                <template #help>累计学员扣分低于此值时，可拉黑课程</template>
+              </t-form-item>
+              <t-form-item label="课程拉黑月数">
+                <t-input-number v-model="configForm.student_blacklist_months" :min="1" :max="24" theme="normal" style="width:100%;"></t-input-number>
+              </t-form-item>
+              <t-form-item label="活动扣分阈值">
+                <t-input-number v-model="configForm.activity_deduction_threshold" :min="-999" :max="0" theme="normal" style="width:100%;" placeholder="如 -20"></t-input-number>
+                <template #help>累计活动扣分低于此值时，可拉黑活动</template>
+              </t-form-item>
+              <t-form-item label="活动拉黑月数">
+                <t-input-number v-model="configForm.activity_blacklist_months" :min="1" :max="24" theme="normal" style="width:100%;"></t-input-number>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- 加分弹窗 -->
+          <t-dialog v-model:visible="addScoreVisible" header="加表现分" width="500px" @confirm="submitAddScore" :confirm-btn="{ loading: addScoreLoading }">
+            <t-form :data="addScoreForm" label-width="100px">
+              <t-form-item label="学员">
+                <t-input :value="addScoreForm.userName" disabled></t-input>
+              </t-form-item>
+              <t-form-item label="岗位类型" required>
+                <t-select v-model="addScoreForm.positionTypeId" placeholder="请选择岗位" style="width:100%;" @change="onPositionChange">
+                  <t-option v-for="pt in positionTypes" :key="pt.id" :value="pt.id" :label="pt.name"></t-option>
+                </t-select>
+              </t-form-item>
+              <t-form-item label="加分分值" required>
+                <t-input-number v-model="addScoreForm.score" :min="0.01" :max="9999" :decimal-places="2" theme="normal" style="width:100%;"></t-input-number>
+              </t-form-item>
+              <t-form-item label="备注">
+                <t-textarea v-model="addScoreForm.reason" placeholder="请输入加分原因（可选）" :maxlength="200"></t-textarea>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- 扣分弹窗 -->
+          <t-dialog v-model:visible="deductScoreVisible" header="扣表现分" width="500px" @confirm="submitDeductScore" :confirm-btn="{ loading: deductScoreLoading }">
+            <t-form :data="deductScoreForm" label-width="100px">
+              <t-form-item label="学员">
+                <t-input :value="deductScoreForm.userName" disabled></t-input>
+              </t-form-item>
+              <t-form-item label="扣分类型" required>
+                <t-radio-group v-model="deductScoreForm.deductType">
+                  <t-radio :value="2">学员扣分</t-radio>
+                  <t-radio :value="3">活动扣分</t-radio>
+                </t-radio-group>
+              </t-form-item>
+              <t-form-item label="扣分分值" required>
+                <t-input-number v-model="deductScoreForm.score" :min="0.01" :max="9999" :decimal-places="2" theme="normal" style="width:100%;"></t-input-number>
+              </t-form-item>
+              <t-form-item label="备注">
+                <t-textarea v-model="deductScoreForm.reason" placeholder="请输入扣分原因（可选）" :maxlength="200"></t-textarea>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
+          <!-- 拉黑确认弹窗 -->
+          <t-dialog v-model:visible="blacklistConfirmVisible" :header="blacklistConfirmTitle" width="400px" @confirm="confirmSetBlacklist" :confirm-btn="{ loading: blacklistLoading }">
+            <p>{{ blacklistConfirmContent }}</p>
+          </t-dialog>
+
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js?v=20260306"></script>
+  <script src="../../assets/js/admin-api.js?v=20260306"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const adminInfo = ref(null);
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../index.html';
+            return false;
+          }
+          return true;
+        };
+        const handleLogout = () => {
+          SidebarNavigation.handleLogout();
+        };
+
+        const loading = ref(false);
+        const keyword = ref('');
+        const tableData = ref([]);
+        const positionTypes = ref([]);
+        const config = ref({});
+        const pagination = reactive({ current: 1, pageSize: 20, total: 0 });
+
+        const studentThreshold = computed(() => parseFloat(config.value.student_deduction_threshold) || -30);
+        const activityThreshold = computed(() => parseFloat(config.value.activity_deduction_threshold) || -20);
+
+        const canBlacklistCourse = (row) => {
+          const sd = parseFloat(row.student_deduction) || 0;
+          return sd <= studentThreshold.value;
+        };
+        const canBlacklistActivity = (row) => {
+          const ad = parseFloat(row.activity_deduction) || 0;
+          return ad <= activityThreshold.value;
+        };
+
+        const MAIN_POSITIONS = ['辅导员', '会务义工', '沙龙组织'];
+
+        const tableColumns = computed(() => {
+          const cols = [
+            { colKey: 'id', title: '用户ID', width: 80 },
+            { colKey: 'avatar', title: '头像', width: 70 },
+            { colKey: 'real_name', title: '姓名', width: 100 },
+            { colKey: 'phone', title: '手机号', width: 130 },
+          ];
+          MAIN_POSITIONS.forEach(name => {
+            cols.push({
+              colKey: 'pos_' + name,
+              title: name + '加分',
+              width: 110,
+              cell: (h, { row }) => {
+                const val = (row.position_scores || {})[name];
+                return h('span', { class: ['score-cell', (val || 0) >= 0 ? 'positive' : 'negative'] }, val != null ? val : '-');
+              }
+            });
+          });
+          cols.push({
+            colKey: 'pos_other',
+            title: '其他加分',
+            width: 100,
+            cell: (h, { row }) => {
+              const scores = row.position_scores || {};
+              let other = 0;
+              Object.entries(scores).forEach(([name, val]) => {
+                if (!MAIN_POSITIONS.includes(name)) other += (parseFloat(val) || 0);
+              });
+              return h('span', { class: ['score-cell', other >= 0 ? 'positive' : 'negative'] }, other || '-');
+            }
+          });
+          cols.push(
+            { colKey: 'total_add', title: '加分总计', width: 90 },
+            { colKey: 'student_deduction', title: '学员扣分', width: 90 },
+            { colKey: 'activity_deduction', title: '活动扣分', width: 90 },
+            { colKey: 'course_status', title: '课程状态', width: 90 },
+            { colKey: 'activity_status', title: '活动状态', width: 90 },
+            { colKey: 'action', title: '操作', width: 280, fixed: 'right' }
+          );
+          return cols;
+        });
+
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const result = await AdminAPI.getEvaluationList({
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              keyword: keyword.value.trim()
+            });
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+            positionTypes.value = result.positionTypes || [];
+            config.value = result.config || {};
+          } catch (e) {
+            TDesign.MessagePlugin.error('加载失败: ' + (e.message || '未知错误'));
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const onPageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+
+        // 阈值设置
+        const configVisible = ref(false);
+        const configLoading = ref(false);
+        const configForm = reactive({
+          student_deduction_threshold: -30,
+          student_blacklist_months: 3,
+          activity_deduction_threshold: -20,
+          activity_blacklist_months: 2
+        });
+
+        const openConfigDialog = () => {
+          configForm.student_deduction_threshold = parseFloat(config.value.student_deduction_threshold) || -30;
+          configForm.student_blacklist_months = parseInt(config.value.student_blacklist_months) || 3;
+          configForm.activity_deduction_threshold = parseFloat(config.value.activity_deduction_threshold) || -20;
+          configForm.activity_blacklist_months = parseInt(config.value.activity_blacklist_months) || 2;
+          configVisible.value = true;
+        };
+
+        const submitConfig = async () => {
+          configLoading.value = true;
+          try {
+            await AdminAPI.updateBlacklistConfig({
+              configs: [
+                { key: 'student_deduction_threshold', value: String(configForm.student_deduction_threshold) },
+                { key: 'student_blacklist_months', value: String(configForm.student_blacklist_months) },
+                { key: 'activity_deduction_threshold', value: String(configForm.activity_deduction_threshold) },
+                { key: 'activity_blacklist_months', value: String(configForm.activity_blacklist_months) }
+              ]
+            });
+            TDesign.MessagePlugin.success('阈值配置已更新');
+            configVisible.value = false;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('更新失败: ' + (e.message || '未知错误'));
+          } finally {
+            configLoading.value = false;
+          }
+        };
+
+        // 加分
+        const addScoreVisible = ref(false);
+        const addScoreLoading = ref(false);
+        const addScoreForm = reactive({
+          userId: '',
+          userName: '',
+          positionTypeId: null,
+          positionName: '',
+          score: null,
+          reason: ''
+        });
+
+        const onPositionChange = (val) => {
+          const pt = positionTypes.value.find(p => p.id === val);
+          addScoreForm.positionName = pt ? pt.name : '';
+        };
+
+        const openAddScore = (row) => {
+          addScoreForm.userId = row.id;
+          addScoreForm.userName = `${row.real_name || '-'}（ID: ${row.id}）`;
+          addScoreForm.positionTypeId = null;
+          addScoreForm.positionName = '';
+          addScoreForm.score = null;
+          addScoreForm.reason = '';
+          if (positionTypes.value.length === 0) {
+            positionTypes.value = config.value.positionTypes || [];
+          }
+          addScoreVisible.value = true;
+        };
+
+        const submitAddScore = async () => {
+          if (!addScoreForm.positionTypeId) {
+            TDesign.MessagePlugin.warning('请选择岗位类型');
+            return;
+          }
+          if (!addScoreForm.score || addScoreForm.score <= 0) {
+            TDesign.MessagePlugin.warning('请输入加分分值');
+            return;
+          }
+          addScoreLoading.value = true;
+          try {
+            await AdminAPI.addPerformanceScore({
+              userId: addScoreForm.userId,
+              positionTypeId: addScoreForm.positionTypeId,
+              positionName: addScoreForm.positionName,
+              score: addScoreForm.score,
+              reason: addScoreForm.reason
+            });
+            TDesign.MessagePlugin.success('加分成功');
+            addScoreVisible.value = false;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('加分失败: ' + (e.message || '未知错误'));
+          } finally {
+            addScoreLoading.value = false;
+          }
+        };
+
+        // 扣分
+        const deductScoreVisible = ref(false);
+        const deductScoreLoading = ref(false);
+        const deductScoreForm = reactive({
+          userId: '',
+          userName: '',
+          deductType: 2,
+          score: null,
+          reason: ''
+        });
+
+        const openDeductScore = (row) => {
+          deductScoreForm.userId = row.id;
+          deductScoreForm.userName = `${row.real_name || '-'}（ID: ${row.id}）`;
+          deductScoreForm.deductType = 2;
+          deductScoreForm.score = null;
+          deductScoreForm.reason = '';
+          deductScoreVisible.value = true;
+        };
+
+        const submitDeductScore = async () => {
+          if (!deductScoreForm.score || deductScoreForm.score <= 0) {
+            TDesign.MessagePlugin.warning('请输入扣分分值');
+            return;
+          }
+          deductScoreLoading.value = true;
+          try {
+            await AdminAPI.deductPerformanceScore({
+              userId: deductScoreForm.userId,
+              deductType: deductScoreForm.deductType,
+              score: deductScoreForm.score,
+              reason: deductScoreForm.reason
+            });
+            TDesign.MessagePlugin.success('扣分成功');
+            deductScoreVisible.value = false;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('扣分失败: ' + (e.message || '未知错误'));
+          } finally {
+            deductScoreLoading.value = false;
+          }
+        };
+
+        // 拉黑/解除
+        const blacklistConfirmVisible = ref(false);
+        const blacklistConfirmTitle = ref('');
+        const blacklistConfirmContent = ref('');
+        const blacklistLoading = ref(false);
+        const pendingBlacklist = ref(null);
+
+        const handleSetBlacklist = (row, type) => {
+          const months = type === 1 ? (config.value.student_blacklist_months || 3) : (config.value.activity_blacklist_months || 2);
+          pendingBlacklist.value = { row, type };
+          blacklistConfirmTitle.value = type === 1 ? '拉黑课程' : '拉黑活动';
+          blacklistConfirmContent.value = `确定将 ${row.real_name || '该用户'} 拉黑${type === 1 ? '课程' : '活动'}吗？拉黑时长 ${months} 个月。`;
+          blacklistConfirmVisible.value = true;
+        };
+
+        const confirmSetBlacklist = async () => {
+          if (!pendingBlacklist.value) return;
+          const { row, type } = pendingBlacklist.value;
+          blacklistLoading.value = true;
+          try {
+            await AdminAPI.setBlacklist({ userId: row.id, blacklistType: type });
+            TDesign.MessagePlugin.success('拉黑成功');
+            blacklistConfirmVisible.value = false;
+            pendingBlacklist.value = null;
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('拉黑失败: ' + (e.message || '未知错误'));
+          } finally {
+            blacklistLoading.value = false;
+          }
+        };
+
+        const handleRemoveBlacklist = async (row, type) => {
+          const typeName = type === 1 ? '课程' : '活动';
+          const ok = await new Promise(res => {
+            TDesign.DialogPlugin.confirm({
+              header: `解除${typeName}拉黑`,
+              body: `确定解除 ${row.real_name || '该用户'} 的${typeName}拉黑吗？`,
+              onConfirm: () => res(true),
+              onCancel: () => res(false)
+            });
+          });
+          if (!ok) return;
+          try {
+            await AdminAPI.removeBlacklist({ userId: row.id, blacklistType: type });
+            TDesign.MessagePlugin.success('已解除拉黑');
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('解除失败: ' + (e.message || '未知错误'));
+          }
+        };
+
+        onMounted(() => {
+          if (checkAuth()) loadData();
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          loading,
+          keyword,
+          tableData,
+          tableColumns,
+          pagination,
+          positionTypes,
+          config,
+          canBlacklistCourse,
+          canBlacklistActivity,
+          loadData,
+          onPageChange,
+          configVisible,
+          configLoading,
+          configForm,
+          openConfigDialog,
+          submitConfig,
+          addScoreVisible,
+          addScoreLoading,
+          addScoreForm,
+          onPositionChange,
+          openAddScore,
+          submitAddScore,
+          deductScoreVisible,
+          deductScoreLoading,
+          deductScoreForm,
+          openDeductScore,
+          submitDeductScore,
+          blacklistConfirmVisible,
+          blacklistConfirmTitle,
+          blacklistConfirmContent,
+          blacklistLoading,
+          handleSetBlacklist,
+          confirmSetBlacklist,
+          handleRemoveBlacklist
+        };
+      }
+    }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
+  </script>
+</body>
+</html>

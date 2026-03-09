@@ -13,7 +13,7 @@
       <!-- 签到成功 -->
       <view v-else-if="status === 'success'" class="status-box">
         <view class="status-icon success-icon"><icon type="success" size="60" color="#00A870"/></view>
-        <text class="status-title">签到成功</text>
+        <text class="status-title">{{ successTitle }}</text>
         <text class="status-desc">{{ checkinTime }}</text>
       </view>
 
@@ -50,6 +50,7 @@ import { CourseApi } from '@/api'
 const status = ref<'loading' | 'success' | 'error' | 'invalid'>('loading')
 const errorMsg = ref('')
 const checkinTime = ref('')
+const successTitle = ref('今日签到成功')
 
 /**
  * 解析 scene 参数，格式 ci={classRecordId}
@@ -79,9 +80,15 @@ async function doCheckin(classRecordId: number) {
     const result = await CourseApi.scanCheckin(classRecordId)
     status.value = 'success'
     checkinTime.value = result.checkin_at || ''
+    successTitle.value = result.already_checked ? '今日已签到' : '今日签到成功'
   } catch (err: any) {
-    status.value = 'error'
-    errorMsg.value = err?.message || '签到失败，请稍后重试'
+    const msg = err?.message || '签到失败，请稍后重试'
+    if (msg.includes('不在签到时间内')) {
+      status.value = 'invalid'
+    } else {
+      status.value = 'error'
+      errorMsg.value = msg
+    }
   }
 }
 

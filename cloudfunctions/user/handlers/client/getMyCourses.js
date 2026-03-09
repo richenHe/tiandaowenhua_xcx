@@ -45,8 +45,40 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
+    const rawList = result.list || [];
+
+    // 对 contract_signed=0 的课程，批量查询待审核(status=5)和已驳回(status=6)签署记录
+    const unsignedCourseIds = rawList
+      .filter(uc => !uc.contract_signed)
+      .map(uc => uc.course_id);
+
+    let pendingAuditCourseIds = new Set();
+    // courseId → reject_reason
+    let rejectedCourseMap = {};
+    if (unsignedCourseIds.length > 0) {
+      const { data: recentSigs } = await db
+        .from('contract_signatures')
+        .select('course_id, status, reject_reason')
+        .eq('user_id', user.id)
+        .in('status', [5, 6])
+        .in('course_id', unsignedCourseIds)
+        .order('id', { ascending: false });
+
+      if (recentSigs) {
+        // 每门课只取最新一条（降序，Map 中已有的不覆盖）
+        recentSigs.forEach(s => {
+          if (s.status === 5 && !pendingAuditCourseIds.has(s.course_id)) {
+            pendingAuditCourseIds.add(s.course_id);
+          }
+          if (s.status === 6 && !(s.course_id in rejectedCourseMap)) {
+            rejectedCourseMap[s.course_id] = s.reject_reason || '无';
+          }
+        });
+      }
+    }
+
     // 格式化数据
-    const list = (result.list || []).map(uc => ({
+    const list = rawList.map(uc => ({
       id: uc.id,
       user_id: uc.user_id,
       course_id: uc.course_id,
@@ -55,7 +87,15 @@ module.exports = async (event, context) => {
       attend_count: uc.attend_count,
       expire_at: uc.expire_at,
       contract_signed: uc.contract_signed || 0,
+      // 合同待审核：已签署但未通过，禁止预约
+      contract_audit_pending: pendingAuditCourseIds.has(uc.course_id),
+      // 合同已驳回：显示驳回原因，可重新签署
+      contract_rejected: uc.course_id in rejectedCourseMap,
+      contract_reject_reason: rejectedCourseMap[uc.course_id] || null,
       pending_days: uc.pending_days || 0,
+      is_gift: uc.is_gift || 0,
+      source_course_id: uc.source_course_id || null,
+      source_order_id: uc.source_order_id || null,
       status: uc.status,
       created_at: uc.created_at,
       // 课程信息

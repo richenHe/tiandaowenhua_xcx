@@ -69,23 +69,25 @@
           </view>
         </view>
 
-        <!-- 推荐人信息 -->
-        <view class="section-title section-title--simple">🎯 推荐人信息</view>
-        <view class="t-card t-card--bordered mb-l">
-          <view class="t-card__body">
-            <view class="referee-info">
-              <view class="t-avatar t-avatar--theme-primary">
-                <text class="t-avatar__text">{{ orderDetail.referee.name.charAt(0) }}</text>
-              </view>
-              <view class="referee-details">
-                <view class="referee-name">{{ orderDetail.referee.name }}</view>
-                <view class="t-badge--standalone t-badge--theme-warning t-badge--size-small">
-                  {{ orderDetail.referee.level }}
+        <!-- 推荐人信息：有推荐人才显示 -->
+        <template v-if="orderDetail.referee.name">
+          <view class="section-title section-title--simple">🎯 推荐人信息</view>
+          <view class="t-card t-card--bordered mb-l">
+            <view class="t-card__body">
+              <view class="referee-info">
+                <view class="t-avatar t-avatar--theme-primary">
+                  <text class="t-avatar__text">{{ orderDetail.referee.name.charAt(0) }}</text>
+                </view>
+                <view class="referee-details">
+                  <view class="referee-name">{{ orderDetail.referee.name }}</view>
+                  <view class="t-badge--standalone t-badge--theme-warning t-badge--size-small">
+                    {{ orderDetail.referee.level }}
+                  </view>
                 </view>
               </view>
             </view>
           </view>
-        </view>
+        </template>
 
         <!-- 金额明细 -->
         <view class="section-title section-title--simple">💰 金额明细</view>
@@ -189,8 +191,8 @@ const loadOrderDetail = async (orderNo: string) => {
     orderDetail.value.user.name = order.user_name || '';
     orderDetail.value.user.phone = order.user_phone || '';
 
-    orderDetail.value.referee.name = order.referee_name || '';
-    orderDetail.value.referee.level = levelNames[order.referee_level || 0] || '';
+    orderDetail.value.referee.name = order.referee?.real_name || '';
+    orderDetail.value.referee.level = levelNames[order.referee?.ambassador_level ?? 0] || '';
 
     orderDetail.value.amount.coursePrice = order.original_amount || 0;
     orderDetail.value.amount.discount = order.discount_amount || 0;

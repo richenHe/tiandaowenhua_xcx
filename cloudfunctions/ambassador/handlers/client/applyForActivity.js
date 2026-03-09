@@ -16,6 +16,26 @@ module.exports = async (event, context) => {
     if (!activityId) return response.paramError('缺少必要参数: activityId');
     if (!positionName) return response.paramError('缺少必要参数: positionName（岗位名称）');
 
+    // 预览模式限制：资料未完善的用户不允许报名活动
+    if (!user.profile_completed) {
+      return response.forbidden('请先完善个人资料后再报名活动');
+    }
+
+    // 黑名单校验：活动拉黑（blacklist_type=2）
+    const { data: activityBlacklist } = await db
+      .from('user_blacklist')
+      .select('blacklist_months, blacklist_end_time')
+      .eq('user_id', user.id)
+      .eq('blacklist_type', 2)
+      .eq('status', 1)
+      .limit(1);
+    if (activityBlacklist && activityBlacklist.length > 0) {
+      const bl = activityBlacklist[0];
+      if (new Date(bl.blacklist_end_time) > new Date()) {
+        return response.error(`因为你多次缺席活动参与，${bl.blacklist_months}月内无法报名活动，请和客服联系`);
+      }
+    }
+
     // 查询活动
     const { data: actRows, error: actError } = await db
       .from('ambassador_activities')

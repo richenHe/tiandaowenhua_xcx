@@ -415,6 +415,220 @@ ELSE:
 
 ---
 
+### 表现分与评估名单
+
+### 🔴 1.8 加表现分
+**云函数**: `user` → Action: `addPerformanceScore`
+**权限**: 管理后台
+
+**接口概述**: 给用户加表现分（按岗位类型加分）
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Int | 是 | 用户ID |
+| positionTypeId | Int | 是 | 岗位类型ID |
+| positionName | String | 是 | 岗位名称 |
+| score | Number | 是 | 加分值（正数） |
+| reason | String | 否 | 备注 |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| id | Number | 表现分记录ID |
+
+---
+
+### 🔴 1.9 扣表现分
+**云函数**: `user` → Action: `deductPerformanceScore`
+**权限**: 管理后台
+
+**接口概述**: 给用户扣表现分（系统自动取负值存储）
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Int | 是 | 用户ID |
+| deductType | Int | 是 | 扣分类型：2=学员扣分，3=活动扣分 |
+| score | Number | 是 | 扣分值（传正数，系统自动取负） |
+| reason | String | 否 | 备注 |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| id | Number | 表现分记录ID |
+
+---
+
+### 🔴 1.10 评估名单列表
+**云函数**: `user` → Action: `getEvaluationList`
+**权限**: 管理后台
+
+**接口概述**: 查询评估名单列表，含各岗位加分汇总、扣分汇总及黑名单状态
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Int | 否 | 页码，默认 1 |
+| pageSize | Int | 否 | 每页条数，默认 20 |
+| keyword | String | 否 | 搜索关键词（姓名/手机号模糊匹配） |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| list | Array | 用户列表，每项含各岗位加分、学员扣分、活动扣分、黑名单状态 |
+| total | Number | 总记录数 |
+| positionTypes | Array | 岗位类型列表（用于动态渲染表头列） |
+| config | Object | 黑名单阈值配置（含学员/活动的扣分阈值和拉黑月数） |
+
+---
+
+### 🔴 1.11 拉黑用户
+**云函数**: `user` → Action: `setBlacklist`
+**权限**: 管理后台
+
+**接口概述**: 将用户拉入黑名单（课程拉黑或活动拉黑）
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Int | 是 | 用户ID |
+| blacklistType | Int | 是 | 拉黑类型：1=课程拉黑，2=活动拉黑 |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| id | Number | 黑名单记录ID |
+| months | Number | 拉黑月数（从 blacklist_config 读取） |
+
+**业务规则**:
+- 自动从 `blacklist_config` 表读取对应拉黑月数，计算过期时间
+- 已处于拉黑状态的用户不可重复操作，返回错误提示
+
+---
+
+### 🔴 1.12 解除拉黑
+**云函数**: `user` → Action: `removeBlacklist`
+**权限**: 管理后台
+
+**接口概述**: 解除用户的黑名单状态
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Int | 是 | 用户ID |
+| blacklistType | Int | 是 | 拉黑类型：1=课程，2=活动 |
+
+**返回字段**: 无（返回 null）
+
+---
+
+### 🔴 1.13 更新黑名单阈值配置
+**云函数**: `user` → Action: `updateBlacklistConfig`
+**权限**: 管理后台
+
+**接口概述**: 更新黑名单扣分阈值与拉黑月数配置
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| configs | Array | 是 | 配置项数组，每项格式：`{key: String, value: String}` |
+
+**有效 key 值**:
+
+| key | 说明 |
+|---|---|
+| student_deduction_threshold | 学员扣分阈值（累计扣分达到此值触发拉黑提示） |
+| student_blacklist_months | 学员拉黑月数 |
+| activity_deduction_threshold | 活动扣分阈值 |
+| activity_blacklist_months | 活动拉黑月数 |
+
+**返回字段**: 无（返回 null）
+
+---
+
+### 🔴 1.14 用户课程列表（管理端）
+
+- **action**: `getUserCourseList`
+- **云函数**: `user`
+- **调用方**: 管理后台
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| keyword | String | 否 | 用户姓名/手机号模糊搜索 |
+| courseId | Number | 否 | 课程ID筛选 |
+| status | Number | 否 | 状态筛选：0无效/1有效/2已退款/3已过期 |
+| page | Number | 否 | 页码，默认1 |
+| pageSize | Number | 否 | 每页条数，默认20 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| list | Array | 用户课程列表 |
+| list[].id | Number | 用户课程ID |
+| list[].user_id | Number | 用户ID |
+| list[].user_name | String | 用户姓名 |
+| list[].user_phone | String | 用户手机号 |
+| list[].course_id | Number | 课程ID |
+| list[].course_name | String | 课程名称 |
+| list[].course_type | Number | 课程类型：1初探班/2密训班/3咨询服务/4沙龙 |
+| list[].status | Number | 状态：0无效/1有效/2已退款/3已过期 |
+| list[].expire_at | String | 有效期截止时间 |
+| list[].attend_count | Number | 上课次数 |
+| list[].contract_signed | Number | 合同状态：0未签/1已签 |
+| list[].created_at | String | 创建时间 |
+| total | Number | 总记录数 |
+
+---
+
+### 🔴 1.15 手动新增用户课程（管理端）
+
+- **action**: `adminAddUserCourse`
+- **云函数**: `user`
+- **调用方**: 管理后台
+- **描述**: 为老学员手动录入课程记录，不触发推荐人奖励，不关联订单
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Number | 是 | 用户ID |
+| courseId | Number | 是 | 课程ID |
+| validityDays | Number | 是 | 剩余有效天数 |
+| needContract | Boolean | 否 | 是否创建合同签署记录，默认false |
+| contractImages | Array | 否 | 合同照片 fileID 数组（needContract=true 时可选传入） |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| user_course_id | Number | 新创建的用户课程记录ID |
+| expire_at | String | 有效期截止时间 |
+| signature_id | Number/null | 合同签署记录ID（未创建合同时为null） |
+
+**业务规则**
+- 同一用户同一课程不允许重复新增（已有有效/过期记录时拒绝）
+- attend_count 默认为 1
+- contract_signed 直接标记为 1
+- 不触发推荐人奖励（不调用 grantRefereeRewardAfterSign）
+- 不关联订单（order_no=NULL），因此不可退款
+- needContract=true 但课程无合同模板时，仅标记 contract_signed=1，不创建 contract_signatures 记录
+
+---
+
 ## 2. 课程模块
 
 ### 🔵 2.1 课程列表
@@ -476,7 +690,7 @@ ELSE:
 1. 查询 courses 基本信息
 2. 如已登录且已购买,查询 user_courses 返回:
    - user_course_id: 用户课程记录ID
-   - attend_count: 已上课次数(初始值为1,表示可以首次上课)
+   - attend_count: 已结课次数(初始值为0，排期结束且有签到记录时由定时任务+1)
 3. type=3 咨询服务特殊处理:购买后显示"已购买,客服将联系您"
 
 **响应数据**:
@@ -603,9 +817,16 @@ ELSE:
   "included_course_ids": [2],
   "stock": 100,
   "sort": 1,
-  "status": 1
+  "status": 1,
+  "needContract": 1
 }
 ```
+
+**请求参数说明**（部分）:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| needContract | Number | 是（非沙龙课程） | 是否需要签订合同：0不需要/1需要 |
 
 > `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。购课时写入 `user_courses.expire_at = buy_time + validityDays 天`。
 
@@ -629,9 +850,16 @@ ELSE:
   "id": 1,
   "name": "新名称",
   "current_price": 1500.00,
-  "validityDays": 365
+  "validityDays": 365,
+  "needContract": 1
 }
 ```
+
+**请求参数说明**（部分）:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| needContract | Number | 否 | 是否需要签订合同：0不需要/1需要 |
 
 > `validityDays`：**必填**，课程有效期天数（正整数，范围 1~3650）。传 `null` 或 `<= 0` 返回 `paramError`。
 
@@ -643,6 +871,7 @@ ELSE:
 > - 当 `status=1` 且课程当前状态不为 1（即从下架变为上架）时，系统检查 `contract_templates` 中是否存在 `course_id=id, contract_type=4, status=1, deleted_at IS NULL` 的记录
 > - 若不存在，返回错误：`"课程上架前必须配置学习服务协议模板，请先在课程列表点击\"合同\"按钮上传协议文件"`
 > - 已上架课程（course.status=1）再次设置 status=1 跳过此校验
+> - **need_contract=0 时跳过合同模板检查**：课程 `need_contract=0`（不需要签订合同）时，上架不校验学习服务协议模板
 
 > **上架锁定（2026-03 新增）**：
 > - 课程 `status=1`（已上架）时，除 `status` 字段外的所有编辑字段均被锁定
@@ -951,7 +1180,7 @@ ELSE:
 ```
 1. 查询课程信息，获取 included_course_ids
 2. 插入 user_courses 表（主课程）:
-   - attend_count 初始值为 1
+   - attend_count 初始值为 0
    - is_gift = 0
    - course_type 冗余存储课程类型
 
@@ -966,7 +1195,7 @@ ELSE:
                is_gift = 1,
                source_order_id = order_id,
                source_course_id = 密训班course_id,
-               attend_count = 1,
+               attend_count = 0,
                course_type = 1
            )
        -- 用户已有该课程则不重复添加
@@ -1461,22 +1690,31 @@ ELSE:
 ```
 1. 查询 class_records 确认排期存在且 status=1
 2. 查询 courses.type 判断是否沙龙(type=4)
-3. 沙龙课程：自动创建 user_courses（若不存在）
-4. 非沙龙课程：
-   a. 验证 user_courses 存在（已购买）
-   b. 复训校验：attend_count >= 1 时，查询 orders 表
-      是否有已支付(pay_status=1)的复训订单(order_type=2)
-      关联此 class_record_id，未支付则拒绝
-5. 检查重复预约（status IN [0,1]）
-6. 检查名额
-7. 创建预约记录 → 更新 booked_quota
+3. 黑名单校验：查询 user_blacklist 是否存在 type=1（课程拉黑）且未过期的记录，若命中则拒绝预约
+4. 沙龙课程：自动创建 user_courses（若不存在）
+5. 非沙龙课程：
+   a. 验证 user_courses 存在（已购买，status=1）
+   b. 复训校验：attend_count >= 1 时：
+      - 优先检查当前排期是否有已支付的复训订单（orders: order_type=2, pay_status=1）
+      - 若无，检查是否有可抵用的复训资格（retrain_credit_status=1，同课程）
+      - 若有复训资格，直接创建预约并标记资格为已抵用（retrain_credit_status=2）
+      - 若均无，拒绝预约
+6. 检查重复预约（status IN [0,1]）
+7. 检查名额
+8. 创建预约记录 → 更新 booked_quota
 ```
 
-**特别说明（2026-03-02 更新）**:
-- `attend_count` 初始值为 **0**（购课时写入），签到后 +1
+> **黑名单校验**（2026-03 新增）：预约前会检查用户是否在课程黑名单中（`user_blacklist.type=1` 且 `expire_at > NOW()`），被拉黑用户无法创建预约。
+
+**特别说明（2026-03-06 更新）**:
+- `attend_count` 初始值为 **0**（购课时写入），排期结束且有签到记录时由定时任务 +1
 - `attend_count = 0` 表示首次上课，直接预约无需支付
 - `attend_count >= 1` 且非沙龙 → 必须先通过订单确认页支付复训费（order_type=2），支付回调自动创建预约
 - 沙龙课程（type=4）免复训费
+- **复训资格抵用**：复训用户如有可抵用复训资格（retrain_credit_status=1），可免付复训费直接预约
+- **同课程去重**：同一课程只能有一个进行中(status=0)的预约，跨排期也不允许，提示"您已预约了该课程的其他排期，如需预约当前排期，请先取消已有的预约"
+
+> **2026-03 变更**：不再校验合同签署状态（contract_signed），只需 `user_courses.status=1` 即可预约。课程合同改为管理员线下录入（`adminCreateCourseContract`）。
 
 **响应数据**:
 ```json
@@ -1484,9 +1722,14 @@ ELSE:
   "appointment_id": 100,
   "class_record_id": 1,
   "class_date": "2026-03-01",
-  "start_time": "09:00-17:00"
+  "start_time": "09:00-17:00",
+  "used_retrain_credit": false
 }
 ```
+
+| 返回字段 | 类型 | 说明 |
+|---|---|---|
+| used_retrain_credit | Boolean | 本次预约是否使用了复训资格抵用 |
 
 **数据库设计注意点**:
 - appointments 表:
@@ -1499,23 +1742,62 @@ ELSE:
 > - 跳过 user_courses 存在性校验，改为自动创建 user_courses 记录（buy_price=0, order_no=null, status=1, attend_count=0）
 > - 其余逻辑不变：名额检查、重复预约检查、booked_quota+1
 
-### 🔵 4.3 取消预约（已废弃）
+### 🔵 4.3 取消预约
 **接口**: `DELETE /api/appointment/cancel`  
-**action**: `cancelAppointment`（course 云函数）
+**action**: `cancelAppointment`（course 云函数）  
+**调用方**: 客户端（小程序）  
+**描述**: 取消预约（支持截止日期校验 + 复训资格保留）
 
-> **⚠️ 2026-03-02 废弃**：复训费支付后不可取消，统一禁止所有预约的取消操作。
-> 接口仍存在但始终返回错误 `"当前不支持取消预约"`。
-> 前端已移除取消预约按钮和"已取消"Tab。
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| appointmentId | Number | 是 | 预约 ID |
+
+**业务规则**:
+- 仅 `status=0` 的预约可取消
+- 校验取消截止日期：当前日期 < `class_date - cancel_deadline_days`，超过截止日期不可取消
+- 取消后 `appointment.status=3`，`booked_quota-1`
+- 复训预约（`is_retrain=1`）取消后，对应订单 `retrain_credit_status` 设为 1（可抵用）
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| appointment_id | Number | 已取消的预约 ID |
+| has_retrain_credit | Boolean | 是否保留了复训资格 |
+| message | String | 提示信息 |
+
+### 🔵 4.3a 检查复训资格
+**action**: `checkRetrainCredit`（course 云函数）  
+**调用方**: 客户端（小程序）  
+**描述**: 检查用户是否有指定课程的可抵用复训资格
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| courseId | Number | 是 | 课程 ID |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| has_credit | Boolean | 是否有可抵用的复训资格 |
+
+**业务规则**:
+- 查询 `orders` 表中 `user_id` 匹配、`order_type=2`、`pay_status=1`、`retrain_credit_status=1` 且 `related_id` 关联到同课程的 `user_course` 记录
 
 ### 🔵 4.4 我的预约
-**接口**: `GET /api/appointment/my`
+**接口**: `GET /api/appointment/my`  
+**action**: `getMyAppointments`（course 云函数）
 
 **请求参数**:
 | 参数名 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | page | Number | 否 | 页码，默认 1 |
 | page_size | Number | 否 | 每页条数，默认 20 |
-| status | Number | 否 | 筛选状态（0待上课/1已签到/2缺席），-1或不传为全部 |
+| status | Number | 否 | 筛选状态：沙龙(0待上课/1已签到/2已结课/3已取消)、非沙龙(0进行中/1已结课/3已取消/4缺席)，-1或不传为全部 |
 
 > 前端采用滚动分页加载，每次 20 条，累计最多展示 99 条（变更于 2026-03-03）
 
@@ -1530,13 +1812,21 @@ ELSE:
       "class_time": "09:00-17:00",
       "class_location": "深圳市南山区",
       "teacher": "王老师",
-      "is_retrain": false,
+      "is_retrain": 0,
       "status": 0,
-      "checkin_code": "ABC123"
+      "checkin_code": "ABC123",
+      "cancel_deadline_days": 3
     }
   ]
 }
 ```
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| is_retrain | Number | 是否复训预约（0/1） |
+| cancel_deadline_days | Number | 该排期的取消截止天数 |
 
 ### 🔴 4.5 上课记录管理 - 创建
 
@@ -1554,6 +1844,7 @@ ELSE:
 | classLocation | String | 否 | 上课地点 |
 | teacher | String | 否 | 主讲老师 |
 | totalQuota | Number | 否 | 总名额，默认 30 |
+| cancelDeadlineDays | Number | 是 | 取消预约截止天数，必须为大于0的整数 |
 | remark | String | 否 | 备注 |
 
 **业务规则**:
@@ -1567,25 +1858,46 @@ ELSE:
 
 - **action**: `updateClassRecord`
 - **调用方**: 管理后台
+- **描述**: 取消排期（排期创建后不可编辑，仅支持取消）
 
 **请求参数**:
 
 | 参数名 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | id | Number | 是 | 排期 ID |
-| courseId | Number | 否 | 课程 ID |
-| classDate | String | 否 | 开课日期（YYYY-MM-DD），修改时不能早于今天 |
-| classEndDate | String | 否 | 结课日期（YYYY-MM-DD） |
-| classTime | String | 否 | 上课时段 |
-| classLocation | String | 否 | 上课地点 |
-| teacher | String | 否 | 主讲老师 |
-| totalQuota | Number | 否 | 总名额 |
-| remark | String | 否 | 备注 |
-| status | Number | 否 | 状态：0取消 / 1正常 / 2已结束 |
+| status | Number | 是 | 必须为 0（取消排期） |
 
 **业务规则**:
-- 若传入 `classDate`，则不能早于服务器当天日期（北京时间）
-- 若传入 `classDate` 未传 `classEndDate`，且原排期为单天课（结课日期=开课日期），结课日期自动同步为新开课日期
+- 排期创建后不可编辑，仅允许取消（`status=0`）
+- 取消时自动取消该排期下所有待上课预约，复训预约触发复训资格保留（`retrain_credit_status=1`）
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| success | Boolean | 操作是否成功 |
+| cancelled_appointments | Number | 被取消的预约数量 |
+| message | String | 提示信息 |
+
+### 🔴 4.5c 上课记录管理 - 获取排期列表
+
+- **action**: `getClassRecordList`
+- **调用方**: 管理后台
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Number | 否 | 页码，默认 1 |
+| page_size | Number | 否 | 每页条数，默认 10 |
+| courseId | Number | 否 | 课程 ID 筛选 |
+| status | Number | 否 | 状态筛选 |
+
+**返回字段**:
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| cancel_deadline_days | Number | 取消预约截止天数 |
 
 ### 🔴 4.6 签到管理 - 签到
 **接口**: `POST /api/admin/attendance/checkin`
@@ -1913,6 +2225,67 @@ ELSE:
 }
 ```
 
+### 获取商学院板块列表
+
+- **action**: `getAcademySections`
+- **云函数**: course
+- **调用方**: 小程序客户端（公开接口，无需登录）
+- **描述**: 获取商学院首页的所有启用板块，按排序权重升序排列
+
+**请求参数**
+
+无需参数
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| list | Array | 板块列表 |
+| list[].id | Number | 板块ID |
+| list[].section_type | String | 板块类型：hero/quick_access/intro/concepts/teachers/timeline/honors |
+| list[].title | String | 板块标题 |
+| list[].icon | String | 标题图标(Emoji) |
+| list[].content | Object | 板块内容(JSON，结构因类型而异) |
+| list[].sort_order | Number | 排序权重 |
+
+**业务规则**
+- 只返回 status=1 的板块
+- teachers 和 honors 类型中的云存储字段自动转换为 CDN URL
+
+### 管理商学院板块
+
+- **action**: `manageAcademySections`
+- **云函数**: course
+- **调用方**: 管理后台
+- **描述**: 管理商学院首页板块的增删改查、排序和状态切换
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| operation | String | 是 | 操作类型：list/detail/create/update/delete/updateSort/toggleStatus |
+| id | Number | 否 | 板块ID（detail/update/delete/toggleStatus 时必填） |
+| sectionType | String | 否 | 板块类型（create 时必填）：hero/quick_access/intro/concepts/teachers/timeline/honors |
+| title | String | 否 | 板块标题（create 时必填） |
+| icon | String | 否 | 标题图标 |
+| content | Object | 否 | 板块内容JSON |
+| sortOrder | Number | 否 | 排序权重 |
+| status | Number | 否 | 状态：0隐藏/1显示 |
+| items | Array | 否 | 排序数据（updateSort 时必填）：[{id, sortOrder}] |
+
+**返回字段（list 操作）**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| list | Array | 全部板块列表（含隐藏） |
+| total | Number | 总数 |
+
+**业务规则**
+- create：验证 sectionType 必须为 7 种合法类型之一
+- update：仅更新传入的字段
+- toggleStatus：自动取反当前状态
+- updateSort：批量更新多个板块的排序
+
 ---
 
 ## 6. 传播大使模块
@@ -1945,8 +2318,9 @@ ELSE:
 }
 ```
 
-### 🔵 6.2 申请成为准青鸾大使
-**接口**: `POST /api/ambassador/apply`
+### 🔵 6.2 申请成为大使/升级
+**接口**: `POST /api/ambassador/apply`  
+**action**: `apply`（ambassador 云函数）
 
 **请求参数**:
 ```json
@@ -1963,7 +2337,9 @@ ELSE:
 }
 ```
 
-**前置条件**: 必须已购买密训班
+**前置条件**:
+- 普通用户(level=0)：无前置课程要求
+- 准青鸾(level=1)：无前置课程要求
 
 **业务逻辑**:
 ```
@@ -1971,41 +2347,55 @@ ELSE:
 2. 检查资料是否完善:
    IF profile_completed = 0:
        返回错误: "请先完善个人资料"
-3. 检查是否已是大使:
-   IF ambassador_level >= 1:
+3. 检查是否已是大使(level>=2):
+   IF ambassador_level >= 2:
        返回错误: "您已经是传播大使,无需重复申请"
-4. 验证前置条件:
+4. 目标等级 target_level 规则:
+   - 普通用户(level=0)提交时: target_level 自动设为 2（青鸾）
+   - 准青鸾(level=1)重新申请时: target_level 也为 2（青鸾）
+5. 普通用户(level=0)即时升级:
+   - 提交申请时，立即将 ambassador_level 更新为 1（准青鸾）
+   - 返回 instant_upgraded = true, new_level = 1
+6. 准青鸾(level=1)提交时:
+   - 不即时升级，需等待审核
+   - 返回 instant_upgraded = false
+7. 验证前置条件(仅 level=0 时):
    查询用户课程:
    IF NOT EXISTS(
        SELECT 1 FROM user_courses 
        WHERE user_id = ? AND course_type = 2  // 密训班
    ):
        返回错误: "必须先购买密训班才能申请成为传播大使"
-5. 检查是否重复申请:
+8. 检查是否重复申请:
    IF EXISTS(
        SELECT 1 FROM ambassador_applications 
        WHERE user_id = ? AND status IN (0,1,2)  // 待审核/待面试/面试中
    ):
        返回错误: "您已提交申请,请等待审核结果"
-6. 验证必填字段:
+9. 验证必填字段:
    IF real_name OR phone OR wechat_id OR city OR apply_reason 为空:
        返回错误: "请填写完整的申请信息"
-7. 创建申请记录:
-   INSERT INTO ambassador_applications (
-     user_id, real_name, phone, wechat_id, city,
-     occupation, apply_reason, understanding,
-     willing_help, promotion_plan,
-     status = 0,  // 待审核
-     created_at = NOW()
-   )
-8. 发送通知给管理员(待审核提醒)
-9. 返回申请成功信息:
-   {
-     "application_id": xxx,
-     "status": 0,
-     "message": "申请已提交,请耐心等待审核"
-   }
+10. 创建申请记录:
+    INSERT INTO ambassador_applications (
+      user_id, real_name, phone, wechat_id, city,
+      occupation, apply_reason, understanding,
+      willing_help, promotion_plan, target_level,
+      status = 0,  // 待审核
+      created_at = NOW()
+    )
+11. 发送通知给管理员(待审核提醒)
+12. 返回申请成功信息
 ```
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| application_id | Number | 申请记录ID |
+| target_level | Number | 目标等级（普通用户/准青鸾申请时均为 2） |
+| status | Number | 申请状态（0=待审核） |
+| message | String | 提示文案 |
+| instant_upgraded | Boolean | 是否已即时升级为准青鸾（普通用户提交时为 true） |
+| new_level | Number | 即时升级后的等级（instant_upgraded=true 时为 1） |
 
 ### 🔵 6.3 查看申请状态
 **接口**: `GET /api/ambassador/apply-status`
@@ -2967,18 +3357,34 @@ IF 无记录（首次兑换）:
 - `3`: 已拒绝
 
 ### 🔴 6.13 大使申请管理 - 审核
-**接口**: `POST /api/admin/ambassador/audit`
+**接口**: `POST /api/admin/ambassador/audit`  
+**action**: `auditApplication`（ambassador 云函数）
 
 **请求参数**:
 ```json
 {
   "application_id": 1,
   "action": "approve",  // approve/reject/arrange_interview
+  "frozen_points": 1688,  // 通过时必填，管理员手动设置的冻结积分
   "interview_time": "2024-01-20 14:00:00",
   "interview_remark": "面试备注",
   "reject_reason": "拒绝原因"
 }
 ```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| application_id | Number | 是 | 申请记录ID |
+| action | String | 是 | approve/reject/arrange_interview |
+| frozen_points | Number | 是（当 action=approve 时） | 管理员手动设置的冻结积分，签署协议时发放 |
+| interview_time | String | 否 | 面试时间（arrange_interview 时必填） |
+| interview_remark | String | 否 | 面试备注 |
+| reject_reason | String | 否 | 拒绝原因（reject 时必填） |
+
+**frozen_points 校验规则**（当 action=approve 时）:
+- `frozen_points` 必须是目标等级 `unfreeze_per_referral` 的整数倍
+- `frozen_points = 0` 时跳过该校验
+- 目标等级 `unfreeze_per_referral = 0` 时，拒绝通过（无法设置有效冻结积分）
 
 **业务逻辑**:
 ```
@@ -2992,24 +3398,20 @@ IF 无记录（首次兑换）:
 4. 根据操作类型处理:
    
    IF action = "approve":  // 通过
-       a. 开启事务
-       b. 更新申请状态:
+       a. 校验 frozen_points（见上方校验规则）
+       b. 开启事务
+       c. 更新申请状态并写入 frozen_points:
           UPDATE ambassador_applications SET
             status = 3,  // 已通过
+            frozen_points = ?,  // 管理员设置的值，签署协议时发放
             audit_admin_id = ?,
             audit_time = NOW(),
             audit_remark = ?
           WHERE id = ?
        
-       c. 更新用户等级:
-          UPDATE users SET
-            ambassador_level = 1,  // 准青鸾
-            ambassador_start_date = NOW()
-          WHERE id = application.user_id
-       
-       d. 提交事务
+       d. 提交事务（不在此处更新用户等级，需用户签署协议后完成升级）
        e. 发送通过通知给用户
-       f. 返回: "审核通过,用户已升级为准青鸾大使"
+       f. 返回: "审核通过，请引导用户签署协议后完成升级"
    
    ELSE IF action = "arrange_interview":  // 安排面试
        IF interview_time 为空:
@@ -3248,7 +3650,8 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
 - 升级记录可在 ambassador_upgrade_logs 表中追踪
 
 ### 🔵 6.18 获取升级指南信息
-**接口**: `GET /api/ambassador/upgrade-guide`
+**接口**: `GET /api/ambassador/upgrade-guide`  
+**action**: `getUpgradeGuide`（ambassador 云函数）
 
 **接口概述**: 获取用户当前等级和升级条件
 
@@ -3261,6 +3664,7 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
   "next_level_name": "青鸾大使",
   "upgrade_type": 2,
   "upgrade_type_name": "协议类型(无需支付)",
+  "instant_upgrade": false,
   "upgrade_conditions": [
     {
       "condition": "推荐初探班成功1次",
@@ -3273,19 +3677,38 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
       "action_url": "/pages/ambassador/contract-sign/index?type=2"
     }
   ],
+  "upgrade_options": [
+    {
+      "type": "contract",
+      "name": "签署青鸾大使协议",
+      "eligible": false,
+      "requirements": ["提交大使申请并通过审核", "签署《青鸾大使协议》"]
+    },
+    {
+      "type": "instant_apply",
+      "name": "立即申请",
+      "eligible": true
+    }
+  ],
   "can_upgrade": false
 }
 ```
+
+| 返回字段（补充） | 类型 | 说明 |
+|---|---|---|
+| instant_upgrade | Boolean | 普通用户(level=0)是否可即时升级为准青鸾（提交申请即升级） |
+| upgrade_options | Array | 升级选项，仅包含 `contract`、`instant_apply` 类型，**不包含** `payment` 类型 |
 
 **业务逻辑**:
 ```
 1. 获取用户当前等级
 2. 判断下一等级和升级类型:
-   - 准青鸾→青鸾: upgrade_type=2(协议)
-   - 青鸾→鸿鹄: upgrade_type=1(支付)
+   - 准青鸾→青鸾: upgrade_type=2(协议)，无支付步骤
+   - 青鸾→鸿鹄: 无支付步骤（已移除 payment 类型）
 3. 检查升级条件是否满足
 4. 检查是否已签署对应协议
 5. 返回条件列表和可操作链接
+6. upgrade_options 仅包含 contract、instant_apply 类型
 ```
 
 ### 🔴 6.19 积分提现审核
@@ -3447,13 +3870,14 @@ ALTER TABLE tiandao_culture.mall_exchange_records
     "list": [
       {
         "id": 1,
-        "name": "引导员",
+        "name": "辅导员",
         "required_level": 1,
         "required_level_name": "准青鸾",
         "merit_points_default": 100,
-        "description": "负责活动引导",
+        "description": "负责课程学员辅导工作",
         "status": 1,
-        "sort_order": 0,
+        "sort_order": 1,
+        "is_fixed": true,
         "created_at": "2026-02-01 10:00:00"
       }
     ],
@@ -3461,6 +3885,11 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   }
 }
 ```
+
+**字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| is_fixed | Boolean | 是否为固定岗位（辅导员/会务义工/沙龙组织），固定岗位不可删除、不可修改名称 |
 
 ---
 
@@ -3504,6 +3933,9 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | status | Number | 否 | 状态（1启用 / 0停用） |
 | sortOrder | Number | 否 | 排序值 |
 
+**业务规则**:
+- 辅导员、会务义工、沙龙组织为固定岗位，**不可修改名称**，修改时返回错误
+
 **响应数据**:
 ```json
 { "success": true, "message": "岗位类型更新成功" }
@@ -3520,9 +3952,12 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 |------|------|------|------|
 | id | Number | 是 | 岗位类型ID |
 
+**业务规则**:
+- 辅导员、会务义工、沙龙组织为固定岗位，**不可删除**，删除时返回错误
+
 **响应数据**:
 ```json
-{ "success": true, "message": "岗位类型「引导员」已删除" }
+{ "success": true, "message": "岗位类型「xxx」已删除" }
 ```
 
 ---
@@ -3859,6 +4294,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 - 若岗位设有等级要求，用户大使等级必须达到
 - 每个用户每个活动只能报名一个岗位（已报名的不可重复报名）
 - 报名成功后 `registered_count + 1`
+- **黑名单校验**（2026-03 新增）：报名前检查用户是否在活动黑名单中（`user_blacklist.type=2` 且 `expire_at > NOW()`），被拉黑用户无法报名
 
 **响应数据**:
 ```json
@@ -3881,39 +4317,44 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **云函数**: `course` → Action: `autoUpdateScheduleStatus`
 **触发方式**: 定时器（每天 0 点触发，`cloudfunction.json` 配置）
 
-**功能说明**: 自动更新排课状态 + 标记缺席预约。
+**功能说明**: 自动更新排课状态 + 沙龙全自动流转 + 非沙龙结课/缺席处理。
 
 **判断逻辑**:
 1. 未开始(1) → 进行中(2)：`class_date <= 今天`
-2. 进行中(2) → 已结束(3)：有结束日期 `class_end_date < 今天`
-3. 进行中(2) → 已结束(3)：无结束日期（单次课）`class_date < 今天`
-4. 缺席标记：已结束排期(status=3)中 appointments.status=0(待上课) → status=2(缺席)
+2. 沙龙自动签到：type=4 排期变为进行中时，appointments.status=0 → 1（自动签到）+ checkin_time
+3. 进行中(2) → 已结束(3)：`class_end_date < 今天`
+4a. 沙龙已结课：已结束排期中 appointments.status IN (0,1) → status=2（已结课）
+4b. 非沙龙按签到分流：有签到记录(appointment_checkins) → status=1（已结课）+ attend_count+1，无签到记录 → status=4（缺席）
+5. 沙龙结束清理：硬删除 class_records + user_courses + courses 记录，appointments 保留
+
+> **attend_count 0→1 时 need_contract=0 的课程（2026-03 新增）**：
+> `batchCheckin`（批量签到）和 `autoUpdateScheduleStatus`（定时更新排期状态）在 attend_count 从 0 变为 1 时，若课程 `need_contract=0` 且 `contract_signed=0`，会自动触发后续业务逻辑（设置有效期、发放推荐人奖励等）。
 
 **响应数据**（日志用）:
 ```json
 {
   "success": true,
   "data": {
-    "date": "2026-02-28",
+    "date": "2026-03-06",
     "affectedRows": 5,
     "toOngoing": 1,
-    "toEndedWithEndDate": 1,
-    "toEndedSingleDay": 0,
-    "toAbsent": 3,
-    "message": "更新 5 条记录（排期状态 2 + 缺席 3）"
+    "toEnded": 1,
+    "salonCompleted": 1,
+    "toAbsent4": 1,
+    "toFinished": 1,
+    "salonAutoCheckin": 0,
+    "salonCleanedCourses": 0,
+    "salonCleanedRecords": 0,
+    "message": "更新 5 条记录（排期状态 2 + 沙龙结课 1 + 非沙龙结课 1 + 非沙龙缺席 1 + 沙龙签到 0），沙龙清理 0 门课程"
   }
 }
 ```
 
-**新增（2026-02-28）**：第四步 - 标记缺席。已结束排期（status=3）中仍为待上课（appointments.status=0）的预约 → 更新为缺席（appointments.status=2）。
-
-**新增（2026-03-02）沙龙课程(type=4)专项逻辑**：
-- **第二步（排期变为进行中后）**：沙龙自动签到 — 查询 courses.type=4 的进行中排期，将其 appointments.status=0 更新为 status=1（已签到），同时写入 checkin_time
-- **第五步（标记缺席后）**：沙龙结束清理 — 查询 courses.type=4 的已结束排期，硬删除 class_records + user_courses + courses 记录，appointments 保留
-
-**响应数据新增字段**:
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
+| salonCompleted | Number | 沙龙已结课(status=2)预约数 |
+| toAbsent4 | Number | 非沙龙缺席(status=4)预约数 |
+| toFinished | Number | 非沙龙已结课(status=1)预约数 |
 | salonAutoCheckin | Number | 沙龙自动签到预约数 |
 | salonCleanedCourses | Number | 沙龙清理课程数 |
 | salonCleanedRecords | Number | 沙龙清理排期数 |
@@ -4014,20 +4455,23 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 |------|------|------|------|
 | classRecordId | Number | 是 | 排期ID（从二维码 scene 参数解析） |
 
-**业务逻辑**:
-1. 查找当前用户在该排期下的预约记录
-2. 验证预约状态为待上课（status=0）
-3. 更新为已签到（status=1），记录 checkin_time
-4. 更新 user_courses.attend_count
-5. 异步解冻推荐人积分
+**业务逻辑**（日签到系统改造后）:
+- **沙龙课程(type=4)**：保持原有逻辑，更新 appointments.status=1
+- **非沙龙课程(type=1/2/3)**：
+  1. 校验今天在排期 [class_date, class_end_date] 范围内
+  2. 检查 appointment_checkins 是否已有今日记录
+  3. 插入 appointment_checkins 记录（checkin_type=1 扫码签到）
+  4. 不修改 appointments.status 和 attend_count
+  5. 不触发积分解冻（已删除该逻辑）
 
 **响应数据**:
 ```json
 {
   "success": true,
   "data": {
-    "message": "签到成功",
-    "checkin_at": "2026-03-01 09:15:00"
+    "message": "今日签到成功",
+    "checkin_at": "2026-03-01 09:15:00",
+    "already_checked": false
   }
 }
 ```
@@ -4036,9 +4480,62 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | 状态 | 错误信息 |
 |------|---------|
 | 无预约 | "您没有该课程的预约记录，无法签到" |
-| 已签到 | "您已签到，请勿重复签到" |
-| 已缺席 | "该预约已标记为缺席，无法签到" |
+| 非沙龙已结课 | "课程已结课，无法签到" |
+| 沙龙已签到 | "您已签到，请勿重复签到" |
 | 已取消 | "该预约已取消，无法签到" |
+| 不在签到时间内 | "不在签到时间内" |
+
+---
+
+### 🟢 6.C3.1 获取每日签到记录（管理端）
+**云函数**: `course` → Action: `getDailyCheckins`
+**权限**: 管理员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| appointmentId | Number | 是 | 预约ID |
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "appointment_id": 1,
+    "class_date": "2026-03-26",
+    "class_end_date": "2026-03-29",
+    "course_type": 1,
+    "checkins": [
+      { "id": 1, "checkin_date": "2026-03-26", "checkin_time": "2026-03-26 09:00:00", "checkin_type": 1, "checkin_admin_id": null },
+      { "id": 2, "checkin_date": "2026-03-27", "checkin_time": "2026-03-27 14:00:00", "checkin_type": 2, "checkin_admin_id": 1 }
+    ]
+  }
+}
+```
+
+---
+
+### 🟢 6.C3.2 管理每日签到（管理端）
+**云函数**: `course` → Action: `manageDailyCheckin`
+**权限**: 管理员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| appointmentId | Number | 是 | 预约ID |
+| checkinDate | String | 是 | 签到日期（YYYY-MM-DD） |
+| operation | String | 是 | 操作：checkin=补签 / cancel=取消签到 |
+
+**业务规则**:
+- 仅适用于非沙龙课程
+- 签到日期必须在排期的 class_date ~ class_end_date 范围内
+- 补签时在 appointment_checkins 插入记录（checkin_type=2 后台补签）
+- 取消签到时删除对应日期的记录
+
+**响应数据**:
+```json
+{ "success": true, "data": { "message": "补签成功" } }
+```
 
 ---
 
@@ -4151,7 +4648,10 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ```
 
 ### 🔵 7.2 签署协议
-**接口**: `POST /api/contract/sign`
+**接口**: `POST /api/contract/sign`  
+**action**: `signContract`（ambassador 云函数）
+
+> 签署后直接生效（status=1），立即执行大使等级升级，无需审核。
 
 **请求参数**:
 ```json
@@ -4173,6 +4673,8 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 - 保存协议完整快照
 - 设置合同期限（1年）
 - 防止重复签署
+- **冻结积分**：从 `ambassador_applications` 表的 `frozen_points` 字段读取（管理员审核时设置的值），签署时发放；签署后标记 `frozen_points_issued=1` 防止重复发放
+- **不再检查** order_type=4 的升级订单支付状态（已移除支付检查逻辑）
 
 **响应数据**:
 ```json
@@ -4185,7 +4687,8 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ```
 
 ### 🔵 7.3 我的协议列表
-**接口**: `GET /api/contract/my-list`
+**接口**: `GET /api/contract/my-list`  
+**action**: `getMyContracts`（ambassador 云函数）
 
 > 后端一次性返回全部协议，前端客户端截取前 99 条展示（变更于 2026-03-03）
 
@@ -4201,14 +4704,22 @@ ALTER TABLE tiandao_culture.mall_exchange_records
       "status_name": "有效",
       "contract_start": "2024-01-15",
       "contract_end": "2025-01-15",
-      "remaining_days": 300
+      "remaining_days": 300,
+      "sign_type": 1,
+      "contract_images": ["https://xxx.tcb.qcloud.la/contracts/xxx.jpg"]
     }
   ]
 }
 ```
 
+| 返回字段（补充） | 类型 | 说明 |
+|---|---|---|
+| sign_type | Number | 签署类型：1=用户签署/2=管理员续签/3=管理员录入 |
+| contract_images | Array<String> | 合同照片 URL 数组（管理员录入类型时有值） |
+
 ### 🔵 7.4 协议详情
-**接口**: `GET /api/contract/detail`
+**接口**: `GET /api/contract/detail`  
+**action**: `getContractDetail`（ambassador 云函数）
 
 **请求参数**:
 ```
@@ -4227,9 +4738,16 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   "sign_device": {},
   "contract_start": "2024-01-15",
   "contract_end": "2025-01-15",
-  "status": 1
+  "status": 1,
+  "contract_images": ["https://xxx.tcb.qcloud.la/contracts/xxx.jpg"],
+  "sign_type": 1
 }
 ```
+
+| 返回字段（补充） | 类型 | 说明 |
+|---|---|---|
+| contract_images | Array<String> | 合同照片 URL 数组（管理员录入类型时有值） |
+| sign_type | Number | 签署类型：1=用户签署/2=管理员续签/3=管理员录入 |
 
 ---
 
@@ -4237,7 +4755,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 
 > 与大使合同体系并列，专用于课程首次预约前的签署拦截流程。
 
-### 🔵 7B.1 检查课程合同签署状态
+### 🔵 7B.1 检查课程合同签署状态 ⚠️ 已废弃
 
 - **action**: `checkCourseContract`
 - **云函数**: `ambassador`
@@ -4259,17 +4777,25 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | reason | String | 不需要签约的原因说明（needSign=false 时有值） |
 | template | Object\|null | 合同模板信息（needSign=true 时返回） |
 
-**业务规则**（v2.4 更新）
+**返回字段（补充）**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| auditPending | Boolean | true=合同已提交待审核（此时 needSign=false，不可预约） |
+| pendingSignatureId | Number | 待审核签署记录ID（auditPending=true 时返回） |
+| signedAt | String | 签署时间（auditPending=true 时返回） |
+
+**业务规则**（v2.8 更新：合同审核流程）
 - 查 `user_courses`（`status=1, 按 created_at DESC`）取最新有效记录
 - `contract_signed=1`（已签且 status=1）→ needSign=false，reason="已签约"
-- `contract_signed=0` 且无合同模板 → needSign=false，reason="该课程未配置合同模板"
-- `contract_signed=0` 且有合同模板 → needSign=true（需要签约，返回 templateId 和 userCourseId）
+- `contract_signed=0` → 查 `contract_signatures`（status=5）是否有待审核记录：
+  - 有待审核记录 → needSign=false，**auditPending=true**，reason="合同已提交，等待管理员审核"
+  - 无待审核记录 → 检查合同模板，有模板则 needSign=true；无模板则 needSign=false
 - 无 status=1 记录 → needSign=false，reason="未购买该课程或课程已过期"
-- 不再依赖 `attend_count`（已移除该判断）
 
 ---
 
-### 🔵 7B.2 客户端获取课程合同模板
+### 🔵 7B.2 客户端获取课程合同模板 ⚠️ 已废弃
 
 - **action**: `getContractTemplateByCourse`
 - **云函数**: `ambassador`
@@ -4293,7 +4819,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 
 ---
 
-### 🔵 7B.3 签署课程学习服务协议
+### 🔵 7B.3 签署课程学习服务协议 ⚠️ 已废弃
 
 - **action**: `signCourseContract`
 - **云函数**: `ambassador`
@@ -4315,14 +4841,21 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | signature_id | Number | 签约记录ID |
 | contract_signed | Number | 签约状态（1=已签约） |
 
-**业务规则**
+**返回字段（补充）**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| status | Number | 5=待审核（签署后不立即生效） |
+| message | String | "协议签署成功，等待管理员审核通过后生效" |
+
+**业务规则**（v2.8 更新：引入合同审核流程）
 - `agreed=false` → 返回参数错误："缺少必要参数或未同意协议"
 - `signatureFileId` 缺失 → 返回参数错误："缺少手写签名文件（signatureFileId）"
-- 签约成功后：写入 `contract_signatures`，更新 `user_courses.contract_signed=1, pending_days=0, expire_at=合同截止日 23:59:59`
-- **奖励延迟发放**：若 `orders.referee_id` 不为空且 `is_reward_granted=0`，签约成功触发奖励发放逻辑（`is_reward_granted=1, reward_granted_at=now()`）；无推荐人时不报错
-- **docx 签名注入**：使用 `insertAfterLabelSmart` 精确注入签名到甲方位置；当标签与其他内容共享同一个 `<w:r>` run 时，自动拆分 run 确保签名/姓名/证件号插入到正确标签之后
-- **合同期限计算**（v2.4 更新）：`contract_end = signDate + user_courses.pending_days 天`（原 `validity_years` 已废弃）；`expire_at = contract_end 23:59:59`；`pending_days` 签约后清零
-- 合同期限来源：`courses.validity_days`（唯一权威来源），不再使用 `contract_templates.validity_years`
+- 已有 status=1（有效）合同 → 返回错误："您已签署过该课程的学习服务协议"
+- 已有 status=5（待审核）合同 → 返回错误："您已提交合同，正在等待管理员审核通过"
+- 签约成功后：写入 `contract_signatures`（**status=5 待审核**），**不立即更新 user_courses**
+- **合同生效推迟到管理员审核通过**（`auditContractSignature` 接口处理）
+- **推荐人奖励推迟发放**：审核通过时才触发奖励逻辑
 
 ---
 
@@ -4380,6 +4913,65 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | template_id | Number | 新建模板ID |
 | contract_name | String | 模板名称 |
 | version | String | 版本号（默认 v1.0） |
+
+---
+
+### 🔴 7B.6 管理员录入课程线下合约
+
+- **action**: `adminCreateCourseContract`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 管理员录入课程线下合约（上传合同照片后直接生效）
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Number | 是 | 用户ID |
+| courseId | Number | 是 | 课程ID |
+| contractImages | Array<String> | 是 | 合同照片 cloud:// fileID 数组，至少1张 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| signature_id | Number | 签署记录ID |
+| contract_start | String | 合同开始日期 |
+| contract_end | String | 合同结束日期 |
+| expire_at | String | 课程到期时间 |
+
+**业务规则**
+- 验证用户已购买该课程且未签合同（user_courses.status=1, contract_signed=0）
+- 防重复录入检查
+- 必须有已启用的合同模板（contract_templates.contract_type=4, status=1）
+- 签署记录 status=1 直接生效，sign_type=3 管理员录入
+- 自动计算有效期：pending_days 优先，否则用 courses.validity_days（兜底365天）
+- 自动发放推荐人奖励
+
+---
+
+### 🔴 7B.7 获取用户已购未签合同课程列表
+
+- **action**: `adminGetUserPaidCourses`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 获取指定用户已购买且未签合同的课程列表
+
+**业务规则**：仅返回 `need_contract=1` 的课程；`need_contract=0` 的课程不出现在可选列表中。
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| userId | Number | 是 | 用户ID |
+
+**返回字段**（数组）
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| course_id | Number | 课程ID |
+| course_name | String | 课程名称 |
+| purchased_at | String | 购买时间 |
 
 ---
 
@@ -4483,6 +5075,43 @@ ALTER TABLE tiandao_culture.mall_exchange_records
       "message": "协议续签成功"
     }
 ```
+
+---
+
+### 🔴 7.9 审核合同签署记录（v2.8 新增）⚠️ 已废弃
+
+- **action**: `auditContractSignature`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 管理员审核用户提交的合同签署记录，通过后合同生效，驳回后用户需重新签署
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| signatureId | Number | 是 | 签署记录ID（status=5 待审核） |
+| action | String | 是 | 'approve'（通过）\| 'reject'（驳回） |
+| remark | String | 驳回必填 | 审核备注或驳回原因 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| signature_id | Number | 签署记录ID |
+| is_course | Boolean | 是否为课程合同 |
+| is_ambassador | Boolean | 是否为大使合同 |
+
+**业务规则**
+
+- 仅 status=5（待审核）的记录可审核，其他状态返回错误
+- **通过（approve）时**：
+  - 更新 `contract_signatures.status=1`，写入 `audit_admin_id`、`audit_time`
+  - **课程合同**（course_id IS NOT NULL）：更新 `user_courses.contract_signed=1, expire_at, pending_days=0`；发放推荐人奖励
+  - **大使合同**（ambassador_level > 0）：升级 `users.ambassador_level`；若付费升级且已支付，发放冻结积分
+- **驳回（reject）时**：
+  - 更新 `contract_signatures.status=6`，写入 `audit_admin_id`、`audit_time`、`reject_reason`
+  - 用户需重新签署（重新签署时 status=6 的记录不拦截，可新建 status=5 记录）
+- 有效期起点：审核通过日（不是用户签署日）+ `courses.validity_days` 天
 
 ---
 
@@ -4754,10 +5383,25 @@ ALTER TABLE tiandao_culture.mall_exchange_records
     "id": 1,
     "username": "admin",
     "real_name": "管理员",
-    "role": "超级管理员"
+    "role": "超级管理员",
+    "role_name": "超级管理员",
+    "permissions": ["*"]
   }
 }
 ```
+
+**返回字段说明**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| token | String | 登录凭证 |
+| admin_info | Object | 管理员信息 |
+| admin_info.id | Number | 管理员ID |
+| admin_info.username | String | 用户名 |
+| admin_info.real_name | String | 真实姓名 |
+| admin_info.role | String | 角色标识 |
+| admin_info.role_name | String | 角色显示名（从 admin_roles 表获取） |
+| admin_info.permissions | Array | 权限数组（从 admin_roles 表获取，super_admin 返回 `["*"]`） |
 
 ### 🔴 10.2 学员管理 - 列表
 **接口**: `GET /api/admin/user/list`
@@ -4899,6 +5543,40 @@ ALTER TABLE tiandao_culture.mall_exchange_records
       "affected_orders": xxx  // 受影响的订单数量
     }
 ```
+
+### 🔴 10.4.1 推荐关系查询（伯乐与千里马）
+**接口**: `POST /api/admin/user/referee-info`  
+**action**: `admin:getUserRefereeInfo`
+
+**调用方**: 管理后台（推荐人管理页）
+
+**描述**: 按用户名字、ID 或手机号查询其伯乐（推荐人）和千里马（我推荐的人）列表
+
+**请求参数**:
+```json
+{
+  "action": "admin:getUserRefereeInfo",
+  "keyword": "张三"
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| keyword | String | 是 | 用户名字、ID 或手机号 |
+
+**查询规则**:
+- 纯数字且 ≤11 位：优先按 id 精确匹配，其次按 phone 精确匹配
+- 纯数字且 >11 位：按 id 精确匹配
+- 非纯数字：按 real_name 模糊匹配（LIKE %keyword%）
+
+**返回字段**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| user | Object | 当前用户信息（id、real_name、phone、avatar、referee_code、ambassador_level） |
+| referee | Object \| null | 伯乐（推荐人），无则为 null |
+| referrals | Array | 千里马（我推荐的人）列表 |
+
+---
 
 ### 🔴 10.5 推荐人变更审计
 **接口**: `GET /api/admin/referee-log/list`
@@ -5049,7 +5727,78 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 - `DELETE /api/admin/admin-user/delete`
 - `GET /api/admin/admin-user/list`
 
-### 🔴 10.10 统计分析
+### 🔴 10.10 角色管理 - 获取角色列表
+
+- **action**: `getRoleList`
+- **云函数**: system
+- **调用方**: 管理后台
+- **描述**: 获取所有角色列表（含权限信息）
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| status | Number | 否 | 状态筛选，不传则默认返回启用角色 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| list | Array | 角色列表 |
+| list[].id | Number | 角色ID |
+| list[].role_key | String | 角色标识 |
+| list[].role_name | String | 角色显示名 |
+| list[].permissions | Array | 权限页面 key 数组 |
+| list[].is_system | Number | 是否系统内置 |
+| list[].status | Number | 状态 |
+
+### 🔴 10.11 角色管理 - 创建角色
+
+- **action**: `createRole`
+- **云函数**: system
+- **调用方**: 管理后台
+- **描述**: 创建自定义角色（仅超级管理员）
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| roleKey | String | 是 | 角色标识（字母数字下划线） |
+| roleName | String | 是 | 角色显示名 |
+| permissions | Array | 否 | 权限页面 key 数组 |
+| description | String | 否 | 角色描述 |
+
+### 🔴 10.12 角色管理 - 更新角色
+
+- **action**: `updateRole`
+- **云函数**: system
+- **调用方**: 管理后台
+- **描述**: 更新角色信息和权限（仅超级管理员，super_admin 权限不可修改）
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| id | Number | 是 | 角色ID |
+| roleName | String | 否 | 角色显示名 |
+| permissions | Array | 否 | 权限页面 key 数组 |
+| description | String | 否 | 角色描述 |
+| status | Number | 否 | 状态 |
+
+### 🔴 10.13 角色管理 - 删除角色
+
+- **action**: `deleteRole`
+- **云函数**: system
+- **调用方**: 管理后台
+- **描述**: 删除自定义角色（仅超级管理员，系统内置角色不可删除，有关联管理员时拒绝删除）
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| id | Number | 是 | 角色ID |
+
+### 🔴 10.14 统计分析
 **接口**: `GET /api/admin/statistics/dashboard`
 
 **响应数据**:

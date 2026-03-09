@@ -131,6 +131,17 @@ export class CourseApi {
   }
 
   /**
+   * 获取商学院板块列表（动态配置）
+   */
+  static async getAcademySections(): Promise<any> {
+    return callCloudFunction<any>({
+      name: 'course',
+      action: 'getAcademySections',
+      showLoading: false
+    })
+  }
+
+  /**
    * 8. 获取日历排课数据
    * @param params 查询参数（开始日期和结束日期）
    * @returns 日历数据
@@ -220,8 +231,8 @@ export class CourseApi {
    * 扫码签到（扫描签到二维码后自动调用）
    * @param classRecordId 排期ID
    */
-  static async scanCheckin(classRecordId: number): Promise<{ message: string; checkin_at: string }> {
-    return callCloudFunction<{ message: string; checkin_at: string }>({
+  static async scanCheckin(classRecordId: number): Promise<{ message: string; checkin_at: string; already_checked?: boolean }> {
+    return callCloudFunction<{ message: string; checkin_at: string; already_checked?: boolean }>({
       name: 'course',
       action: 'scanCheckin',
       data: { classRecordId },
@@ -254,6 +265,20 @@ export class CourseApi {
       showLoading: false
     })
   }
+
+  /**
+   * 15. 检查复训资格（是否有可抵用的复训资格）
+   * @param params 包含 courseId
+   * @returns { has_credit: boolean }
+   */
+  static async checkRetrainCredit(params: { courseId: number }): Promise<{ has_credit: boolean }> {
+    return callCloudFunction<{ has_credit: boolean }>({
+      name: 'course',
+      action: 'checkRetrainCredit',
+      data: params,
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -265,6 +290,7 @@ export const {
   getMaterialList,
   getAcademyList,
   getAcademyDetail,
+  getAcademySections,
   getCalendarSchedule,
   getClassRecords,
   createAppointment,
@@ -273,7 +299,8 @@ export const {
   checkin,
   scanCheckin,
   recordAcademyProgress,
-  getAcademyProgress
+  getAcademyProgress,
+  checkRetrainCredit
 } = CourseApi
 
 // 默认导出

@@ -31,8 +31,8 @@
             <view class="t-card__body">
               <view class="card-header">
                 <text class="card-title">{{ appointment.title }}</text>
-                <view class="t-badge" :class="`t-badge--${appointment.statusType}`">
-                  {{ appointment.status }}
+                <view v-if="appointment.statusTag" class="t-badge" :class="`t-badge--${appointment.statusType}`">
+                  {{ appointment.statusTag }}
                 </view>
               </view>
 
@@ -49,17 +49,17 @@
                   <text class="info-icon">👨‍🏫</text>
                   <text class="info-text">授课老师: {{ appointment.teacher }}</text>
                 </view>
-                <view v-if="appointment.phone" class="info-item">
-                  <text class="info-icon">📞</text>
-                  <text class="info-text">联系电话: {{ appointment.phone }}</text>
-                </view>
               </view>
 
-              <!-- 已完成状态：显示评价 -->
-              <view v-if="appointment.appointmentStatus === 'completed'">
-                <view class="t-divider"></view>
-                <view class="card-footer">
-                  <text class="rating-text">评价: {{ appointment.rating }}</text>
+              <!-- 取消预约区域：仅待上课状态显示 -->
+              <view v-if="appointment.dbStatus === 0" class="cancel-section">
+                <text class="cancel-hint">{{ appointment.cancelHint }}</text>
+                <view
+                  class="cancel-btn"
+                  :class="{ 'cancel-btn--disabled': !appointment.canCancel }"
+                  @tap="handleCancelAppointment(appointment)"
+                >
+                  {{ appointment.canCancel ? '取消预约' : '无法取消预约' }}
                 </view>
               </view>
             </view>
@@ -105,14 +105,10 @@ import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { CourseApi } from '@/api'
 
-// 页面头部高度
 const pageHeaderHeight = ref(64)
 const scrollViewHeight = ref(0)
-
-// StickyTabs 组件引用
 const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 
-// 处理滚动事件 + 触底检测加载更多
 const handleScroll = (e: any) => {
   if (stickyTabsRef.value) {
     stickyTabsRef.value.updateScrollTop(e.detail.scrollTop)
@@ -123,19 +119,16 @@ const handleScroll = (e: any) => {
   }
 }
 
-// Tab 标签（value 对应数据库 appointments.status：0待上课/1已签到/2缺席/3已取消）
 const activeTab = ref(-1)
 const tabOptions = [
   { label: '全部', value: -1 },
-  { label: '待上课', value: 0 },
-  { label: '已签到', value: 1 },
-  { label: '缺席', value: 2 }
+  { label: '进行中', value: 0 },
+  { label: '已结课', value: 1 },
+  { label: '已取消', value: 3 },
+  { label: '缺席', value: 4 }
 ]
 
-// 预约数据
 const appointments = ref<any[]>([])
-
-// 分页状态
 const MAX_ITEMS = 99
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -143,37 +136,75 @@ const total = ref(0)
 const loading = ref(false)
 const finished = ref(false)
 
-// 状态映射（与数据库 appointments.status 一致：0待上课/1已签到/2缺席/3已取消）
-const statusMap: Record<number, { text: string; type: string; appointmentStatus: string }> = {
-  0: { text: '待上课', type: 'warning', appointmentStatus: 'pending' },
-  1: { text: '已签到', type: 'success', appointmentStatus: 'completed' },
-  2: { text: '缺席', type: 'danger', appointmentStatus: 'absent' }
+/**
+ * 计算非沙龙课程的展示标签和样式
+ * 优先级：已取消 > 缺席 > 已结课 > 今日已签到 > 待上课 > 无标签
+ */
+const getNonSalonDisplay = (item: any) => {
+  const today = new Date().toISOString().slice(0, 10)
+
+  if (item.status === 3) return { tag: '已取消', type: 'default' }
+  if (item.status === 4) return { tag: '缺席', type: 'danger' }
+  if (item.status === 1 || (item.class_end_date && item.class_end_date < today)) {
+    return { tag: '已结课', type: 'default' }
+  }
+  if (item.today_checked_in) return { tag: '今日已签到', type: 'success' }
+  if (!item.has_ever_checked_in) return { tag: '待上课', type: 'warning' }
+  return { tag: '', type: '' }
 }
 
-// 将接口返回的原始数据映射为前端展示结构
+const getSalonDisplay = (item: any) => {
+  const map: Record<number, { tag: string; type: string }> = {
+    0: { tag: '待上课', type: 'warning' },
+    1: { tag: '已签到', type: 'success' },
+    2: { tag: '已结课', type: 'default' },
+    3: { tag: '已取消', type: 'default' }
+  }
+  return map[item.status] || map[0]
+}
+
 const mapAppointmentItem = (item: any) => {
-  const statusInfo = statusMap[item.status] ?? statusMap[0]
+  const isSalon = item.course_type === 4 || item.is_salon
+  const display = isSalon ? getSalonDisplay(item) : getNonSalonDisplay(item)
+
+  const cancelDeadlineDays = item.cancel_deadline_days || 0
+  const classDate = item.class_date || ''
+  const isRetrain = item.is_retrain === 1
+
+  // 计算是否可取消：当前日期 < class_date - cancel_deadline_days
+  let canCancel = false
+  let cancelHint = ''
+  if (item.status === 0 && classDate && cancelDeadlineDays > 0) {
+    const classDateTime = new Date(classDate + 'T00:00:00').getTime()
+    const deadlineTime = classDateTime - cancelDeadlineDays * 24 * 60 * 60 * 1000
+    const now = Date.now()
+    if (now < deadlineTime) {
+      canCancel = true
+      cancelHint = `上课前${cancelDeadlineDays}天将无法取消预约`
+    } else {
+      cancelHint = '已超过取消截止日期，无法取消预约'
+    }
+  }
+
   return {
     id: item.id,
     courseId: item.course_id,
     classRecordId: item.class_record_id,
-    courseName: item.course_name || '',
-    classDate: item.class_date || '',
-    classTime: item.start_time || item.class_time || '',
-    title: `${item.course_name} ${item.class_date ? '第' + item.class_date.split('-')[1] + '期' : ''}`,
-    time: `${item.class_date} ${item.start_time || ''}`,
+    title: item.course_name || '',
+    time: `${classDate} ${item.start_time || item.class_time || ''}`,
     location: item.location || '',
-    teacher: item.teacher,
-    phone: '',
-    status: statusInfo.text,
-    statusType: statusInfo.type,
-    appointmentStatus: statusInfo.appointmentStatus,
+    teacher: item.teacher || '',
+    statusTag: display.tag,
+    statusType: display.type,
     dbStatus: item.status,
-    rating: item.status === 1 ? '⭐⭐⭐⭐⭐' : ''
+    isSalon,
+    isRetrain,
+    canCancel,
+    cancelHint,
+    cancelDeadlineDays
   }
 }
 
-// 加载预约列表（reset=true 时重置分页从头加载）
 const loadAppointments = async (reset = false) => {
   if (reset) {
     currentPage.value = 1
@@ -223,25 +254,86 @@ const loadAppointments = async (reset = false) => {
   }
 }
 
-// 加载更多
 const loadMore = () => {
   if (!finished.value && !loading.value) {
     loadAppointments()
   }
 }
 
-// 过滤预约
 const filteredAppointments = computed(() => {
-  if (activeTab.value === -1) {
-    return appointments.value
-  }
+  if (activeTab.value === -1) return appointments.value
   return appointments.value.filter(item => item.dbStatus === activeTab.value)
 })
 
-// 切换 Tab 时重置分页
+const cancelLoading = ref(false)
+
+const handleCancelAppointment = (appointment: any) => {
+  if (!appointment.canCancel || cancelLoading.value) return
+
+  const confirmContent = appointment.isRetrain
+    ? '取消后，您已支付的复训费将保留至下期预约使用，确定取消吗？'
+    : '确定要取消该预约吗？'
+
+  uni.showModal({
+    title: '取消预约',
+    content: confirmContent,
+    confirmText: '确定取消',
+    confirmColor: '#d54941',
+    success: async (res) => {
+      if (!res.confirm) return
+      cancelLoading.value = true
+      try {
+        const result = await CourseApi.cancelAppointment({ appointmentId: appointment.id })
+        const msg = result?.has_retrain_credit
+          ? '预约已取消，复训费已保留至下期'
+          : '预约已取消'
+        uni.showToast({ title: msg, icon: 'none', duration: 2000 })
+        loadAppointments(true)
+      } catch (error: any) {
+        uni.showToast({ title: error.message || '取消失败', icon: 'none' })
+      } finally {
+        cancelLoading.value = false
+      }
+    }
+  })
+}
+
 const handleTabChange = (value: number) => {
   activeTab.value = value
   loadAppointments(true)
+}
+
+const cancelLoading = ref(false)
+
+const handleCancelAppointment = (appointment: any) => {
+  if (!appointment.canCancel || cancelLoading.value) return
+
+  const confirmContent = appointment.isRetrain
+    ? '确定取消本次预约吗？\n\n您已支付的复训费将保留至下期预约使用。'
+    : '确定取消本次预约吗？'
+
+  uni.showModal({
+    title: '取消预约',
+    content: confirmContent,
+    confirmText: '确定取消',
+    confirmColor: '#d54941',
+    success: async (res) => {
+      if (!res.confirm) return
+      cancelLoading.value = true
+      try {
+        const result = await CourseApi.cancelAppointment({ appointmentId: appointment.id })
+        const msg = result?.has_retrain_credit
+          ? '预约已取消，复训费已保留至下期'
+          : '预约已取消'
+        uni.showToast({ title: msg, icon: 'success', duration: 2000 })
+        loadAppointments(true)
+      } catch (error: any) {
+        uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
+      } finally {
+        cancelLoading.value = false
+      }
+    }
+  })
 }
 
 onMounted(() => {
@@ -269,7 +361,6 @@ onShow(() => {
   flex-direction: column;
 }
 
-// 滚动内容
 .scroll-content {
   flex: 1;
   overflow: hidden;
@@ -280,33 +371,28 @@ onShow(() => {
   padding-bottom: 0;
 }
 
-// 标签切换容器
 .tabs-wrapper {
   margin-bottom: 32rpx;
 }
 
-// 预约列表
 .appointment-list {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
 }
 
-// 卡片样式
 .t-card {
   background-color: #FFFFFF;
   border-radius: $td-radius-default;
   border: 1px solid $td-border-level-1;
   overflow: hidden;
   transition: all 0.3s;
-
 }
 
 .t-card__body {
   padding: 24rpx;
 }
 
-// 卡片头部
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -320,7 +406,6 @@ onShow(() => {
   color: $td-text-color-primary;
 }
 
-// 徽章样式
 .t-badge {
   font-size: 20rpx;
   padding: 6rpx 16rpx;
@@ -338,7 +423,16 @@ onShow(() => {
   color: $td-success-color;
 }
 
-// 卡片信息
+.t-badge--danger {
+  background-color: #fde2e2;
+  color: #d54941;
+}
+
+.t-badge--default {
+  background-color: #f3f3f3;
+  color: #999;
+}
+
 .card-info {
   display: flex;
   flex-direction: column;
@@ -362,77 +456,6 @@ onShow(() => {
   flex: 1;
 }
 
-// 分割线
-.t-divider {
-  height: 1px;
-  background-color: $td-border-level-0;
-  margin: 24rpx 0;
-}
-
-// 卡片操作按钮
-.card-actions {
-  display: flex;
-  gap: 16rpx;
-}
-
-// 卡片底部
-.card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.rating-text {
-  font-size: 24rpx;
-  color: $td-text-color-placeholder;
-}
-
-// 按钮样式
-.t-button {
-  flex: 1;
-  border: none;
-  border-radius: $td-radius-default;
-  font-size: 26rpx;
-  font-weight: 500;
-  height: 64rpx;
-  line-height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-
-  &::after {
-    border: none;
-  }
-}
-
-.t-button--outline {
-  background-color: #FFFFFF;
-  border: 1px solid $td-border-level-1;
-  color: $td-text-color-primary;
-}
-
-.t-button--primary {
-  background-color: #E6F4FF;
-  color: $td-brand-color;
-}
-
-.t-button--text {
-  background-color: transparent;
-  color: $td-brand-color;
-  flex: none;
-  padding: 0 16rpx;
-}
-
-.t-button--block {
-  width: 100%;
-}
-
-.t-button__text {
-  font-size: 26rpx;
-}
-
-// 提示框
 .t-alert {
   display: flex;
   gap: 16rpx;
@@ -457,7 +480,6 @@ onShow(() => {
   line-height: 1.6;
 }
 
-// 加载更多
 .load-more {
   text-align: center;
   padding: 40rpx 0;
@@ -473,12 +495,10 @@ onShow(() => {
   color: $td-text-color-placeholder;
 }
 
-// 底部留白
 .bottom-spacing {
   height: 120rpx;
 }
 
-// 空状态
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -497,5 +517,35 @@ onShow(() => {
   font-size: 28rpx;
   color: $td-text-color-placeholder;
 }
-</style>
 
+.cancel-section {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1px solid $td-border-level-1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cancel-hint {
+  font-size: 22rpx;
+  color: $td-text-color-placeholder;
+  flex: 1;
+  margin-right: 16rpx;
+}
+
+.cancel-btn {
+  font-size: 24rpx;
+  color: #d54941;
+  padding: 8rpx 24rpx;
+  border: 1px solid #d54941;
+  border-radius: 32rpx;
+  flex-shrink: 0;
+}
+
+.cancel-btn--disabled {
+  color: #bbb;
+  border-color: #ddd;
+  background-color: #f5f5f5;
+}
+</style>

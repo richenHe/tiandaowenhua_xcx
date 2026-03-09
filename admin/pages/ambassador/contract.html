@@ -7,7 +7,7 @@
   <title>合约管理 - 天道文化后台</title>
   
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
   
   <style>
     .alert-card {
@@ -47,6 +47,95 @@
             <h1 class="page-title">合约管理</h1>
           </div>
           
+          <!-- Tab 切换：合约列表 / 录入合约 -->
+          <t-tabs v-model="activeTab" style="margin-bottom: 16px;">
+            <t-tab-panel value="list" label="合约列表"></t-tab-panel>
+            <t-tab-panel value="create" label="录入合约"></t-tab-panel>
+          </t-tabs>
+
+          <!-- ========== 录入合约 Tab ========== -->
+          <div v-if="activeTab === 'create'" class="table-card" style="padding: 24px;">
+            <t-form :data="createForm" label-width="120px" style="max-width: 600px;">
+              <t-form-item label="选择用户" required>
+                <t-select
+                  v-model="createForm.userId"
+                  filterable
+                  :filter="() => true"
+                  placeholder="输入姓名或手机号搜索"
+                  :loading="userSearchLoading"
+                  @search="handleUserSearch"
+                  @change="handleUserChange"
+                  clearable
+                  style="width: 100%;"
+                >
+                  <t-option
+                    v-for="u in userSearchList"
+                    :key="u.id"
+                    :value="u.id"
+                    :label="`${u.real_name || '未设置姓名'} (${u.phone || '无手机号'})`"
+                  ></t-option>
+                </t-select>
+              </t-form-item>
+
+              <t-form-item label="选择课程" required>
+                <t-select
+                  v-model="createForm.courseId"
+                  placeholder="请先选择用户"
+                  :disabled="!createForm.userId"
+                  :loading="courseLoading"
+                  clearable
+                  style="width: 100%;"
+                >
+                  <t-option
+                    v-for="c in userCourseList"
+                    :key="c.course_id"
+                    :value="c.course_id"
+                    :label="`${c.course_name} (购买于 ${c.purchased_at ? c.purchased_at.slice(0, 10) : '-'})`"
+                  ></t-option>
+                </t-select>
+                <div v-if="createForm.userId && userCourseList.length === 0 && !courseLoading" style="color: #999; font-size: 12px; margin-top: 4px;">
+                  该用户没有待签合同的课程
+                </div>
+              </t-form-item>
+
+              <t-form-item label="上传合同照片" required>
+                <div>
+                  <input type="file" ref="contractFileInput" accept="image/*" multiple
+                    style="display:none;" @change="handleContractImageChange" />
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <div
+                      v-for="(img, idx) in createForm.contractImages"
+                      :key="idx"
+                      style="position: relative; width: 100px; height: 100px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;"
+                    >
+                      <img :src="img.url" style="width: 100%; height: 100%; object-fit: cover;" />
+                      <div
+                        @click="removeContractImage(idx)"
+                        style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(0,0,0,0.5); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px;"
+                      >✕</div>
+                    </div>
+                    <div
+                      @click="triggerContractFileInput"
+                      style="width: 100px; height: 100px; border: 2px dashed #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 24px;"
+                      :style="contractImageUploading ? 'opacity: 0.5; pointer-events: none;' : ''"
+                    >
+                      <span v-if="contractImageUploading">⏳</span>
+                      <span v-else>＋</span>
+                    </div>
+                  </div>
+                  <div style="color: #999; font-size: 12px; margin-top: 4px;">支持多张照片，至少上传1张</div>
+                </div>
+              </t-form-item>
+
+              <t-form-item>
+                <t-button theme="primary" :loading="createLoading" @click="submitCreateContract">提交录入</t-button>
+              </t-form-item>
+            </t-form>
+          </div>
+
+          <!-- ========== 合约列表 Tab ========== -->
+          <template v-if="activeTab === 'list'">
+
           <!-- 到期合约提醒 -->
           <div class="alert-card" v-if="expiringContracts.length > 0">
             <t-alert 
@@ -114,6 +203,8 @@
             </t-table>
           </div>
           
+          </template><!-- /合约列表 Tab -->
+
           <!-- 合约详情对话框 -->
           <t-dialog
             v-model:visible="detailVisible"
@@ -244,9 +335,11 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/config.js?v=20260306"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260306"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/admin-api.js?v=20260306"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -317,6 +410,114 @@
           status: '',
         });
         
+        // Tab 控制
+        const activeTab = ref('list');
+
+        // ── 录入合约相关 ──
+        const userSearchLoading = ref(false);
+        const userSearchList = ref([]);
+        const courseLoading = ref(false);
+        const userCourseList = ref([]);
+        const contractImageUploading = ref(false);
+        const createLoading = ref(false);
+        const contractFileInput = ref(null);
+        const createForm = reactive({
+          userId: null,
+          courseId: null,
+          contractImages: [],
+        });
+
+        let userSearchTimer = null;
+        const handleUserSearch = (keyword) => {
+          if (userSearchTimer) clearTimeout(userSearchTimer);
+          if (!keyword || keyword.length < 1) { userSearchList.value = []; return; }
+          userSearchTimer = setTimeout(async () => {
+            userSearchLoading.value = true;
+            try {
+              const result = await AdminAPI.getUserList({ keyword, page: 1, pageSize: 20 });
+              userSearchList.value = result.list || result || [];
+            } catch (e) {
+              console.error('用户搜索失败:', e);
+            } finally {
+              userSearchLoading.value = false;
+            }
+          }, 300);
+        };
+
+        const handleUserChange = async (userId) => {
+          createForm.courseId = null;
+          userCourseList.value = [];
+          if (!userId) return;
+          courseLoading.value = true;
+          try {
+            const result = await AdminAPI.adminGetUserPaidCourses(userId);
+            userCourseList.value = result || [];
+          } catch (e) {
+            TDesign.MessagePlugin.error('加载用户课程失败: ' + (e.message || ''));
+          } finally {
+            courseLoading.value = false;
+          }
+        };
+
+        const triggerContractFileInput = () => {
+          if (contractFileInput.value) contractFileInput.value.click();
+        };
+
+        const handleContractImageChange = async (e) => {
+          const files = Array.from(e.target.files || []);
+          e.target.value = '';
+          if (files.length === 0) return;
+          contractImageUploading.value = true;
+          TDesign.MessagePlugin.loading('上传中，请稍候…', 0);
+          try {
+            for (const file of files) {
+              const ext = file.name.split('.').pop() || 'jpg';
+              const cloudPath = `contracts/offline/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+              const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+              createForm.contractImages.push({
+                fileId: result.fileID,
+                url: result.tempFileURL || result.fileID
+              });
+            }
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success(`${files.length}张照片上传成功`);
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || ''));
+          } finally {
+            contractImageUploading.value = false;
+          }
+        };
+
+        const removeContractImage = (idx) => {
+          createForm.contractImages.splice(idx, 1);
+        };
+
+        const submitCreateContract = async () => {
+          if (!createForm.userId) { TDesign.MessagePlugin.warning('请选择用户'); return; }
+          if (!createForm.courseId) { TDesign.MessagePlugin.warning('请选择课程'); return; }
+          if (createForm.contractImages.length === 0) { TDesign.MessagePlugin.warning('请至少上传一张合同照片'); return; }
+          createLoading.value = true;
+          try {
+            const result = await AdminAPI.adminCreateCourseContract({
+              userId: createForm.userId,
+              courseId: createForm.courseId,
+              contractImages: createForm.contractImages.map(img => img.fileId),
+            });
+            TDesign.MessagePlugin.success('合约录入成功');
+            createForm.userId = null;
+            createForm.courseId = null;
+            createForm.contractImages = [];
+            userCourseList.value = [];
+            activeTab.value = 'list';
+            loadData();
+          } catch (err) {
+            TDesign.MessagePlugin.error('录入失败: ' + (err.message || ''));
+          } finally {
+            createLoading.value = false;
+          }
+        };
+
         const levelMap = { 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使' };
         const levelTheme = { 1: 'primary', 2: 'success', 3: 'warning' };
         const columns = [
@@ -326,6 +527,7 @@
           { colKey: 'contract_no', title: '合约编号', width: 180 },
           { colKey: 'signed_at', title: '签署时间', width: 160 },
           { colKey: 'expires_at', title: '到期时间', width: 160 },
+          { colKey: 'sign_type', title: '签署方式', width: 100, cell: (h, { row }) => h('span', {}, row.sign_type === 3 ? '线下录入' : row.sign_type === 2 ? '管理员续签' : '电子签署') },
           { colKey: 'status', title: '状态', width: 100 },
           { colKey: 'action', title: '操作', width: 160, fixed: 'right' },
         ];
@@ -493,7 +695,9 @@
         });
         
         return {
-          activeMenuKey: 'contract-list',adminInfo,
+          activeMenuKey: 'contract-list',
+          activeTab,
+          adminInfo,
           handleLogout,
           handleMenuChange,
           loading,
@@ -524,6 +728,20 @@
           handleTerminate,
           contactAmbassador,
           formatDateTime,
+          userSearchLoading,
+          userSearchList,
+          courseLoading,
+          userCourseList,
+          contractImageUploading,
+          createLoading,
+          contractFileInput,
+          createForm,
+          handleUserSearch,
+          handleUserChange,
+          triggerContractFileInput,
+          handleContractImageChange,
+          removeContractImage,
+          submitCreateContract,
         };
       }
     });

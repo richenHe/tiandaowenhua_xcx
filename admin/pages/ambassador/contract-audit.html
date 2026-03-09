@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合约审核 - 天道文化后台</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <!-- 顶部导航 -->
+      <t-header height="64px" style="
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 24px; background: #fff; border-bottom: 1px solid #dcdcdc;">
+        <div>
+          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+
+      <t-layout>
+        <!-- 侧边菜单 -->
+        <sidebar-menu active-key="contract-audit"></sidebar-menu>
+
+        <!-- 主内容区 -->
+        <t-content class="page-content">
+          <div class="page-header">
+            <h1 class="page-title">合约审核</h1>
+            <span class="page-desc">审核用户提交的合同签署，通过后对应业务逻辑自动生效</span>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <div class="stat-card">
+              <div class="stat-value" style="color: #e6a23c;">{{ pendingCount }}</div>
+              <div class="stat-label">待审核</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" style="color: #67c23a;">{{ todayApproved }}</div>
+              <div class="stat-label">今日通过</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" style="color: #f56c6c;">{{ todayRejected }}</div>
+              <div class="stat-label">今日驳回</div>
+            </div>
+          </div>
+
+          <!-- 搜索表单 -->
+          <div class="search-form">
+            <t-form layout="inline">
+              <t-form-item label="用户姓名">
+                <t-input v-model="searchForm.keyword" placeholder="姓名/手机号" clearable style="width: 200px;"></t-input>
+              </t-form-item>
+              <t-form-item label="审核状态">
+                <t-select v-model="searchForm.status" clearable placeholder="全部" style="width: 120px;">
+                  <t-option :value="5" label="待审核"></t-option>
+                  <t-option :value="1" label="已通过"></t-option>
+                  <t-option :value="6" label="已驳回"></t-option>
+                </t-select>
+              </t-form-item>
+              <t-form-item>
+                <t-space>
+                  <t-button theme="primary" @click="handleSearch">查询</t-button>
+                  <t-button theme="default" @click="handleReset">重置</t-button>
+                </t-space>
+              </t-form-item>
+            </t-form>
+          </div>
+
+          <!-- 数据表格 -->
+          <div class="table-card">
+            <t-table
+              :data="tableData"
+              :columns="columns"
+              :loading="loading"
+              row-key="id"
+              :pagination="pagination"
+              @page-change="onPageChange"
+            >
+              <!-- 用户信息列 -->
+              <template #user="{ row }">
+                <div>
+                  <div style="font-weight: 500;">{{ row.user_name }}</div>
+                  <div style="color: #999; font-size: 12px;">{{ row.phone }}</div>
+                </div>
+              </template>
+
+              <!-- 大使等级列 -->
+              <template #level="{ row }">
+                <span v-if="row.ambassador_level === 0">—</span>
+                <t-tag v-else-if="row.ambassador_level === 1" theme="primary" variant="light">准青鸾</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 2" theme="success" variant="light">青鸾</t-tag>
+                <t-tag v-else-if="row.ambassador_level === 3" theme="warning" variant="light">鸿鹄</t-tag>
+              </template>
+
+              <!-- 审核状态列 -->
+              <template #status="{ row }">
+                <t-tag v-if="row.status === 5" theme="warning">待审核</t-tag>
+                <t-tag v-else-if="row.status === 1" theme="success">已通过</t-tag>
+                <t-tag v-else-if="row.status === 6" theme="danger">已驳回</t-tag>
+                <t-tag v-else theme="default">{{ row.status }}</t-tag>
+              </template>
+
+              <!-- 操作列 -->
+              <template #action="{ row }">
+                <t-space>
+                  <t-button theme="primary" size="small" variant="text" @click="viewDetail(row)">查看</t-button>
+                  <t-button
+                    v-if="row.status === 5"
+                    theme="success" size="small" variant="text"
+                    @click="handleApprove(row)"
+                  >通过</t-button>
+                  <t-button
+                    v-if="row.status === 5"
+                    theme="danger" size="small" variant="text"
+                    @click="openRejectDialog(row)"
+                  >驳回</t-button>
+                  <span v-if="row.status === 6" style="color: #999; font-size: 12px;">
+                    {{ row.reject_reason ? `驳回原因：${row.reject_reason}` : '' }}
+                  </span>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+
+          <!-- 合同详情弹窗 -->
+          <t-dialog
+            v-model:visible="detailVisible"
+            header="合同详情"
+            width="680px"
+            :footer="false"
+          >
+            <div v-if="currentRecord" style="line-height: 2;">
+              <t-descriptions bordered :column="2">
+                <t-descriptions-item label="用户姓名">{{ currentRecord.user_name }}</t-descriptions-item>
+                <t-descriptions-item label="手机号">{{ currentRecord.phone }}</t-descriptions-item>
+                <t-descriptions-item label="合同名称" :span="2">{{ currentRecord.contract_name }}</t-descriptions-item>
+                <t-descriptions-item label="大使等级">
+                  <span v-if="!currentRecord.ambassador_level || currentRecord.ambassador_level === 0">—</span>
+                  <t-tag v-else-if="currentRecord.ambassador_level === 1" theme="primary" variant="light">准青鸾</t-tag>
+                  <t-tag v-else-if="currentRecord.ambassador_level === 2" theme="success" variant="light">青鸾</t-tag>
+                  <t-tag v-else-if="currentRecord.ambassador_level === 3" theme="warning" variant="light">鸿鹄</t-tag>
+                </t-descriptions-item>
+                <t-descriptions-item label="签署时间" :span="2">{{ currentRecord.sign_time }}</t-descriptions-item>
+                <t-descriptions-item label="审核状态" :span="2">
+                  <t-tag v-if="currentRecord.status === 5" theme="warning">待审核</t-tag>
+                  <t-tag v-else-if="currentRecord.status === 1" theme="success">已通过</t-tag>
+                  <t-tag v-else-if="currentRecord.status === 6" theme="danger">已驳回</t-tag>
+                </t-descriptions-item>
+                <t-descriptions-item v-if="currentRecord.status === 6" label="驳回原因" :span="2">
+                  <span style="color: #f56c6c;">{{ currentRecord.reject_reason || '—' }}</span>
+                </t-descriptions-item>
+                <t-descriptions-item v-if="currentRecord.audit_time" label="审核时间" :span="2">{{ currentRecord.audit_time }}</t-descriptions-item>
+              </t-descriptions>
+
+              <!-- 查看签名图片 -->
+              <div v-if="currentRecord.signature_image_url" style="margin-top: 16px;">
+                <div style="font-weight: 500; margin-bottom: 8px;">手写签名：</div>
+                <img
+                  :src="currentRecord.signature_image_url"
+                  style="max-width: 300px; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background: #fff;"
+                  alt="签名图片"
+                />
+              </div>
+
+              <!-- 查看合同文件 -->
+              <div v-if="currentRecord.contract_file_url" style="margin-top: 16px;">
+                <a :href="currentRecord.contract_file_url" target="_blank">
+                  <t-button theme="primary" variant="outline" size="small">📄 查看/下载合同文件</t-button>
+                </a>
+              </div>
+
+              <!-- 底部操作按钮 -->
+              <div v-if="currentRecord.status === 5" style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+                <t-button theme="success" @click="handleApprove(currentRecord); detailVisible = false">
+                  ✅ 审核通过
+                </t-button>
+                <t-button theme="danger" variant="outline" @click="openRejectDialog(currentRecord); detailVisible = false">
+                  ❌ 驳回
+                </t-button>
+              </div>
+            </div>
+          </t-dialog>
+
+          <!-- 驳回原因弹窗 -->
+          <t-dialog
+            v-model:visible="rejectVisible"
+            header="驳回合同"
+            width="480px"
+            @confirm="confirmReject"
+            @close="rejectForm.reason = ''"
+            confirm-btn="确认驳回"
+            cancel-btn="取消"
+          >
+            <div style="padding: 8px 0;">
+              <div style="margin-bottom: 12px; color: #666;">
+                用户：<strong>{{ rejectTarget?.user_name }}</strong>
+                &nbsp;&nbsp;合同：<strong>{{ rejectTarget?.contract_name }}</strong>
+              </div>
+              <t-form>
+                <t-form-item label="驳回原因" required>
+                  <t-textarea
+                    v-model="rejectForm.reason"
+                    placeholder="请填写驳回原因，用户重新签合同时可看到此原因"
+                    :maxlength="500"
+                    :rows="4"
+                  ></t-textarea>
+                </t-form-item>
+              </t-form>
+            </div>
+          </t-dialog>
+
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+
+        const loading     = ref(false);
+        const tableData   = ref([]);
+        const pendingCount   = ref(0);
+        const todayApproved  = ref(0);
+        const todayRejected  = ref(0);
+
+        const searchForm = ref({ keyword: '', status: 5 }); // 默认显示待审核
+
+        const pagination = ref({ current: 1, pageSize: 20, total: 0, showJumper: true, pageSizeOptions: [10, 20, 50] });
+
+        const detailVisible  = ref(false);
+        const currentRecord  = ref(null);
+        const rejectVisible  = ref(false);
+        const rejectTarget   = ref(null);
+        const rejectForm     = ref({ reason: '' });
+
+        // 云存储 fileID → CDN URL
+        function fileIDToURL(fileID) {
+          if (!fileID || !fileID.startsWith('cloud://')) return fileID;
+          const match = fileID.match(/^cloud:\/\/([^.]+)\.([^/]+)\/(.+)$/);
+          if (!match) return fileID;
+          return `https://${match[2]}.tcb.qcloud.la/${match[3]}`;
+        }
+
+        const columns = [
+          { colKey: 'id',            title: 'ID',       width: 70 },
+          { colKey: 'user',          title: '用户',     width: 140, cell: 'user' },
+          { colKey: 'contract_name', title: '合同名称', width: 200, ellipsis: true },
+          { colKey: 'level',         title: '大使等级', width: 100, cell: 'level' },
+          { colKey: 'sign_time',     title: '签署时间', width: 165 },
+          { colKey: 'status',        title: '状态',     width: 90,  cell: 'status' },
+          { colKey: 'action',        title: '操作',     width: 180, cell: 'action' },
+        ];
+
+        async function loadData() {
+          loading.value = true;
+          try {
+            const params = {
+              page:      pagination.value.current,
+              page_size: pagination.value.pageSize,
+            };
+            if (searchForm.value.status != null && searchForm.value.status !== '') {
+              params.status = searchForm.value.status;
+            }
+            // keyword 通过前端过滤（接口不支持 keyword 搜索时的备选方案）
+
+            const result = await AdminAPI.getSignatureList(params);
+            let list = result.list || [];
+
+            // 前端关键词过滤
+            const kw = (searchForm.value.keyword || '').trim();
+            if (kw) {
+              list = list.filter(r =>
+                (r.user_name || '').includes(kw) ||
+                (r.phone     || '').includes(kw)
+              );
+            }
+
+            tableData.value   = list;
+            pagination.value.total = result.total || list.length;
+
+            // 统计待审核数量
+            if (!searchForm.value.status || searchForm.value.status === 5) {
+              pendingCount.value = result.total || list.length;
+            }
+
+          } catch (err) {
+            TDesign.MessagePlugin.error('加载失败：' + (err.message || '未知错误'));
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        async function loadStats() {
+          try {
+            // 待审核总数
+            const pending = await AdminAPI.getSignatureList({ status: 5, page: 1, page_size: 1 });
+            pendingCount.value = pending.total || 0;
+          } catch (_) {}
+        }
+
+        function handleSearch() {
+          pagination.value.current = 1;
+          loadData();
+        }
+
+        function handleReset() {
+          searchForm.value = { keyword: '', status: 5 };
+          pagination.value.current = 1;
+          loadData();
+        }
+
+        function onPageChange(pageInfo) {
+          pagination.value.current  = pageInfo.current;
+          pagination.value.pageSize = pageInfo.pageSize;
+          loadData();
+        }
+
+        // 查看详情
+        function viewDetail(row) {
+          currentRecord.value = {
+            ...row,
+            signature_image_url: fileIDToURL(row.signature_image_id),
+            contract_file_url:   fileIDToURL(row.contract_file_id),
+          };
+          detailVisible.value = true;
+        }
+
+        // 审核通过
+        async function handleApprove(row) {
+          TDesign.DialogPlugin.confirm({
+            header: '确认审核通过',
+            body: `确认通过 【${row.user_name}】 提交的合同《${row.contract_name}》？通过后将自动执行对应业务逻辑。`,
+            confirmBtn: { content: '确认通过', theme: 'success' },
+            onConfirm: async () => {
+              try {
+                await AdminAPI.auditContractSignature({
+                  signatureId: row.id,
+                  auditAction: 'approve',
+                });
+                TDesign.MessagePlugin.success('审核通过，业务逻辑已执行');
+                await loadData();
+                await loadStats();
+                todayApproved.value++;
+              } catch (err) {
+                TDesign.MessagePlugin.error('操作失败：' + (err.message || '未知错误'));
+              }
+            }
+          });
+        }
+
+        // 打开驳回弹窗
+        function openRejectDialog(row) {
+          rejectTarget.value   = row;
+          rejectForm.value.reason = '';
+          rejectVisible.value  = true;
+        }
+
+        // 确认驳回
+        async function confirmReject() {
+          if (!rejectForm.value.reason.trim()) {
+            TDesign.MessagePlugin.warning('请填写驳回原因');
+            return;
+          }
+          try {
+            await AdminAPI.auditContractSignature({
+              signatureId: rejectTarget.value.id,
+              auditAction: 'reject',
+              remark:      rejectForm.value.reason.trim(),
+            });
+            TDesign.MessagePlugin.success('已驳回，用户需重新签署');
+            rejectVisible.value = false;
+            rejectForm.value.reason = '';
+            todayRejected.value++;
+            await loadData();
+            await loadStats();
+          } catch (err) {
+            TDesign.MessagePlugin.error('操作失败：' + (err.message || '未知错误'));
+          }
+        }
+
+        onMounted(() => {
+          loadData();
+          loadStats();
+        });
+
+        return {
+          adminInfo, handleMenuChange, handleLogout,
+          loading, tableData, columns, pagination,
+          searchForm, pendingCount, todayApproved, todayRejected,
+          detailVisible, currentRecord, rejectVisible, rejectTarget, rejectForm,
+          handleSearch, handleReset, onPageChange,
+          viewDetail, handleApprove, openRejectDialog, confirmReject,
+        };
+      }
+    });
+
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
+    app.use(TDesign);
+    app.mount('#app');
+  </script>
+
+  <style>
+    .page-content { padding: 24px; background: #f5f5f5; min-height: 100%; }
+    .page-header   { margin-bottom: 24px; }
+    .page-title    { font-size: 20px; font-weight: 600; margin: 0 0 4px 0; color: #333; }
+    .page-desc     { font-size: 13px; color: #999; }
+    .search-form   { background: #fff; padding: 20px 24px 8px; border-radius: 6px; margin-bottom: 16px; }
+    .table-card    { background: #fff; border-radius: 6px; padding: 16px; }
+    .stat-card     { background: #fff; border-radius: 6px; padding: 16px 24px; min-width: 100px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .stat-value    { font-size: 28px; font-weight: 700; line-height: 1.2; }
+    .stat-label    { font-size: 13px; color: #999; margin-top: 4px; }
+  </style>
+</body>
+</html>

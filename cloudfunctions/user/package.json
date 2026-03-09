@@ -6,7 +6,6 @@
   "dependencies": {
     "@cloudbase/node-sdk": "latest",
     "wx-server-sdk": "latest",
-    "mysql2": "^3.0.0",
     "jsonwebtoken": "^9.0.3"
   }
 }

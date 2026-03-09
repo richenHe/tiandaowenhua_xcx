@@ -259,39 +259,6 @@ export class AmbassadorApi {
     })
   }
 
-  /**
-   * 18. 检查课程学习合同签署状态
-   */
-  static async checkCourseContract(courseId: number): Promise<{ needSign: boolean; hasTemplate: boolean; templateId?: number; reason?: string }> {
-    return callCloudFunction({
-      name: 'ambassador',
-      action: 'checkCourseContract',
-      data: { courseId }
-    })
-  }
-
-  /**
-   * 19. 按课程ID获取学习服务协议模板
-   */
-  static async getContractTemplateByCourse(courseId: number): Promise<{ template: ContractTemplate; signed: boolean; signature: any }> {
-    return callCloudFunction({
-      name: 'ambassador',
-      action: 'getContractTemplateByCourse',
-      data: { courseId }
-    })
-  }
-
-  /**
-   * 20. 签署课程学习服务协议
-   */
-  static async signCourseContract(params: { courseId: number; templateId: number; signatureFileId: string; agreed: boolean; idNumber?: string }): Promise<{ signature_id: number; signed_at: string; message: string }> {
-    return callCloudFunction({
-      name: 'ambassador',
-      action: 'signCourseContract',
-      data: params,
-      loadingText: '签署中...'
-    })
-  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -312,10 +279,7 @@ export const {
   getLevelSystem,
   getAvailableActivities,
   applyForActivity,
-  cancelActivityRegistration,
-  checkCourseContract,
-  getContractTemplateByCourse,
-  signCourseContract
+  cancelActivityRegistration
 } = AmbassadorApi
 
 // 默认导出

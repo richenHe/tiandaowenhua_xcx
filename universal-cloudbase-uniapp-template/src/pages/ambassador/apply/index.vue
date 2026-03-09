@@ -196,7 +196,7 @@ const handleSubmit = async () => {
   }
 
   try {
-    await AmbassadorApi.apply({
+    const result = await AmbassadorApi.apply({
       real_name: userProfile.value.real_name,
       phone: userProfile.value.phone,
       wechat_id: userProfile.value.wechat_id || undefined,
@@ -208,7 +208,11 @@ const handleSubmit = async () => {
 
     isSubmitted.value = true
     uni.hideLoading()
-    uni.showToast({ title: '申请提交成功', icon: 'success', duration: 2000 })
+
+    const toastTitle = result?.instant_upgraded
+      ? '恭喜！已成为准青鸾大使'
+      : '申请提交成功'
+    uni.showToast({ title: toastTitle, icon: 'success', duration: 2000 })
     setTimeout(() => uni.navigateBack(), 2000)
   } catch (error: any) {
     uni.hideLoading()

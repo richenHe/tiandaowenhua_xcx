@@ -16,41 +16,44 @@ module.exports = async (event, context) => {
   const { username, password } = event;
 
   try {
-    // 参数验证
     if (!username || !password) {
       return response.paramError('缺少必要参数: username, password');
     }
 
     console.log(`[admin:login] 管理员登录尝试: ${username}`);
 
-    // 查询管理员账号
     const admin = await findOne('admin_users', { username });
     if (!admin) {
       return response.error('用户名或密码错误', null, 401);
     }
 
-    // 检查账号状态
     if (admin.status !== 1) {
       return response.error('账号已被禁用', null, 403);
     }
 
-    // 验证密码（bcrypt）
     const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
       return response.error('用户名或密码错误', null, 401);
     }
 
-    // 生成 JWT Token
     const token = generateAdminToken({
       id: admin.id,
       username: admin.username,
       role: admin.role
     });
 
-    // 更新最后登录时间
-    // await update('admin_users', { last_login_at: new Date() }, { id: admin.id });
+    // 从 admin_roles 表查询该角色的权限
+    let permissions = [];
+    let roleName = admin.role;
+    const roleInfo = await findOne('admin_roles', { role_key: admin.role, status: 1 });
+    if (roleInfo) {
+      roleName = roleInfo.role_name;
+      const rawPerms = roleInfo.permissions;
+      permissions = Array.isArray(rawPerms)
+        ? rawPerms
+        : (rawPerms ? JSON.parse(rawPerms) : []);
+    }
 
-    // 返回登录结果
     return response.success({
       token,
       admin: {
@@ -58,10 +61,8 @@ module.exports = async (event, context) => {
         username: admin.username,
         real_name: admin.real_name,
         role: admin.role,
-        // permissions 字段可能是 JSON 类型（已解析）或字符串
-        permissions: Array.isArray(admin.permissions) 
-          ? admin.permissions 
-          : (admin.permissions ? JSON.parse(admin.permissions) : [])
+        role_name: roleName,
+        permissions
       }
     }, '登录成功');
 

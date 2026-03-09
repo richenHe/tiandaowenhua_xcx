@@ -1,7 +1,7 @@
 /**
  * 生成签到二维码（管理端接口）
  *
- * 为指定排期生成小程序签到码，上传云存储并存入 checkin_qrcodes 表。
+ * 每个排期只保留一条 checkin_qrcodes 记录，重新生成时覆盖旧记录。
  * scene 格式：ci={class_record_id}，落地页：pages/course/checkin/index
  */
 const { db } = require('../../common/db');
@@ -21,47 +21,59 @@ module.exports = async (event, context) => {
 
     const recordId = parseInt(classRecordId);
 
-    // 查询排期信息
     const { data: classRecord, error: findError } = await db
       .from('class_records')
       .select('id, course_name, class_date, status')
       .eq('id', recordId)
       .single();
 
-    if (findError && !findError.message?.includes('0 rows')) {
-      throw findError;
-    }
+    if (findError && !findError.message?.includes('0 rows')) throw findError;
+    if (!classRecord) return response.notFound('排期不存在');
+    if (classRecord.status === 0) return response.error('该排期已取消，无法生成签到码');
 
-    if (!classRecord) {
-      return response.notFound('排期不存在');
-    }
+    // 生成小程序码并上传云存储
+    const qrResult = await business.generateCheckinQRCode({ classRecordId: recordId });
 
-    if (classRecord.status === 0) {
-      return response.error('该排期已取消，无法生成签到码');
-    }
-
-    // 调用 business-logic 生成小程序码并上传云存储
-    const qrResult = await business.generateCheckinQRCode({
-      classRecordId: recordId
-    });
-
-    // 存入 checkin_qrcodes 表
-    const { error: insertError } = await db
+    // 查询是否已有该排期的签到码记录
+    const { data: existing } = await db
       .from('checkin_qrcodes')
-      .insert({
+      .select('id, qrcode_url')
+      .eq('class_record_id', recordId)
+      .limit(1);
+
+    const now = formatDateTime(new Date());
+
+    if (existing && existing.length > 0) {
+      // 覆盖：更新现有记录
+      await db.from('checkin_qrcodes')
+        .update({
+          qrcode_url: qrResult.fileID,
+          scene: qrResult.scene,
+          course_name: classRecord.course_name || '',
+          class_date: classRecord.class_date,
+          status: 1,
+          created_by: admin?.id || null,
+          created_at: now
+        })
+        .eq('id', existing[0].id);
+
+      console.log(`[generateCheckinQRCode] 覆盖生成: class_record_id=${recordId}`);
+    } else {
+      // 新增
+      await db.from('checkin_qrcodes').insert({
         class_record_id: recordId,
         course_name: classRecord.course_name || '',
         class_date: classRecord.class_date,
         qrcode_url: qrResult.fileID,
         scene: qrResult.scene,
+        _openid: '',
         status: 1,
         created_by: admin?.id || null,
-        created_at: formatDateTime(new Date())
+        created_at: now
       });
 
-    if (insertError) throw insertError;
-
-    console.log(`[Course/generateCheckinQRCode] 生成成功: class_record_id=${recordId}, fileID=${qrResult.fileID}`);
+      console.log(`[generateCheckinQRCode] 新增生成: class_record_id=${recordId}`);
+    }
 
     return response.success({
       qrcode_url: cloudFileIDToURL(qrResult.fileID),
@@ -73,7 +85,7 @@ module.exports = async (event, context) => {
     }, '签到码生成成功');
 
   } catch (error) {
-    console.error('[Course/generateCheckinQRCode] 生成失败:', error);
+    console.error('[generateCheckinQRCode] 生成失败:', error);
     return response.error('生成签到码失败', error);
   }
 };

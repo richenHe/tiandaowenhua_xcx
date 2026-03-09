@@ -285,20 +285,20 @@ module.exports = async (event, context) => {
       return response.error('该协议模板未配置电子合同文件，请联系管理员');
     }
 
-    // ── 检查是否已签署（按等级判断，同一等级只能签一次）─────────────────────
-    const { data: existing } = await db
+    // ── 检查是否已签署（按等级判断）──────────────────────────────
+    const { data: existingList } = await db
       .from('contract_signatures')
-      .select('id')
+      .select('id, status')
       .eq('user_id', user.id)
       .eq('ambassador_level', template.ambassador_level)
       .eq('status', 1)
       .limit(1);
 
-    if (existing && existing.length > 0) {
+    if (existingList && existingList.length > 0) {
       return response.error('您已签署过该等级的协议');
     }
 
-    // ── 查询用户手机号 ────────────────────────────────────────────────────────
+    // ── 查询用户信息 ───────────────────────────────────────────────────────────
     const { data: userInfo } = await db
       .from('users')
       .select('phone, real_name')
@@ -369,28 +369,27 @@ module.exports = async (event, context) => {
       signedFileId = template.contract_file_id;
     }
 
-    // ── 创建签署记录 ──────────────────────────────────────────────────────────
+    // ── 创建签署记录（status=1 直接生效） ────────────────────────────────────────
+    const nowStr = formatDateTime(signDate);
     const { data: newSignature, error: insertError } = await db
       .from('contract_signatures')
       .insert({
-        user_id: user.id,
-        _openid: OPENID || '',
+        user_id:              user.id,
+        user_name:            userInfo?.real_name || '',
+        _openid:              OPENID || '',
         contract_template_id: finalTemplateId,
-        ambassador_level: template.ambassador_level,
-        contract_name: template.contract_name,
-        contract_version: template.version,
-        // 已废弃字段，保留为空字符串以兼容旧约束
-        contract_content: '',
-        // 已签版文件（含手写签名）
-        contract_file_id: signedFileId,
-        // 原始手写签名图片 cloud:// 路径
-        signature_image_id: signatureFileId,
-        contract_start: contractStart,
-        contract_end: contractEnd,
-        sign_time: formatDateTime(signDate),
-        status: 1,
-        sign_ip: event.ip_address || '',
-        sign_device: event.device_info || null
+        ambassador_level:     template.ambassador_level,
+        contract_name:        template.contract_name,
+        contract_version:     template.version,
+        contract_content:     '',
+        contract_file_id:     signedFileId,
+        signature_image_id:   signatureFileId,
+        contract_start:       contractStart,
+        contract_end:         contractEnd,
+        sign_time:            nowStr,
+        status:               1,
+        sign_ip:              event.ip_address || '',
+        sign_device:          event.device_info || null
       })
       .select()
       .single();
@@ -400,10 +399,19 @@ module.exports = async (event, context) => {
       throw insertError;
     }
 
-    // ── 判断等级升级 ──────────────────────────────────────────────────────────
-    const targetLevel = template.ambassador_level;
-    let levelUpgraded = false;
+    console.log(`[signContract] 用户 ${user.id} 签署协议成功，直接生效，signature_id=${newSignature.id}`);
 
+    // ── 直接执行大使升级逻辑（无需审核） ──────────────────────────────────────
+    const targetLevel = template.ambassador_level;
+    const today = contractStart;
+
+    await update('users',
+      { ambassador_level: targetLevel, ambassador_start_date: today },
+      { id: user.id }
+    );
+    console.log(`[signContract] 用户 ${user.id} 升级至等级 ${targetLevel}`);
+
+    // 查看等级配置，判断是否需发冻结积分
     const { data: levelConfig } = await db
       .from('ambassador_level_configs')
       .select('upgrade_payment_amount, frozen_points')
@@ -411,68 +419,54 @@ module.exports = async (event, context) => {
       .single();
 
     const needsPayment = levelConfig && Number(levelConfig.upgrade_payment_amount) > 0;
+    if (needsPayment) {
+      const { count: paidCount } = await db
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('order_type', 4)
+        .eq('related_id', targetLevel)
+        .eq('pay_status', 1);
 
-    // 检查是否已支付升级费（先支付后签合同流程）
-    const { count: paidOrderCount } = await db
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('order_type', 4)
-      .eq('related_id', targetLevel)
-      .eq('pay_status', 1);
-    const hasUpgradePaid = (paidOrderCount || 0) > 0;
+      if ((paidCount || 0) > 0) {
+        const frozenPoints = Number(levelConfig.frozen_points || 0);
+        if (frozenPoints > 0) {
+          const { data: currentUser } = await db
+            .from('users')
+            .select('cash_points_frozen')
+            .eq('id', user.id)
+            .single();
 
-    // 无需支付（普通用户→准青鸾）或已完成支付，签署即升级
-    if (!needsPayment || hasUpgradePaid) {
-      const now = new Date();
-      const today = formatDateTime(now).slice(0, 10);
-      await update('users',
-        {
-          ambassador_level: targetLevel,
-          ambassador_start_date: today
-        },
-        { id: user.id }
-      );
-      levelUpgraded = true;
-      console.log(`[signContract] 用户 ${user.id} 升级至等级 ${targetLevel}`);
+          const currentFrozen = Number(currentUser?.cash_points_frozen || 0);
+          await update('users',
+            { cash_points_frozen: currentFrozen + frozenPoints },
+            { id: user.id }
+          );
 
-      // 发放冻结积分（升级费转化为冻结积分，需支付升级费的等级才有）
-      const frozenPoints = Number(levelConfig?.frozen_points || 0);
-      if (needsPayment && hasUpgradePaid && frozenPoints > 0) {
-        // 增加用户冻结积分余额
-        const { data: currentUser } = await db
-          .from('users')
-          .select('cash_points_frozen')
-          .eq('id', user.id)
-          .single();
-        const currentFrozen = Number(currentUser?.cash_points_frozen || 0);
-        await update('users',
-          { cash_points_frozen: currentFrozen + frozenPoints },
-          { id: user.id }
-        );
+          const levelNameMap = { 2: '青鸾', 3: '鸿鹄', 4: '金凤' };
+          const levelLabel = levelNameMap[targetLevel] || `等级${targetLevel}`;
 
-        // 记录积分流水（type=1 增加冻结积分）
-        const levelNameMap = { 2: '青鸾', 3: '鸿鹄', 4: '金凤' };
-        const levelLabel = levelNameMap[targetLevel] || `等级${targetLevel}`;
-        await insert('cash_points_records', {
-          user_id: user.id,
-          _openid: OPENID || '',
-          type: 1,
-          amount: frozenPoints,
-          remark: `升级${levelLabel}大使升级费转为冻结积分`,
-          created_at: formatDateTime(now)
-        });
-        console.log(`[signContract] 用户 ${user.id} 获得 ${frozenPoints} 冻结积分`);
+          await insert('cash_points_records', {
+            user_id:    user.id,
+            _openid:    OPENID || '',
+            type:       1,
+            amount:     frozenPoints,
+            remark:     `升级${levelLabel}大使升级费转为冻结积分`,
+            created_at: nowStr
+          });
+
+          console.log(`[signContract] 用户 ${user.id} 获得 ${frozenPoints} 冻结积分`);
+        }
       }
     }
 
+    const levelNameMap = { 1: '准青鸾', 2: '青鸾', 3: '鸿鹄', 4: '金凤' };
     return response.success({
-      signature_id: newSignature.id,
+      signature_id:     newSignature.id,
       ambassador_level: targetLevel,
-      level_upgraded: levelUpgraded,
-      needs_payment: needsPayment && !hasUpgradePaid,
-      signed_at: newSignature.sign_time,
-      message: levelUpgraded ? '协议签署成功，等级已升级' : '协议签署成功，请先支付升级费用'
+      level_name:       levelNameMap[targetLevel] || `等级${targetLevel}`,
+      signed_at:        newSignature.sign_time,
+      message:          `签署成功，您已升级为${levelNameMap[targetLevel] || ''}大使`
     }, '签署成功');
 
   } catch (error) {

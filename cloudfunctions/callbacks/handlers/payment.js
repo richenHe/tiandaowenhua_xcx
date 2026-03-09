@@ -242,10 +242,11 @@ async function handleCoursePurchase(order, db) {
     .eq('user_id', order.user_id)
     .eq('course_id', course.id)
     .eq('is_gift', 0)
+    .eq('status', 1)
     .limit(1);
 
   if (existingUc && existingUc.length > 0) {
-    console.log('[Payment] 用户已有该课程记录，跳过创建:', course.id);
+    console.log('[Payment] 用户已有生效的课程记录，跳过创建:', course.id);
     return;
   }
 

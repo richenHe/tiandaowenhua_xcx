@@ -136,41 +136,23 @@ const loadOrderDetail = async (orderNo: string) => {
 
 const COURSE_REMINDER_TMPL_ID = 'SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc'
 
-// 处理支付
-const handlePay = async () => {
-  console.log('支付方式:', selectedPayment.value);
-
-  // 复训订单：在 tap 上下文中（异步操作之前）请求订阅消息授权
-  // requestSubscribeMessage 必须在用户点击的同步栈内调用，放入 success 回调会被微信拦截
-  if (isRetrainOrder.value) {
-    // #ifdef MP-WEIXIN
-    await new Promise<void>((resolve) => {
-      uni.requestSubscribeMessage({
-        tmplIds: [COURSE_REMINDER_TMPL_ID],
-        success: (res) => { console.log('[订阅授权] success:', JSON.stringify(res)); },
-        fail: (err) => { console.log('[订阅授权] fail:', JSON.stringify(err)); },
-        complete: (res) => {
-          console.log('[订阅授权] complete:', JSON.stringify(res));
-          resolve();
-        }
-      });
-    });
-    // #endif
-  }
-
+/**
+ * 实际发起支付（订阅授权完成后调用）
+ * 从 handlePay 中抽离，避免 async 函数影响微信手势上下文判断
+ */
+const doPayment = async () => {
+  let loadingShown = false;
   try {
-    uni.showLoading({
-      title: '支付中...',
-    });
+    uni.showLoading({ title: '支付中...' });
+    loadingShown = true;
 
-    // 调用支付接口
     const payParams = await OrderApi.createPayment({
       order_no: orderInfo.value.orderNo
     });
 
     uni.hideLoading();
+    loadingShown = false;
 
-    // 调用微信支付
     uni.requestPayment({
       timeStamp: payParams.timeStamp,
       nonceStr: payParams.nonceStr,
@@ -194,31 +176,45 @@ const handlePay = async () => {
       },
       fail: (err) => {
         console.error('支付失败:', err);
-        
         if (err.errMsg && err.errMsg.includes('cancel')) {
-          uni.showToast({
-            title: '已取消支付',
-            icon: 'none',
-            duration: 1500
-          });
+          uni.showToast({ title: '已取消支付', icon: 'none', duration: 1500 });
           setTimeout(() => {
             uni.redirectTo({
               url: '/pages/order/pending/index?orderNo=' + orderInfo.value.orderNo
             });
           }, 1500);
         } else {
-          // 其他支付错误
-          uni.showToast({
-            title: '支付失败',
-            icon: 'none',
-          });
+          uni.showToast({ title: '支付失败', icon: 'none' });
         }
       }
     });
   } catch (error) {
-    uni.hideLoading();
+    if (loadingShown) uni.hideLoading();
     console.error('发起支付失败:', error);
   }
+};
+
+/**
+ * 处理支付按钮点击
+ * 必须是非 async 函数：微信真机要求 requestSubscribeMessage 在用户 tap 的同步调用栈内触发，
+ * async 函数会破坏该上下文导致真机不弹订阅弹窗（开发者工具检测更宽松因此不受影响）
+ */
+const handlePay = () => {
+  // #ifdef MP-WEIXIN
+  if (isRetrainOrder.value) {
+    uni.requestSubscribeMessage({
+      tmplIds: [COURSE_REMINDER_TMPL_ID],
+      success: (res) => { console.log('[订阅授权] success:', JSON.stringify(res)); },
+      fail: (err) => { console.log('[订阅授权] fail:', JSON.stringify(err)); },
+      complete: (res) => {
+        console.log('[订阅授权] complete:', JSON.stringify(res));
+        doPayment();
+      }
+    });
+    return;
+  }
+  // #endif
+  doPayment();
 };
 
 onMounted(() => {

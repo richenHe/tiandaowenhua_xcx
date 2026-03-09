@@ -1,6 +1,6 @@
 /**
  * Course 云函数入口
- * 课程模块 - 39个action + 2个定时任务
+ * 课程模块 - 41个action + 2个定时任务
  *
  * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  * 定时任务：
@@ -20,7 +20,7 @@ const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
 // 初始化 business-logic（传 wx-server-sdk cloud 实例，wxacode/uploadFile/cloudPay 均需要它）
 business.init(cloud);
 
-// 导入处理器 - 公开接口（8个）
+// 导入处理器 - 公开接口（9个）
 const publicHandlers = {
   getList: require('./handlers/public/getList'),
   getDetail: require('./handlers/public/getDetail'),
@@ -29,15 +29,17 @@ const publicHandlers = {
   getMaterialList: require('./handlers/public/getMaterialList'),
   getAcademyList: require('./handlers/public/getAcademyList'),
   getAcademyDetail: require('./handlers/public/getAcademyDetail'),
-  getCalendarSchedule: require('./handlers/public/getCalendarSchedule')
+  getCalendarSchedule: require('./handlers/public/getCalendarSchedule'),
+  getAcademySections: require('./handlers/public/getAcademySections')
 };
 
-// 导入处理器 - 客户端接口（8个）
+// 导入处理器 - 客户端接口（9个）
 const clientHandlers = {
   getClassRecords: require('./handlers/client/getClassRecords'),
   createAppointment: require('./handlers/client/createAppointment'),
   cancelAppointment: require('./handlers/client/cancelAppointment'),
   getMyAppointments: require('./handlers/client/getMyAppointments'),
+  checkRetrainCredit: require('./handlers/client/checkRetrainCredit'),
   checkin: require('./handlers/client/checkin'),
   scanCheckin: require('./handlers/client/scanCheckin'),
   recordAcademyProgress: require('./handlers/client/recordAcademyProgress'),
@@ -48,7 +50,7 @@ const clientHandlers = {
 const autoUpdateScheduleStatus = require('./handlers/admin/autoUpdateScheduleStatus');
 const sendCourseReminder = require('./handlers/admin/sendCourseReminder');
 
-// 导入处理器 - 管理端接口（23个）
+// 导入处理器 - 管理端接口（26个）
 const adminHandlers = {
   createCourse: require('./handlers/admin/createCourse'),
   updateCourse: require('./handlers/admin/updateCourse'),
@@ -72,7 +74,10 @@ const adminHandlers = {
   updateMaterial: require('./handlers/admin/updateMaterial'),
   deleteMaterial: require('./handlers/admin/deleteMaterial'),
   getMaterialList: require('./handlers/admin/getMaterialList'),
-  manageAcademyContent: require('./handlers/admin/manageAcademyContent')
+  manageAcademyContent: require('./handlers/admin/manageAcademyContent'),
+  manageAcademySections: require('./handlers/admin/manageAcademySections'),
+  manageDailyCheckin: require('./handlers/admin/manageDailyCheckin'),
+  getDailyCheckins: require('./handlers/admin/getDailyCheckins')
 };
 
 // 路由配置

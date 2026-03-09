@@ -50,7 +50,7 @@
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
-import { CourseApi, AmbassadorApi, UserApi } from '@/api';
+import { CourseApi, UserApi } from '@/api';
 
 // 课程排期数据
 const schedules = ref<any[]>([]);
@@ -131,46 +131,21 @@ const goToAppointmentConfirm = (schedule: any) => {
   });
 };
 
-// 处理预约（沙龙课程跳过合同检查，其余类型需检查合同签署状态）
 const handleAppointment = async (schedule: any) => {
-  if (courseType.value !== 4) {
-    try {
-      uni.showLoading({ title: '检查中...' })
-      const checkResult = await AmbassadorApi.checkCourseContract(courseId.value)
-      uni.hideLoading()
-
-      if (checkResult.needSign) {
-        uni.showModal({
-          title: '签署学习合同',
-          content: '您需要签署学习服务协议后才能参加学习，是否立即签署？',
-          success: (res) => {
-            if (res.confirm) {
-              uni.navigateTo({
-                url: `/pages/ambassador/contract-sign/index?courseId=${courseId.value}&templateId=${checkResult.templateId}`
-              })
-            }
-          }
-        })
-        return
-      }
-    } catch (e) {
-      uni.hideLoading()
-      console.error('检查合同状态失败:', e)
-    }
-  }
-
   goToAppointmentConfirm(schedule)
 };
 
 onLoad((options: any) => {
+  // 必须先赋值 courseType，再调用 loadSchedules()
+  // 否则沙龙课(type=4)会因 courseType 仍为 0 而被误判为付费课，触发购买校验
+  const type = options?.course_type ?? options?.courseType;
+  if (type) {
+    courseType.value = Number(type);
+  }
   const id = options?.course_id ?? options?.courseId ?? options?.id;
   if (id) {
     courseId.value = Number(id);
     loadSchedules();
-  }
-  const type = options?.course_type ?? options?.courseType;
-  if (type) {
-    courseType.value = Number(type);
   }
 });
 

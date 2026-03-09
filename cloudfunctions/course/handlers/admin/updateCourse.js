@@ -26,6 +26,7 @@
  * @param {number}  event.sortOrder     - 排序，对应 DB 字段 sort_order
  * @param {number}  event.status        - 状态
  * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
+ * @param {number}  event.needContract  - 是否需要签订合同：0不需要/1需要，对应 DB 字段 need_contract
  */
 const { db, findOne, update } = require('../../common/db');
 const { response } = require('../../common');
@@ -51,7 +52,8 @@ module.exports = async (event, context) => {
     teacher,
     sortOrder,
     status,
-    includedCourseIds
+    includedCourseIds,
+    needContract
   } = event;
 
   try {
@@ -71,7 +73,7 @@ module.exports = async (event, context) => {
     if (course.status === 1) {
       const editFields = ['name', 'nickname', 'type', 'coverImage', 'currentPrice', 'originalPrice',
         'retrainPrice', 'allowRetrain', 'validityDays', 'duration', 'description', 'content',
-        'outline', 'teacher', 'sortOrder', 'includedCourseIds'];
+        'outline', 'teacher', 'sortOrder', 'includedCourseIds', 'needContract'];
       const hasEditField = editFields.some(k => event[k] !== undefined);
       if (hasEditField) {
         return response.error('课程已上架，不可修改任何字段。如需修改请先下架课程。');
@@ -118,10 +120,13 @@ module.exports = async (event, context) => {
         fieldsToUpdate.included_course_ids = null;
       }
     }
+    if (needContract !== undefined) fieldsToUpdate.need_contract = isSalon ? 0 : (parseInt(needContract) === 0 ? 0 : 1);
     if (status !== undefined) fieldsToUpdate.status = status;
 
-    // 上架前检查是否已配置学习服务协议模板（沙龙课程无需合同，跳过检查）
-    if (status === 1 && course.status !== 1 && !isSalon) {
+    // 上架前检查是否已配置学习服务协议模板（沙龙课程和不需要合同的课程跳过检查）
+    // need_contract 优先取本次提交值，否则取数据库已有值
+    const effectiveNeedContract = needContract !== undefined ? parseInt(needContract) : course.need_contract;
+    if (status === 1 && course.status !== 1 && !isSalon && effectiveNeedContract === 1) {
       const { data: templates } = await db
         .from('contract_templates')
         .select('id')

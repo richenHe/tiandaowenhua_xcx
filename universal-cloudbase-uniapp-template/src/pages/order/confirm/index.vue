@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi, CourseApi, OrderApi } from '@/api';
 import { formatPrice } from '@/utils';
@@ -229,6 +230,7 @@ const loadPageData = async () => {
     uni.showToast({ title: '加载失败，请重试', icon: 'none' });
   } finally {
     isLoading.value = false;
+    hasLoaded.value = true;
   }
 };
 
@@ -253,8 +255,39 @@ const getAmbassadorLevelName = (level: number): string => {
   return levelMap[level] || '普通用户';
 };
 
+// 仅刷新推荐人信息（从选择推荐人页返回时调用）
+const refreshRefereeInfo = async () => {
+  if (isRetrain.value) return;
+  try {
+    const profile = await UserApi.getProfile();
+    if (profile.referee_id && profile.referee_name) {
+      refereeInfo.value = {
+        id: profile.referee_id,
+        name: profile.referee_name,
+        level: getAmbassadorLevelName(profile.referee_level || 0)
+      };
+      refereeLocked.value = !!profile.referee_confirmed_at;
+    } else {
+      refereeInfo.value = { id: 0, name: '', level: '' };
+      refereeLocked.value = false;
+    }
+  } catch (error) {
+    console.error('刷新推荐人信息失败:', error);
+  }
+};
+
+// 标记是否已完成初次加载，避免 onShow 在首次渲染时重复请求
+const hasLoaded = ref(false);
+
 onMounted(() => {
   loadPageData();
+});
+
+// 每次页面显示时刷新推荐人（从选推荐人页返回时生效）
+onShow(() => {
+  if (hasLoaded.value) {
+    refreshRefereeInfo();
+  }
 });
 
 const discount = ref(0);

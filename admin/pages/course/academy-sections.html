@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8">
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>商学院板块管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260309"><style>
+    .upload-placeholder{width:100px;height:100px;border:2px dashed #dcdcdc;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;}
+    .upload-placeholder:hover{border-color:#0052d9;background:#f3f3f3;}
+    .avatar-preview{position:relative;width:100px;height:100px;}
+    .avatar-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:1px solid #dcdcdc;}
+    .avatar-actions{margin-top:6px;display:flex;gap:4px;justify-content:center;}
+    .dynamic-list-item{background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;padding:16px;margin-bottom:12px;position:relative;}
+    .dynamic-list-item:last-child{margin-bottom:0;}
+    .item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .item-index{font-weight:600;color:#333;font-size:14px;}
+    .item-fields{display:flex;flex-wrap:wrap;gap:12px;}
+    .item-field{flex:1;min-width:200px;}
+    .item-field-full{width:100%;flex-basis:100%;}
+    .color-preview{display:inline-block;width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-left:8px;border:1px solid #dcdcdc;}
+    .section-type-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:500;}
+    .section-type-badge.hero{background:#e8f0fe;color:#0052d9;}
+    .section-type-badge.quick_access{background:#fde8ec;color:#d9304e;}
+    .section-type-badge.intro{background:#e8f5e9;color:#2ba471;}
+    .section-type-badge.concepts{background:#fff3e0;color:#e37318;}
+    .section-type-badge.teachers{background:#f3e8fd;color:#8b5cf6;}
+    .section-type-badge.timeline{background:#e0f2f1;color:#0594fa;}
+    .section-type-badge.honors{background:#fef3c7;color:#d4af37;}
+  </style></head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <t-header height="64px" style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:18px;font-weight:600;color:#333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+
+      <t-layout>
+        <sidebar-menu active-key="academy-sections"></sidebar-menu>
+
+        <t-content class="page-content">
+          <div class="page-container">
+            <div class="page-header">
+              <h1 class="page-title">商学院板块管理</h1>
+              <p class="page-desc">管理商学院首页的各个展示板块，支持增删改查、排序和显示/隐藏</p>
+            </div>
+
+            <!-- 操作栏 -->
+            <div style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+              <t-button theme="primary" @click="handleAdd">新增板块</t-button>
+              <t-button theme="default" @click="loadData" :loading="loading">刷新</t-button>
+            </div>
+
+            <!-- 板块列表 -->
+            <t-table :data="tableData" :columns="columns" :loading="loading" row-key="id" bordered stripe hover>
+              <template #sort_order="{ row, rowIndex }">
+                <t-space size="small">
+                  <t-button size="small" variant="text" :disabled="rowIndex===0" @click="handleMoveUp(row, rowIndex)">↑</t-button>
+                  <t-button size="small" variant="text" :disabled="rowIndex===tableData.length-1" @click="handleMoveDown(row, rowIndex)">↓</t-button>
+                  <span style="color:#999;font-size:12px;">{{ row.sort_order }}</span>
+                </t-space>
+              </template>
+              <template #section_type="{ row }">
+                <span :class="'section-type-badge ' + row.section_type">{{ typeLabels[row.section_type] || row.section_type }}</span>
+              </template>
+              <template #title="{ row }">
+                <span>{{ row.icon }} {{ row.title }}</span>
+              </template>
+              <template #status="{ row }">
+                <t-switch :value="row.status===1" size="small" @change="handleToggleStatus(row)" />
+              </template>
+              <template #operation="{ row }">
+                <t-space size="small">
+                  <t-button theme="primary" size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+                  <t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button>
+                </t-space>
+              </template>
+            </t-table>
+          </div>
+
+          <!-- 新增/编辑弹窗 -->
+          <t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增板块':'编辑板块'" width="750px" :confirm-on-enter="false" @confirm="handleSubmit" :confirm-btn="{content:'保存',loading:submitting}">
+            <t-form :data="formData" label-width="100px">
+              <!-- 板块类型（新增时选择，编辑时只读） -->
+              <t-form-item label="板块类型" required>
+                <t-select v-model="formData.sectionType" :options="typeSelectOptions" placeholder="选择板块类型" :disabled="formMode==='edit'" style="width:300px;" @change="onTypeChange" />
+              </t-form-item>
+
+              <t-form-item label="板块标题" required>
+                <t-input v-model="formData.title" placeholder="板块显示标题" />
+              </t-form-item>
+
+              <t-form-item label="标题图标">
+                <t-input v-model="formData.icon" placeholder="输入Emoji图标，如 📖💡🏆" style="width:200px;" />
+              </t-form-item>
+
+              <t-divider>板块内容</t-divider>
+
+              <!-- ===== hero 类型 ===== -->
+              <template v-if="formData.sectionType==='hero'">
+                <t-form-item label="Banner图标">
+                  <t-input v-model="formContent.icon" placeholder="如 🏛️" style="width:200px;" />
+                </t-form-item>
+                <t-form-item label="主标题">
+                  <t-input v-model="formContent.title" placeholder="Banner主标题" />
+                </t-form-item>
+                <t-form-item label="副标题">
+                  <t-input v-model="formContent.subtitle" placeholder="Banner副标题" />
+                </t-form-item>
+                <t-form-item label="背景渐变">
+                  <t-input v-model="formContent.background" placeholder="如 linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
+                </t-form-item>
+              </template>
+
+              <!-- ===== quick_access 类型 ===== -->
+              <template v-if="formData.sectionType==='quick_access'">
+                <div v-for="(item, idx) in formContent.items" :key="'qa-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">快捷入口 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
+                  </div>
+                  <div class="item-fields">
+                    <div class="item-field"><t-input v-model="item.icon" placeholder="图标Emoji" /></div>
+                    <div class="item-field"><t-input v-model="item.title" placeholder="标题" /></div>
+                    <div class="item-field"><t-input v-model="item.link" placeholder="跳转路径，如 /pages/academy/materials/index" /></div>
+                    <div class="item-field-full"><t-input v-model="item.gradient" placeholder="渐变色，如 linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" /></div>
+                  </div>
+                </div>
+                <t-button theme="default" size="small" @click="addItem({icon:'',title:'',link:'',gradient:''})">+ 添加入口</t-button>
+              </template>
+
+              <!-- ===== intro 类型 ===== -->
+              <template v-if="formData.sectionType==='intro'">
+                <div v-for="(p, idx) in formContent.paragraphs" :key="'p-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">段落 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="formContent.paragraphs.splice(idx,1)">删除</t-button>
+                  </div>
+                  <t-textarea v-model="formContent.paragraphs[idx]" placeholder="段落内容" :autosize="{minRows:2,maxRows:6}" />
+                </div>
+                <t-button theme="default" size="small" @click="formContent.paragraphs.push('')">+ 添加段落</t-button>
+              </template>
+
+              <!-- ===== concepts 类型 ===== -->
+              <template v-if="formData.sectionType==='concepts'">
+                <div v-for="(item, idx) in formContent.items" :key="'c-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">理念 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
+                  </div>
+                  <div class="item-fields">
+                    <div class="item-field"><t-input v-model="item.icon" placeholder="图标Emoji" style="width:120px;" /></div>
+                    <div class="item-field"><t-input v-model="item.name" placeholder="理念名称" /></div>
+                    <div class="item-field">
+                      <t-input v-model="item.color" placeholder="渐变色/颜色" />
+                      <span v-if="item.color" :style="{display:'inline-block',width:'16px',height:'16px',borderRadius:'4px',background:item.color,verticalAlign:'middle',marginLeft:'4px',border:'1px solid #dcdcdc'}"></span>
+                    </div>
+                    <div class="item-field-full"><t-textarea v-model="item.description" placeholder="描述" :autosize="{minRows:1,maxRows:3}" /></div>
+                  </div>
+                </div>
+                <t-button theme="default" size="small" @click="addItem({icon:'',color:'',name:'',description:''})">+ 添加理念</t-button>
+              </template>
+
+              <!-- ===== teachers 类型 ===== -->
+              <template v-if="formData.sectionType==='teachers'">
+                <div v-for="(item, idx) in formContent.items" :key="'t-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">讲师 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
+                  </div>
+                  <div class="item-fields">
+                    <div class="item-field"><t-input v-model="item.name" placeholder="讲师姓名" /></div>
+                    <div class="item-field"><t-input v-model="item.role" placeholder="角色/头衔" /></div>
+                    <div class="item-field">
+                      <t-select v-model="item.theme" :options="themeOptions" placeholder="主题色(文字头像)" style="width:160px;" />
+                    </div>
+                    <div class="item-field-full"><t-textarea v-model="item.description" placeholder="讲师简介" :autosize="{minRows:1,maxRows:3}" /></div>
+                    <div class="item-field-full">
+                      <div style="display:flex;align-items:center;gap:12px;">
+                        <span style="font-size:13px;color:#666;">头像：</span>
+                        <!-- 头像上传 -->
+                        <input type="file" :ref="el => { if(el) avatarInputRefs[idx] = el; }" accept="image/*" style="display:none;" @change="e => handleAvatarUpload(e, idx)" />
+                        <div v-if="item.avatarURL" class="avatar-preview">
+                          <img :src="item.avatarURL" />
+                          <div class="avatar-actions">
+                            <t-button size="small" variant="text" @click="triggerAvatarUpload(idx)">更换</t-button>
+                            <t-button size="small" variant="text" theme="danger" @click="removeAvatar(idx)">删除</t-button>
+                          </div>
+                        </div>
+                        <div v-else class="upload-placeholder" @click="triggerAvatarUpload(idx)">
+                          <span style="font-size:24px;color:#999;">+</span>
+                          <span style="font-size:11px;color:#999;">上传头像</span>
+                        </div>
+                        <span v-if="avatarUploading[idx]" style="font-size:12px;color:#0052d9;">上传中...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <t-button theme="default" size="small" @click="addTeacher">+ 添加讲师</t-button>
+              </template>
+
+              <!-- ===== timeline 类型 ===== -->
+              <template v-if="formData.sectionType==='timeline'">
+                <div v-for="(item, idx) in formContent.items" :key="'tl-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">时间线 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
+                  </div>
+                  <div class="item-fields">
+                    <div class="item-field"><t-input v-model="item.year" placeholder="年份，如 2024年" style="width:160px;" /></div>
+                    <div class="item-field">
+                      <t-input v-model="item.color" placeholder="圆点颜色，如 #0052D9" style="width:200px;" />
+                      <span v-if="item.color" :style="{display:'inline-block',width:'16px',height:'16px',borderRadius:'50%',background:item.color,verticalAlign:'middle',marginLeft:'4px',border:'1px solid #dcdcdc'}"></span>
+                    </div>
+                    <div class="item-field-full"><t-textarea v-model="item.description" placeholder="描述" :autosize="{minRows:1,maxRows:3}" /></div>
+                  </div>
+                </div>
+                <t-button theme="default" size="small" @click="addItem({year:'',description:'',color:'#0052D9'})">+ 添加时间线</t-button>
+              </template>
+
+              <!-- ===== honors 类型 ===== -->
+              <template v-if="formData.sectionType==='honors'">
+                <div v-for="(item, idx) in formContent.items" :key="'h-'+idx" class="dynamic-list-item">
+                  <div class="item-header">
+                    <span class="item-index">荣誉 #{{ idx+1 }}</span>
+                    <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
+                  </div>
+                  <div class="item-fields">
+                    <div class="item-field"><t-input v-model="item.icon" placeholder="图标Emoji，如 🏅" style="width:120px;" /></div>
+                    <div class="item-field"><t-input v-model="item.name" placeholder="荣誉名称" /></div>
+                  </div>
+                </div>
+                <t-button theme="default" size="small" @click="addItem({icon:'',name:'',image:''})">+ 添加荣誉</t-button>
+              </template>
+
+            </t-form>
+          </t-dialog>
+
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js?v=20260309"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260309"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260309"></script>
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+    const SidebarNavigation = window.SidebarNavigation;
+
+    createApp({
+      setup() {
+        const { adminInfo, handleLogout } = SidebarNavigation.useSidebarNavigation();
+
+        const loading = ref(false);
+        const submitting = ref(false);
+        const tableData = ref([]);
+        const formVisible = ref(false);
+        const formMode = ref('add');
+        const formData = reactive({ id: null, sectionType: '', title: '', icon: '' });
+        const formContent = reactive({});
+
+        // 头像上传相关
+        const avatarInputRefs = {};
+        const avatarUploading = reactive({});
+
+        const typeLabels = {
+          hero: 'Hero Banner',
+          quick_access: '快捷入口',
+          intro: '简介',
+          concepts: '核心理念',
+          teachers: '讲师团队',
+          timeline: '发展历程',
+          honors: '荣誉资质'
+        };
+
+        const typeSelectOptions = [
+          { value: 'hero', label: 'Hero Banner' },
+          { value: 'quick_access', label: '快捷入口' },
+          { value: 'intro', label: '简介' },
+          { value: 'concepts', label: '核心理念' },
+          { value: 'teachers', label: '讲师团队' },
+          { value: 'timeline', label: '发展历程' },
+          { value: 'honors', label: '荣誉资质' }
+        ];
+
+        const themeOptions = [
+          { value: 'primary', label: '蓝色(primary)' },
+          { value: 'success', label: '绿色(success)' },
+          { value: 'warning', label: '金色(warning)' },
+          { value: 'danger', label: '红色(danger)' }
+        ];
+
+        const columns = [
+          { colKey: 'sort_order', title: '排序', width: 120 },
+          { colKey: 'section_type', title: '类型', width: 130 },
+          { colKey: 'title', title: '标题' },
+          { colKey: 'status', title: '状态', width: 80 },
+          { colKey: 'operation', title: '操作', width: 150 }
+        ];
+
+        // 构建指定类型的默认 content
+        function getDefaultContent(type) {
+          switch (type) {
+            case 'hero': return { icon: '', title: '', subtitle: '', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+            case 'quick_access': return { items: [] };
+            case 'intro': return { paragraphs: [''] };
+            case 'concepts': return { items: [] };
+            case 'teachers': return { items: [] };
+            case 'timeline': return { items: [] };
+            case 'honors': return { items: [] };
+            default: return {};
+          }
+        }
+
+        function setFormContent(content) {
+          Object.keys(formContent).forEach(k => delete formContent[k]);
+          Object.assign(formContent, content || {});
+        }
+
+        function onTypeChange(val) {
+          setFormContent(getDefaultContent(val));
+        }
+
+        // 加载数据
+        async function loadData() {
+          loading.value = true;
+          try {
+            const res = await AdminAPI.manageAcademySections({ operation: 'list' });
+            tableData.value = res?.list || [];
+          } catch (e) {
+            TDesign.MessagePlugin.error('加载失败: ' + (e.message || '未知错误'));
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        // 新增
+        function handleAdd() {
+          formMode.value = 'add';
+          formData.id = null;
+          formData.sectionType = '';
+          formData.title = '';
+          formData.icon = '';
+          setFormContent({});
+          formVisible.value = true;
+        }
+
+        // 编辑
+        function handleEdit(row) {
+          formMode.value = 'edit';
+          formData.id = row.id;
+          formData.sectionType = row.section_type;
+          formData.title = row.title;
+          formData.icon = row.icon;
+
+          const content = typeof row.content === 'string' ? JSON.parse(row.content) : { ...row.content };
+
+          // teachers 类型需要加载头像预览URL
+          if (row.section_type === 'teachers' && content.items) {
+            content.items = content.items.map(item => ({
+              ...item,
+              avatarURL: item.avatar ? cloudFileIDToURL(item.avatar) : ''
+            }));
+          }
+
+          setFormContent(content);
+          formVisible.value = true;
+        }
+
+        // cloudFileIDToURL 工具函数（前端用）
+        function cloudFileIDToURL(fileID) {
+          if (!fileID || !fileID.startsWith('cloud://')) return fileID || '';
+          const withoutPrefix = fileID.replace('cloud://', '');
+          const dotIndex = withoutPrefix.indexOf('.');
+          const slashIndex = withoutPrefix.indexOf('/');
+          if (dotIndex === -1 || slashIndex === -1) return fileID;
+          const bucket = withoutPrefix.substring(0, slashIndex);
+          const path = withoutPrefix.substring(slashIndex + 1);
+          return `https://${bucket}.tcb.qcloud.la/${path}`;
+        }
+
+        // 提交
+        async function handleSubmit() {
+          if (!formData.sectionType) { TDesign.MessagePlugin.warning('请选择板块类型'); return; }
+          if (!formData.title) { TDesign.MessagePlugin.warning('请输入板块标题'); return; }
+
+          submitting.value = true;
+          try {
+            // 构建干净的 content（剥离 avatarURL 等临时字段）
+            const cleanContent = JSON.parse(JSON.stringify(formContent));
+            if (formData.sectionType === 'teachers' && cleanContent.items) {
+              cleanContent.items = cleanContent.items.map(item => {
+                const { avatarURL, ...rest } = item;
+                return rest;
+              });
+            }
+
+            const params = {
+              operation: formMode.value === 'add' ? 'create' : 'update',
+              sectionType: formData.sectionType,
+              title: formData.title,
+              icon: formData.icon,
+              content: cleanContent
+            };
+            if (formMode.value === 'edit') params.id = formData.id;
+
+            await AdminAPI.manageAcademySections(params);
+            TDesign.MessagePlugin.success(formMode.value === 'add' ? '创建成功' : '更新成功');
+            formVisible.value = false;
+            await loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('操作失败: ' + (e.message || '未知错误'));
+          } finally {
+            submitting.value = false;
+          }
+        }
+
+        // 删除
+        function handleDelete(row) {
+          TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除板块「${row.title}」吗？此操作不可恢复。`,
+            onConfirm: async () => {
+              try {
+                await AdminAPI.manageAcademySections({ operation: 'delete', id: row.id });
+                TDesign.MessagePlugin.success('删除成功');
+                await loadData();
+              } catch (e) {
+                TDesign.MessagePlugin.error('删除失败: ' + (e.message || '未知错误'));
+              }
+            }
+          });
+        }
+
+        // 显示/隐藏
+        async function handleToggleStatus(row) {
+          try {
+            await AdminAPI.manageAcademySections({ operation: 'toggleStatus', id: row.id });
+            await loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('切换状态失败');
+          }
+        }
+
+        // 排序：上移
+        async function handleMoveUp(row, rowIndex) {
+          if (rowIndex === 0) return;
+          const prev = tableData.value[rowIndex - 1];
+          await swapSort(row, prev);
+        }
+
+        // 排序：下移
+        async function handleMoveDown(row, rowIndex) {
+          if (rowIndex >= tableData.value.length - 1) return;
+          const next = tableData.value[rowIndex + 1];
+          await swapSort(row, next);
+        }
+
+        async function swapSort(a, b) {
+          try {
+            const tmpA = a.sort_order;
+            const tmpB = b.sort_order;
+            // 避免相同 sort_order 导致无法交换
+            const newA = tmpA === tmpB ? tmpB + 1 : tmpB;
+            const newB = tmpA;
+            await AdminAPI.manageAcademySections({
+              operation: 'updateSort',
+              items: [
+                { id: a.id, sortOrder: newA },
+                { id: b.id, sortOrder: newB }
+              ]
+            });
+            await loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error('排序失败');
+          }
+        }
+
+        // 动态列表操作
+        function addItem(template) {
+          if (!formContent.items) formContent.items = [];
+          formContent.items.push({ ...template });
+        }
+
+        function removeItem(idx) {
+          if (formContent.items) formContent.items.splice(idx, 1);
+        }
+
+        function addTeacher() {
+          if (!formContent.items) formContent.items = [];
+          formContent.items.push({ name: '', role: '', description: '', avatar: '', avatarURL: '', theme: 'primary' });
+        }
+
+        // 讲师头像上传
+        function triggerAvatarUpload(idx) {
+          const input = avatarInputRefs[idx];
+          if (input) input.click();
+        }
+
+        async function handleAvatarUpload(e, idx) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          if (!file) return;
+
+          const v = window.CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 2 * 1024 * 1024 });
+          if (!v.valid) { TDesign.MessagePlugin.error(v.error); return; }
+
+          avatarUploading[idx] = true;
+          try {
+            const ext = file.name.split('.').pop();
+            const cloudPath = `academy/sections/teachers/${Date.now()}_${idx}.${ext}`;
+            const r = await window.CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            formContent.items[idx].avatar = r.fileID;
+            formContent.items[idx].avatarURL = r.tempFileURL || cloudFileIDToURL(r.fileID);
+            TDesign.MessagePlugin.success('头像上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || '未知错误'));
+          } finally {
+            avatarUploading[idx] = false;
+          }
+        }
+
+        function removeAvatar(idx) {
+          formContent.items[idx].avatar = '';
+          formContent.items[idx].avatarURL = '';
+        }
+
+        onMounted(() => { loadData(); });
+
+        return {
+          adminInfo, handleLogout, loading, submitting,
+          tableData, columns, typeLabels, typeSelectOptions, themeOptions,
+          formVisible, formMode, formData, formContent,
+          avatarInputRefs, avatarUploading,
+          loadData, handleAdd, handleEdit, handleDelete, handleSubmit,
+          handleToggleStatus, handleMoveUp, handleMoveDown,
+          onTypeChange, addItem, removeItem, addTeacher,
+          triggerAvatarUpload, handleAvatarUpload, removeAvatar
+        };
+      }
+    }).use(TDesign)
+      .component('sidebar-menu', SidebarNavigation.SidebarMenu)
+      .mount('#app');
+  </script>
+</body>
+</html>

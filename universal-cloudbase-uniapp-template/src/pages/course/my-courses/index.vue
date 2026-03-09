@@ -43,14 +43,19 @@
                     class="expire-tag"
                     :class="course.expireExpired
                       ? 'expire-tag--danger'
-                      : course.expireLabel === '待签合同'
-                        ? 'expire-tag--info'
-                        : course.expireUrgent
-                          ? 'expire-tag--warning'
-                          : 'expire-tag--success'"
+                      : course.expireUrgent
+                        ? 'expire-tag--warning'
+                        : 'expire-tag--success'"
                   >
                     {{ course.expireLabel }}
                   </view>
+                </view>
+                <!-- 合同驳回原因提示 -->
+                <view
+                  v-if="course.contract_rejected"
+                  class="contract-reject-tip"
+                >
+                  ❌ 合同驳回：{{ course.contract_reject_reason }}
                 </view>
               </view>
             </view>
@@ -129,26 +134,24 @@ const courseStyles: Record<number, { icon: string; gradient: string }> = {
 /**
  * 计算有效期剩余文案
  * - status=3（已过期）→ 「已过期」
- * - contract_signed=0（未签合同）→ 「待签合同」（沙龙课不显示）
- * - contract_signed=1 + status=1 → 根据 expire_at 算剩余天数
+ * - contract_signed=1 + expire_at → 根据 expire_at 算剩余天数
+ * - 未签合同时不显示任何标识
  */
 const calcExpireInfo = (item: any) => {
   const isSalon = item.course_type === 4 || item.type === 4;
 
-  // 沙龙课：不显示有效期标签
   if (isSalon) return { label: '', urgent: false, expired: false };
 
-  // 已过期（定时任务标记 status=3）
   if (item.status === 3) {
     return { label: '已过期', urgent: true, expired: true };
   }
 
-  // 未签合同（待激活状态）
+  // 未签合同：不显示标识
   if (item.contract_signed === 0) {
-    return { label: '待签合同', urgent: false, expired: false };
+    return { label: '', urgent: false, expired: false };
   }
 
-  // 已签合同且有效（status=1 + contract_signed=1）→ 计算剩余天数
+  // 已签合同且有效 → 计算剩余天数
   if (!item.expire_at) return { label: '', urgent: false, expired: false };
 
   const parts = item.expire_at.split(' ')[0].split('-').map(Number);
@@ -185,7 +188,10 @@ const mapCourseItem = (item: any) => {
     expireUrgent: expireInfo.urgent,
     expireExpired: expireInfo.expired,
     isExpired: item.status === 3,
-    status: item.status
+    status: item.status,
+    contract_audit_pending: item.contract_audit_pending || false,
+    contract_rejected: item.contract_rejected || false,
+    contract_reject_reason: item.contract_reject_reason || null
   };
 };
 
@@ -383,6 +389,13 @@ const goToCourseSchedule = (courseId: string) => {
     color: $td-brand-color;
     background-color: #e8f0fd;
   }
+}
+
+.contract-reject-tip {
+  font-size: 22rpx;
+  color: #d54941;
+  margin-top: 8rpx;
+  line-height: 1.5;
 }
 
 // 加载更多

@@ -21,6 +21,7 @@ module.exports = async (event, context) => {
     let queryBuilder = db
       .from('orders')
       .select(`
+        id,
         order_no,
         order_type,
         order_name,
@@ -90,6 +91,7 @@ module.exports = async (event, context) => {
 
     // 格式化数据
     const list = (result.list || []).map(order => ({
+      id: order.id,
       order_no: order.order_no,
       order_type: order.order_type,
       order_name: order.order_name,

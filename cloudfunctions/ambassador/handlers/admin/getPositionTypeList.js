@@ -1,8 +1,11 @@
 /**
  * 管理端接口：获取活动岗位类型列表
  * Action: getPositionTypeList
+ *
+ * 返回 is_fixed：辅导员/会务义工/沙龙组织为固定岗位，前端用于隐藏删除按钮、禁用名称编辑
  */
 const { db, response } = require('../../common');
+const { isFixedPosition } = require('../../constants/activityType');
 
 module.exports = async (event, context) => {
   const { includeDisabled = false } = event;
@@ -13,6 +16,7 @@ module.exports = async (event, context) => {
     let query = db
       .from('ambassador_position_types')
       .select('*')
+      .order('sort_order', { ascending: true })
       .order('id', { ascending: true });
 
     if (!includeDisabled) {
@@ -39,6 +43,7 @@ module.exports = async (event, context) => {
       description: item.description,
       status: item.status,
       sort_order: item.sort_order,
+      is_fixed: isFixedPosition(item.name),
       created_at: item.created_at,
       updated_at: item.updated_at
     }));

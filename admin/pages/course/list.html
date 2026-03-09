@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
   
   <style>
     .type-tag {
@@ -165,7 +165,7 @@
         <template #operation="{ row }">
           <t-space>
             <t-link theme="primary" :disabled="row.type === 3" @click="row.type !== 3 && editCourse(row)">编辑</t-link>
-            <t-link v-if="row.type !== 4" theme="primary" @click="openCourseContract(row)">合同</t-link>
+            <t-link v-if="row.type !== 4 && row.need_contract === 1" theme="primary" @click="openCourseContract(row)">合同</t-link>
             <t-link 
               :theme="row.status === 1 ? 'warning' : 'success'" 
               @click="toggleStatus(row)"
@@ -249,6 +249,17 @@
 
           <t-form-item label="课程时长" name="duration">
             <t-input v-model="editForm.duration" placeholder="例如：3天2夜" :disabled="isCourseLocked" />
+          </t-form-item>
+
+          <t-form-item label="是否需要合同" name="needContract" :rules="[{ required: true, message: '请选择是否需要签订合同' }]">
+            <t-radio-group v-model="editForm.needContract" :disabled="isCourseLocked">
+              <t-radio :value="1">需要签订合同</t-radio>
+              <t-radio :value="0">不需要签订合同</t-radio>
+            </t-radio-group>
+            <div style="font-size:12px; color:#999; margin-top:4px;">
+              需要合同：管理员上传合同后触发课程有效期和推荐奖励<br>
+              不需要合同：学员第一次上课后自动触发课程有效期和推荐奖励
+            </div>
           </t-form-item>
         </template>
 
@@ -350,12 +361,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260302b"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260302b"></script>
+  <script src="../../assets/js/config.js?v=20260305"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260302b"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260302b"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -451,6 +462,7 @@
           teacher: '',
           sortOrder: 0,
           status: 0,
+          needContract: 1,
           enableGiftCourse: false,  // 赠送课程开关（仅密训班）
           includedCourseId: null    // 赠送课程ID（单选）
         });
@@ -552,6 +564,7 @@
             teacher: '',
             sortOrder: 0,
             status: 0,
+            needContract: 1,
             enableGiftCourse: false,
             includedCourseId: null
           });
@@ -592,6 +605,7 @@
             teacher: course.teacher,
             sortOrder: course.sort_order,
             status: course.status,
+            needContract: course.need_contract ?? 1,
             enableGiftCourse: !!giftId,
             includedCourseId: giftId
           });
@@ -634,6 +648,7 @@
               teacher: editForm.teacher,
               sortOrder: editForm.sortOrder,
               status: editForm.status,
+              needContract: isSalon ? 0 : editForm.needContract,
               includedCourseIds: (editForm.type === 2 && editForm.enableGiftCourse && editForm.includedCourseId)
                 ? editForm.includedCourseId
                 : null

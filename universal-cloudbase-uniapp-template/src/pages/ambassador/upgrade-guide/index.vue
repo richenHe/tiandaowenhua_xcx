@@ -103,34 +103,34 @@
                 </view>
               </view>
 
-              <!-- 步骤2：支付升级费用（有支付要求的等级才显示，先于签合同） -->
-              <view v-if="paymentOption" class="step-item">
-                <view class="step-number" :class="stepClass(paymentStepStatus)">2</view>
-                <view class="step-content">
-                  <view class="step-title">支付 {{ paymentOption.fee }} 元升级费用</view>
-                  <view class="step-desc">{{ paymentOption.completed ? '升级费用已支付 ✓' : '申请通过后支付升级费，费用将转为冻结积分' }}</view>
-                  <template v-if="paymentOption.eligible">
-                    <view @tap="handlePayUpgrade">
-                      <button class="t-button t-button--theme-warning t-button--variant-base t-button--block" style="margin-top:16rpx;">
-                        <span class="t-button__text">💳 支付升级费用</span>
-                      </button>
-                    </view>
-                  </template>
-                  <template v-else-if="!paymentOption.completed">
-                    <view class="step-desc-reason">{{ paymentOption.reason }}</view>
-                  </template>
-                </view>
-              </view>
-
-              <!-- 步骤2或步骤3：签署协议（无支付=步骤2，有支付=步骤3） -->
+              <!-- 步骤2：签署协议 -->
               <view v-if="contractOption" class="step-item">
-                <view class="step-number" :class="stepClass(contractStepStatus)">{{ paymentOption ? 3 : 2 }}</view>
+                <view class="step-number" :class="stepClass(contractStepStatus)">2</view>
                 <view class="step-content">
                   <view class="step-title">签署协议</view>
                   <view class="step-desc">
-                    {{ contractOption.completed ? '协议已签署 ✓' : (paymentOption ? '支付升级费后签署协议，签署即完成升级' : (contractOption.requirements?.join('；') || contractOption.name)) }}
+                    {{ contractOption.completed ? '协议已签署 ✓'
+                      : contractOption.audit_pending ? '协议审核中 ⏳'
+                      : (contractOption.requirements?.join('；') || contractOption.name) }}
                   </view>
-                  <template v-if="contractOption.eligible">
+                  <!-- 待审核：不显示签署按钮，显示提示 -->
+                  <template v-if="contractOption.audit_pending">
+                    <view class="step-desc-reason" style="color:#ff9500;">
+                      协议已提交，正在等待管理员审核，审核通过后升级自动生效
+                    </view>
+                  </template>
+                  <!-- 已驳回：显示原因 + 重新签署按钮 -->
+                  <template v-else-if="contractOption.rejected">
+                    <view class="step-desc-reason" style="color:#e34d59;margin-bottom:12rpx;">
+                      ❌ 协议已被驳回：{{ contractOption.reject_reason }}
+                    </view>
+                    <view v-if="contractOption.eligible" @tap="goToContractSign">
+                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:8rpx;">
+                        <span class="t-button__text">📝 重新签署</span>
+                      </button>
+                    </view>
+                  </template>
+                  <template v-else-if="contractOption.eligible">
                     <view @tap="goToContractSign">
                       <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
                         <span class="t-button__text">📝 立即签署</span>
@@ -202,7 +202,7 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import { AmbassadorApi, UserApi, OrderApi } from '@/api'
+import { AmbassadorApi, UserApi } from '@/api'
 import type { UpgradeGuide, UpgradeBenefitItem } from '@/api/types/ambassador'
 
 // ── 等级常量 ──
@@ -257,9 +257,6 @@ const rejectReason = computed(() => guideData.value?.application_reject_reason |
 const contractOption = computed(() =>
   guideData.value?.upgrade_options.find(o => o.type === 'contract') || null
 )
-const paymentOption = computed(() =>
-  guideData.value?.upgrade_options.find(o => o.type === 'payment') || null
-)
 
 // 升级收益文案
 const upgradeBenefits = computed<UpgradeBenefitItem[] | null>(() => {
@@ -285,13 +282,6 @@ const contractStepStatus = computed(() => {
   if (contractOption.value.eligible) return 'active'
   return 'pending'
 })
-const paymentStepStatus = computed(() => {
-  if (!paymentOption.value) return 'pending'
-  if (paymentOption.value.completed) return 'done'
-  if (paymentOption.value.eligible) return 'active'
-  return 'pending'
-})
-
 function stepClass(status: string) {
   return {
     'step-done': status === 'done',
@@ -330,25 +320,22 @@ const fetchGuide = async (urlTargetLevel: number | null = null) => {
     let resolvedTargetLevel: number
 
     if (urlTargetLevel && urlTargetLevel >= 1 && urlTargetLevel <= 4) {
-      // URL 明确指定目标等级，同时从 API 返回中同步当前等级
       resolvedTargetLevel = urlTargetLevel
     } else {
-      // 未传 URL 参数：先获取用户真实等级，再计算目标等级
       const profile = await UserApi.getProfile()
       const actualLevel = profile.ambassador_level || 0
       currentLevel.value = actualLevel
-      resolvedTargetLevel = actualLevel + 1
+      // 普通用户(0)看 target=1（准青鸾即时升级页），准青鸾(1)看 target=2（青鸾）
+      resolvedTargetLevel = actualLevel === 0 ? 1 : actualLevel + 1
     }
 
     if (resolvedTargetLevel > 4) {
-      // 已是最高等级
       loading.value = false
       return
     }
 
     const result = await AmbassadorApi.getUpgradeGuide(resolvedTargetLevel)
     guideData.value = result
-    // 以 API 返回的当前等级为准（确保和服务端一致）
     currentLevel.value = result.current_level.level
   } catch (error: any) {
     console.error('获取升级指南失败:', error)
@@ -360,7 +347,8 @@ const fetchGuide = async (urlTargetLevel: number | null = null) => {
 
 // ── 导航函数 ──
 const goToApply = () => {
-  const tl = currentLevel.value + 1
+  // 普通用户和准青鸾的 target_level 均为 2（青鸾），青鸾的为 3（鸿鹄）
+  const tl = currentLevel.value <= 1 ? 2 : currentLevel.value + 1
   uni.navigateTo({
     url: `/pages/ambassador/apply/index?targetLevel=${tl}`
   })
@@ -371,25 +359,6 @@ const goToContractSign = () => {
   uni.navigateTo({
     url: `/pages/ambassador/contract-sign/index?upgradeType=${tl}`
   })
-}
-
-const handlePayUpgrade = async () => {
-  if (!paymentOption.value) return
-  const targetLevel = currentLevel.value + 1
-  try {
-    uni.showLoading({ title: '创建订单中…', mask: true })
-    const orderResult = await OrderApi.create({
-      order_type: 4,
-      item_id: targetLevel
-    })
-    uni.hideLoading()
-    uni.redirectTo({
-      url: `/pages/order/payment/index?orderNo=${orderResult.order_no}`
-    })
-  } catch (error: any) {
-    uni.hideLoading()
-    uni.showToast({ title: error?.message || '创建订单失败', icon: 'none' })
-  }
 }
 </script>
 

@@ -65,7 +65,16 @@ module.exports = async (event, context) => {
         contract_end: sig.contract_end,
         expires_at: sig.contract_end,                   // 前端使用 expires_at
         status: sig.status,
-        status_text: sig.status === 1 ? '有效' : sig.status === 2 ? '已过期' : sig.status === 3 ? '已续签' : '已作废',
+        status_text: sig.status === 1 ? '有效'
+          : sig.status === 2 ? '已过期'
+          : sig.status === 3 ? '已续签'
+          : sig.status === 4 ? '已作废'
+          : sig.status === 5 ? '待审核'
+          : sig.status === 6 ? '已驳回'
+          : '未知',
+        audit_admin_id: sig.audit_admin_id,
+        audit_time: sig.audit_time,
+        reject_reason: sig.reject_reason,
         sign_ip: sig.sign_ip,
         sign_device: sig.sign_device
       };

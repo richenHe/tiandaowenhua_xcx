@@ -25,6 +25,7 @@
  * @param {number}  event.sortOrder     - 排序，对应 DB 字段 sort_order
  * @param {number}  event.status        - 状态（新课程强制为 0=下架）
  * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
+ * @param {number}  event.needContract  - 是否需要签订合同：0不需要/1需要，对应 DB 字段 need_contract
  */
 const { insert } = require('../../common/db');
 const { response } = require('../../common');
@@ -48,6 +49,7 @@ module.exports = async (event, context) => {
   const teacher = event.teacher;
   const sortOrder = event.sortOrder || event.sort_order;
   const includedCourseIds = event.includedCourseIds || event.included_course_ids;
+  const needContract = event.needContract !== undefined ? event.needContract : event.need_contract;
 
   try {
     const isSalon = parseInt(type) === 4;
@@ -95,6 +97,7 @@ module.exports = async (event, context) => {
       allow_retrain: isSalon ? 0 : (allowRetrain ? 1 : 0),
       validity_days: validityDaysParsed,
       included_course_ids: includedCourseIdsJson,
+      need_contract: isSalon ? 0 : (parseInt(needContract) === 0 ? 0 : 1),
       sort_order: sortOrder || 0,
       status: 0
     });

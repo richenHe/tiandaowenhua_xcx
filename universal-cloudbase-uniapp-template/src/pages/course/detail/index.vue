@@ -94,10 +94,6 @@
                         </view>
                       </view>
                     </view>
-                    <view v-if="gc.description" style="margin-top: 24rpx;">
-                      <view class="section-heading">📖 课程介绍</view>
-                      <view class="section-text">{{ gc.description }}</view>
-                    </view>
                     <view v-if="gc.outline && gc.outline.length > 0" style="margin-top: 24rpx;">
                       <view class="section-heading">📋 课程大纲</view>
                       <view class="section-list">

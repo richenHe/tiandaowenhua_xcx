@@ -6,22 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>预约管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260301">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260306">
   <style>
+    .daily-checkin-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .daily-checkin-item { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #e7e7e7; border-radius: 6px; font-size: 13px; }
+    .daily-checkin-item.checked { border-color: #2ba471; background: #f3faf6; }
+    .daily-checkin-item.unchecked { border-color: #dcdcdc; background: #fafafa; }
+    .daily-checkin-item .date-text { min-width: 80px; }
+    .daily-checkin-item .status-text { font-weight: 500; }
+    .daily-checkin-item .status-text.checked { color: #2ba471; }
+    .daily-checkin-item .status-text.unchecked { color: #999; }
   </style>
 </head>
 <body>
   <div id="app">
     <t-layout style="height: 100vh;">
-      <!-- 顶部导航 -->
-      <t-header height="64px" style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 24px;
-        background: #fff;
-        border-bottom: 1px solid #dcdcdc;
-      ">
+      <t-header height="64px" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; background: #fff; border-bottom: 1px solid #dcdcdc;">
         <div style="display: flex; align-items: center; gap: 16px;">
           <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
         </div>
@@ -32,10 +32,8 @@
       </t-header>
       
       <t-layout>
-        <!-- 侧边菜单 -->
         <sidebar-menu active-key="appointment-list"></sidebar-menu>
         
-        <!-- 主内容区 -->
         <t-content class="page-content">
     <div class="page-container">
       <div class="page-header">
@@ -54,10 +52,12 @@
           <t-select v-model="filters.status" :options="statusOptions" placeholder="状态" clearable style="width: 150px;" />
         </t-form-item>
         <t-form-item>
+          <t-date-picker v-model="filters.date" clearable placeholder="按上课日期筛选" style="width: 180px;" />
+        </t-form-item>
+        <t-form-item>
           <t-space>
             <t-button theme="primary" @click="handleSearch">查询</t-button>
             <t-button theme="default" @click="handleReset">重置</t-button>
-            <t-button theme="warning" @click="handleBatchCheckIn" :disabled="selectedRowKeys.length === 0">批量签到 ({{ selectedRowKeys.length }})</t-button>
           </t-space>
         </t-form-item>
       </t-form>
@@ -67,8 +67,6 @@
         :columns="columns" 
         :loading="loading" 
         :pagination="pagination" 
-        :selected-row-keys="selectedRowKeys"
-        @select-change="handleSelectChange"
         @page-change="handlePageChange" 
         row-key="id" 
         bordered 
@@ -76,178 +74,233 @@
         hover
       >
         <template #status="{ row }">
-          <t-tag v-if="row.status === 0" theme="warning">待上课</t-tag>
-          <t-tag v-else-if="row.status === 1" theme="success">已签到</t-tag>
-          <t-tag v-else-if="row.status === 2" theme="danger">缺席</t-tag>
-          <t-tag v-else-if="row.status === 3" theme="default">已取消</t-tag>
+          <template v-if="row.is_salon">
+            <t-tag v-if="row.status === 0" theme="warning">待上课</t-tag>
+            <t-tag v-else-if="row.status === 1" theme="success">已签到</t-tag>
+            <t-tag v-else-if="row.status === 2" theme="default">已结课</t-tag>
+            <t-tag v-else-if="row.status === 3" theme="default">已取消</t-tag>
+          </template>
+          <template v-else>
+            <t-tag v-if="row.status === 0" theme="primary">进行中</t-tag>
+            <t-tag v-else-if="row.status === 1" theme="default">已结课</t-tag>
+            <t-tag v-else-if="row.status === 3" theme="default">已取消</t-tag>
+            <t-tag v-else-if="row.status === 4" theme="danger">缺席</t-tag>
+          </template>
         </template>
         <template #operation="{ row }">
           <t-space size="small">
             <t-button theme="primary" size="small" variant="text" @click="handleView(row)">查看详情</t-button>
-            <t-button v-if="row.status === 0" theme="success" size="small" variant="text" @click="handleCheckIn(row)">签到</t-button>
-            <t-button v-if="row.status === 0" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
+            <t-button v-if="!row.is_salon && row.status === 0" theme="danger" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
           </t-space>
         </template>
       </t-table>
     </div>
 
-    <t-dialog v-model:visible="detailVisible" header="预约详情" width="600px" :footer="false">
+    <!-- 预约详情弹窗 -->
+    <t-dialog v-model:visible="detailVisible" header="预约详情" width="680px" :footer="false">
       <t-descriptions v-if="currentRecord" bordered :column="2">
         <t-descriptions-item label="预约编号" :span="2">{{ currentRecord.appointment_no }}</t-descriptions-item>
         <t-descriptions-item label="用户姓名">{{ currentRecord.user_name }}</t-descriptions-item>
         <t-descriptions-item label="手机号">{{ currentRecord.user_phone }}</t-descriptions-item>
         <t-descriptions-item label="课程名称" :span="2">{{ currentRecord.course_name }}</t-descriptions-item>
-        <t-descriptions-item label="上课时间" :span="2">{{ currentRecord.class_date }} {{ currentRecord.start_time }}-{{ currentRecord.end_time }}</t-descriptions-item>
-        <t-descriptions-item label="上课地点" :span="2">{{ currentRecord.location }}</t-descriptions-item>
+        <t-descriptions-item label="上课日期">{{ currentRecord.class_date }}</t-descriptions-item>
+        <t-descriptions-item label="结课日期">{{ currentRecord.class_end_date }}</t-descriptions-item>
+        <t-descriptions-item label="上课时段">{{ currentRecord.class_time }}</t-descriptions-item>
+        <t-descriptions-item label="上课地点">{{ currentRecord.location }}</t-descriptions-item>
         <t-descriptions-item label="预约时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
         <t-descriptions-item label="状态" :span="2">
-          <t-tag v-if="currentRecord.status === 0" theme="warning">待上课</t-tag>
-          <t-tag v-else-if="currentRecord.status === 1" theme="success">已签到</t-tag>
-          <t-tag v-else-if="currentRecord.status === 2" theme="danger">缺席</t-tag>
-          <t-tag v-else-if="currentRecord.status === 3" theme="default">已取消</t-tag>
+          <t-tag v-if="currentRecord.is_salon">{{ currentRecord.status_name }}</t-tag>
+          <t-tag v-else>{{ currentRecord.status_name }}</t-tag>
         </t-descriptions-item>
       </t-descriptions>
+
+      <!-- 非沙龙课程：每日签到记录 -->
+      <template v-if="currentRecord && !currentRecord.is_salon && currentRecord.status !== 3">
+        <t-divider>每日签到记录</t-divider>
+        <div v-if="dailyCheckinsLoading" style="text-align: center; padding: 20px;">
+          <t-loading text="加载签到记录..." />
+        </div>
+        <div v-else class="daily-checkin-grid">
+          <div v-for="day in dailyCheckinDays" :key="day.date" :class="['daily-checkin-item', day.checked ? 'checked' : 'unchecked']">
+            <span class="date-text">{{ day.date }}</span>
+            <span :class="['status-text', day.checked ? 'checked' : 'unchecked']">
+              {{ day.checked ? '已签到' : '未签到' }}
+            </span>
+            <t-button v-if="!day.checked" size="small" theme="primary" variant="text" @click="handleDailyCheckin(day.date, 'checkin')">补签</t-button>
+            <t-button v-else size="small" theme="danger" variant="text" @click="handleDailyCheckin(day.date, 'cancel')">取消签到</t-button>
+          </div>
+        </div>
+      </template>
     </t-dialog>
-          </t-content>
+        </t-content>
       </t-layout>
     </t-layout>
   </div>
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260227"></script>
-  <script src="../../assets/js/admin-api.js?v=20260227f"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260227ddc"></script>
+  <script src="../../assets/js/config.js?v=20260306"></script>
+  <script src="../../assets/js/admin-api.js?v=20260306"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
 
   <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
     createApp({
       setup() {
-        // 管理员信息
         const adminInfo = ref(null);
         
-        // 检查登录状态
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
-          if (!adminInfo.value) {
-            window.location.href = '../../index.html';
-            return false;
-          }
+          if (!adminInfo.value) { window.location.href = '../../index.html'; return false; }
           return true;
         };
         
-        // 退出登录
-        const handleLogout = () => {
-          AdminAPI.logout();
-        };
+        const handleLogout = () => { AdminAPI.logout(); };
         
-        // 菜单切换
-        const handleMenuChange = (value) => {
-          const routes = {
-            'dashboard': '../../dashboard.html',
-            'user-list': '../user/list.html',
-            'user-referee': '../user/referee.html',
-            'user-referee-logs': '../user/referee-logs.html',
-            'order-list': '../order/list.html',
-            'order-refund': '../order/refund.html',
-            'withdraw-audit': '../order/withdraw-audit.html',
-            'mall-goods': '../order/mall-goods.html',
-            'course-list': '../course/list.html',
-            'schedule-list': '../course/schedule.html',
-            'appointment-list': '../course/appointment.html',
-            'case-list': '../course/case.html',
-            'material-list': '../course/material.html',
-            'ambassador-list': '../ambassador/list.html',
-            'application-audit': '../ambassador/application-audit.html',
-            'activity-list': '../ambassador/activity.html',
-            'contract-list': '../ambassador/contract.html',
-            'admin-list': '../system/admin.html',
-            'config': '../system/config.html',
-            'announcement-list': '../system/announcement.html',
-            'feedback-list': '../system/feedback.html',
-            'notification-list': '../system/notification.html',
-            'level-config': '../system/level-config.html',
-          };
-          
-          if (routes[value]) {
-            window.location.href = routes[value];
-          }
-        };
-        
-        
-        const loading = ref(false); const tableData = ref([]); const detailVisible = ref(false); const currentRecord = ref(null);
-        const filters = ref({ keyword: '', courseId: null, status: null }); const courseOptions = ref([]);
-        // appointments.status: 0待上课/1已签到/2缺席/3已取消
-        const statusOptions = [{ label: '待上课', value: 0 }, { label: '已签到', value: 1 }, { label: '缺席', value: 2 }, { label: '已取消', value: 3 }];
+        const loading = ref(false);
+        const tableData = ref([]);
+        const detailVisible = ref(false);
+        const currentRecord = ref(null);
+        const filters = ref({ keyword: '', courseId: null, status: null, date: '' });
+        const courseOptions = ref([]);
+        const statusOptions = [
+          { label: '进行中/待上课', value: 0 },
+          { label: '已结课/已签到', value: 1 },
+          { label: '已结课(沙龙)', value: 2 },
+          { label: '已取消', value: 3 },
+          { label: '缺席(非沙龙)', value: 4 }
+        ];
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
-        const selectedRowKeys = ref([]); // 批量签到选中的行
         const columns = [
-          { colKey: 'appointment_no', title: '预约编号', width: 180 }, { colKey: 'user_name', title: '用户姓名', width: 120 },
-          { colKey: 'user_phone', title: '手机号', width: 130 }, { colKey: 'course_name', title: '课程名称', width: 200 },
-          { colKey: 'class_date', title: '上课日期', width: 120 }, { colKey: 'class_time', title: '上课时间', width: 150 },
-          { colKey: 'created_at', title: '预约时间', width: 160 }, { colKey: 'status', title: '状态', width: 100, cell: 'status' },
-          { colKey: 'operation', title: '操作', width: 200, fixed: 'right', cell: 'operation' }
+          { colKey: 'appointment_no', title: '预约编号', width: 160 },
+          { colKey: 'user_name', title: '用户姓名', width: 100 },
+          { colKey: 'user_phone', title: '手机号', width: 130 },
+          { colKey: 'course_name', title: '课程名称', width: 180 },
+          { colKey: 'class_date', title: '上课日期', width: 110 },
+          { colKey: 'class_end_date', title: '结课日期', width: 110 },
+          { colKey: 'class_time', title: '上课时段', width: 130 },
+          { colKey: 'created_at', title: '预约时间', width: 160 },
+          { colKey: 'status', title: '状态', width: 100, cell: 'status' },
+          { colKey: 'operation', title: '操作', width: 220, fixed: 'right', cell: 'operation' }
         ];
 
         const fetchData = async () => {
-          loading.value = true; try {
-            const params = { page: pagination.value.current, pageSize: pagination.value.pageSize, ...filters.value };
-            const data = await AdminAPI.getAppointmentList(params); tableData.value = data.list; pagination.value.total = data.total;
-          } catch (error) { TDesign.MessagePlugin.error(error.message || '获取数据失败'); } finally { loading.value = false; }
-        };
-        const fetchCourses = async () => { try { const data = await AdminAPI.getAllCourses(); courseOptions.value = data.map(c => ({ label: c.name, value: c.id })); } catch (error) { console.error('获取课程列表失败', error); } };
-        const handleSearch = () => { pagination.value.current = 1; fetchData(); };
-        const handleReset = () => { filters.value = { keyword: '', courseId: null, status: null }; handleSearch(); };
-        const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
-        const handleView = (row) => { currentRecord.value = row; detailVisible.value = true; };
-        const handleCheckIn = async (row) => {
-          try { await AdminAPI.checkInAppointment({ appointmentId: row.id }); TDesign.MessagePlugin.success('签到成功'); fetchData(); } catch (error) { TDesign.MessagePlugin.error(error.message || '签到失败'); }
-        };
-        const handleCancel = async (row) => {
-          try { await AdminAPI.cancelAppointment({ appointmentId: row.id }); TDesign.MessagePlugin.success('已取消'); fetchData(); } catch (error) { TDesign.MessagePlugin.error(error.message || '取消失败'); }
-        };
-
-        // 批量签到相关
-        const handleSelectChange = (value, { selectedRowData }) => {
-          selectedRowKeys.value = value;
-        };
-
-        const handleBatchCheckIn = async () => {
-          if (selectedRowKeys.value.length === 0) {
-            TDesign.MessagePlugin.warning('请先选择要签到的预约');
-            return;
-          }
-
+          loading.value = true;
           try {
-            const result = await AdminAPI.batchCheckIn({ appointment_ids: selectedRowKeys.value });
-            TDesign.MessagePlugin.success(`批量签到成功！成功 ${result.success_count} 条，失败 ${result.failed_count} 条`);
-            selectedRowKeys.value = [];
+            const params = {
+              page: pagination.value.current,
+              pageSize: pagination.value.pageSize,
+              keyword: filters.value.keyword || undefined,
+              course_id: filters.value.courseId || undefined,
+              status: filters.value.status !== null && filters.value.status !== undefined ? filters.value.status : undefined,
+              date: filters.value.date || undefined
+            };
+            const data = await AdminAPI.getAppointmentList(params);
+            tableData.value = data.list;
+            pagination.value.total = data.total;
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取数据失败');
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const fetchCourses = async () => {
+          try {
+            const data = await AdminAPI.getAllCourses();
+            courseOptions.value = data.map(c => ({ label: c.name, value: c.id }));
+          } catch (error) { console.error('获取课程列表失败', error); }
+        };
+
+        const handleSearch = () => { pagination.value.current = 1; fetchData(); };
+        const handleReset = () => { filters.value = { keyword: '', courseId: null, status: null, date: '' }; handleSearch(); };
+        const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
+
+        // ===== 每日签到记录 =====
+        const dailyCheckinsLoading = ref(false);
+        const dailyCheckinDays = ref([]);
+        const dailyCheckinsRaw = ref([]);
+
+        // 生成日期范围数组
+        const generateDateRange = (start, end) => {
+          const dates = [];
+          const d = new Date(start + 'T00:00:00');
+          const endD = new Date(end + 'T00:00:00');
+          while (d <= endD) {
+            dates.push(d.toISOString().slice(0, 10));
+            d.setDate(d.getDate() + 1);
+          }
+          return dates;
+        };
+
+        const loadDailyCheckins = async (appointmentId) => {
+          dailyCheckinsLoading.value = true;
+          dailyCheckinDays.value = [];
+          try {
+            const data = await AdminAPI.getDailyCheckins({ appointmentId });
+            dailyCheckinsRaw.value = data.checkins || [];
+            const checkedDates = new Set(dailyCheckinsRaw.value.map(c => c.checkin_date));
+            const allDates = generateDateRange(data.class_date, data.class_end_date);
+            dailyCheckinDays.value = allDates.map(date => ({
+              date,
+              checked: checkedDates.has(date)
+            }));
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || '获取签到记录失败');
+          } finally {
+            dailyCheckinsLoading.value = false;
+          }
+        };
+
+        const handleDailyCheckin = async (checkinDate, operation) => {
+          if (!currentRecord.value) return;
+          const actionText = operation === 'checkin' ? '补签' : '取消签到';
+          try {
+            await AdminAPI.manageDailyCheckin({
+              appointmentId: currentRecord.value.id,
+              checkinDate,
+              operation
+            });
+            TDesign.MessagePlugin.success(`${actionText}成功`);
+            await loadDailyCheckins(currentRecord.value.id);
+          } catch (error) {
+            TDesign.MessagePlugin.error(error.message || `${actionText}失败`);
+          }
+        };
+
+        const handleView = (row) => {
+          currentRecord.value = row;
+          detailVisible.value = true;
+          // 非沙龙课程自动加载每日签到
+          if (!row.is_salon && row.status !== 3) {
+            loadDailyCheckins(row.id);
+          }
+        };
+
+        const handleCancel = async (row) => {
+          try {
+            await AdminAPI.cancelAppointment({ appointmentId: row.id });
+            TDesign.MessagePlugin.success('已取消');
             fetchData();
           } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '批量签到失败');
+            TDesign.MessagePlugin.error(error.message || '取消失败');
           }
         };
 
         onMounted(() => {
           if (checkAuth()) { fetchData(); fetchCourses(); }
         });
+
         return {
-          activeMenuKey: 'appointment-list',adminInfo,
+          activeMenuKey: 'appointment-list', adminInfo,
           handleLogout,
-          handleMenuChange, loading, tableData, detailVisible, currentRecord, filters, courseOptions, statusOptions, pagination, columns, 
-          selectedRowKeys, handleSearch, handleReset, handlePageChange, handleView, handleCheckIn, handleCancel,
-          handleSelectChange, handleBatchCheckIn
+          loading, tableData, detailVisible, currentRecord, filters, courseOptions, statusOptions, pagination, columns,
+          handleSearch, handleReset, handlePageChange, handleView, handleCancel,
+          dailyCheckinsLoading, dailyCheckinDays,
+          handleDailyCheckin
         };
       }
     }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-

@@ -7,9 +7,13 @@
  * - _openid 字段：存储真实微信 openid（与 openid 字段相同）
  * - openid 字段：存储真实微信 openid（通过 code2session 二次确认）
  * - 迁移兼容：老用户 _openid 存的是 CloudBase uid，通过 openid 字段查找并自动迁移
+ * 
+ * 推荐人绑定策略：
+ * - 新用户：注册时自动从 scene 绑定推荐人
+ * - 老用户：若携带 scene 且推荐人未锁定（未购课），自动更新推荐人
  */
 const { findOne, insert, update, query } = require('../../common/db');
-const { response } = require('../../common');
+const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   // 切换至 wx.cloud.callFunction() 后，context.OPENID = 真实微信 openid
@@ -116,7 +120,47 @@ module.exports = async (event, context) => {
         console.log('[login] 更新 openid 字段:', wxOpenid?.slice(-6));
         console.log('[login] ✅ 用户信息更新完成');
       }
-      
+
+      // 扫码带有 scene 参数时，尝试为老用户自动更新推荐人（购课锁定前可更换）
+      if (scene && !existingUser.referee_confirmed_at) {
+        console.log('[login] 老用户扫码，尝试更新推荐人 (scene:', scene, ')');
+        try {
+          const sceneParams = String(scene).split('&').reduce((acc, part) => {
+            const [k, v] = part.split('=');
+            if (k) acc[k] = v || '';
+            return acc;
+          }, {});
+          const refereeCodeFromScene = sceneParams.ref || scene;
+
+          console.log('[login] 解析后推荐码:', refereeCodeFromScene);
+          const newReferee = await findOne('users', { referee_code: refereeCodeFromScene });
+
+          if (newReferee && newReferee.id !== existingUser.id) {
+            // 避免循环引用：不允许将自己的下级设为推荐人
+            const isDownline = await checkIfDownline(existingUser.id, newReferee.id);
+            if (!isDownline) {
+              await update('users', {
+                referee_id: newReferee.id,
+                referee_uid: newReferee.uid,
+                referee_updated_at: utils.formatDateTime(new Date())
+              }, { id: existingUser.id });
+              existingUser.referee_id = newReferee.id;
+              existingUser.referee_uid = newReferee.uid;
+              console.log('[login] ✅ 老用户推荐人已通过扫码自动更新为:', newReferee.id);
+            } else {
+              console.log('[login] ⚠️ 扫码推荐人是当前用户的下级，跳过更新');
+            }
+          } else if (!newReferee) {
+            console.log('[login] ⚠️ 扫码推荐码无效，未找到推荐人:', refereeCodeFromScene);
+          } else {
+            console.log('[login] ⚠️ 扫码推荐人是自己，跳过更新');
+          }
+        } catch (sceneError) {
+          // 推荐人更新失败不影响登录主流程
+          console.error('[login] ⚠️ 老用户扫码更新推荐人失败（不影响登录）:', sceneError.message);
+        }
+      }
+
       console.log('[login] 用户信息:', {
         id: existingUser.id,
         uid: existingUser.uid,
@@ -241,4 +285,30 @@ function generateUID() {
   const timestamp = Date.now().toString(36);
   const randomStr = Math.random().toString(36).substring(2, 15);
   return `${timestamp}${randomStr}`.toUpperCase();
+}
+
+/**
+ * 检查目标用户是否是当前用户的下级（防止循环推荐）
+ */
+async function checkIfDownline(userId, targetUserId) {
+  let currentId = targetUserId;
+  const visited = new Set();
+
+  while (currentId) {
+    if (visited.has(currentId)) {
+      return true;
+    }
+    if (currentId === userId) {
+      return true;
+    }
+    visited.add(currentId);
+
+    const parent = await findOne('users', { id: currentId });
+    if (!parent || !parent.referee_id) {
+      break;
+    }
+    currentId = parent.referee_id;
+  }
+
+  return false;
 }

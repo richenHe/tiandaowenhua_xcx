@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户课程 - 天道文化后台</title>
+  
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260309">
+  
+  <style>
+    .status-tag-valid { color: #00a870; background: #e8f8f0; border-color: #a3e5cd; }
+    .status-tag-invalid { color: #8c8c8c; background: #f5f5f5; border-color: #d9d9d9; }
+    .status-tag-refunded { color: #e34d59; background: #fdecee; border-color: #f6b9be; }
+    .status-tag-expired { color: #ed7b2f; background: #fef0e5; border-color: #f9c192; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <t-layout style="height: 100vh;">
+      <t-header height="64px" style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:18px;font-weight:600;color:#333;">🎨 天道文化后台管理</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
+          <t-button size="small" @click="handleLogout">退出</t-button>
+        </div>
+      </t-header>
+      
+      <t-layout>
+        <sidebar-menu active-key="user-courses"></sidebar-menu>
+        
+        <t-content class="page-content">
+          <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h1 class="page-title">用户课程</h1>
+            <t-button theme="primary" @click="handleAdd">
+              <template #icon><t-icon name="add" /></template>手动新增
+            </t-button>
+          </div>
+
+          <!-- 搜索表单 -->
+          <div class="search-form">
+            <t-form layout="inline">
+              <t-form-item label="关键词">
+                <t-input v-model="searchForm.keyword" placeholder="用户姓名/手机号" clearable style="width:200px;" @enter="handleSearch"></t-input>
+              </t-form-item>
+              <t-form-item label="课程">
+                <t-select v-model="searchForm.courseId" clearable placeholder="全部课程" style="width:180px;">
+                  <t-option v-for="c in courseOptions" :key="c.id" :value="c.id" :label="c.name"></t-option>
+                </t-select>
+              </t-form-item>
+              <t-form-item label="状态">
+                <t-select v-model="searchForm.status" clearable placeholder="全部" style="width:120px;">
+                  <t-option :value="1" label="有效"></t-option>
+                  <t-option :value="0" label="无效"></t-option>
+                  <t-option :value="2" label="已退款"></t-option>
+                  <t-option :value="3" label="已过期"></t-option>
+                </t-select>
+              </t-form-item>
+              <t-form-item>
+                <t-space>
+                  <t-button theme="primary" @click="handleSearch">查询</t-button>
+                  <t-button theme="default" @click="handleReset">重置</t-button>
+                </t-space>
+              </t-form-item>
+            </t-form>
+          </div>
+
+          <!-- 数据表格 -->
+          <div class="table-card">
+            <t-table
+              :data="tableData"
+              :columns="columns"
+              :loading="loading"
+              row-key="id"
+              :pagination="pagination"
+              @page-change="onPageChange"
+            >
+              <template #course_type="{ row }">
+                <t-tag v-if="row.course_type === 1" theme="primary" variant="light">初探班</t-tag>
+                <t-tag v-else-if="row.course_type === 2" theme="warning" variant="light">密训班</t-tag>
+                <t-tag v-else-if="row.course_type === 3" theme="success" variant="light">咨询服务</t-tag>
+                <t-tag v-else-if="row.course_type === 4" theme="default" variant="light">沙龙</t-tag>
+                <span v-else>-</span>
+              </template>
+              <template #status="{ row }">
+                <t-tag v-if="row.status === 1" class="status-tag-valid" variant="light">有效</t-tag>
+                <t-tag v-else-if="row.status === 0" class="status-tag-invalid" variant="light">无效</t-tag>
+                <t-tag v-else-if="row.status === 2" class="status-tag-refunded" variant="light">已退款</t-tag>
+                <t-tag v-else-if="row.status === 3" class="status-tag-expired" variant="light">已过期</t-tag>
+              </template>
+              <template #contract_signed="{ row }">
+                <t-tag v-if="row.contract_signed" theme="success" variant="light">已签</t-tag>
+                <t-tag v-else theme="default" variant="light">未签</t-tag>
+              </template>
+              <template #expire_at="{ row }">
+                <span>{{ row.expire_at ? row.expire_at.substring(0, 10) : '-' }}</span>
+              </template>
+            </t-table>
+          </div>
+
+          <!-- 新增弹窗 -->
+          <t-dialog
+            v-model:visible="addVisible"
+            header="手动新增用户课程"
+            width="600px"
+            @confirm="submitAdd"
+            :confirm-btn="{ loading: addLoading }"
+          >
+            <t-form :data="addForm" label-width="120px">
+              <!-- 用户选择 -->
+              <t-form-item label="选择用户" required>
+                <div style="width:100%;">
+                  <t-input
+                    v-model="userSearchKeyword"
+                    placeholder="输入手机号搜索用户"
+                    clearable
+                    @enter="searchUsers"
+                    style="margin-bottom:8px;"
+                  >
+                    <template #suffixIcon>
+                      <t-icon name="search" style="cursor:pointer;" @click="searchUsers" />
+                    </template>
+                  </t-input>
+                  <t-select
+                    v-if="userSearchResults.length > 0"
+                    v-model="addForm.userId"
+                    placeholder="请选择用户"
+                    style="width:100%;"
+                  >
+                    <t-option
+                      v-for="u in userSearchResults"
+                      :key="u.id"
+                      :value="u.id"
+                      :label="(u.real_name || '未填写') + ' - ' + (u.phone || '无手机号') + ' (ID:' + u.id + ')'"
+                    ></t-option>
+                  </t-select>
+                  <div v-if="userSearched && userSearchResults.length === 0" style="color:#e34d59;font-size:12px;margin-top:4px;">
+                    未找到匹配用户
+                  </div>
+                </div>
+              </t-form-item>
+
+              <!-- 课程选择 -->
+              <t-form-item label="选择课程" required>
+                <t-select v-model="addForm.courseId" placeholder="请选择课程" style="width:100%;">
+                  <t-option v-for="c in courseOptions" :key="c.id" :value="c.id" :label="c.name + ' (' + courseTypeText(c.type) + ')'"></t-option>
+                </t-select>
+              </t-form-item>
+
+              <!-- 有效期 -->
+              <t-form-item label="剩余有效期(天)" required>
+                <t-input-number v-model="addForm.validityDays" :min="1" :max="3650" style="width:100%;" placeholder="输入天数"></t-input-number>
+                <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">
+                  到期日期：{{ computedExpireDate }}
+                </div>
+              </t-form-item>
+
+              <!-- 是否需要合同 -->
+              <t-form-item label="创建合同记录">
+                <t-switch v-model="addForm.needContract"></t-switch>
+                <span style="margin-left:8px;font-size:12px;color:#8c8c8c;">
+                  开启后，若课程有合同模板将自动创建合同签署记录
+                </span>
+              </t-form-item>
+
+              <!-- 合同照片上传（可选） -->
+              <t-form-item v-if="addForm.needContract" label="合同照片">
+                <div>
+                  <input type="file" ref="contractFileInput" accept="image/*" multiple
+                    style="display:none;" @change="handleContractFileChange" />
+                  <t-button variant="outline" @click="triggerContractFileInput">
+                    <template #icon><t-icon name="upload" /></template>
+                    选择照片（可选）
+                  </t-button>
+                  <div v-if="contractUploading" style="color:#0052d9;font-size:12px;margin-top:4px;">
+                    ⏳ 上传中，请稍候…
+                  </div>
+                  <div v-if="contractImageIds.length > 0" style="margin-top:8px;">
+                    <t-tag v-for="(img, idx) in contractImageIds" :key="idx" closable @close="removeContractImage(idx)"
+                      style="margin:0 4px 4px 0;">
+                      照片{{ idx + 1 }}
+                    </t-tag>
+                  </div>
+                </div>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
+        </t-content>
+      </t-layout>
+    </t-layout>
+  </div>
+
+  <script src="../../assets/libs/vue.global.js"></script>
+  <script src="../../assets/libs/tdesign.min.js"></script>
+  <script src="../../assets/libs/tcb.js"></script>
+  <script src="../../assets/js/config.js?v=20260309"></script>
+  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260309"></script>
+  <script src="../../assets/js/cloud-storage-helper.js"></script>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        const adminInfo = ref(null);
+
+        const checkAuth = () => {
+          adminInfo.value = AdminAPI.getCurrentAdmin();
+          if (!adminInfo.value) {
+            window.location.href = '../../index.html';
+            return false;
+          }
+          return true;
+        };
+
+        // ── 搜索 ──
+        const searchForm = reactive({ keyword: '', courseId: null, status: null });
+        const courseOptions = ref([]);
+
+        // ── 表格 ──
+        const tableData = ref([]);
+        const loading = ref(false);
+        const pagination = reactive({ current: 1, pageSize: 20, total: 0 });
+
+        const columns = [
+          { colKey: 'id', title: 'ID', width: 60 },
+          { colKey: 'user_name', title: '姓名', width: 100 },
+          { colKey: 'user_phone', title: '手机号', width: 130 },
+          { colKey: 'course_name', title: '课程名称', width: 150 },
+          { colKey: 'course_type', title: '课程类型', width: 90, cell: 'course_type' },
+          { colKey: 'status', title: '状态', width: 80, cell: 'status' },
+          { colKey: 'expire_at', title: '有效期截止', width: 120, cell: 'expire_at' },
+          { colKey: 'attend_count', title: '上课次数', width: 80 },
+          { colKey: 'contract_signed', title: '合同', width: 70, cell: 'contract_signed' },
+          { colKey: 'created_at', title: '创建时间', width: 170 },
+        ];
+
+        const loadData = async () => {
+          loading.value = true;
+          try {
+            const params = {
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+            };
+            if (searchForm.keyword) params.keyword = searchForm.keyword;
+            if (searchForm.courseId) params.courseId = searchForm.courseId;
+            if (searchForm.status != null && searchForm.status !== '') params.status = searchForm.status;
+
+            const result = await AdminAPI.getUserCourseList(params);
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+          } catch (error) {
+            TDesign.MessagePlugin.error('加载失败: ' + error.message);
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const handleSearch = () => { pagination.current = 1; loadData(); };
+        const handleReset = () => {
+          searchForm.keyword = '';
+          searchForm.courseId = null;
+          searchForm.status = null;
+          pagination.current = 1;
+          loadData();
+        };
+        const onPageChange = (info) => {
+          pagination.current = info.current;
+          pagination.pageSize = info.pageSize;
+          loadData();
+        };
+
+        // ── 加载课程选项 ──
+        const loadCourses = async () => {
+          try {
+            courseOptions.value = await AdminAPI.getAllCourses();
+          } catch (e) {
+            console.error('加载课程列表失败:', e);
+          }
+        };
+
+        // ── 新增弹窗 ──
+        const addVisible = ref(false);
+        const addLoading = ref(false);
+        const addForm = reactive({
+          userId: null,
+          courseId: null,
+          validityDays: 365,
+          needContract: false,
+        });
+
+        // 用户搜索
+        const userSearchKeyword = ref('');
+        const userSearchResults = ref([]);
+        const userSearched = ref(false);
+
+        const searchUsers = async () => {
+          if (!userSearchKeyword.value.trim()) {
+            TDesign.MessagePlugin.warning('请输入手机号');
+            return;
+          }
+          try {
+            const result = await AdminAPI.getUserList({
+              keyword: userSearchKeyword.value.trim(),
+              page: 1,
+              pageSize: 20
+            });
+            userSearchResults.value = result.list || [];
+            userSearched.value = true;
+            if (userSearchResults.value.length === 1) {
+              addForm.userId = userSearchResults.value[0].id;
+            }
+          } catch (e) {
+            TDesign.MessagePlugin.error('搜索用户失败: ' + e.message);
+          }
+        };
+
+        // 合同照片上传
+        const contractFileInput = ref(null);
+        const contractUploading = ref(false);
+        const contractImageIds = ref([]);
+
+        const triggerContractFileInput = () => contractFileInput.value && contractFileInput.value.click();
+
+        const handleContractFileChange = async (e) => {
+          const files = e.target.files;
+          e.target.value = '';
+          if (!files || files.length === 0) return;
+
+          contractUploading.value = true;
+          TDesign.MessagePlugin.loading('上传中…', 0);
+          try {
+            for (const file of files) {
+              const ext = file.name.split('.').pop() || 'jpg';
+              const cloudPath = `contracts/manual/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+              const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+              contractImageIds.value.push(result.fileID);
+            }
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success('上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || '未知错误'));
+          } finally {
+            contractUploading.value = false;
+          }
+        };
+
+        const removeContractImage = (idx) => { contractImageIds.value.splice(idx, 1); };
+
+        // 到期日期预览
+        const computedExpireDate = computed(() => {
+          if (!addForm.validityDays || addForm.validityDays <= 0) return '-';
+          const d = new Date();
+          d.setDate(d.getDate() + addForm.validityDays);
+          return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0');
+        });
+
+        const courseTypeText = (type) => {
+          const map = { 1: '初探班', 2: '密训班', 3: '咨询服务', 4: '沙龙' };
+          return map[type] || '未知';
+        };
+
+        const handleAdd = () => {
+          addForm.userId = null;
+          addForm.courseId = null;
+          addForm.validityDays = 365;
+          addForm.needContract = false;
+          userSearchKeyword.value = '';
+          userSearchResults.value = [];
+          userSearched.value = false;
+          contractImageIds.value = [];
+          addVisible.value = true;
+        };
+
+        const submitAdd = async () => {
+          if (!addForm.userId) {
+            TDesign.MessagePlugin.warning('请选择用户');
+            return;
+          }
+          if (!addForm.courseId) {
+            TDesign.MessagePlugin.warning('请选择课程');
+            return;
+          }
+          if (!addForm.validityDays || addForm.validityDays <= 0) {
+            TDesign.MessagePlugin.warning('请输入有效的有效期天数');
+            return;
+          }
+
+          addLoading.value = true;
+          try {
+            const data = {
+              userId: addForm.userId,
+              courseId: addForm.courseId,
+              validityDays: addForm.validityDays,
+              needContract: addForm.needContract,
+            };
+            if (addForm.needContract && contractImageIds.value.length > 0) {
+              data.contractImages = contractImageIds.value;
+            }
+            await AdminAPI.adminAddUserCourse(data);
+            TDesign.MessagePlugin.success('新增成功');
+            addVisible.value = false;
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('新增失败: ' + error.message);
+          } finally {
+            addLoading.value = false;
+          }
+        };
+
+        // ── 退出 ──
+        const handleLogout = () => {
+          AdminAPI.logout();
+          window.location.href = '../../index.html';
+        };
+
+        // ── 初始化 ──
+        onMounted(() => {
+          if (!checkAuth()) return;
+          loadCourses();
+          loadData();
+        });
+
+        return {
+          adminInfo,
+          handleLogout,
+          searchForm,
+          courseOptions,
+          tableData,
+          loading,
+          pagination,
+          columns,
+          handleSearch,
+          handleReset,
+          onPageChange,
+          addVisible,
+          addLoading,
+          addForm,
+          userSearchKeyword,
+          userSearchResults,
+          userSearched,
+          searchUsers,
+          contractFileInput,
+          contractUploading,
+          contractImageIds,
+          triggerContractFileInput,
+          handleContractFileChange,
+          removeContractImage,
+          computedExpireDate,
+          courseTypeText,
+          handleAdd,
+          submitAdd,
+        };
+      }
+    });
+
+    app.use(TDesign);
+    app.component('sidebar-menu', SidebarNavigation.SidebarMenu);
+    app.mount('#app');
+  </script>
+</body>
+</html>

@@ -21,7 +21,7 @@
         <view class="user-info">
           <view class="user-name">
             <text>{{ userInfo.name }}</text>
-            <text class="growth-badge" @tap.stop="openGrowthPopup">{{ growthLevelDisplay || '🌱' }}</text>
+            <text v-if="growthLevelDisplay" class="growth-badge" @tap.stop="openGrowthPopup">{{ growthLevelDisplay }}</text>
           </view>
           <!-- 积分显示 -->
           <view class="user-points">
@@ -169,8 +169,8 @@ const getGrowthLevelDisplay = (activityCount: number): string => {
   return result;
 };
 
-// 成长等级显示（默认幼苗，加载后根据活动次数更新）
-const growthLevelDisplay = ref('🌱');
+// 成长等级显示（0次活动时为空，不显示任何图标）
+const growthLevelDisplay = ref('');
 
 // 成长等级说明浮窗
 const showGrowthPopup = ref(false);

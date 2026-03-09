@@ -474,7 +474,8 @@ const confirmApply = async () => {
     // 刷新活动列表
     loadAvailableActivities()
   } catch (error: any) {
-    uni.showToast({ title: error?.message || '报名失败', icon: 'none' })
+    const msg = error?.message || '报名失败，请稍后重试'
+    uni.showModal({ title: '提示', content: msg, showCancel: false })
   } finally {
     applySubmitting.value = false
   }
