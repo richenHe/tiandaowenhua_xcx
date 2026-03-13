@@ -65,11 +65,37 @@ async function triggerPostContractLogic(userId, courseId, userCourseId) {
 
     console.log(`[triggerPostContractLogic] 用户${userId} 课程${courseId} 首次上课触发：contract_signed=1, expire_at=${expireAt}`);
 
+    // 锁定推荐人：首次 contract_signed=1 时永久锁定
+    await confirmRefereeIfNeeded(userId, nowStr);
+
     // 发放推荐人奖励
     await grantRefereeRewardAfterSign(userId, courseId);
 
   } catch (err) {
     console.error('[triggerPostContractLogic] 触发后续逻辑失败（不影响签到主流程）:', err);
+  }
+}
+
+/**
+ * 首次 contract_signed=1 时锁定推荐人（设置 referee_confirmed_at）
+ * 幂等：已锁定则跳过
+ */
+async function confirmRefereeIfNeeded(userId, nowStr) {
+  try {
+    const { data: user } = await db
+      .from('users')
+      .select('referee_confirmed_at')
+      .eq('id', userId)
+      .single();
+
+    if (user && !user.referee_confirmed_at) {
+      await db.from('users').update({
+        referee_confirmed_at: nowStr
+      }).eq('id', userId);
+      console.log(`[triggerPostContractLogic] 用户${userId} 推荐人已锁定 referee_confirmed_at=${nowStr}`);
+    }
+  } catch (err) {
+    console.error('[triggerPostContractLogic] 锁定推荐人失败（不影响主流程）:', err);
   }
 }
 

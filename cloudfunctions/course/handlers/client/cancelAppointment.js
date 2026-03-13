@@ -49,6 +49,25 @@ module.exports = async (event, context) => {
       return response.error(`上课前 ${cancelDeadlineDays} 天内无法取消预约`);
     }
 
+    // 检查是否有活动报名关联此排期（有活动报名时禁止取消预约）
+    const { data: linkedActivities } = await db
+      .from('ambassador_activities')
+      .select('id')
+      .eq('schedule_id', appointment.class_record_id)
+      .neq('status', 0);
+    if (linkedActivities && linkedActivities.length > 0) {
+      const actIds = linkedActivities.map(a => a.id);
+      const { data: activeRegs } = await db
+        .from('ambassador_activity_registrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 1)
+        .in('activity_id', actIds);
+      if (activeRegs && activeRegs.length > 0) {
+        return response.error('您已报名该排期的活动岗位，请先取消活动报名后再取消预约');
+      }
+    }
+
     const now = formatDateTime(new Date());
 
     // 4. 更新预约状态为已取消

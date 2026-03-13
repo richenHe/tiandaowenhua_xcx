@@ -174,7 +174,8 @@
             </view>
           </view>
 
-          <!-- 推荐人信息（只读） -->
+          <!-- 推荐人信息已隐藏：仅后台可查看 -->
+          <!--
           <view class="t-form-item">
             <view class="t-form-item__label">
               <text>我的传播大使</text>
@@ -188,6 +189,7 @@
               </view>
             </view>
           </view>
+          -->
         </view>
       </view>
     </scroll-view>

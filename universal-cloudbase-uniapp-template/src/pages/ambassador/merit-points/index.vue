@@ -60,6 +60,7 @@
               <CapsuleTabs
                 v-model="activeTab"
                 :options="tabs"
+                @change="onTabChange"
               />
             </template>
           </StickyTabs>
@@ -70,14 +71,16 @@
 
         <!-- 记录列表 -->
         <view v-for="record in recordsList" :key="record.id" class="record-card">
-          <view class="record-icon" :style="{ background: getRecordStyle(record.change_type).gradient }">
-            {{ getRecordStyle(record.change_type).icon }}
+          <view class="record-icon" :style="{ background: getRecordStyle(record.source).gradient }">
+            {{ getRecordStyle(record.source).icon }}
           </view>
           <view class="record-content">
             <view class="record-header">
               <view class="record-info">
                 <view class="record-title">{{ record.remark || '功德分变动' }}</view>
-                <view class="record-desc" v-if="record.related_id">关联ID: {{ record.related_id }}</view>
+                <view class="record-desc" v-if="record.referee_user_name">推荐学员: {{ record.referee_user_name }}</view>
+                <view class="record-desc" v-else-if="record.activity_name">{{ record.activity_name }}</view>
+                <view class="record-desc" v-else-if="record.related_id">单号: {{ record.related_id }}</view>
               </view>
               <view class="record-amount" :class="record.change_amount > 0 ? 'success' : 'error'">
                 {{ record.change_amount > 0 ? '+' : '' }}{{ formatAmount(record.change_amount) }}
@@ -116,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
@@ -133,11 +136,19 @@ const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>()
 const pageHeaderHeight = ref(64)
 
 const tabs = ref([
-  { label: '全部明细', value: 'all' },
+  { label: '全部', value: 'all' },
   { label: '推荐', value: 'referral' },
   { label: '活动', value: 'activity' },
   { label: '兑换', value: 'exchange' }
 ])
+
+// Tab → source 筛选映射
+const tabSourceMap: Record<string, number[] | undefined> = {
+  'all': undefined,
+  'referral': [1, 2],
+  'activity': [3, 4, 5, 7],
+  'exchange': [6]
+}
 
 // 功德分信息
 const meritPointsInfo = ref<MeritPointsInfo>({
@@ -169,7 +180,7 @@ const loadMeritPoints = async () => {
 
 // 获取功德分明细
 const loadRecords = async (reset = false) => {
-  if (loading.value || finished.value) return
+  if (loading.value || (!reset && finished.value)) return
 
   if (reset) {
     page.value = 1
@@ -178,11 +189,12 @@ const loadRecords = async (reset = false) => {
   }
 
   try {
-    uni.showLoading({ title: '加载中...' })
     loading.value = true
+    const sourceFilter = tabSourceMap[activeTab.value]
     const result = await UserApi.getMeritPointsHistory({
       page: page.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
+      sourceFilter
     })
 
     recordsList.value.push(...result.list)
@@ -192,10 +204,8 @@ const loadRecords = async (reset = false) => {
     if (recordsList.value.length >= result.total) {
       finished.value = true
     }
-    uni.hideLoading()
   } catch (error) {
     console.error('获取功德分明细失败:', error)
-    uni.hideLoading()
   } finally {
     loading.value = false
   }
@@ -206,25 +216,23 @@ const loadMore = () => {
   loadRecords()
 }
 
-// 监听Tab切换，重新加载数据
-watch(activeTab, () => {
+// Tab 切换时重新加载数据
+const onTabChange = (value: string | number) => {
+  activeTab.value = String(value)
   loadRecords(true)
-})
+}
 
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20
-  // 计算页面头部高度（状态栏 + 导航栏）
   pageHeaderHeight.value = statusBarHeight + 44
 
-  // 加载数据
   loadMeritPoints()
   loadRecords()
 })
 
 onShow(() => {
   loadMeritPoints()
-  loadRecords()
 })
 
 const scrollHeight = computed(() => {
@@ -256,16 +264,18 @@ const formatAmount = (amount: number | string) => {
   return isNaN(num) ? '0' : String(Math.round(num))
 }
 
-// 获取记录图标和渐变色
-const getRecordStyle = (changeType: string) => {
-  const styleMap: Record<string, { icon: string; gradient: string }> = {
-    'referral_course': { icon: '📚', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-    'referral_advanced': { icon: '🎓', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-    'tutor': { icon: '👨‍🏫', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
-    'volunteer': { icon: '🤝', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
-    'exchange': { icon: '🎁', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' }
+// 按 source 获取记录图标和渐变色
+const getRecordStyle = (source: number) => {
+  const styleMap: Record<number, { icon: string; gradient: string }> = {
+    1: { icon: '📚', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    2: { icon: '🎓', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+    3: { icon: '👨‍🏫', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+    4: { icon: '🤝', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+    5: { icon: '🎉', gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)' },
+    6: { icon: '🎁', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
+    7: { icon: '⭐', gradient: 'linear-gradient(135deg, #fddb92 0%, #d1fdff 100%)' }
   }
-  return styleMap[changeType] || { icon: '💎', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
+  return styleMap[source] || { icon: '💎', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
 }
 </script>
 

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>合约审核 - 天道文化后台</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
 </head>
 <body>
   <div id="app">
@@ -223,9 +223,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
 
   <script>
     const { createApp, ref, computed, onMounted } = Vue;
@@ -278,19 +278,14 @@
             if (searchForm.value.status != null && searchForm.value.status !== '') {
               params.status = searchForm.value.status;
             }
-            // keyword 通过前端过滤（接口不支持 keyword 搜索时的备选方案）
-
-            const result = await AdminAPI.getSignatureList(params);
-            let list = result.list || [];
-
-            // 前端关键词过滤
+            // keyword 传给后端过滤（getSignatureList 已支持 keyword 搜索）
             const kw = (searchForm.value.keyword || '').trim();
             if (kw) {
-              list = list.filter(r =>
-                (r.user_name || '').includes(kw) ||
-                (r.phone     || '').includes(kw)
-              );
+              params.keyword = kw;
             }
+
+            const result = await AdminAPI.getSignatureList(params);
+            const list = result.list || [];
 
             tableData.value   = list;
             pagination.value.total = result.total || list.length;
@@ -343,25 +338,30 @@
         }
 
         // 审核通过
-        async function handleApprove(row) {
-          TDesign.DialogPlugin.confirm({
+        function handleApprove(row) {
+          const dialog = TDesign.DialogPlugin.confirm({
             header: '确认审核通过',
             body: `确认通过 【${row.user_name}】 提交的合同《${row.contract_name}》？通过后将自动执行对应业务逻辑。`,
             confirmBtn: { content: '确认通过', theme: 'success' },
             onConfirm: async () => {
+              dialog.update({ confirmBtn: { loading: true } });
               try {
                 await AdminAPI.auditContractSignature({
                   signatureId: row.id,
                   auditAction: 'approve',
                 });
                 TDesign.MessagePlugin.success('审核通过，业务逻辑已执行');
+                dialog.hide();
                 await loadData();
                 await loadStats();
                 todayApproved.value++;
               } catch (err) {
                 TDesign.MessagePlugin.error('操作失败：' + (err.message || '未知错误'));
+                dialog.update({ confirmBtn: { loading: false } });
               }
-            }
+            },
+            onCancel: () => dialog.hide(),
+            onClose: () => dialog.hide(),
           });
         }
 

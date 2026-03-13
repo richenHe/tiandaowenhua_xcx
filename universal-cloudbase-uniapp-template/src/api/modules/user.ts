@@ -9,10 +9,7 @@ import type {
   UserProfile,
   UpdateProfileParams,
   UpdateProfileResponse,
-  UpdateRefereeParams,
   RefereeInfo,
-  SearchRefereesParams,
-  SearchRefereesResponse,
   MeritPointsInfo,
   GetMeritPointsHistoryParams,
   GetMeritPointsHistoryResponse,
@@ -27,7 +24,8 @@ import type {
   GetMyCoursesParams,
   GetMyCoursesResponse,
   GetMyOrdersParams,
-  GetMyOrdersResponse
+  GetMyOrdersResponse,
+  ReferralStats
 } from '../types/user'
 
 /**
@@ -75,21 +73,7 @@ export class UserApi {
   }
 
   /**
-   * 4. 修改推荐人
-   * @param params 修改参数
-   * @returns 修改结果
-   */
-  static async updateReferee(params: UpdateRefereeParams): Promise<{ message: string }> {
-    return callCloudFunction<{ message: string }>({
-      name: 'user',
-      action: 'updateReferee',
-      data: params,
-      loadingText: '修改中...'
-    })
-  }
-
-  /**
-   * 5. 获取推荐人信息
+   * 4. 获取推荐人信息
    * @param referralCode 推荐码
    * @returns 推荐人信息
    */
@@ -103,21 +87,7 @@ export class UserApi {
   }
 
   /**
-   * 5.1 搜索推荐人列表
-   * @param params 搜索参数
-   * @returns 推荐人列表
-   */
-  static async searchReferees(params: SearchRefereesParams): Promise<SearchRefereesResponse> {
-    return callCloudFunction<SearchRefereesResponse>({
-      name: 'user',
-      action: 'searchReferees',
-      data: params,
-      showLoading: false
-    })
-  }
-
-  /**
-   * 6. 获取我的课程列表
+   * 5. 获取我的课程列表
    * @param params 分页参数
    * @returns 课程列表
    */
@@ -262,7 +232,6 @@ export const {
   login,
   getProfile,
   updateProfile,
-  updateReferee,
   getRefereeInfo,
   getMyCourses,
   getMyOrders,

@@ -6,7 +6,7 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { userId, page = 1, page_size = 20, pageSize } = event;
+  const { userId, keyword, changeType, startDate, endDate, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log('[admin:getRefereeChangeLogs] 获取推荐人变更日志:', userId);
@@ -20,6 +20,24 @@ module.exports = async (event, context) => {
 
     if (userId) {
       queryBuilder = queryBuilder.eq('user_id', userId);
+    }
+
+    // 变更类型筛选
+    if (changeType != null && changeType !== '') {
+      queryBuilder = queryBuilder.eq('change_type', changeType);
+    }
+
+    // 日期范围筛选（按 created_at）
+    if (startDate) {
+      queryBuilder = queryBuilder.gte('created_at', startDate);
+    }
+    if (endDate) {
+      queryBuilder = queryBuilder.lte('created_at', endDate + ' 23:59:59');
+    }
+
+    // 关键词搜索（按用户名或推荐人名）
+    if (keyword) {
+      queryBuilder = queryBuilder.or(`user_name.like.%${keyword}%,old_referee_name.like.%${keyword}%,new_referee_name.like.%${keyword}%`);
     }
 
     // 执行分页查询

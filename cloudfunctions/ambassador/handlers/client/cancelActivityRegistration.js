@@ -43,6 +43,9 @@ module.exports = async (event, context) => {
     if (activity.status === 0) {
       return response.error('活动已结束，无法取消报名');
     }
+    if (activity.status === 2) {
+      return response.error('活动报名已截止，无法取消报名');
+    }
 
     const now = formatDateTime(new Date());
 

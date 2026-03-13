@@ -1,6 +1,6 @@
 /**
  * User 云函数入口
- * 用户模块 - 25个action（客户端16 + 管理端14，含表现分与黑名单6个、用户课程管理2个）
+ * 用户模块 - 23个action（客户端14 + 管理端14，含表现分与黑名单6个、用户课程管理2个）
  *
  * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  */
@@ -15,9 +15,7 @@ const clientHandlers = {
   login: require('./handlers/client/login'),
   getProfile: require('./handlers/client/getProfile'),
   updateProfile: require('./handlers/client/updateProfile'),
-  updateReferee: require('./handlers/client/updateReferee'),
   getRefereeInfo: require('./handlers/client/getRefereeInfo'),
-  searchReferees: require('./handlers/client/searchReferees'),
   getMyCourses: require('./handlers/client/getMyCourses'),
   getMyOrders: require('./handlers/client/getMyOrders'),
   getMeritPoints: require('./handlers/client/getMeritPoints'),

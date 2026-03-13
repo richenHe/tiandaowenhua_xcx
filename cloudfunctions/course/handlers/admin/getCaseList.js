@@ -21,6 +21,10 @@ module.exports = async (event, context) => {
       `, { count: 'exact' })
       .order('id', { ascending: false });
 
+    if (category != null && category !== '') {
+      queryBuilder = queryBuilder.eq('category', category);
+    }
+
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }

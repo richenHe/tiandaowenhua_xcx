@@ -33,19 +33,34 @@ module.exports = async (event, context) => {
       return response.error('用户不存在或不是大使');
     }
 
-    // 统计推荐人数
-    const { count: refereeCount } = await db
+    // 统计推荐人数 — 只计 contract_signed=1 的正式推荐关系
+    const { data: allRefUsers } = await db
       .from('users')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('referee_id', user.id);
 
-    // 查询推荐人列表（前10个）
-    const { data: referees } = await db
-      .from('users')
-      .select('id, real_name, phone, ambassador_level, created_at')
-      .eq('referee_id', user.id)
-      .order('id', { ascending: true })
-      .limit(10);
+    let refereeCount = 0;
+    let referees = [];
+    if (allRefUsers && allRefUsers.length > 0) {
+      const refIds = allRefUsers.map(u => u.id);
+      const { data: confirmedRecords } = await db
+        .from('user_courses')
+        .select('user_id')
+        .in('user_id', refIds)
+        .eq('contract_signed', 1);
+      const confirmedSet = new Set((confirmedRecords || []).map(r => r.user_id));
+      refereeCount = confirmedSet.size;
+
+      if (confirmedSet.size > 0) {
+        const { data: refList } = await db
+          .from('users')
+          .select('id, real_name, phone, ambassador_level, created_at')
+          .in('id', [...confirmedSet])
+          .order('id', { ascending: true })
+          .limit(10);
+        referees = refList || [];
+      }
+    }
 
     // 查询订单统计
     const { count: totalOrders } = await db

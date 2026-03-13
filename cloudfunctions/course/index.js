@@ -1,6 +1,6 @@
 /**
  * Course 云函数入口
- * 课程模块 - 41个action + 2个定时任务
+ * 课程模块 - 45个action + 2个定时任务
  *
  * 认证方式：前端使用 wx.cloud.callFunction()，通过 cloud.getWXContext().OPENID 获取真实 openid
  * 定时任务：
@@ -50,7 +50,7 @@ const clientHandlers = {
 const autoUpdateScheduleStatus = require('./handlers/admin/autoUpdateScheduleStatus');
 const sendCourseReminder = require('./handlers/admin/sendCourseReminder');
 
-// 导入处理器 - 管理端接口（26个）
+// 导入处理器 - 管理端接口（31个）
 const adminHandlers = {
   createCourse: require('./handlers/admin/createCourse'),
   updateCourse: require('./handlers/admin/updateCourse'),
@@ -77,7 +77,12 @@ const adminHandlers = {
   manageAcademyContent: require('./handlers/admin/manageAcademyContent'),
   manageAcademySections: require('./handlers/admin/manageAcademySections'),
   manageDailyCheckin: require('./handlers/admin/manageDailyCheckin'),
-  getDailyCheckins: require('./handlers/admin/getDailyCheckins')
+  getDailyCheckins: require('./handlers/admin/getDailyCheckins'),
+  getSeatingData: require('./handlers/admin/getSeatingData'),
+  saveSeatingConfig: require('./handlers/admin/saveSeatingConfig'),
+  saveSeatingAssignment: require('./handlers/admin/saveSeatingAssignment'),
+  randomAssignSeats: require('./handlers/admin/randomAssignSeats'),
+  syncSeatingAssignments: require('./handlers/admin/syncSeatingAssignments')
 };
 
 // 路由配置

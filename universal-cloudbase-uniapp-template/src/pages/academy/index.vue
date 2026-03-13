@@ -9,27 +9,37 @@
     </view>
 
     <template v-else>
-      <!-- Hero Banner（从接口读取） -->
-      <view v-if="heroSection" class="hero-banner" :style="{ background: heroSection.content?.background || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }">
-        <view class="hero-icon">{{ heroSection.content?.icon || '🏛️' }}</view>
-        <view class="hero-title">{{ heroSection.content?.title || '' }}</view>
-        <view class="hero-subtitle">{{ heroSection.content?.subtitle || '' }}</view>
+      <!-- Hero Banner（从接口读取，整张图片） -->
+      <image
+        v-if="heroSection && heroSection.content?.image"
+        class="hero-banner-img"
+        :src="heroSection.content.image"
+        mode="widthFix"
+      />
+      <!-- Hero Banner 无图片时的 fallback -->
+      <view v-else-if="heroSection" class="hero-banner">
+        <view class="hero-icon">🏛️</view>
+        <view class="hero-title">{{ heroSection.title || '商学院' }}</view>
       </view>
 
       <!-- 页面内容 -->
       <view class="page-content">
-        <!-- 快捷入口（从接口读取） -->
+        <!-- 快捷入口（从接口读取，每项为图片卡片） -->
         <view v-if="quickAccessSection && quickAccessSection.content?.items?.length" class="quick-access-section">
           <view
             v-for="(item, index) in quickAccessSection.content.items"
             :key="'qa-' + index"
             class="quick-access-card"
-            :style="{ background: item.gradient || '' }"
             @tap="handleQuickAccess(item.link)"
           >
-            <view class="quick-access-body">
-              <text class="quick-access-icon">{{ item.icon }}</text>
-              <text class="quick-access-title">{{ item.title }}</text>
+            <image
+              v-if="item.image"
+              class="quick-access-img"
+              :src="item.image"
+              mode="aspectFill"
+            />
+            <view v-else class="quick-access-body">
+              <text class="quick-access-icon">📱</text>
             </view>
           </view>
         </view>
@@ -64,7 +74,8 @@
               >
                 <view class="t-card__body">
                   <view class="concept-content">
-                    <view class="concept-icon" :style="{ background: concept.color || '#667eea' }">
+                    <image v-if="concept.image" class="concept-icon-img" :src="concept.image" mode="aspectFill" />
+                    <view v-else class="concept-icon" :style="{ background: concept.color || '#667eea' }">
                       <text>{{ concept.icon }}</text>
                     </view>
                     <view class="concept-info">
@@ -96,7 +107,7 @@
                     mode="aspectFill"
                   />
                   <!-- 文字头像 fallback -->
-                  <view v-else class="teacher-avatar" :class="`teacher-avatar--${teacher.theme || 'primary'}`">
+                  <view v-else class="teacher-avatar" :style="{ backgroundColor: teacher.theme || '#0052D9' }">
                     <text class="teacher-avatar-text">{{ teacher.name?.charAt(0) || '' }}</text>
                   </view>
                   <view class="teacher-info">
@@ -157,6 +168,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api/modules/course';
 
@@ -196,6 +208,10 @@ const loadSections = async () => {
 onMounted(() => {
   loadSections();
 });
+
+onShow(() => {
+  loadSections();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -220,7 +236,13 @@ onMounted(() => {
   color: $td-text-color-secondary;
 }
 
-// Hero Banner
+// Hero Banner（图片模式）
+.hero-banner-img {
+  width: 100%;
+  display: block;
+}
+
+// Hero Banner（fallback 无图片时）
 .hero-banner {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 48rpx 32rpx;
@@ -243,11 +265,6 @@ onMounted(() => {
   margin-bottom: 16rpx;
 }
 
-.hero-subtitle {
-  font-size: 28rpx;
-  opacity: 0.9;
-}
-
 // 页面内容
 .page-content {
   padding: $td-page-margin;
@@ -264,7 +281,6 @@ onMounted(() => {
 .quick-access-card {
   flex: 1;
   height: 200rpx;
-  background: linear-gradient(135deg, #00C4FF 0%, #0096D9 100%);
   border-radius: 16rpx;
   overflow: hidden;
   transition: transform 0.2s;
@@ -272,6 +288,11 @@ onMounted(() => {
   &:active {
     transform: scale(0.98);
   }
+}
+
+.quick-access-img {
+  width: 100%;
+  height: 100%;
 }
 
 .quick-access-body {
@@ -282,19 +303,12 @@ onMounted(() => {
   padding: 0;
   height: 100%;
   width: 100%;
+  background: linear-gradient(135deg, #00C4FF 0%, #0096D9 100%);
 }
 
 .quick-access-icon {
   font-size: 72rpx;
-  margin-bottom: 20rpx;
   filter: drop-shadow(0 2rpx 8rpx rgba(0, 0, 0, 0.1));
-}
-
-.quick-access-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #ffffff;
-  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 // 卡片
@@ -370,6 +384,14 @@ onMounted(() => {
   font-size: 40rpx;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.concept-icon-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .concept-info {
@@ -418,18 +440,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
-  &--primary {
-    background-color: $td-brand-color;
-  }
-
-  &--success {
-    background-color: $td-success-color;
-  }
-
-  &--warning {
-    background-color: $td-warning-color;
-  }
 }
 
 .teacher-avatar-img {

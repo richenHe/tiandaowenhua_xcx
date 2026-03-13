@@ -26,6 +26,9 @@ const clientHandlers = {
   getMyQuotas: require('./handlers/client/getMyQuotas'),
   giftQuota: require('./handlers/client/giftQuota'),
   getContractTemplate: require('./handlers/client/getContractTemplate'),
+  checkCourseContract: require('./handlers/client/checkCourseContract'),
+  getContractTemplateByCourse: require('./handlers/client/getContractTemplateByCourse'),
+  signCourseContract: require('./handlers/client/signCourseContract'),
   signContract: require('./handlers/client/signContract'),
   getMyContracts: require('./handlers/client/getMyContracts'),
   getContractDetail: require('./handlers/client/getContractDetail'),
@@ -35,6 +38,7 @@ const clientHandlers = {
   getAvailableActivities: require('./handlers/client/getAvailableActivities'),
   applyForActivity: require('./handlers/client/applyForActivity'),
   cancelActivityRegistration: require('./handlers/client/cancelActivityRegistration'),
+  getMyRegistrations: require('./handlers/client/getMyRegistrations'),
 };
 
 const adminHandlers = {
@@ -77,7 +81,10 @@ const adminHandlers = {
   adminGetCourseContractTemplate: require('./handlers/admin/getContractTemplateByCourse'),
   adminGiftCourse: require('./handlers/admin/adminGiftCourse'),
   adminCreateCourseContract: require('./handlers/admin/adminCreateCourseContract'),
-  adminGetUserPaidCourses: require('./handlers/admin/adminGetUserPaidCourses')
+  adminGetUserPaidCourses: require('./handlers/admin/adminGetUserPaidCourses'),
+  adminAddRegistrant: require('./handlers/admin/adminAddRegistrant'),
+  updateContractImages: require('./handlers/admin/updateContractImages'),
+  auditContractSignature: require('./handlers/admin/auditContractSignature'),
 };
 
 // 路由配置

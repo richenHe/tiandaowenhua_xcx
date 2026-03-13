@@ -2,10 +2,7 @@
  * 客户端接口：获取可报名的活动列表
  * Action: getAvailableActivities
  *
- * 返回 status=1（报名中/报名截止但未结束）的活动，附带：
- * - class_date（开始日期）：前端据此判断是否显示"报名截止"置灰
- * - class_end_date（结束日期）：活动结束日期
- * - my_active_registration：用户跨活动的全局有效报名（若有），用于"每人限报一个活动"展示逻辑
+ * 只返回用户已预约了对应排期（appointments.status=0）且活动 status=1（报名中）的活动
  */
 const { db, response, executePaginatedQuery } = require('../../common');
 
@@ -31,11 +28,28 @@ module.exports = async (event, context) => {
     const levelNameMap = {};
     (levelRows || []).forEach(l => { levelNameMap[l.level] = l.level_name; });
 
-    // 只返回 status=1（报名中）的活动，报名截止（status=2）不展示
+    // 查询用户有效预约（status=0），获取已预约的排期 ID 列表
+    const { data: appointments } = await db
+      .from('appointments')
+      .select('class_record_id')
+      .eq('user_id', user.id)
+      .eq('status', 0);
+
+    const bookedScheduleIds = (appointments || [])
+      .map(a => a.class_record_id)
+      .filter(Boolean);
+
+    // 无有效预约 → 直接返回空列表
+    if (bookedScheduleIds.length === 0) {
+      return response.success({ list: [], total: 0, page, pageSize });
+    }
+
+    // 只查询用户已预约排期 且 status=1（报名中）的活动
     const queryBuilder = db
       .from('ambassador_activities')
       .select('*', { count: 'exact' })
       .eq('status', 1)
+      .in('schedule_id', bookedScheduleIds)
       .order('schedule_date', { ascending: true });
 
     const result = await executePaginatedQuery(queryBuilder, page, pageSize);
@@ -51,7 +65,7 @@ module.exports = async (event, context) => {
       (scheduleRows || []).forEach(s => { scheduleMap[s.id] = s; });
     }
 
-    // 查询该用户的报名记录
+    // 查询该用户在这些活动中的有效报名记录（排除已取消 status=0，已取消视为未报名可重新申请）
     const activityIds = (result.list || []).map(a => a.id);
     let myRegistrations = [];
     if (activityIds.length > 0) {
@@ -59,7 +73,8 @@ module.exports = async (event, context) => {
         .from('ambassador_activity_registrations')
         .select('activity_id, position_name, status')
         .eq('user_id', user.id)
-        .in('activity_id', activityIds);
+        .in('activity_id', activityIds)
+        .not('status', 'eq', 0);
       myRegistrations = regRows || [];
     }
 
@@ -81,7 +96,6 @@ module.exports = async (event, context) => {
         id: item.id,
         schedule_id: item.schedule_id,
         schedule_name: item.schedule_name,
-        // class_date / schedule_date 用于前端判断报名是否截止（today >= class_date → 置灰"报名截止"）
         class_date: schedule.class_date || item.schedule_date,
         class_end_date: schedule.class_end_date || null,
         schedule_date: item.schedule_date,
@@ -108,35 +122,7 @@ module.exports = async (event, context) => {
       };
     });
 
-    // 全局已报名状态检查：查询用户在任意活动中是否存在有效报名（status=1）
-    const { data: globalRegs } = await db
-      .from('ambassador_activity_registrations')
-      .select('id, activity_id, position_name')
-      .eq('user_id', user.id)
-      .eq('status', 1);
-
-    let myActiveRegistration = null;
-    if (globalRegs && globalRegs.length > 0) {
-      const actIds = globalRegs.map(r => r.activity_id);
-      const { data: activeActs } = await db
-        .from('ambassador_activities')
-        .select('id, schedule_name, schedule_date, schedule_location')
-        .in('id', actIds)
-        .neq('status', 0);
-      if (activeActs && activeActs.length > 0) {
-        const reg = globalRegs.find(r => r.activity_id === activeActs[0].id);
-        myActiveRegistration = {
-          registration_id: reg.id,
-          activity_id: activeActs[0].id,
-          position_name: reg.position_name,
-          activity_name: activeActs[0].schedule_name,
-          schedule_date: activeActs[0].schedule_date,
-          schedule_location: activeActs[0].schedule_location || ''
-        };
-      }
-    }
-
-    return response.success({ ...result, list, my_active_registration: myActiveRegistration });
+    return response.success({ ...result, list });
 
   } catch (error) {
     console.error('[getAvailableActivities] 失败:', error);

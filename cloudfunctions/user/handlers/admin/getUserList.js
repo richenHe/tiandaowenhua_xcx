@@ -42,10 +42,24 @@ module.exports = async (event, context) => {
 
     console.log('[admin:getUserList] 查询成功，共', result.total, '条');
 
-    // 🔥 格式化数据，转换头像 cloud:// fileID 为 CDN HTTPS URL
-    const list = (result.list || []).map(user => ({
+    const rawList = result.list || [];
+
+    // 批量查询推荐人姓名
+    const refereeIds = [...new Set(rawList.filter(u => u.referee_id).map(u => u.referee_id))];
+    let refereeMap = {};
+    if (refereeIds.length > 0) {
+      const { data: referees } = await db.from('users')
+        .select('id, real_name')
+        .in('id', refereeIds);
+      if (referees) {
+        refereeMap = Object.fromEntries(referees.map(r => [r.id, r.real_name]));
+      }
+    }
+
+    const list = rawList.map(user => ({
       ...user,
       avatar: cloudFileIDToURL(user.avatar || ''),
+      referee_name: refereeMap[user.referee_id] || null,
       cash_points: user.cash_points_available,
       frozen_cash_points: user.cash_points_frozen
     }));

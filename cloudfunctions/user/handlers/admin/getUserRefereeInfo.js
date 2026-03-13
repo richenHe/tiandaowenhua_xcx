@@ -64,17 +64,27 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 4. 查询千里马（我推荐的人）
-    const { data: referrals } = await db
+    // 4. 查询千里马（我推荐的人）— 只展示 contract_signed=1 的正式推荐关系
+    const { data: allReferrals } = await db
       .from('users')
       .select('id, real_name, phone, avatar, ambassador_level, created_at')
       .eq('referee_id', user.id)
       .order('id', { ascending: false });
 
-    const referralsList = (referrals || []).map((u) => ({
-      ...u,
-      avatar: cloudFileIDToURL(u.avatar || '')
-    }));
+    let referralsList = [];
+    if (allReferrals && allReferrals.length > 0) {
+      const refIds = allReferrals.map(u => u.id);
+      const { data: confirmedRecords } = await db
+        .from('user_courses')
+        .select('user_id')
+        .in('user_id', refIds)
+        .eq('contract_signed', 1);
+      const confirmedSet = new Set((confirmedRecords || []).map(r => r.user_id));
+
+      referralsList = allReferrals
+        .filter(u => confirmedSet.has(u.id))
+        .map(u => ({ ...u, avatar: cloudFileIDToURL(u.avatar || '') }));
+    }
 
     const result = {
       user: {

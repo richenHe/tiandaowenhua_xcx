@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>商学院板块管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260309"><style>
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>商学院板块管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313"><style>
     .upload-placeholder{width:100px;height:100px;border:2px dashed #dcdcdc;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;}
     .upload-placeholder:hover{border-color:#0052d9;background:#f3f3f3;}
+    .upload-rect{border-radius:8px;width:280px;height:120px;}
+    .upload-rect-sm{width:180px;height:100px;}
     .avatar-preview{position:relative;width:100px;height:100px;}
     .avatar-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:1px solid #dcdcdc;}
+    .rect-preview{position:relative;width:280px;height:120px;border-radius:8px;overflow:hidden;}
+    .rect-preview-sm{width:180px;height:100px;}
+    .rect-preview img{width:100%;height:100%;object-fit:cover;}
+    .img-actions{margin-top:6px;display:flex;gap:4px;}
     .avatar-actions{margin-top:6px;display:flex;gap:4px;justify-content:center;}
     .dynamic-list-item{background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;padding:16px;margin-bottom:12px;position:relative;}
     .dynamic-list-item:last-child{margin-bottom:0;}
@@ -14,7 +20,9 @@
     .item-fields{display:flex;flex-wrap:wrap;gap:12px;}
     .item-field{flex:1;min-width:200px;}
     .item-field-full{width:100%;flex-basis:100%;}
-    .color-preview{display:inline-block;width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-left:8px;border:1px solid #dcdcdc;}
+    .color-picker-wrap{display:flex;align-items:center;gap:8px;}
+    .color-picker-wrap input[type="color"]{width:40px;height:32px;border:1px solid #dcdcdc;border-radius:4px;cursor:pointer;padding:2px;background:#fff;}
+    .color-picker-wrap .color-hex{font-size:12px;color:#666;font-family:monospace;}
     .section-type-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:500;}
     .section-type-badge.hero{background:#e8f0fe;color:#0052d9;}
     .section-type-badge.quick_access{background:#fde8ec;color:#d9304e;}
@@ -47,13 +55,11 @@
               <p class="page-desc">管理商学院首页的各个展示板块，支持增删改查、排序和显示/隐藏</p>
             </div>
 
-            <!-- 操作栏 -->
             <div style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
               <t-button theme="primary" @click="handleAdd">新增板块</t-button>
               <t-button theme="default" @click="loadData" :loading="loading">刷新</t-button>
             </div>
 
-            <!-- 板块列表 -->
             <t-table :data="tableData" :columns="columns" :loading="loading" row-key="id" bordered stripe hover>
               <template #sort_order="{ row, rowIndex }">
                 <t-space size="small">
@@ -83,7 +89,6 @@
           <!-- 新增/编辑弹窗 -->
           <t-dialog v-model:visible="formVisible" :header="formMode==='add'?'新增板块':'编辑板块'" width="750px" :confirm-on-enter="false" @confirm="handleSubmit" :confirm-btn="{content:'保存',loading:submitting}">
             <t-form :data="formData" label-width="100px">
-              <!-- 板块类型（新增时选择，编辑时只读） -->
               <t-form-item label="板块类型" required>
                 <t-select v-model="formData.sectionType" :options="typeSelectOptions" placeholder="选择板块类型" :disabled="formMode==='edit'" style="width:300px;" @change="onTypeChange" />
               </t-form-item>
@@ -98,23 +103,29 @@
 
               <t-divider>板块内容</t-divider>
 
-              <!-- ===== hero 类型 ===== -->
+              <!-- ===== hero 类型：仅图片上传 ===== -->
               <template v-if="formData.sectionType==='hero'">
-                <t-form-item label="Banner图标">
-                  <t-input v-model="formContent.icon" placeholder="如 🏛️" style="width:200px;" />
-                </t-form-item>
-                <t-form-item label="主标题">
-                  <t-input v-model="formContent.title" placeholder="Banner主标题" />
-                </t-form-item>
-                <t-form-item label="副标题">
-                  <t-input v-model="formContent.subtitle" placeholder="Banner副标题" />
-                </t-form-item>
-                <t-form-item label="背景渐变">
-                  <t-input v-model="formContent.background" placeholder="如 linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
+                <t-form-item label="Banner图片">
+                  <div>
+                    <input type="file" ref="heroImageInput" accept="image/*" style="display:none;" @change="handleHeroImageUpload" />
+                    <div v-if="formContent.imageURL" class="rect-preview">
+                      <img :src="formContent.imageURL" />
+                      <div class="img-actions">
+                        <t-button size="small" variant="text" @click="$refs.heroImageInput.click()">更换</t-button>
+                        <t-button size="small" variant="text" theme="danger" @click="formContent.image='';formContent.imageURL=''">删除</t-button>
+                      </div>
+                    </div>
+                    <div v-else class="upload-placeholder upload-rect" @click="$refs.heroImageInput.click()">
+                      <span style="font-size:24px;color:#999;">+</span>
+                      <span style="font-size:11px;color:#999;">上传Banner图片</span>
+                    </div>
+                    <span v-if="heroUploading" style="font-size:12px;color:#0052d9;">上传中...</span>
+                    <div style="font-size:12px;color:#999;margin-top:4px;">建议宽度 750px，图片中包含文案</div>
+                  </div>
                 </t-form-item>
               </template>
 
-              <!-- ===== quick_access 类型 ===== -->
+              <!-- ===== quick_access 类型：每项仅图片+链接 ===== -->
               <template v-if="formData.sectionType==='quick_access'">
                 <div v-for="(item, idx) in formContent.items" :key="'qa-'+idx" class="dynamic-list-item">
                   <div class="item-header">
@@ -122,13 +133,28 @@
                     <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
                   </div>
                   <div class="item-fields">
-                    <div class="item-field"><t-input v-model="item.icon" placeholder="图标Emoji" /></div>
-                    <div class="item-field"><t-input v-model="item.title" placeholder="标题" /></div>
-                    <div class="item-field"><t-input v-model="item.link" placeholder="跳转路径，如 /pages/academy/materials/index" /></div>
-                    <div class="item-field-full"><t-input v-model="item.gradient" placeholder="渐变色，如 linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" /></div>
+                    <div class="item-field-full" style="margin-bottom:8px;">
+                      <span style="font-size:13px;color:#666;margin-bottom:4px;display:block;">卡片图片：</span>
+                      <input type="file" :ref="el => { if(el) qaImageInputRefs[idx] = el; }" accept="image/*" style="display:none;" @change="e => handleQaImageUpload(e, idx)" />
+                      <div v-if="item.imageURL" class="rect-preview rect-preview-sm">
+                        <img :src="item.imageURL" />
+                        <div class="img-actions">
+                          <t-button size="small" variant="text" @click="triggerQaImageUpload(idx)">更换</t-button>
+                          <t-button size="small" variant="text" theme="danger" @click="item.image='';item.imageURL=''">删除</t-button>
+                        </div>
+                      </div>
+                      <div v-else class="upload-placeholder upload-rect upload-rect-sm" @click="triggerQaImageUpload(idx)">
+                        <span style="font-size:20px;color:#999;">+</span>
+                        <span style="font-size:11px;color:#999;">上传卡片图片</span>
+                      </div>
+                      <span v-if="qaUploading[idx]" style="font-size:12px;color:#0052d9;">上传中...</span>
+                    </div>
+                    <div class="item-field-full">
+                      <t-input v-model="item.link" placeholder="跳转路径，如 /pages/academy/materials/index" />
+                    </div>
                   </div>
                 </div>
-                <t-button theme="default" size="small" @click="addItem({icon:'',title:'',link:'',gradient:''})">+ 添加入口</t-button>
+                <t-button theme="default" size="small" @click="addItem({image:'',imageURL:'',link:''})">+ 添加入口</t-button>
               </template>
 
               <!-- ===== intro 类型 ===== -->
@@ -143,7 +169,7 @@
                 <t-button theme="default" size="small" @click="formContent.paragraphs.push('')">+ 添加段落</t-button>
               </template>
 
-              <!-- ===== concepts 类型 ===== -->
+              <!-- ===== concepts 类型：颜色用选色器 + 图标图片上传 ===== -->
               <template v-if="formData.sectionType==='concepts'">
                 <div v-for="(item, idx) in formContent.items" :key="'c-'+idx" class="dynamic-list-item">
                   <div class="item-header">
@@ -151,19 +177,43 @@
                     <t-button theme="danger" size="small" variant="text" @click="removeItem(idx)">删除</t-button>
                   </div>
                   <div class="item-fields">
-                    <div class="item-field"><t-input v-model="item.icon" placeholder="图标Emoji" style="width:120px;" /></div>
                     <div class="item-field"><t-input v-model="item.name" placeholder="理念名称" /></div>
                     <div class="item-field">
-                      <t-input v-model="item.color" placeholder="渐变色/颜色" />
-                      <span v-if="item.color" :style="{display:'inline-block',width:'16px',height:'16px',borderRadius:'4px',background:item.color,verticalAlign:'middle',marginLeft:'4px',border:'1px solid #dcdcdc'}"></span>
+                      <span style="font-size:13px;color:#666;margin-right:6px;">底色</span>
+                      <div class="color-picker-wrap">
+                        <input type="color" v-model="item.color" />
+                        <span class="color-hex">{{ item.color }}</span>
+                      </div>
+                    </div>
+                    <div class="item-field-full">
+                      <div style="display:flex;align-items:center;gap:12px;">
+                        <span style="font-size:13px;color:#666;">图标：</span>
+                        <input type="file" :ref="el => { if(el) conceptImageInputRefs[idx] = el; }" accept="image/*" style="display:none;" @change="e => handleConceptImageUpload(e, idx)" />
+                        <div v-if="item.imageURL" class="avatar-preview">
+                          <img :src="item.imageURL" />
+                          <div class="avatar-actions">
+                            <t-button size="small" variant="text" @click="triggerConceptImageUpload(idx)">更换</t-button>
+                            <t-button size="small" variant="text" theme="danger" @click="item.image='';item.imageURL=''">删除</t-button>
+                          </div>
+                        </div>
+                        <div v-else class="upload-placeholder" @click="triggerConceptImageUpload(idx)">
+                          <span style="font-size:24px;color:#999;">+</span>
+                          <span style="font-size:11px;color:#999;">上传图标</span>
+                        </div>
+                        <span v-if="conceptUploading[idx]" style="font-size:12px;color:#0052d9;">上传中...</span>
+                        <div style="margin-left:8px;">
+                          <span style="font-size:12px;color:#999;">或 Emoji：</span>
+                          <t-input v-model="item.icon" placeholder="如 ☯️" style="width:80px;display:inline-block;" />
+                        </div>
+                      </div>
                     </div>
                     <div class="item-field-full"><t-textarea v-model="item.description" placeholder="描述" :autosize="{minRows:1,maxRows:3}" /></div>
                   </div>
                 </div>
-                <t-button theme="default" size="small" @click="addItem({icon:'',color:'',name:'',description:''})">+ 添加理念</t-button>
+                <t-button theme="default" size="small" @click="addItem({icon:'',color:'#0052D9',name:'',description:'',image:'',imageURL:''})">+ 添加理念</t-button>
               </template>
 
-              <!-- ===== teachers 类型 ===== -->
+              <!-- ===== teachers 类型：主题色用选色器 ===== -->
               <template v-if="formData.sectionType==='teachers'">
                 <div v-for="(item, idx) in formContent.items" :key="'t-'+idx" class="dynamic-list-item">
                   <div class="item-header">
@@ -174,13 +224,16 @@
                     <div class="item-field"><t-input v-model="item.name" placeholder="讲师姓名" /></div>
                     <div class="item-field"><t-input v-model="item.role" placeholder="角色/头衔" /></div>
                     <div class="item-field">
-                      <t-select v-model="item.theme" :options="themeOptions" placeholder="主题色(文字头像)" style="width:160px;" />
+                      <span style="font-size:13px;color:#666;margin-right:6px;">头像底色</span>
+                      <div class="color-picker-wrap">
+                        <input type="color" v-model="item.theme" />
+                        <span class="color-hex">{{ item.theme }}</span>
+                      </div>
                     </div>
                     <div class="item-field-full"><t-textarea v-model="item.description" placeholder="讲师简介" :autosize="{minRows:1,maxRows:3}" /></div>
                     <div class="item-field-full">
                       <div style="display:flex;align-items:center;gap:12px;">
                         <span style="font-size:13px;color:#666;">头像：</span>
-                        <!-- 头像上传 -->
                         <input type="file" :ref="el => { if(el) avatarInputRefs[idx] = el; }" accept="image/*" style="display:none;" @change="e => handleAvatarUpload(e, idx)" />
                         <div v-if="item.avatarURL" class="avatar-preview">
                           <img :src="item.avatarURL" />
@@ -201,7 +254,7 @@
                 <t-button theme="default" size="small" @click="addTeacher">+ 添加讲师</t-button>
               </template>
 
-              <!-- ===== timeline 类型 ===== -->
+              <!-- ===== timeline 类型：颜色用选色器 ===== -->
               <template v-if="formData.sectionType==='timeline'">
                 <div v-for="(item, idx) in formContent.items" :key="'tl-'+idx" class="dynamic-list-item">
                   <div class="item-header">
@@ -211,8 +264,10 @@
                   <div class="item-fields">
                     <div class="item-field"><t-input v-model="item.year" placeholder="年份，如 2024年" style="width:160px;" /></div>
                     <div class="item-field">
-                      <t-input v-model="item.color" placeholder="圆点颜色，如 #0052D9" style="width:200px;" />
-                      <span v-if="item.color" :style="{display:'inline-block',width:'16px',height:'16px',borderRadius:'50%',background:item.color,verticalAlign:'middle',marginLeft:'4px',border:'1px solid #dcdcdc'}"></span>
+                      <div class="color-picker-wrap">
+                        <input type="color" v-model="item.color" />
+                        <span class="color-hex">{{ item.color }}</span>
+                      </div>
                     </div>
                     <div class="item-field-full"><t-textarea v-model="item.description" placeholder="描述" :autosize="{minRows:1,maxRows:3}" /></div>
                   </div>
@@ -246,11 +301,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260309"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260309"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260309"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   <script>
     const { createApp, ref, reactive, computed, onMounted } = Vue;
     const SidebarNavigation = window.SidebarNavigation;
@@ -267,9 +322,15 @@
         const formData = reactive({ id: null, sectionType: '', title: '', icon: '' });
         const formContent = reactive({});
 
-        // 头像上传相关
+        // 上传相关
+        const heroImageInput = ref(null);
+        const heroUploading = ref(false);
         const avatarInputRefs = {};
         const avatarUploading = reactive({});
+        const qaImageInputRefs = {};
+        const qaUploading = reactive({});
+        const conceptImageInputRefs = {};
+        const conceptUploading = reactive({});
 
         const typeLabels = {
           hero: 'Hero Banner',
@@ -291,13 +352,6 @@
           { value: 'honors', label: '荣誉资质' }
         ];
 
-        const themeOptions = [
-          { value: 'primary', label: '蓝色(primary)' },
-          { value: 'success', label: '绿色(success)' },
-          { value: 'warning', label: '金色(warning)' },
-          { value: 'danger', label: '红色(danger)' }
-        ];
-
         const columns = [
           { colKey: 'sort_order', title: '排序', width: 120 },
           { colKey: 'section_type', title: '类型', width: 130 },
@@ -306,10 +360,9 @@
           { colKey: 'operation', title: '操作', width: 150 }
         ];
 
-        // 构建指定类型的默认 content
         function getDefaultContent(type) {
           switch (type) {
-            case 'hero': return { icon: '', title: '', subtitle: '', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+            case 'hero': return { image: '', imageURL: '' };
             case 'quick_access': return { items: [] };
             case 'intro': return { paragraphs: [''] };
             case 'concepts': return { items: [] };
@@ -329,7 +382,17 @@
           setFormContent(getDefaultContent(val));
         }
 
-        // 加载数据
+        function cloudFileIDToURL(fileID) {
+          if (!fileID || !fileID.startsWith('cloud://')) return fileID || '';
+          const withoutScheme = fileID.slice(8);
+          const dotIdx = withoutScheme.indexOf('.');
+          const slashIdx = withoutScheme.indexOf('/');
+          if (dotIdx === -1 || slashIdx === -1 || dotIdx >= slashIdx) return fileID;
+          const bucket = withoutScheme.slice(dotIdx + 1, slashIdx);
+          const filePath = withoutScheme.slice(slashIdx + 1);
+          return `https://${bucket}.tcb.qcloud.la/${filePath}`;
+        }
+
         async function loadData() {
           loading.value = true;
           try {
@@ -342,7 +405,6 @@
           }
         }
 
-        // 新增
         function handleAdd() {
           formMode.value = 'add';
           formData.id = null;
@@ -353,7 +415,6 @@
           formVisible.value = true;
         }
 
-        // 编辑
         function handleEdit(row) {
           formMode.value = 'edit';
           formData.id = row.id;
@@ -361,9 +422,23 @@
           formData.title = row.title;
           formData.icon = row.icon;
 
-          const content = typeof row.content === 'string' ? JSON.parse(row.content) : { ...row.content };
+          const content = typeof row.content === 'string' ? JSON.parse(row.content) : JSON.parse(JSON.stringify(row.content));
 
-          // teachers 类型需要加载头像预览URL
+          if (row.section_type === 'hero') {
+            content.imageURL = content.image ? cloudFileIDToURL(content.image) : '';
+          }
+          if (row.section_type === 'quick_access' && content.items) {
+            content.items = content.items.map(item => ({
+              ...item,
+              imageURL: item.image ? cloudFileIDToURL(item.image) : ''
+            }));
+          }
+          if (row.section_type === 'concepts' && content.items) {
+            content.items = content.items.map(item => ({
+              ...item,
+              imageURL: item.image ? cloudFileIDToURL(item.image) : ''
+            }));
+          }
           if (row.section_type === 'teachers' && content.items) {
             content.items = content.items.map(item => ({
               ...item,
@@ -375,32 +450,26 @@
           formVisible.value = true;
         }
 
-        // cloudFileIDToURL 工具函数（前端用）
-        function cloudFileIDToURL(fileID) {
-          if (!fileID || !fileID.startsWith('cloud://')) return fileID || '';
-          const withoutPrefix = fileID.replace('cloud://', '');
-          const dotIndex = withoutPrefix.indexOf('.');
-          const slashIndex = withoutPrefix.indexOf('/');
-          if (dotIndex === -1 || slashIndex === -1) return fileID;
-          const bucket = withoutPrefix.substring(0, slashIndex);
-          const path = withoutPrefix.substring(slashIndex + 1);
-          return `https://${bucket}.tcb.qcloud.la/${path}`;
-        }
-
-        // 提交
         async function handleSubmit() {
           if (!formData.sectionType) { TDesign.MessagePlugin.warning('请选择板块类型'); return; }
           if (!formData.title) { TDesign.MessagePlugin.warning('请输入板块标题'); return; }
 
           submitting.value = true;
           try {
-            // 构建干净的 content（剥离 avatarURL 等临时字段）
             const cleanContent = JSON.parse(JSON.stringify(formContent));
+
+            // 剥离临时预览 URL 字段
+            if (formData.sectionType === 'hero') {
+              delete cleanContent.imageURL;
+            }
+            if (formData.sectionType === 'quick_access' && cleanContent.items) {
+              cleanContent.items = cleanContent.items.map(({ imageURL, ...rest }) => rest);
+            }
+            if (formData.sectionType === 'concepts' && cleanContent.items) {
+              cleanContent.items = cleanContent.items.map(({ imageURL, ...rest }) => rest);
+            }
             if (formData.sectionType === 'teachers' && cleanContent.items) {
-              cleanContent.items = cleanContent.items.map(item => {
-                const { avatarURL, ...rest } = item;
-                return rest;
-              });
+              cleanContent.items = cleanContent.items.map(({ avatarURL, ...rest }) => rest);
             }
 
             const params = {
@@ -423,24 +492,27 @@
           }
         }
 
-        // 删除
         function handleDelete(row) {
-          TDesign.DialogPlugin.confirm({
+          const dialog = TDesign.DialogPlugin.confirm({
             header: '确认删除',
             body: `确定要删除板块「${row.title}」吗？此操作不可恢复。`,
             onConfirm: async () => {
+              dialog.update({ confirmBtn: { loading: true } });
               try {
                 await AdminAPI.manageAcademySections({ operation: 'delete', id: row.id });
                 TDesign.MessagePlugin.success('删除成功');
+                dialog.hide();
                 await loadData();
               } catch (e) {
                 TDesign.MessagePlugin.error('删除失败: ' + (e.message || '未知错误'));
+                dialog.update({ confirmBtn: { loading: false } });
               }
-            }
+            },
+            onCancel: () => dialog.hide(),
+            onClose: () => dialog.hide(),
           });
         }
 
-        // 显示/隐藏
         async function handleToggleStatus(row) {
           try {
             await AdminAPI.manageAcademySections({ operation: 'toggleStatus', id: row.id });
@@ -450,33 +522,23 @@
           }
         }
 
-        // 排序：上移
         async function handleMoveUp(row, rowIndex) {
           if (rowIndex === 0) return;
-          const prev = tableData.value[rowIndex - 1];
-          await swapSort(row, prev);
+          await swapSort(row, tableData.value[rowIndex - 1]);
         }
 
-        // 排序：下移
         async function handleMoveDown(row, rowIndex) {
           if (rowIndex >= tableData.value.length - 1) return;
-          const next = tableData.value[rowIndex + 1];
-          await swapSort(row, next);
+          await swapSort(row, tableData.value[rowIndex + 1]);
         }
 
         async function swapSort(a, b) {
           try {
-            const tmpA = a.sort_order;
-            const tmpB = b.sort_order;
-            // 避免相同 sort_order 导致无法交换
+            const tmpA = a.sort_order, tmpB = b.sort_order;
             const newA = tmpA === tmpB ? tmpB + 1 : tmpB;
-            const newB = tmpA;
             await AdminAPI.manageAcademySections({
               operation: 'updateSort',
-              items: [
-                { id: a.id, sortOrder: newA },
-                { id: b.id, sortOrder: newB }
-              ]
+              items: [{ id: a.id, sortOrder: newA }, { id: b.id, sortOrder: tmpA }]
             });
             await loadData();
           } catch (e) {
@@ -484,7 +546,6 @@
           }
         }
 
-        // 动态列表操作
         function addItem(template) {
           if (!formContent.items) formContent.items = [];
           formContent.items.push({ ...template });
@@ -496,10 +557,83 @@
 
         function addTeacher() {
           if (!formContent.items) formContent.items = [];
-          formContent.items.push({ name: '', role: '', description: '', avatar: '', avatarURL: '', theme: 'primary' });
+          formContent.items.push({ name: '', role: '', description: '', avatar: '', avatarURL: '', theme: '#0052D9' });
         }
 
-        // 讲师头像上传
+        // ===== Hero Banner 图片上传 =====
+        async function handleHeroImageUpload(e) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          if (!file) return;
+          const v = window.CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 5 * 1024 * 1024 });
+          if (!v.valid) { TDesign.MessagePlugin.error(v.error); return; }
+          heroUploading.value = true;
+          try {
+            const ext = file.name.split('.').pop();
+            const r = await window.CloudStorageHelper.uploadSingleFile(file, `academy/sections/hero/${Date.now()}.${ext}`);
+            formContent.image = r.fileID;
+            formContent.imageURL = r.tempFileURL || cloudFileIDToURL(r.fileID);
+            TDesign.MessagePlugin.success('上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || '未知错误'));
+          } finally {
+            heroUploading.value = false;
+          }
+        }
+
+        // ===== 快捷入口卡片图片上传 =====
+        function triggerQaImageUpload(idx) {
+          const input = qaImageInputRefs[idx];
+          if (input) input.click();
+        }
+
+        async function handleQaImageUpload(e, idx) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          if (!file) return;
+          const v = window.CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 5 * 1024 * 1024 });
+          if (!v.valid) { TDesign.MessagePlugin.error(v.error); return; }
+          qaUploading[idx] = true;
+          try {
+            const ext = file.name.split('.').pop();
+            const r = await window.CloudStorageHelper.uploadSingleFile(file, `academy/sections/quick_access/${Date.now()}_${idx}.${ext}`);
+            formContent.items[idx].image = r.fileID;
+            formContent.items[idx].imageURL = r.tempFileURL || cloudFileIDToURL(r.fileID);
+            TDesign.MessagePlugin.success('上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || '未知错误'));
+          } finally {
+            qaUploading[idx] = false;
+          }
+        }
+
+        // ===== 核心理念图标图片上传 =====
+        function triggerConceptImageUpload(idx) {
+          const input = conceptImageInputRefs[idx];
+          if (input) input.click();
+        }
+
+        async function handleConceptImageUpload(e, idx) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          if (!file) return;
+          const v = window.CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 2 * 1024 * 1024 });
+          if (!v.valid) { TDesign.MessagePlugin.error(v.error); return; }
+          conceptUploading[idx] = true;
+          try {
+            const ext = file.name.split('.').pop();
+            const r = await window.CloudStorageHelper.uploadSingleFile(file, `academy/sections/concepts/${Date.now()}_${idx}.${ext}`);
+            formContent.items[idx].image = r.fileID;
+            formContent.items[idx].imageURL = r.tempFileURL || cloudFileIDToURL(r.fileID);
+            TDesign.MessagePlugin.success('图标上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || '未知错误'));
+          } finally {
+            conceptUploading[idx] = false;
+          }
+        }
+
+        // ===== 讲师头像上传 =====
         function triggerAvatarUpload(idx) {
           const input = avatarInputRefs[idx];
           if (input) input.click();
@@ -509,15 +643,12 @@
           const file = e.target.files[0];
           e.target.value = '';
           if (!file) return;
-
           const v = window.CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 2 * 1024 * 1024 });
           if (!v.valid) { TDesign.MessagePlugin.error(v.error); return; }
-
           avatarUploading[idx] = true;
           try {
             const ext = file.name.split('.').pop();
-            const cloudPath = `academy/sections/teachers/${Date.now()}_${idx}.${ext}`;
-            const r = await window.CloudStorageHelper.uploadSingleFile(file, cloudPath);
+            const r = await window.CloudStorageHelper.uploadSingleFile(file, `academy/sections/teachers/${Date.now()}_${idx}.${ext}`);
             formContent.items[idx].avatar = r.fileID;
             formContent.items[idx].avatarURL = r.tempFileURL || cloudFileIDToURL(r.fileID);
             TDesign.MessagePlugin.success('头像上传成功');
@@ -537,12 +668,18 @@
 
         return {
           adminInfo, handleLogout, loading, submitting,
-          tableData, columns, typeLabels, typeSelectOptions, themeOptions,
+          tableData, columns, typeLabels, typeSelectOptions,
           formVisible, formMode, formData, formContent,
+          heroImageInput, heroUploading,
           avatarInputRefs, avatarUploading,
+          qaImageInputRefs, qaUploading,
+          conceptImageInputRefs, conceptUploading,
           loadData, handleAdd, handleEdit, handleDelete, handleSubmit,
           handleToggleStatus, handleMoveUp, handleMoveDown,
           onTypeChange, addItem, removeItem, addTeacher,
+          handleHeroImageUpload,
+          triggerQaImageUpload, handleQaImageUpload,
+          triggerConceptImageUpload, handleConceptImageUpload,
           triggerAvatarUpload, handleAvatarUpload, removeAvatar
         };
       }

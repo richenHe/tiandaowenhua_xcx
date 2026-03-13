@@ -299,7 +299,7 @@ const getLevelIcon = (level: number): string => {
     1: '🥚',
     2: '🐦',
     3: '🦅',
-    4: '🦚'
+    4: '🐦‍🔥'
   }
   return iconMap[level] || '🌿'
 }

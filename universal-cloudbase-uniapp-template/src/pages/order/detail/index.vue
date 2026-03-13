@@ -69,7 +69,8 @@
           </view>
         </view>
 
-        <!-- 推荐人信息：有推荐人才显示 -->
+        <!-- 推荐人信息已隐藏：仅后台可查看 -->
+        <!--
         <template v-if="orderDetail.referee.name">
           <view class="section-title section-title--simple">🎯 推荐人信息</view>
           <view class="t-card t-card--bordered mb-l">
@@ -88,6 +89,7 @@
             </view>
           </view>
         </template>
+        -->
 
         <!-- 金额明细 -->
         <view class="section-title section-title--simple">💰 金额明细</view>

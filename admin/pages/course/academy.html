@@ -7,7 +7,7 @@
   <title>学院内容管理 - 天道文化后台</title>
   
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   
   <style>
     .toolbar {
@@ -41,71 +41,7 @@
       
       <t-layout>
         <!-- 侧边菜单 -->
-        <t-aside width="240px" style="
-          background: #fff;
-          border-right: 1px solid #dcdcdc;
-          overflow-y: auto;
-        ">
-          <t-menu
-            value="academy-content"
-            :default-expanded="['user', 'order', 'course', 'ambassador', 'system']"
-            theme="light"
-            @change="handleMenuChange"
-          >
-            <t-menu-item value="dashboard">
-              <template #icon><t-icon name="dashboard" /></template>
-              数据概览
-            </t-menu-item>
-            
-            <t-submenu value="user">
-              <template #icon><t-icon name="user" /></template>
-              <template #title>用户管理</template>
-              <t-menu-item value="user-list">学员列表</t-menu-item>
-              <t-menu-item value="user-referee">推荐关系查询</t-menu-item>
-              <t-menu-item value="user-referee-logs">推荐人变更记录</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="order">
-              <template #icon><t-icon name="order" /></template>
-              <template #title>订单管理</template>
-              <t-menu-item value="order-list">订单列表</t-menu-item>
-              <t-menu-item value="order-refund">退款管理</t-menu-item>
-              <t-menu-item value="withdraw-audit">提现审核</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="course">
-              <template #icon><t-icon name="file" /></template>
-              <template #title>课程管理</template>
-              <t-menu-item value="course-list">课程列表</t-menu-item>
-              <t-menu-item value="schedule-list">排期管理</t-menu-item>
-              <t-menu-item value="appointment-list">预约管理</t-menu-item>
-              <t-menu-item value="case-list">案例管理</t-menu-item>
-              <t-menu-item value="material-list">资料管理</t-menu-item>
-              <t-menu-item value="academy-content">学院内容</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="ambassador">
-              <template #icon><t-icon name="usergroup" /></template>
-              <template #title>大使管理</template>
-              <t-menu-item value="ambassador-list">大使列表</t-menu-item>
-              <t-menu-item value="application-audit">申请审核</t-menu-item>
-              <t-menu-item value="activity-list">活动管理</t-menu-item>
-              <t-menu-item value="contract-list">合约管理</t-menu-item>
-            </t-submenu>
-            
-            <t-submenu value="system">
-              <template #icon><t-icon name="setting" /></template>
-              <template #title>系统管理</template>
-              <t-menu-item value="admin-list">管理员管理</t-menu-item>
-              <t-menu-item value="config">系统配置</t-menu-item>
-              <t-menu-item value="banner-list">轮播图管理</t-menu-item>
-              <t-menu-item value="announcement-list">公告管理</t-menu-item>
-              <t-menu-item value="feedback-list">反馈管理</t-menu-item>
-              <t-menu-item value="notification-list">通知管理</t-menu-item>
-              <t-menu-item value="level-config">等级配置</t-menu-item>
-            </t-submenu>
-          </t-menu>
-        </t-aside>
+        <sidebar-menu active-key="academy-content"></sidebar-menu>
         
         <!-- 主内容区 -->
         <t-content class="page-content">
@@ -126,8 +62,9 @@
           <div class="table-card" v-if="activeTab === 'courses'">
             <div class="toolbar">
               <t-space>
-                <t-input v-model="searchKeyword" placeholder="搜索课程名称" clearable style="width: 200px;"></t-input>
+                <t-input v-model="searchKeyword" placeholder="搜索课程名称" clearable style="width: 200px;" @enter="loadCourses"></t-input>
                 <t-button theme="primary" @click="loadCourses">查询</t-button>
+                <t-button @click="searchKeyword = ''; loadCourses()">重置</t-button>
               </t-space>
               <t-button theme="primary" @click="createCourse">
                 <template #icon><t-icon name="add" /></template>
@@ -264,8 +201,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -380,13 +318,14 @@
           }
         };
         
-        // 加载课程列表
+        // 加载课程列表（使用独立的 getCourseList API，避免 action 字段覆盖路由）
         const loadCourses = async () => {
           loading.value = true;
           try {
-            const result = await AdminAPI.manageAcademyContent({
-              action: 'list_courses',
-              data: { keyword: searchKeyword.value }
+            const result = await AdminAPI.getCourseList({
+              keyword: searchKeyword.value,
+              pageSize: 100,
+              page: 1
             });
             courses.value = result.list || [];
           } catch (error) {
@@ -396,22 +335,11 @@
           }
         };
         
-        // 加载章节列表
+        // 加载章节列表（章节功能暂未实现后端列表接口）
         const loadChapters = async () => {
           if (!selectedCourseId.value) return;
-          
-          loading.value = true;
-          try {
-            const result = await AdminAPI.manageAcademyContent({
-              action: 'list_chapters',
-              data: { courseId: selectedCourseId.value }
-            });
-            chapters.value = result.list || [];
-          } catch (error) {
-            TDesign.MessagePlugin.error('加载章节失败: ' + error.message);
-          } finally {
-            loading.value = false;
-          }
+          chapters.value = [];
+          TDesign.MessagePlugin.info('章节管理功能开发中，请到课程列表页面管理章节');
         };
         
         // 根据课程加载章节
@@ -420,33 +348,23 @@
           loadChapters();
         };
         
-        // 加载视频列表
+        // 加载视频列表（视频功能暂未实现后端列表接口）
         const loadVideos = async () => {
           if (!selectedChapterId.value) return;
-          
-          loading.value = true;
-          try {
-            const result = await AdminAPI.manageAcademyContent({
-              action: 'list_videos',
-              data: { chapterId: selectedChapterId.value }
-            });
-            videos.value = result.list || [];
-          } catch (error) {
-            TDesign.MessagePlugin.error('加载视频失败: ' + error.message);
-          } finally {
-            loading.value = false;
-          }
+          videos.value = [];
+          TDesign.MessagePlugin.info('视频管理功能开发中');
         };
         
-        // 加载资料列表
+        // 加载资料列表（使用独立的 getMaterialList API）
         const loadMaterials = async () => {
           if (!selectedCourseId.value) return;
           
           loading.value = true;
           try {
-            const result = await AdminAPI.manageAcademyContent({
-              action: 'list_materials',
-              data: { courseId: selectedCourseId.value }
+            const result = await AdminAPI.getMaterialList({
+              courseId: selectedCourseId.value,
+              pageSize: 100,
+              page: 1
             });
             materials.value = result.list || [];
           } catch (error) {
@@ -467,10 +385,7 @@
         
         const deleteCourse = async (row) => {
           try {
-            await AdminAPI.manageAcademyContent({
-              action: 'delete_course',
-              data: { id: row.id }
-            });
+            await AdminAPI.deleteCourse({ courseId: row.id });
             TDesign.MessagePlugin.success('删除成功');
             loadCourses();
           } catch (error) {
@@ -493,16 +408,7 @@
         };
         
         const deleteChapter = async (row) => {
-          try {
-            await AdminAPI.manageAcademyContent({
-              action: 'delete_chapter',
-              data: { id: row.id }
-            });
-            TDesign.MessagePlugin.success('删除成功');
-            loadChapters();
-          } catch (error) {
-            TDesign.MessagePlugin.error('删除失败: ' + error.message);
-          }
+          TDesign.MessagePlugin.info('章节管理功能开发中，请直接管理课程内容');
         };
         
         const viewVideos = (row) => {
@@ -524,16 +430,7 @@
         };
         
         const deleteVideo = async (row) => {
-          try {
-            await AdminAPI.manageAcademyContent({
-              action: 'delete_video',
-              data: { id: row.id }
-            });
-            TDesign.MessagePlugin.success('删除成功');
-            loadVideos();
-          } catch (error) {
-            TDesign.MessagePlugin.error('删除失败: ' + error.message);
-          }
+          TDesign.MessagePlugin.info('视频管理功能开发中');
         };
         
         const uploadMaterial = () => {
@@ -554,10 +451,7 @@
         
         const deleteMaterial = async (row) => {
           try {
-            await AdminAPI.manageAcademyContent({
-              action: 'delete_material',
-              data: { id: row.id }
-            });
+            await AdminAPI.deleteMaterial({ materialId: row.id });
             TDesign.MessagePlugin.success('删除成功');
             loadMaterials();
           } catch (error) {
@@ -631,8 +525,9 @@
       }
     });
     
-    app.use(TDesign);
-    app.mount('#app');
+    app.use(TDesign)
+      .component('sidebar-menu', SidebarNavigation.SidebarMenu)
+      .mount('#app');
   </script>
 </body>
 </html>

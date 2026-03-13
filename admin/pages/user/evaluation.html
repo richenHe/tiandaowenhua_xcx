@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>评估名单 - 天道文化后台</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260306">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   <style>
     .page-container { max-width: 1600px; margin: 0 auto; }
     .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end; }
@@ -46,12 +46,12 @@
             <div class="search-bar">
               <t-form layout="inline">
                 <t-form-item label="关键词">
-                  <t-input v-model="keyword" placeholder="姓名/手机号" clearable style="width: 200px;" @enter="loadData"></t-input>
+                  <t-input v-model="keyword" placeholder="姓名/手机号" clearable style="width: 200px;" @enter="handleSearch"></t-input>
                 </t-form-item>
                 <t-form-item>
                   <t-space>
-                    <t-button theme="primary" @click="loadData">查询</t-button>
-                    <t-button theme="default" @click="keyword=''; loadData()">重置</t-button>
+                    <t-button theme="primary" @click="handleSearch">查询</t-button>
+                    <t-button theme="default" @click="handleReset">重置</t-button>
                   </t-space>
                 </t-form-item>
               </t-form>
@@ -178,9 +178,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260306"></script>
-  <script src="../../assets/js/admin-api.js?v=20260306"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
 
   <script>
     const { createApp, ref, reactive, computed, onMounted } = Vue;
@@ -280,6 +280,17 @@
           } finally {
             loading.value = false;
           }
+        };
+
+        const handleSearch = () => {
+          pagination.current = 1;
+          loadData();
+        };
+
+        const handleReset = () => {
+          keyword.value = '';
+          pagination.current = 1;
+          loadData();
         };
 
         const onPageChange = (pageInfo) => {
@@ -460,24 +471,26 @@
           }
         };
 
-        const handleRemoveBlacklist = async (row, type) => {
+        const handleRemoveBlacklist = (row, type) => {
           const typeName = type === 1 ? '课程' : '活动';
-          const ok = await new Promise(res => {
-            TDesign.DialogPlugin.confirm({
-              header: `解除${typeName}拉黑`,
-              body: `确定解除 ${row.real_name || '该用户'} 的${typeName}拉黑吗？`,
-              onConfirm: () => res(true),
-              onCancel: () => res(false)
-            });
+          const dialog = TDesign.DialogPlugin.confirm({
+            header: `解除${typeName}拉黑`,
+            body: `确定解除 ${row.real_name || '该用户'} 的${typeName}拉黑吗？`,
+            onConfirm: async () => {
+              dialog.update({ confirmBtn: { loading: true } });
+              try {
+                await AdminAPI.removeBlacklist({ userId: row.id, blacklistType: type });
+                TDesign.MessagePlugin.success('已解除拉黑');
+                dialog.hide();
+                loadData();
+              } catch (e) {
+                TDesign.MessagePlugin.error('解除失败: ' + (e.message || '未知错误'));
+                dialog.update({ confirmBtn: { loading: false } });
+              }
+            },
+            onCancel: () => dialog.hide(),
+            onClose: () => dialog.hide(),
           });
-          if (!ok) return;
-          try {
-            await AdminAPI.removeBlacklist({ userId: row.id, blacklistType: type });
-            TDesign.MessagePlugin.success('已解除拉黑');
-            loadData();
-          } catch (e) {
-            TDesign.MessagePlugin.error('解除失败: ' + (e.message || '未知错误'));
-          }
         };
 
         onMounted(() => {
@@ -497,6 +510,8 @@
           canBlacklistCourse,
           canBlacklistActivity,
           loadData,
+          handleSearch,
+          handleReset,
           onPageChange,
           configVisible,
           configLoading,

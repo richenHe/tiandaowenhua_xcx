@@ -2,90 +2,11 @@
   <view class="page-container">
     <TdPageHeader title="引荐人列表" :showBack="true" />
 
-    <!-- Tab 切换头部 -->
-    <view class="tab-header">
-      <view 
-        class="tab-header__item"
-        :class="{ 'tab-header__item--active': activeTab === 0 }"
-        @click="handleTabChange(0)"
-      >
-        <text class="tab-header__icon">🏇</text>
-        <text class="tab-header__label">伯乐</text>
-        <text class="tab-header__desc">我的推荐人</text>
-      </view>
-      <view 
-        class="tab-header__item"
-        :class="{ 'tab-header__item--active': activeTab === 1 }"
-        @click="handleTabChange(1)"
-      >
-        <text class="tab-header__icon">🐎</text>
-        <text class="tab-header__label">千里马</text>
-        <text class="tab-header__desc">我推荐的人</text>
-      </view>
-    </view>
-
     <!-- 页面内容 -->
     <scroll-view class="scroll-content" scroll-y>
       <view class="page-content">
-        <!-- 伯乐板块 (我的推荐人) -->
-        <view v-if="activeTab === 0">
-          <view class="t-section-title t-section-title--simple">🏇 我的伯乐（推荐人）</view>
-
-          <!-- 推荐人卡片 -->
-          <view v-if="referee" class="referral-card referral-card--highlight">
-            <view class="card-header">
-              <view class="t-avatar t-avatar--primary t-avatar--large">
-                <text class="t-avatar__text">{{ referee.real_name?.charAt(0) || '?' }}</text>
-              </view>
-              <view class="card-info">
-                <view class="info-name">
-                  <text class="name-text">{{ referee.real_name || '未设置' }}</text>
-                  <text class="level-badge">{{ getLevelIcon(referee.activity_count || 0) }}</text>
-                </view>
-                <view class="info-level">
-                  <text class="t-badge t-badge--primary">{{ getLevelText(referee.ambassador_level) }}</text>
-                </view>
-              </view>
-            </view>
-
-            <view class="t-divider"></view>
-
-            <view class="card-details">
-              <view class="detail-item">
-                <text class="detail-label">联系方式</text>
-                <text class="detail-value">{{ referee.phone || '未设置' }}</text>
-              </view>
-              <view class="detail-item">
-                <text class="detail-label">推荐时间</text>
-                <text class="detail-value">{{ formatDate(referee.created_at) }}</text>
-              </view>
-            </view>
-          </view>
-
-          <!-- 无推荐人提示 -->
-          <view v-else class="empty-state">
-            <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
-            <text class="empty-text">暂无推荐人</text>
-          </view>
-
-          <!-- 修改推荐人按钮：首次购课后推荐人永久锁定，不再显示 -->
-          <view v-if="showModifyRefereeBtn" class="modify-referee-section">
-            <button class="t-button t-button--outline" @click="handleModifyReferee">
-              <text class="t-button__text">✏️ 修改推荐人</text>
-            </button>
-          </view>
-
-          <!-- 说明信息 -->
-          <view class="t-alert">
-            <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
-            <view class="alert-content">
-              <text class="alert-message">伯乐是引荐您加入天道文化大家庭的人。首次购买课程后，推荐人关系将永久锁定。</text>
-            </view>
-          </view>
-        </view>
-
         <!-- 千里马板块 (我推荐的人) -->
-        <view v-if="activeTab === 1">
+        <view>
           <view class="t-section-title t-section-title--simple">🐎 我的千里马（推荐的人）</view>
 
           <!-- 统计卡片 -->
@@ -149,23 +70,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
-import type { RefereeInfo, RefereeListItem } from '@/api/types/user'
-
-// Tab 状态
-const activeTab = ref(0)
-
-// 我的推荐人（伯乐）
-const referee = ref<RefereeInfo | null>(null)
-
-// 推荐人是否已锁定（首次购课后不可修改）
-const isRefereeConfirmed = ref(false)
-
-// 是否显示"修改推荐人"按钮（未购课时才允许修改）
-const showModifyRefereeBtn = computed(() => !isRefereeConfirmed.value)
+import type { RefereeListItem } from '@/api/types/user'
 
 // 统计数据
 const stats = ref({
@@ -181,40 +90,6 @@ const pageSize = ref(20)
 const total = ref(0)
 const loading = ref(false)
 const finished = ref(false)
-
-// 获取我的推荐人信息
-const loadRefereeInfo = async () => {
-  try {
-    uni.showLoading({ title: '加载中...' })
-    const profile = await UserApi.getProfile()
-    
-    // 如果有推荐人，构建推荐人信息
-    if (profile.referee_id && profile.referee_name) {
-      referee.value = {
-        id: profile.referee_id,
-        real_name: profile.referee_name,
-        phone: '',
-        referral_code: '',
-        ambassador_level: profile.referee_level || 0,
-        activity_count: profile.referee_activity_count || 0,
-        avatar: '',
-        created_at: profile.referee_confirmed_at || profile.created_at
-      }
-    } else {
-      referee.value = null
-    }
-    // 首次购课后 referee_confirmed_at 被写入，此时推荐人关系永久锁定
-    isRefereeConfirmed.value = !!profile.referee_confirmed_at
-    uni.hideLoading()
-  } catch (error) {
-    console.error('获取推荐人信息失败:', error)
-    uni.hideLoading()
-    uni.showToast({
-      title: '加载失败，请重试',
-      icon: 'none'
-    })
-  }
-}
 
 // 获取我推荐的人列表
 const loadReferralList = async (reset = false) => {
@@ -260,19 +135,12 @@ const loadReferralList = async (reset = false) => {
 }
 
 onMounted(() => {
-  loadRefereeInfo()
   loadReferralList()
 })
 
 onShow(() => {
-  loadRefereeInfo()
   loadReferralList()
 })
-
-// 切换 Tab
-const handleTabChange = (index: number) => {
-  activeTab.value = index
-}
 
 // 返回上一页
 const goBack = () => {
@@ -283,13 +151,6 @@ const goBack = () => {
 const handleInvite = () => {
   uni.navigateTo({
     url: '/pages/ambassador/qrcode/index'
-  })
-}
-
-// 修改推荐人
-const handleModifyReferee = () => {
-  uni.navigateTo({
-    url: '/pages/order/select-referee/index'
   })
 }
 
@@ -369,49 +230,9 @@ const formatDate = (dateStr: string) => {
   background-color: $td-bg-color-page;
 }
 
-// Tab 切换头部
-.tab-header {
-  display: flex;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid $td-border-level-1;
-}
-
-.tab-header__item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx 24rpx;
-  border-bottom: 4rpx solid transparent;
-  transition: all 0.3s;
-  color: $td-text-color-secondary;
-}
-
-.tab-header__item--active {
-  color: $td-brand-color;
-  border-bottom-color: $td-brand-color;
-}
-
-.tab-header__icon {
-  font-size: 56rpx;
-  margin-bottom: 8rpx;
-}
-
-.tab-header__label {
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
-.tab-header__desc {
-  font-size: 22rpx;
-  margin-top: 4rpx;
-  opacity: 0.8;
-}
-
 // 滚动内容
 .scroll-content {
-  height: calc(100vh - var(--td-page-header-height) - 180rpx);
+  height: calc(100vh - var(--td-page-header-height));
 }
 
 .page-content {
@@ -664,18 +485,6 @@ const formatDate = (dateStr: string) => {
 
 .t-button__text {
   font-size: 28rpx;
-}
-
-// 修改推荐人按钮区域
-.modify-referee-section {
-  text-align: center;
-  padding: 32rpx 0;
-}
-
-.t-button--outline {
-  background-color: transparent;
-  border: 2rpx solid $td-brand-color;
-  color: $td-brand-color;
 }
 
 // 底部留白

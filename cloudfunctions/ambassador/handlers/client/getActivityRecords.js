@@ -85,7 +85,9 @@ module.exports = async (event, context) => {
         1: 0,  // 辅导员
         2: 0,  // 会务义工
         3: 0,  // 沙龙组织
-        4: 0   // 其他活动
+        4: 0,  // 其他活动
+        5: 0,  // 统筹
+        6: 0   // 主持
       }
     };
 
@@ -93,11 +95,9 @@ module.exports = async (event, context) => {
     const currentYear = new Date().getFullYear();
 
     (allRecords || []).forEach(record => {
-      // 累计功德分
       stats.total_merit_points += parseFloat(record.merit_points) || 0;
 
-      // 统计活动类型
-      if (record.activity_type >= 1 && record.activity_type <= 4) {
+      if (record.activity_type >= 1 && record.activity_type <= 6) {
         stats.type_stats[record.activity_type]++;
       }
 

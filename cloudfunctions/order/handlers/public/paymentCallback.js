@@ -69,11 +69,7 @@ module.exports = async (event, context) => {
         console.warn(`[paymentCallback] 未知订单类型:`, order.order_type);
     }
 
-    // 7. 标记奖励已发放
-    await update('orders', {
-      is_reward_granted: true,
-      reward_granted_at: utils.formatDateTime(new Date())
-    }, { order_no: out_trade_no });
+    // 7. 推荐人奖励由合同签署/首次上课流程单独标记，此处不标记
 
     console.log(`[paymentCallback] 支付回调处理完成:`, out_trade_no);
 
@@ -98,18 +94,8 @@ async function handleCoursePurchaseSuccess(order, user) {
       course_id: order.related_id
     });
 
-    // 2. 首次购买：锁定推荐人
-    if (!user.referee_confirmed_at) {
-      await update('users',
-        { referee_confirmed_at: utils.formatDateTime(new Date()) },
-        { id: user.id }
-      );
-    }
-
-    // 3. 发放推荐人奖励
-    if (order.referee_id) {
-      await grantRefereeReward(order, user);
-    }
+    // 2. 推荐人确认和奖励发放均在 contract_signed=1 时触发（签合同审核通过 / 初探班首次上课）
+    //    支付阶段不锁定推荐人，允许用户在签约前更换
 
     // 4. 发送购买成功通知
     // await business.sendPaymentSuccessNotice({
@@ -170,30 +156,3 @@ async function handleUpgradeSuccess(order, user) {
   console.log(`[handleUpgradeSuccess] 用户 ${user.id} 升级费支付成功，目标等级 ${targetLevel}，等待签署协议`);
 }
 
-/**
- * 发放推荐人奖励
- * 使用 business-logic 的 processReferralReward
- */
-async function grantRefereeReward(order, user) {
-  try {
-    if (!order.referee_id) {
-      console.log(`[grantRefereeReward] 无推荐人`);
-      return;
-    }
-
-    // 使用 business-logic 的推荐奖励处理
-    await business.processReferralReward({
-      order_id: order.id,
-      user_id: user.id,
-      referee_id: order.referee_id,
-      order_amount: order.final_amount,
-      order_type: order.order_type
-    });
-
-    console.log(`[grantRefereeReward] 推荐人奖励发放完成`);
-
-  } catch (error) {
-    console.error(`[grantRefereeReward] 失败:`, error);
-    throw error;
-  }
-}

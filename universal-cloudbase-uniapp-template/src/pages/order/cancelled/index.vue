@@ -45,13 +45,15 @@
           </view>
         </view>
 
-        <!-- 推荐人信息 -->
+        <!-- 推荐人信息已隐藏：仅后台可查看 -->
+        <!--
         <view v-if="orderInfo.refereeName" class="t-card referee-info">
           <view class="info-row">
             <text class="label">推荐人</text>
             <text class="value">{{ orderInfo.refereeName }}</text>
           </view>
         </view>
+        -->
       </view>
     </scroll-view>
 

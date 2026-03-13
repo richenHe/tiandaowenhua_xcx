@@ -95,14 +95,7 @@
 		{
 			"path": "pages/mine/referral-list/index",
 			"style": {
-				"navigationBarTitleText": "引荐人列表",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/mine/referee-manage/index",
-			"style": {
-				"navigationBarTitleText": "推荐人管理",
+				"navigationBarTitleText": "我推荐的",
 				"navigationStyle": "custom"
 			}
 		},
@@ -176,13 +169,6 @@
 					"path": "confirm/index",
 					"style": {
 						"navigationBarTitleText": "确认订单",
-						"navigationStyle": "custom"
-					}
-				},
-				{
-					"path": "select-referee/index",
-					"style": {
-						"navigationBarTitleText": "选择推荐人",
 						"navigationStyle": "custom"
 					}
 				},

@@ -6,17 +6,32 @@ const { db } = require('../../common/db');
 const { response, cloudFileIDToURL } = require('../../common');
 
 /**
- * 遍历 teachers/honors 类型的 content，将云存储 fileID 转换为 CDN URL
+ * 将 content 中的云存储 fileID 转换为 CDN URL
+ * 支持 hero / quick_access / teachers / honors 类型
  */
 function convertContentStorageURLs(sectionType, content) {
-  if (!content || !content.items) return content;
+  if (!content) return content;
 
-  if (sectionType === 'teachers') {
+  if (sectionType === 'hero') {
+    if (content.image) {
+      content.image = cloudFileIDToURL(content.image);
+    }
+  } else if (sectionType === 'quick_access' && content.items) {
+    content.items = content.items.map(item => ({
+      ...item,
+      image: item.image ? cloudFileIDToURL(item.image) : ''
+    }));
+  } else if (sectionType === 'concepts' && content.items) {
+    content.items = content.items.map(item => ({
+      ...item,
+      image: item.image ? cloudFileIDToURL(item.image) : ''
+    }));
+  } else if (sectionType === 'teachers' && content.items) {
     content.items = content.items.map(item => ({
       ...item,
       avatar: item.avatar ? cloudFileIDToURL(item.avatar) : ''
     }));
-  } else if (sectionType === 'honors') {
+  } else if (sectionType === 'honors' && content.items) {
     content.items = content.items.map(item => ({
       ...item,
       image: item.image ? cloudFileIDToURL(item.image) : ''

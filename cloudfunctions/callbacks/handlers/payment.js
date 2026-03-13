@@ -358,22 +358,7 @@ async function handleCoursePurchase(order, db) {
     }
   }
 
-  // 首次购买锁定推荐人
-  const { data: userCourseCount } = await db
-    .from('user_courses')
-    .select('id')
-    .eq('user_id', order.user_id)
-    .eq('is_gift', 0);
-
-  const isFirstPurchase = userCourseCount && userCourseCount.length === 1;
-
-  if (isFirstPurchase && order.referee_id) {
-    await db.from('users').update({
-      referee_confirmed_at: formatDateTime(new Date())
-    }).eq('id', order.user_id);
-    console.log('[Payment] 首购锁定推荐人');
-  }
-
+  // 推荐人锁定时机统一为签合同时（triggerPostContractLogic），支付时不再锁定
   // 推荐人奖励延迟至用户签署课程学习合同后发放（signCourseContract 触发）
   if (order.referee_id) {
     console.log('[Payment] 推荐人奖励暂不发放，将在用户签署课程学习合同后触发, referee_id:', order.referee_id);

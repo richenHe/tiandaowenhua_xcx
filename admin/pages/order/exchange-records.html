@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>兑换管理 - 天道文化后台</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   <style>
     .stats-cards {
       display: grid;
@@ -265,9 +265,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   <script>
     const { createApp, ref, computed, onMounted } = Vue;
 
@@ -367,11 +367,12 @@
             tableData.value      = data.list || [];
             pagination.value.total = data.total || 0;
 
-            // 统计卡片（从列表中汇总，无需额外接口）
-            const all = tableData.value;
-            statistics.value.pending   = all.filter(r => r.status === 1).length;
-            statistics.value.picked    = all.filter(r => r.status === 2).length;
-            statistics.value.cancelled = all.filter(r => r.status === 3).length;
+            // 使用后端返回的全局统计数据
+            if (data.statistics) {
+              statistics.value.pending   = data.statistics.pending   || 0;
+              statistics.value.picked    = data.statistics.picked    || 0;
+              statistics.value.cancelled = data.statistics.cancelled || 0;
+            }
           } catch (error) {
             TDesign.MessagePlugin.error(error.message || '获取兑换记录失败');
           } finally {

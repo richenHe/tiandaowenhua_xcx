@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305"><style>
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>活动管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313"><style>
     .container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px;}
     .title{font-size:20px;font-weight:600;margin-bottom:8px;}
     .desc{color:#999;margin-bottom:24px;}
@@ -54,7 +54,7 @@
                 <t-option :value="2" label="报名截止"></t-option>
                 <t-option :value="0" label="已结束"></t-option>
               </t-select>
-              <t-button theme="primary" @click="load">查询</t-button>
+              <t-button theme="primary" @click="() => { page.value.current = 1; load(); }">查询</t-button>
               <t-button @click="reset">重置</t-button>
             </div>
 
@@ -115,7 +115,7 @@
             <t-form :data="ptForm" label-width="100px">
               <t-form-item label="岗位名称">
                 <t-input v-model="ptForm.name" placeholder="请输入岗位名称"
-                  :disabled="ptForm.isFixed" :title="ptForm.isFixed ? '辅导员、会务义工、沙龙组织为固定岗位，名称不可修改' : ''" />
+                  :disabled="ptForm.isFixed" :title="ptForm.isFixed ? '辅导员、会务义工、沙龙组织、统筹、主持为固定岗位，名称不可修改' : ''" />
               </t-form-item>
               <t-form-item label="门槛等级">
                 <t-select v-model="ptForm.requiredLevel" placeholder="无限制（所有人可报名）" clearable style="width:100%;">
@@ -213,12 +213,18 @@
           <!-- 报名人员弹窗（分页） -->
           <t-dialog v-model:visible="showRegistrants" :header="`报名人员 - ${registrantsActivity?.schedule_name||''}`"
             width="920px" :footer="false" cancel-btn="关闭">
-            <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
-              <t-select v-model="regFilter.positionName" placeholder="按岗位筛选" clearable style="width:160px;"
-                @change="loadRegistrants(1)">
-                <t-option v-for="p in registrantsActivity?.positions||[]" :key="p.name"
-                  :value="p.name" :label="p.name" />
-              </t-select>
+            <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <t-select v-model="regFilter.positionName" placeholder="按岗位筛选" clearable style="width:160px;"
+                  @change="loadRegistrants(1)">
+                  <t-option v-for="p in registrantsActivity?.positions||[]" :key="p.name"
+                    :value="p.name" :label="p.name" />
+                </t-select>
+              </div>
+              <t-button theme="primary" size="small" @click="openAddRegistrant" :disabled="registrantsActivity?.status===0">
+                <template #icon><t-icon name="user-add"/></template>
+                新增人员
+              </t-button>
             </div>
             <div class="modal-scroll">
               <t-table :data="regList" :columns="regCols" :loading="regLoading" row-key="id" bordered size="small">
@@ -240,6 +246,34 @@
             </div>
           </t-dialog>
 
+          <!-- 新增活动人员弹窗 -->
+          <t-dialog v-model:visible="showAddRegistrant" header="添加活动人员" width="520px"
+            :confirm-btn="{content:'确认添加',loading:addRegSubmitting,disabled:!addRegForm.userId||!addRegForm.positionName}"
+            @confirm="submitAddRegistrant" cancel-btn="取消">
+            <div style="margin-bottom:16px;">
+              <div style="margin-bottom:8px;font-weight:500;">搜索用户</div>
+              <div style="display:flex;gap:8px;">
+                <t-input v-model="addRegSearch" placeholder="输入用户ID或姓名" style="flex:1;" @enter="searchUsersForAdd" />
+                <t-button theme="primary" @click="searchUsersForAdd" :loading="addRegSearching">搜索</t-button>
+              </div>
+            </div>
+            <div v-if="addRegUserList.length>0" style="margin-bottom:16px;max-height:200px;overflow-y:auto;">
+              <div v-for="u in addRegUserList" :key="u.id"
+                :style="{padding:'8px 12px',cursor:'pointer',borderRadius:'6px',marginBottom:'4px',background:addRegForm.userId===u.id?'#e8f4ff':'#f5f5f5',border:addRegForm.userId===u.id?'1px solid #0052D9':'1px solid transparent'}"
+                @click="selectUserForAdd(u)">
+                <div style="font-weight:500;">{{ u.real_name || '未填写' }}</div>
+                <div style="font-size:12px;color:#999;">ID: {{ u.id }} · {{ u.phone || '无手机号' }}</div>
+              </div>
+            </div>
+            <div v-if="addRegForm.userId" style="margin-bottom:16px;">
+              <div style="margin-bottom:8px;font-weight:500;">选择岗位</div>
+              <t-select v-model="addRegForm.positionName" placeholder="选择岗位">
+                <t-option v-for="p in registrantsActivity?.positions||[]" :key="p.name"
+                  :value="p.name" :label="`${p.name}（剩余 ${Math.max(0,(p.quota||0)-(p.registered_count||0))} 个）`" />
+              </t-select>
+            </div>
+          </t-dialog>
+
         </t-content>
       </t-layout>
     </t-layout>
@@ -248,11 +282,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   <script>
   const { createApp, ref, computed, onMounted } = Vue;
   createApp({
@@ -308,7 +342,7 @@
         finally { loading.value = false; }
       };
 
-      const reset = () => { q.value = ''; filterStatus.value = null; load(); };
+      const reset = () => { q.value = ''; filterStatus.value = null; page.value.current = 1; load(); };
       const changePage = pi => { page.value.current = pi.current; page.value.pageSize = pi.pageSize; load(); };
 
       // ===== 删除活动 =====
@@ -575,6 +609,56 @@
         finally { regLoading.value = false; }
       };
 
+      // ===== 新增活动人员 =====
+      const showAddRegistrant = ref(false);
+      const addRegSearch = ref('');
+      const addRegSearching = ref(false);
+      const addRegUserList = ref([]);
+      const addRegForm = ref({ userId: null, positionName: null });
+      const addRegSubmitting = ref(false);
+
+      const openAddRegistrant = () => {
+        addRegSearch.value = '';
+        addRegUserList.value = [];
+        addRegForm.value = { userId: null, positionName: null };
+        showAddRegistrant.value = true;
+      };
+
+      const searchUsersForAdd = async () => {
+        const kw = addRegSearch.value.trim();
+        if (!kw) { TDesign.MessagePlugin.warning('请输入用户ID或姓名'); return; }
+        addRegSearching.value = true;
+        try {
+          const data = await AdminAPI.getUserList({ keyword: kw, page: 1, pageSize: 10 });
+          addRegUserList.value = data.list || [];
+          if (addRegUserList.value.length === 0) {
+            TDesign.MessagePlugin.info('未找到匹配用户');
+          }
+        } catch (e) { TDesign.MessagePlugin.error('搜索失败: ' + e.message); }
+        finally { addRegSearching.value = false; }
+      };
+
+      const selectUserForAdd = (u) => {
+        addRegForm.value.userId = u.id;
+      };
+
+      const submitAddRegistrant = async () => {
+        if (!addRegForm.value.userId || !addRegForm.value.positionName) return;
+        addRegSubmitting.value = true;
+        try {
+          await AdminAPI.adminAddRegistrant({
+            activityId: registrantsActivity.value.id,
+            userId: addRegForm.value.userId,
+            positionName: addRegForm.value.positionName
+          });
+          TDesign.MessagePlugin.success('添加成功');
+          showAddRegistrant.value = false;
+          loadRegistrants(regPage.value.current);
+          load();
+        } catch (e) { TDesign.MessagePlugin.error(e.message); }
+        finally { addRegSubmitting.value = false; }
+      };
+
       onMounted(async () => {
         await Promise.all([load(), loadLevelOptions(), loadEnabledPositionTypes()]);
       });
@@ -596,7 +680,11 @@
         showDetail, detailData, detailCols, openDetail,
         // 报名人员
         showRegistrants, registrantsActivity, regLoading, regList, regPage, regFilter, regCols,
-        openRegistrants, loadRegistrants, removeRegistrant
+        openRegistrants, loadRegistrants, removeRegistrant,
+        // 新增人员
+        showAddRegistrant, addRegSearch, addRegSearching, addRegUserList,
+        addRegForm, addRegSubmitting,
+        openAddRegistrant, searchUsersForAdd, selectUserForAdd, submitAddRegistrant
       };
     }
   }).use(TDesign).component('sidebar-menu', SidebarNavigation.SidebarMenu).mount('#app');

@@ -24,11 +24,11 @@ import type {
   GetActivityRecordsResponse,
   ActivityStats,
   LevelSystemResponse,
-  AvailableActivity,
   AvailableActivitiesResult,
   GetAvailableActivitiesParams,
   ApplyForActivityParams,
-  CancelActivityRegistrationParams
+  CancelActivityRegistrationParams,
+  MyRegistrationsResult
 } from '../types/ambassador'
 
 /**
@@ -259,6 +259,17 @@ export class AmbassadorApi {
     })
   }
 
+  /**
+   * 18. 获取我的活动报名列表
+   */
+  static async getMyRegistrations(): Promise<MyRegistrationsResult> {
+    return callCloudFunction<MyRegistrationsResult>({
+      name: 'ambassador',
+      action: 'getMyRegistrations',
+      showLoading: false
+    })
+  }
+
 }
 
 // 导出单个方法（便于按需导入）
@@ -279,7 +290,8 @@ export const {
   getLevelSystem,
   getAvailableActivities,
   applyForActivity,
-  cancelActivityRegistration
+  cancelActivityRegistration,
+  getMyRegistrations
 } = AmbassadorApi
 
 // 默认导出

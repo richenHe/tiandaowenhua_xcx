@@ -537,8 +537,10 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getApplicationList', params);
   }
 
-  static async auditApplication(application_id, approved, reject_reason = '') {
-    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'auditApplication', { application_id, approved, reject_reason });
+  static async auditApplication(application_id, approved, reject_reason = '', frozen_points = undefined) {
+    const params = { application_id, approved, reject_reason };
+    if (frozen_points !== undefined) params.frozen_points = frozen_points;
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'auditApplication', params);
   }
 
   // 活动管理（旧版，兼容保留）
@@ -592,6 +594,11 @@ class AdminAPI {
   /** 管理员移除活动报名人员（物理删除） */
   static async removeActivityRegistrant({ registrationId }) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminRemoveRegistrant', { registrationId });
+  }
+
+  /** 管理员手动添加活动报名人员 */
+  static async adminAddRegistrant({ activityId, userId, positionName }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminAddRegistrant', { activityId, userId, positionName });
   }
 
   // 岗位类型管理
@@ -669,8 +676,8 @@ class AdminAPI {
   }
 
   /** 通过大使申请（别名） */
-  static async approveAmbassadorApplication({ applicationId }) {
-    return this.auditApplication(applicationId, true, '');
+  static async approveAmbassadorApplication({ applicationId, frozenPoints = 0 }) {
+    return this.auditApplication(applicationId, true, '', frozenPoints);
   }
 
   /** 驳回大使申请（别名） */
@@ -688,7 +695,12 @@ class AdminAPI {
   }
 
   static async getContractList(params = {}) {
-    return this.getSignatureList(params);
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'getContractList', params);
+  }
+
+  /** 审核合同签署记录（通过/驳回） */
+  static async auditContractSignature({ signatureId, auditAction, remark = '' }) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'auditContractSignature', { signatureId, auditAction, remark });
   }
 
   static async renewContract(data) {
@@ -707,6 +719,11 @@ class AdminAPI {
   /** 获取用户已购买且未签合同的课程列表 */
   static async adminGetUserPaidCourses(userId) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'adminGetUserPaidCourses', { userId });
+  }
+
+  /** 补充/更新合约照片 */
+  static async updateContractImages(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.AMBASSADOR, 'updateContractImages', data);
   }
 
   // ==================== 商城商品模块 ====================
@@ -856,6 +873,32 @@ class AdminAPI {
   /** 按用户名字/ID/手机号查询伯乐（推荐人）和千里马（我推荐的人）列表 */
   static async getUserRefereeInfo(keyword) {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserRefereeInfo', { keyword });
+  }
+
+  // ==================== 排座管理模块 ====================
+
+  /** 获取排座数据（配置+学员+岗位+分配） */
+  static async getSeatingData(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getSeatingData', params);
+  }
+
+  /** 保存排座配置 */
+  static async saveSeatingConfig(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'saveSeatingConfig', params);
+  }
+
+  /** 保存座位分配变更（自动保存） */
+  static async saveSeatingAssignment(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'saveSeatingAssignment', params);
+  }
+
+  /** 随机分配座位 */
+  static async randomAssignSeats(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'randomAssignSeats', params);
+  }
+
+  static async syncSeatingAssignments(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'syncSeatingAssignments', params);
   }
 }
 

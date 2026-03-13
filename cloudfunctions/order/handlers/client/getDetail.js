@@ -64,7 +64,18 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 4. 查询推荐人信息
+    // 4. 查询买家 referee_confirmed_at（推荐人锁定时间在 users 表）
+    let buyerRefereeConfirmedAt = null;
+    const { data: buyer } = await db
+      .from('users')
+      .select('referee_confirmed_at')
+      .eq('id', user.id)
+      .single();
+    if (buyer) {
+      buyerRefereeConfirmedAt = buyer.referee_confirmed_at || null;
+    }
+
+    // 5. 查询推荐人信息
     let refereeInfo = null;
     if (order.referee_id) {
       const { data: referee } = await db
@@ -85,7 +96,7 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 5. 查询关联课程信息（如果是课程订单）
+    // 6. 查询关联课程信息（如果是课程订单）
     let courseInfo = null;
     if (order.order_type === 1 || order.order_type === 2) {
       const { data: course } = await db
@@ -103,7 +114,7 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 6. 构建响应数据
+    // 7. 构建响应数据
     const orderDetail = {
       order_no: order.order_no,
       user_id: order.user_id,
@@ -121,7 +132,7 @@ module.exports = async (event, context) => {
       transaction_id: order.transaction_id,
       is_reward_granted: order.is_reward_granted,
       reward_granted_at: order.reward_granted_at,
-      referee_confirmed_at: order.referee_updated_at || null,
+      referee_confirmed_at: buyerRefereeConfirmedAt,
       created_at: order.created_at,
       expires_at: order.expire_at,
       ...refereeInfo,

@@ -2,7 +2,7 @@
  * 管理商学院板块（管理端接口）
  * 支持 list / detail / create / update / delete / updateSort / toggleStatus
  */
-const { db } = require('../../common/db');
+const { db, insert: dbInsert } = require('../../common/db');
 const { response, formatDateTime } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -97,21 +97,17 @@ async function createSection(data) {
   const contentStr = typeof content === 'string' ? content : JSON.stringify(content || {});
   const now = formatDateTime(new Date());
 
-  const { data: result, error } = await db
-    .from('academy_sections')
-    .insert({
-      _openid: '',
-      section_type: sectionType,
-      title: title || '',
-      icon: icon || '',
-      content: contentStr,
-      sort_order: sortOrder !== undefined ? sortOrder : 0,
-      status: status !== undefined ? status : 1,
-      created_at: now,
-      updated_at: now
-    });
-
-  if (error) throw error;
+  const result = await dbInsert('academy_sections', {
+    _openid: '',
+    section_type: sectionType,
+    title: title || '',
+    icon: icon || '',
+    content: contentStr,
+    sort_order: sortOrder !== undefined ? sortOrder : 0,
+    status: status !== undefined ? status : 1,
+    created_at: now,
+    updated_at: now
+  });
 
   return response.success({ id: result?.[0]?.id }, '板块创建成功');
 }

@@ -112,14 +112,6 @@ export interface UpdateProfileResponse {
 }
 
 /**
- * 修改推荐人请求参数
- */
-export interface UpdateRefereeParams {
-  /** 推荐码 */
-  refereeCode: string
-}
-
-/**
  * 推荐人信息
  */
 export interface RefereeInfo {
@@ -151,15 +143,7 @@ export interface RefereeListItem {
 }
 
 /**
- * 搜索推荐人请求参数
- */
-export interface SearchRefereesParams {
-  /** 搜索关键词（姓名或手机号） */
-  keyword: string
-}
-
-/**
- * 搜索推荐人列表项
+ * 搜索推荐人列表项（后台使用）
  */
 export interface SearchRefereeItem {
   id: number
@@ -171,14 +155,6 @@ export interface SearchRefereeItem {
   ambassador_level: number
   limitation: string
   referee_code: string
-}
-
-/**
- * 搜索推荐人响应数据
- */
-export interface SearchRefereesResponse {
-  list: SearchRefereeItem[]
-  total: number
 }
 
 /**
@@ -202,10 +178,16 @@ export interface MeritPointsRecord {
   change_amount: number
   /** 变动后余额 */
   balance_after: number
-  /** 变动类型 */
-  change_type: string
-  /** 关联ID */
-  related_id: number | null
+  /** 变动类型：1=收入, 2=支出 */
+  change_type: number
+  /** 来源：1推荐初探班/2推荐密训班/3辅导员/4义工/5沙龙活动/6兑换/7其他(含活动岗位) */
+  source: number
+  /** 关联订单号或兑换单号 */
+  related_id: string | null
+  /** 被推荐人姓名 */
+  referee_user_name: string | null
+  /** 活动名称 */
+  activity_name: string | null
   /** 备注 */
   remark: string
   /** 创建时间 */
@@ -358,7 +340,10 @@ export interface GetRefereesResponse extends PaginationResponse<RefereeUser> {}
 /**
  * 获取功德分明细请求参数
  */
-export interface GetMeritPointsHistoryParams extends PaginationParams {}
+export interface GetMeritPointsHistoryParams extends PaginationParams {
+  /** 来源筛选（数组）：1推荐初探/2推荐密训/3辅导员/4义工/5沙龙/6兑换/7其他 */
+  sourceFilter?: number[]
+}
 
 /**
  * 获取功德分明细响应数据

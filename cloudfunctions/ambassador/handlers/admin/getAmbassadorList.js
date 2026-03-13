@@ -36,11 +36,21 @@ module.exports = async (event, context) => {
 
     // 统计每个大使的推荐数据
     const list = await Promise.all((result.list || []).map(async (ambassador) => {
-      // 统计推荐人数
-      const { count: refereeCount } = await db
+      // 统计推荐人数 — 只计 contract_signed=1 的正式推荐关系
+      const { data: refUsers } = await db
         .from('users')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('referee_id', ambassador.id);
+      let refereeCount = 0;
+      if (refUsers && refUsers.length > 0) {
+        const rIds = refUsers.map(u => u.id);
+        const { data: cRecs } = await db
+          .from('user_courses')
+          .select('user_id')
+          .in('user_id', rIds)
+          .eq('contract_signed', 1);
+        refereeCount = new Set((cRecs || []).map(r => r.user_id)).size;
+      }
 
       // 统计推荐订单数
       const { count: orderCount } = await db

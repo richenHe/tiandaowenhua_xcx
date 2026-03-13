@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
   <title>轮播图管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   <style>
     .page-card {
       background: white;
@@ -71,9 +71,9 @@
 
             <!-- 搜索栏 -->
             <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
-              <div style="width:220px;flex:0 0 220px;"><t-input v-model="keyword" placeholder="轮播图标题" clearable @enter="loadData" /></div>
+              <div style="width:220px;flex:0 0 220px;"><t-input v-model="keyword" placeholder="轮播图标题" clearable @enter="handleSearch" /></div>
               <div style="width:120px;flex:0 0 120px;"><t-select v-model="filterStatus" placeholder="状态筛选" clearable :options="statusOptions" /></div>
-              <t-button theme="primary" @click="loadData">查询</t-button>
+              <t-button theme="primary" @click="handleSearch">查询</t-button>
               <t-button @click="resetSearch">重置</t-button>
             </div>
 
@@ -178,11 +178,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -244,6 +244,11 @@
           } finally {
             loading.value = false;
           }
+        };
+
+        const handleSearch = () => {
+          pagination.value.current = 1;
+          loadData();
         };
 
         const resetSearch = () => {
@@ -387,7 +392,7 @@
           loading, dataList, keyword, filterStatus, pagination,
           dialogVisible, dialogMode, formData,
           statusOptions, columns,
-          loadData, resetSearch, handlePageChange,
+          loadData, handleSearch, resetSearch, handlePageChange,
           handleAdd, handleEdit, handleToggleStatus, handleDelete,
           handleSave, handleDialogClose,
         };

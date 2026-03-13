@@ -94,12 +94,6 @@ module.exports = async (event, context) => {
       }
 
       if (level.level === 3) { // 鸿鹄
-        if (level.gift_quota_basic > 0) {
-          benefits.push(`赠送${level.gift_quota_basic}个初探班名额`);
-        }
-        if (level.gift_quota_advanced > 0) {
-          benefits.push(`赠送${level.gift_quota_advanced}个密训班名额`);
-        }
         benefits.push('专属大使证书');
         benefits.push('年度大使峰会邀请');
       }

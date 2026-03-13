@@ -41,7 +41,8 @@ async function grantRefereeRewardAfterSign(userId, courseId) {
       .eq('level', referee.ambassador_level)
       .single();
 
-    if (!config || !config.can_earn_reward) {
+    // 未找到该等级配置，标记已处理后跳过
+    if (!config) {
       await markRewardGranted(order.order_no);
       return;
     }

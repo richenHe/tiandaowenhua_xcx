@@ -12,7 +12,7 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, pageSize, status, keyword } = event;
+  const { page = 1, page_size = 20, pageSize, status, keyword, start_date, end_date } = event;
 
   try {
     console.log(`[admin:getWithdrawList] 管理员 ${admin.id} 获取提现列表`);
@@ -47,6 +47,14 @@ module.exports = async (event, context) => {
     // 状态筛选
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
+    }
+
+    // 日期范围筛选（按申请时间 apply_time 过滤）
+    if (start_date) {
+      queryBuilder = queryBuilder.gte('apply_time', start_date);
+    }
+    if (end_date) {
+      queryBuilder = queryBuilder.lte('apply_time', end_date + ' 23:59:59');
     }
 
     // 关键词搜索

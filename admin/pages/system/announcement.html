@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
   <title>公告管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   <style>
     .c {
       max-width: 1400px;
@@ -111,8 +111,8 @@
             
             <!-- 查询表单 -->
             <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;">
-              <div style="width:200px;flex:0 0 200px;"><t-input v-model="keyword" placeholder="公告标题" clearable /></div>
-              <t-button theme="primary" @click="loadData">查询</t-button>
+              <div style="width:200px;flex:0 0 200px;"><t-input v-model="keyword" placeholder="公告标题" clearable @enter="handleSearch" /></div>
+              <t-button theme="primary" @click="handleSearch">查询</t-button>
               <t-button @click="resetSearch">重置</t-button>
             </div>
             
@@ -211,12 +211,12 @@
   
   <!-- 🔥 引入云存储相关脚本（使用本地 SDK） -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -280,9 +280,16 @@
           }
         };
         
+        // 查询（重置分页到第1页）
+        const handleSearch = () => {
+          pagination.value.current = 1;
+          loadData();
+        };
+
         // 重置搜索
         const resetSearch = () => {
           keyword.value = '';
+          pagination.value.current = 1;
           loadData();
         };
         
@@ -442,6 +449,7 @@
           
           // 方法
           loadData,
+          handleSearch,
           resetSearch,
           handlePageChange,
           handleAdd,

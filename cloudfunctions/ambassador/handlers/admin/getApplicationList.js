@@ -6,7 +6,7 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { status, page = 1, page_size = 20, pageSize } = event;
+  const { status, keyword, target_level: targetLevel, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getApplicationList] 查询申请列表:`, { status, page });
@@ -23,6 +23,16 @@ module.exports = async (event, context) => {
     // 状态筛选
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
+    }
+
+    // 目标等级筛选
+    if (targetLevel != null && targetLevel !== '') {
+      queryBuilder = queryBuilder.eq('target_level', parseInt(targetLevel));
+    }
+
+    // 关键词搜索（按姓名或手机号）
+    if (keyword) {
+      queryBuilder = queryBuilder.or(`real_name.like.%${keyword}%,phone.like.%${keyword}%`);
     }
 
     // 执行分页查询

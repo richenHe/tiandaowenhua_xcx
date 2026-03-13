@@ -6,33 +6,39 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { page = 1, page_size = 20, pageSize } = event;
+  const { page = 1, page_size = 20, pageSize, sourceFilter } = event;
 
   try {
-    console.log('[getMeritPointsHistory] 获取功德分明细:', user.id);
+    console.log('[getMeritPointsHistory] 获取功德分明细:', {
+      userId: user.id,
+      sourceFilter
+    });
 
-    // 兼容 pageSize 参数
     const finalPageSize = page_size || pageSize || 20;
 
-    // 构建查询
     let queryBuilder = db
       .from('merit_points_records')
-      .select('id, type, amount, balance_after, source, order_no, referee_user_id, remark, created_at', { count: 'exact' })
+      .select('id, type, amount, balance_after, source, order_no, exchange_no, referee_user_id, referee_user_name, activity_name, remark, created_at', { count: 'exact' })
       .eq('user_id', user.id)
       .order('id', { ascending: false });
 
-    // 执行分页查询
+    // 按来源筛选（数组形式，如 [1,2] 表示推荐初探班+密训班）
+    if (Array.isArray(sourceFilter) && sourceFilter.length > 0) {
+      queryBuilder = queryBuilder.in('source', sourceFilter);
+    }
+
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 格式化返回数据
     const list = (result.list || []).map(record => ({
       id: record.id,
-      change_amount: record.type === 1 ? record.amount : -record.amount, // type: 1=收入(正数), 2=支出(负数)
-      balance_after: record.balance_after, // 变更后余额
-      change_type: record.type, // 1=收入, 2=支出
-      source: record.source, // 来源：1=推荐新用户, 2=用户购课, 3=用户升级, 4=活动奖励, 5=兑换商品
-      related_id: record.order_no, // 关联订单号
+      change_amount: record.type === 1 ? record.amount : -record.amount,
+      balance_after: record.balance_after,
+      change_type: record.type,
+      source: record.source,
+      related_id: record.order_no || record.exchange_no || null,
       referee_user_id: record.referee_user_id,
+      referee_user_name: record.referee_user_name || null,
+      activity_name: record.activity_name || null,
       remark: record.remark,
       created_at: record.created_at
     }));

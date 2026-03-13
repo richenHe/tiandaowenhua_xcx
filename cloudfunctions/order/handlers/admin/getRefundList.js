@@ -12,7 +12,7 @@ const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../..
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, pageSize, refund_status, keyword } = event;
+  const { page = 1, page_size = 20, pageSize, refund_status, keyword, start_date, end_date } = event;
 
   try {
     console.log(`[admin:getRefundList] 管理员 ${admin.id} 获取退款列表`);
@@ -54,6 +54,14 @@ module.exports = async (event, context) => {
 
     if (refund_status != null && refund_status !== '') {
       queryBuilder = queryBuilder.eq('refund_status', parseInt(refund_status));
+    }
+
+    // 日期范围筛选（按退款申请时间 refund_time 过滤）
+    if (start_date) {
+      queryBuilder = queryBuilder.gte('refund_time', start_date);
+    }
+    if (end_date) {
+      queryBuilder = queryBuilder.lte('refund_time', end_date + ' 23:59:59');
     }
 
     if (keyword) {

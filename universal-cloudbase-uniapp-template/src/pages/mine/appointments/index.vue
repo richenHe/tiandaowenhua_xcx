@@ -303,39 +303,6 @@ const handleTabChange = (value: number) => {
   loadAppointments(true)
 }
 
-const cancelLoading = ref(false)
-
-const handleCancelAppointment = (appointment: any) => {
-  if (!appointment.canCancel || cancelLoading.value) return
-
-  const confirmContent = appointment.isRetrain
-    ? '确定取消本次预约吗？\n\n您已支付的复训费将保留至下期预约使用。'
-    : '确定取消本次预约吗？'
-
-  uni.showModal({
-    title: '取消预约',
-    content: confirmContent,
-    confirmText: '确定取消',
-    confirmColor: '#d54941',
-    success: async (res) => {
-      if (!res.confirm) return
-      cancelLoading.value = true
-      try {
-        const result = await CourseApi.cancelAppointment({ appointmentId: appointment.id })
-        const msg = result?.has_retrain_credit
-          ? '预约已取消，复训费已保留至下期'
-          : '预约已取消'
-        uni.showToast({ title: msg, icon: 'success', duration: 2000 })
-        loadAppointments(true)
-      } catch (error: any) {
-        uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
-      } finally {
-        cancelLoading.value = false
-      }
-    }
-  })
-}
-
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 20

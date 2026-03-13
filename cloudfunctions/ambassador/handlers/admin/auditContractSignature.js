@@ -165,6 +165,9 @@ async function approveCourseContract(sig, now, nowStr) {
 
   console.log(`[auditContractSignature] user_courses 更新完成 expire_at=${expireAt} userId=${userId} courseId=${courseId}`);
 
+  // 锁定推荐人：首次 contract_signed=1 时永久锁定
+  await confirmRefereeIfNeeded(userId, nowStr);
+
   // 发放推荐人奖励（支付时已跳过即时发放，签约通过后再发）
   await grantRefereeRewardAfterSign(userId, courseId);
 }
@@ -339,4 +342,27 @@ async function markRewardGranted(orderNo) {
     is_reward_granted: 1,
     reward_granted_at: formatDateTime(new Date())
   }).eq('order_no', orderNo);
+}
+
+/**
+ * 首次 contract_signed=1 时锁定推荐人（设置 referee_confirmed_at）
+ * 幂等：已锁定则跳过
+ */
+async function confirmRefereeIfNeeded(userId, nowStr) {
+  try {
+    const { data: user } = await db
+      .from('users')
+      .select('referee_confirmed_at')
+      .eq('id', userId)
+      .single();
+
+    if (user && !user.referee_confirmed_at) {
+      await db.from('users').update({
+        referee_confirmed_at: nowStr
+      }).eq('id', userId);
+      console.log(`[auditContractSignature] 用户${userId} 推荐人已锁定 referee_confirmed_at=${nowStr}`);
+    }
+  } catch (err) {
+    console.error('[auditContractSignature] 锁定推荐人失败（不影响审核结果）:', err);
+  }
 }

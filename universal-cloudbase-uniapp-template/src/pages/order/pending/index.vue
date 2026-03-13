@@ -44,7 +44,8 @@
           </view>
         </view>
 
-        <!-- 推荐人信息（如果有） -->
+        <!-- 推荐人信息已隐藏：仅后台可查看 -->
+        <!--
         <view v-if="orderInfo.refereeName" class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
         <view v-if="orderInfo.refereeName" class="t-card t-card--bordered mb-l">
           <view class="t-card__body">
@@ -54,6 +55,7 @@
             </view>
           </view>
         </view>
+        -->
 
         <!-- 温馨提示 -->
         <view class="t-alert t-alert--theme-warning">

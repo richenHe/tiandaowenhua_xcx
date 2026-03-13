@@ -107,11 +107,6 @@
               天道文化已经帮助众多学员实现蜕变。无论你是企业家、创业者还是职场人，都能找到适合自己的成长路径。
             </view>
           </view>
-          <view @tap="goToMall">
-            <button class="t-button t-button--theme-default t-button--variant-base t-button--block t-button--size-large">
-              <span class="t-button__text">立即开始学习</span>
-            </button>
-          </view>
         </view>
 
         <view style="height: 120rpx;"></view>

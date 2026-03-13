@@ -36,6 +36,23 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, page_size);
 
+    // 全局统计（不受分页/搜索条件影响）
+    const [
+      { count: totalPending },
+      { count: totalPicked },
+      { count: totalCancelled }
+    ] = await Promise.all([
+      db.from('mall_exchange_records').select('id', { count: 'exact', head: true }).eq('status', 1),
+      db.from('mall_exchange_records').select('id', { count: 'exact', head: true }).eq('status', 2),
+      db.from('mall_exchange_records').select('id', { count: 'exact', head: true }).eq('status', 3)
+    ]);
+
+    const statistics = {
+      pending:   totalPending   || 0,
+      picked:    totalPicked    || 0,
+      cancelled: totalCancelled || 0
+    };
+
     // 将 JOIN 的 user 对象展开为平铺字段，并补充 status_name
     const list = (result.list || []).map(r => {
       const { user, ...rest } = r;
@@ -54,7 +71,8 @@ module.exports = async (event, context) => {
       total:     result.total,
       page:      parseInt(page),
       page_size: parseInt(page_size),
-      list
+      list,
+      statistics
     }, '查询成功');
 
   } catch (error) {

@@ -31,12 +31,15 @@ module.exports = async (event, context) => {
       return response.error('排期不存在');
     }
 
-    // 查找当前用户在该排期下的预约记录
+    // 查找当前用户在该排期下的有效预约记录（过滤已取消，取最新一条）
     const { data: appointments, error: findError } = await db
       .from('appointments')
       .select('id, status, course_id, order_no')
       .eq('user_id', user.id)
-      .eq('class_record_id', recordId);
+      .eq('class_record_id', recordId)
+      .in('status', [0, 1, 2])
+      .order('id', { ascending: false })
+      .limit(1);
 
     if (findError) throw findError;
 

@@ -29,6 +29,7 @@ const ROUTE_MAP = {
   'case-list':          'pages/course/case.html',
   'material-list':      'pages/course/material.html',
   'academy-sections':   'pages/course/academy-sections.html',
+  'seating':            'pages/course/seating.html',
   'ambassador-list':    'pages/ambassador/list.html',
   'application-audit':  'pages/ambassador/application-audit.html',
   'activity-list':      'pages/ambassador/activity.html',
@@ -55,7 +56,7 @@ for (const [key, path] of Object.entries(ROUTE_MAP)) {
 const MENU_STRUCTURE = [
   { key: 'user', children: ['user-list', 'user-referee', 'evaluation-list', 'user-courses'] },
   { key: 'order', children: ['order-list', 'order-refund', 'withdraw-audit', 'mall-goods', 'exchange-records'] },
-  { key: 'course', children: ['course-list', 'schedule-list', 'appointment-list', 'case-list', 'material-list', 'academy-sections'] },
+  { key: 'course', children: ['course-list', 'schedule-list', 'appointment-list', 'seating', 'case-list', 'material-list', 'academy-sections'] },
   { key: 'ambassador', children: ['ambassador-list', 'application-audit', 'activity-list', 'contract-list'] },
   { key: 'system', children: ['admin-list', 'config', 'banner-list', 'announcement-list', 'feedback-list', 'notification-list', 'level-config', 'auto-test', 'method-check', 'button-test'] }
 ];
@@ -213,6 +214,7 @@ const SidebarMenu = {
           <t-menu-item v-if="hasPerm('course-list')" value="course-list">课程列表</t-menu-item>
           <t-menu-item v-if="hasPerm('schedule-list')" value="schedule-list">排期管理</t-menu-item>
           <t-menu-item v-if="hasPerm('appointment-list')" value="appointment-list">预约管理</t-menu-item>
+          <t-menu-item v-if="hasPerm('seating')" value="seating">排座管理</t-menu-item>
           <t-menu-item v-if="hasPerm('case-list')" value="case-list">案例管理</t-menu-item>
           <t-menu-item v-if="hasPerm('material-list')" value="material-list">素材管理</t-menu-item>
           <t-menu-item v-if="hasPerm('academy-sections')" value="academy-sections">商学院板块</t-menu-item>

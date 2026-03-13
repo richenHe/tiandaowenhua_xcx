@@ -206,7 +206,7 @@ import { AmbassadorApi, UserApi } from '@/api'
 import type { UpgradeGuide, UpgradeBenefitItem } from '@/api/types/ambassador'
 
 // ── 等级常量 ──
-const LEVEL_ICONS: Record<number, string> = { 0: '👤', 1: '🥚', 2: '🐦', 3: '🦅', 4: '🦚' }
+const LEVEL_ICONS: Record<number, string> = { 0: '👤', 1: '🥚', 2: '🐦', 3: '🦅', 4: '🐦‍🔥' }
 const LEVEL_NAMES: Record<number, string> = {
   0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使', 4: '金凤大使'
 }
@@ -236,7 +236,7 @@ const pathSteps = [
   { level: 1, name: '准青鸾', icon: '🥚' },
   { level: 2, name: '青鸾', icon: '🐦' },
   { level: 3, name: '鸿鹄', icon: '🦅' },
-  { level: 4, name: '金凤', icon: '🦚' }
+  { level: 4, name: '金凤', icon: '🐦‍🔥' }
 ]
 
 // ── 派生数据 ──

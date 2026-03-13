@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   
   <style>
     .type-tag {
@@ -91,8 +91,8 @@
     <!-- 搜索表单 -->
     <div class="search-form">
       <t-form :data="searchForm" layout="inline" @submit="handleSearch" @reset="handleReset">
-        <t-form-item label="课程名称" name="name">
-          <t-input v-model="searchForm.name" placeholder="请输入课程名称" />
+        <t-form-item label="课程名称" name="keyword">
+          <t-input v-model="searchForm.keyword" placeholder="请输入课程名称" />
         </t-form-item>
         
         <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙 -->
@@ -361,12 +361,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260305"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260305"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260309"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260305"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -428,7 +428,7 @@
         const loading = ref(false);
         const courses = ref([]);
         const searchForm = reactive({
-          name: '',
+          keyword: '',
           type: '',
           status: ''
         });
@@ -518,7 +518,7 @@
         // 重置
         const handleReset = () => {
           Object.assign(searchForm, {
-            name: '',
+            keyword: '',
             type: '',
             status: ''
           });
@@ -671,23 +671,33 @@
         };
 
         // 切换状态（下架→上架时弹出确认框）
-        const toggleStatus = async (course) => {
+        const toggleStatus = (course) => {
           const newStatus = course.status === 1 ? 0 : 1;
+          const doToggle = async () => {
+            try {
+              await AdminAPI.updateCourse({ id: course.id, status: newStatus });
+              TDesign.MessagePlugin.success('状态更新成功');
+              fetchCourses();
+            } catch (error) {
+              TDesign.MessagePlugin.error('状态更新失败: ' + error.message);
+            }
+          };
           if (newStatus === 1) {
-            const confirmResult = await TDesign.DialogPlugin.confirm({
+            const dialog = TDesign.DialogPlugin.confirm({
               header: '确认上架',
               body: '课程上架后不能修改任何字段，确定好再上架。',
               confirmBtn: '确认上架',
-              cancelBtn: '取消'
+              cancelBtn: '取消',
+              onConfirm: async () => {
+                dialog.update({ confirmBtn: { loading: true } });
+                await doToggle();
+                dialog.hide();
+              },
+              onCancel: () => dialog.hide(),
+              onClose: () => dialog.hide(),
             });
-            if (confirmResult === 'cancel' || confirmResult === 'close' || confirmResult === 'esc' || confirmResult === 'overlay') return;
-          }
-          try {
-            await AdminAPI.updateCourse({ id: course.id, status: newStatus });
-            TDesign.MessagePlugin.success('状态更新成功');
-            fetchCourses();
-          } catch (error) {
-            TDesign.MessagePlugin.error('状态更新失败: ' + error.message);
+          } else {
+            doToggle();
           }
         };
 

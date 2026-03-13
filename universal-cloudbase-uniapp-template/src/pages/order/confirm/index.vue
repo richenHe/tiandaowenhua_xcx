@@ -42,7 +42,8 @@
           </view>
         </view>
 
-        <!-- 推荐人信息（复训订单不显示） -->
+        <!-- 推荐人信息已隐藏：仅后台可查看 -->
+        <!--
         <template v-if="!isRetrain">
           <view class="t-section-title t-section-title--simple">🎯 推荐人信息</view>
           <view
@@ -74,6 +75,7 @@
             </view>
           </view>
         </template>
+        -->
 
         <!-- 复训提示（复训订单时显示） -->
         <view v-if="isRetrain" class="retrain-notice-card">
@@ -120,7 +122,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi, CourseApi, OrderApi } from '@/api';
 import { formatPrice } from '@/utils';
@@ -159,9 +160,6 @@ const courseInfo = ref({
 });
 
 const userInfo = ref({ name: '', phone: '' });
-
-const refereeInfo = ref({ id: 0, name: '', level: '' });
-const refereeLocked = ref(false);
 
 const isLoading = ref(true);
 
@@ -214,15 +212,6 @@ const loadPageData = async () => {
       gradient: getCourseGradient(course.type)
     };
 
-    // 推荐人信息（仅普通订单需要）
-    if (!isRetrain.value && profile.referee_id && profile.referee_name) {
-      refereeInfo.value = {
-        id: profile.referee_id,
-        name: profile.referee_name,
-        level: getAmbassadorLevelName(profile.referee_level || 0)
-      };
-      refereeLocked.value = !!profile.referee_confirmed_at;
-    }
     uni.hideLoading();
   } catch (error) {
     console.error('加载页面数据失败:', error);
@@ -248,46 +237,11 @@ const getCourseGradient = (type: number): string => {
   return gradientMap[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
 };
 
-const getAmbassadorLevelName = (level: number): string => {
-  const levelMap: Record<number, string> = {
-    0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使', 4: '金凤大使'
-  };
-  return levelMap[level] || '普通用户';
-};
-
-// 仅刷新推荐人信息（从选择推荐人页返回时调用）
-const refreshRefereeInfo = async () => {
-  if (isRetrain.value) return;
-  try {
-    const profile = await UserApi.getProfile();
-    if (profile.referee_id && profile.referee_name) {
-      refereeInfo.value = {
-        id: profile.referee_id,
-        name: profile.referee_name,
-        level: getAmbassadorLevelName(profile.referee_level || 0)
-      };
-      refereeLocked.value = !!profile.referee_confirmed_at;
-    } else {
-      refereeInfo.value = { id: 0, name: '', level: '' };
-      refereeLocked.value = false;
-    }
-  } catch (error) {
-    console.error('刷新推荐人信息失败:', error);
-  }
-};
-
-// 标记是否已完成初次加载，避免 onShow 在首次渲染时重复请求
+// 标记是否已完成初次加载
 const hasLoaded = ref(false);
 
 onMounted(() => {
   loadPageData();
-});
-
-// 每次页面显示时刷新推荐人（从选推荐人页返回时生效）
-onShow(() => {
-  if (hasLoaded.value) {
-    refreshRefereeInfo();
-  }
 });
 
 const discount = ref(0);
@@ -295,14 +249,6 @@ const discount = ref(0);
 const totalAmount = computed(() => {
   return isRetrain.value ? courseInfo.value.price : courseInfo.value.price - discount.value;
 });
-
-const goToSelectReferee = () => {
-  if (refereeLocked.value) {
-    uni.showToast({ title: '推荐人已锁定，无法修改', icon: 'none', duration: 2000 });
-    return;
-  }
-  uni.navigateTo({ url: '/pages/order/select-referee/index' });
-};
 
 const handleConfirm = () => {
   if (isRetrain.value) {
@@ -341,16 +287,11 @@ const handleRetrainConfirm = () => {
   });
 };
 
-/** 普通课程订单确认 */
+/** 普通课程订单确认 - 推荐人信息已隐藏，不再前端展示和确认 */
 const handleCourseConfirm = () => {
-  if (refereeInfo.value.id === 0 || refereeInfo.value.name === '未设置') {
-    uni.showToast({ title: '请选择推荐人', icon: 'none', duration: 2000 });
-    return;
-  }
-
   uni.showModal({
     title: '提示',
-    content: `确认推荐人为【${refereeInfo.value.name}】吗？\n\n一旦支付则无法修改！`,
+    content: '确认下单吗？',
     confirmText: '确定',
     cancelText: '取消',
     success: async (res) => {
@@ -358,8 +299,7 @@ const handleCourseConfirm = () => {
         try {
           const orderResult = await OrderApi.create({
             order_type: 1,
-            item_id: courseInfo.value.id,
-            referee_id: refereeInfo.value.id || undefined
+            item_id: courseInfo.value.id
           });
 
           uni.redirectTo({

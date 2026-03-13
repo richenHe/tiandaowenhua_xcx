@@ -2,7 +2,7 @@
  * 管理端接口：删除活动岗位类型（硬删除）
  * Action: deletePositionType
  *
- * 业务规则：辅导员、会务义工、沙龙组织为固定岗位，不可删除
+ * 业务规则：辅导员、会务义工、沙龙组织、统筹、主持为固定岗位，不可删除
  */
 const { db, response } = require('../../common');
 const { isFixedPosition } = require('../../constants/activityType');
@@ -27,9 +27,9 @@ module.exports = async (event, context) => {
       return response.error('岗位类型不存在');
     }
 
-    // 固定岗位（辅导员/会务义工/沙龙组织）不可删除
+    // 固定岗位不可删除
     if (isFixedPosition(existing[0].name)) {
-      return response.error('辅导员、会务义工、沙龙组织为固定岗位，不可删除');
+      return response.error('辅导员、会务义工、沙龙组织、统筹、主持为固定岗位，不可删除');
     }
 
     await db.from('ambassador_position_types').delete().eq('id', id);

@@ -8,7 +8,7 @@ const { db, response, executePaginatedQuery } = require('../../common');
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
   // 兼容前端传 status 或 pay_status，以及 paymentMethod
-  const { pay_status: _pay_status, status: _status, start_date, end_date, startDate, endDate, keyword, page = 1, page_size = 20, pageSize } = event;
+  const { pay_status: _pay_status, status: _status, start_date, end_date, startDate, endDate, keyword, order_type, pay_method, page = 1, page_size = 20, pageSize } = event;
   const pay_status = _pay_status != null ? _pay_status : _status;
   const finalStartDate = start_date || startDate;
   const finalEndDate = end_date || endDate;
@@ -40,6 +40,16 @@ module.exports = async (event, context) => {
     }
     if (finalEndDate) {
       queryBuilder = queryBuilder.lte('created_at', finalEndDate);
+    }
+
+    // 订单类型筛选
+    if (order_type != null && order_type !== '') {
+      queryBuilder = queryBuilder.eq('order_type', parseInt(order_type));
+    }
+
+    // 支付方式筛选
+    if (pay_method) {
+      queryBuilder = queryBuilder.eq('pay_method', pay_method);
     }
 
     // 关键词搜索

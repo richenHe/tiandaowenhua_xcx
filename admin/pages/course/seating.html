@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排座管理 - 天道文化后台</title>
+  <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <style>
+    /* ==================== 页面整体 ==================== */
+    .seating-toolbar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 16px; background: #fff; border-radius: 6px; margin-bottom: 16px; border: 1px solid #e7e7e7;
+    }
+    .seating-toolbar .t-select { width: 220px; }
+
+    /* ==================== 配置面板 ==================== */
+    .config-panel {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 12px 16px; background: #f9f9f9; border-radius: 6px; margin-bottom: 16px; border: 1px solid #e7e7e7;
+    }
+    .config-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555; }
+    .config-item label { white-space: nowrap; }
+    .config-item .t-input-number { width: 100px; }
+    .color-preset-row { display: flex; gap: 4px; align-items: center; }
+    .color-dot {
+      width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color .15s;
+    }
+    .color-dot:hover, .color-dot.active { border-color: #333; }
+
+    /* ==================== 座位区域 ==================== */
+    .seating-area {
+      padding: 16px; background: #fff; border-radius: 6px; border: 1px solid #e7e7e7; margin-bottom: 16px; min-height: 300px; position: relative;
+    }
+    .seating-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+    }
+    .seating-header .left { display: flex; align-items: center; gap: 12px; }
+    .seating-header .right { display: flex; align-items: center; gap: 8px; }
+    .seating-stats { font-size: 13px; color: #888; }
+
+    .desk-grid-wrapper {
+      overflow: auto; max-height: 70vh; border: 1px solid #eee; border-radius: 6px; background: #fafafa; padding: 20px;
+    }
+    .desk-grid {
+      display: grid; gap: 40px 32px; justify-items: center; width: max-content; min-width: 100%;
+    }
+
+    /* 单桌容器 */
+    .desk-container {
+      display: flex; flex-direction: column; align-items: center; gap: 0; width: 350px;
+    }
+
+    /* 桌面 SVG + 座位 */
+    .desk-wrapper { position: relative; width: 220px; height: 100%; }
+
+    .desk-table-svg {
+      width: 100%; border-radius: 12px; display: block;
+    }
+
+    .desk-label {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-weight: 700; font-size: 15px; color: rgba(255,255,255,.7); pointer-events: none; user-select: none;
+    }
+
+    /* 座位布局行 */
+    .seats-top, .seats-bottom { display: flex; justify-content: center; gap: 6px; padding: 2px 0; }
+    .seats-middle { display: flex; justify-content: space-between; align-items: stretch; }
+    .seats-left, .seats-right { display: flex; flex-direction: column; gap: 4px; justify-content: center; padding: 4px 0; }
+
+    /* 单座位 */
+    .seat-slot {
+      width: 60px; min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 8px; cursor: pointer; transition: background .15s, box-shadow .15s; user-select: none; position: relative;
+    }
+    .seat-slot:hover { background: rgba(0,82,217,.06); }
+    .seat-slot.drag-over { background: rgba(0,82,217,.12); box-shadow: 0 0 0 2px #0052d9; }
+    .seat-slot.highlighted { background: rgba(227,77,89,.12); box-shadow: 0 0 0 2px #e34d59; animation: pulse 1s ease-in-out 3; }
+    @keyframes pulse { 0%,100%{ box-shadow:0 0 0 2px #e34d59; } 50%{ box-shadow:0 0 0 5px rgba(227,77,89,.3); } }
+
+    .seat-avatar {
+      width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 600; color: #fff; flex-shrink: 0;
+    }
+    .seat-avatar.occupied { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .seat-avatar.empty { background: #e7e7e7; color: #bbb; font-size: 20px; }
+
+    .seat-name {
+      font-size: 11px; color: #333; margin-top: 2px; text-align: center; max-width: 58px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .seat-position-tag {
+      position: absolute; top: -2px; right: -4px;
+      font-size: 9px; padding: 1px 4px; border-radius: 3px; color: #fff; white-space: nowrap;
+      line-height: 1.4;
+    }
+
+    /* ==================== 备选区域 ==================== */
+    .waiting-area {
+      padding: 16px; background: #fff; border-radius: 6px; border: 1px solid #e7e7e7;
+    }
+    .waiting-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .waiting-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px;
+      padding: 8px; border: 2px dashed #ddd; border-radius: 8px; transition: border-color .15s, background .15s;
+    }
+    .waiting-grid.drag-over { border-color: #0052d9; background: rgba(0,82,217,.04); }
+
+    .waiting-card {
+      display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+      background: #f5f5f5; border-radius: 6px; cursor: grab; user-select: none; transition: background .15s;
+      border: 1px solid #e7e7e7;
+    }
+    .waiting-card:hover { background: #eee; }
+    .waiting-card.selected { border-color: #0052d9; background: rgba(0,82,217,.06); }
+    .waiting-card .card-avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+    .waiting-card .card-info { font-size: 12px; color: #333; }
+    .waiting-card .card-position { font-size: 10px; color: #888; }
+
+    /* ==================== 人员选择弹窗 ==================== */
+    .person-picker-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+      max-height: 400px; overflow-y: auto; padding: 4px;
+    }
+    .person-pick-card {
+      display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e7e7e7;
+      border-radius: 6px; cursor: pointer; transition: all .15s;
+    }
+    .person-pick-card:hover { border-color: #0052d9; background: rgba(0,82,217,.04); }
+
+    /* ==================== 全屏模式 ==================== */
+    .fullscreen-overlay {
+      position: fixed; inset: 0; z-index: 9999; background: #f5f5f5; overflow: auto; padding: 24px;
+    }
+    .fullscreen-overlay .fullscreen-close {
+      position: fixed; top: 16px; right: 16px; z-index: 10000;
+    }
+    .fullscreen-overlay .desk-grid { padding: 16px; width: max-content; min-width: 100%; }
+    .fullscreen-overlay .seat-slot { cursor: default; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <t-layout style="height:100vh;">
+    <t-header height="64px" style="background:#fff;border-bottom:1px solid #dcdcdc;display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
+      <span style="font-size:18px;font-weight:bold;">天道文化后台管理</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:14px;color:#666;">{{ adminInfo?.real_name || adminInfo?.username }}</span>
+        <t-button variant="text" @click="handleLogout">退出</t-button>
+      </div>
+    </t-header>
+    <t-layout>
+      <sidebar-menu active-key="seating"></sidebar-menu>
+      <t-content class="page-content" style="padding:20px;">
+
+        <!-- 标题 -->
+        <div class="page-header" style="margin-bottom:16px;">
+          <h1 class="page-title">排座管理</h1>
+        </div>
+
+        <!-- 课程/排期选择 + 操作按钮 -->
+        <div class="seating-toolbar">
+          <div class="config-item">
+            <label>课程：</label>
+            <t-select v-model="selectedCourseId" placeholder="选择课程" clearable filterable @change="onCourseChange">
+              <t-option v-for="c in courseList" :key="c.id" :value="c.id" :label="c.name"></t-option>
+            </t-select>
+          </div>
+          <div class="config-item">
+            <label>排期：</label>
+            <t-select v-model="selectedScheduleId" placeholder="选择排期" clearable :disabled="!selectedCourseId" @change="onScheduleChange">
+              <t-option v-for="s in scheduleList" :key="s.id" :value="s.id"
+                :label="(s.period ? s.period + ' ' : '') + s.class_date + (s.class_location ? ' ' + s.class_location : '')">
+              </t-option>
+            </t-select>
+          </div>
+          <t-button v-if="dataLoaded" variant="outline" @click="exportStudentWord">导出学员表</t-button>
+          <t-button v-if="dataLoaded" variant="outline" @click="exportSignInWord">导出签到表</t-button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div v-if="loading" style="text-align:center;padding:60px;">
+          <t-loading text="加载中..." />
+        </div>
+
+        <!-- 未选择排期 -->
+        <div v-else-if="!dataLoaded" style="text-align:center;padding:60px;color:#999;">
+          请先选择课程和排期
+        </div>
+
+        <!-- 排座主界面 -->
+        <template v-else>
+          <!-- 配置面板 -->
+          <div class="config-panel">
+            <div class="config-item">
+              <label>桌数：</label>
+              <t-input-number v-model="config.desk_count" :min="1" :max="50" theme="column" @change="onConfigChange" />
+            </div>
+            <div class="config-item">
+              <label>每桌座位：</label>
+              <t-input-number v-model="config.seats_per_desk" :min="4" :max="12" theme="column" @change="onConfigChange" />
+            </div>
+            <div class="config-item">
+              <label>列数：</label>
+              <t-input-number v-model="config.display_columns" :min="1" :max="10" theme="column" @change="onConfigChange" />
+            </div>
+            <div class="config-item">
+              <label>桌布：</label>
+              <div class="color-preset-row">
+                <div v-for="c in presetColors" :key="c" class="color-dot"
+                  :class="{ active: config.table_cloth_color === c }"
+                  :style="{ background: c }" @click="config.table_cloth_color = c; onConfigChange();">
+                </div>
+                <input type="color" v-model="config.table_cloth_color" @change="onConfigChange"
+                  style="width:24px;height:24px;border:none;padding:0;cursor:pointer;" />
+              </div>
+            </div>
+            <span v-if="savingConfig" style="font-size:12px;color:#0052d9;">保存中...</span>
+          </div>
+
+          <!-- 座位区域 -->
+          <div class="seating-area">
+            <div class="seating-header">
+              <div class="left">
+                <strong>座位安排</strong>
+                <span class="seating-stats">
+                  已排 {{ assignedCount }} / 总 {{ totalSeats }} 座 · {{ students.length }} 名学员
+                </span>
+                <t-tag v-if="hasUnsavedChanges" theme="warning" variant="light" style="margin-left:4px;">未保存</t-tag>
+              </div>
+              <div class="right">
+                <t-button theme="primary" :loading="saving" :disabled="!hasUnsavedChanges" @click="saveAll">
+                  <t-icon name="save" style="margin-right:4px;" />保存
+                </t-button>
+                <t-input v-model="searchKeyword" placeholder="搜索姓名" clearable style="width:160px;"
+                  @enter="doSearch" @clear="clearSearch">
+                  <template #suffix-icon><t-icon name="search" @click="doSearch" style="cursor:pointer;" /></template>
+                </t-input>
+                <t-button variant="outline" @click="toggleFullscreen">
+                  <t-icon :name="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" />
+                </t-button>
+              </div>
+            </div>
+
+            <div class="desk-grid-wrapper">
+            <div class="desk-grid" :style="{ gridTemplateColumns: 'repeat(' + config.display_columns + ', 350px)' }">
+              <div v-for="deskNum in config.desk_count" :key="deskNum" class="desk-container">
+                <!-- 上方座位 -->
+                <div class="seats-top">
+                  <div class="seat-slot" :class="seatClass(deskNum, 1)" :data-desk="deskNum" :data-seat="1"
+                    draggable="true"
+                    @dragstart="onSeatDragStart($event, deskNum, 1)"
+                    @dragover.prevent="onSeatDragOver($event, deskNum, 1)"
+                    @dragleave="onSeatDragLeave($event)"
+                    @drop.prevent="onSeatDrop($event, deskNum, 1)"
+                    @click="onSeatClick(deskNum, 1)">
+                    <template v-if="getSeatUser(deskNum, 1)">
+                      <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1).user_name?.charAt(0) }}</div>
+                      <div class="seat-name">{{ getSeatUser(deskNum, 1).user_name }}</div>
+                      <div v-if="getSeatPosition(deskNum, 1)" class="seat-position-tag"
+                        :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1)) }">
+                        {{ getSeatPosition(deskNum, 1) }}
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="seat-avatar empty">+</div>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- 中间：左 + 桌面 + 右 -->
+                <div class="seats-middle">
+                  <div class="seats-left">
+                    <div v-for="i in leftSeats" :key="'l'+i" class="seat-slot" :class="seatClass(deskNum, 1+i)"
+                      draggable="true"
+                      @dragstart="onSeatDragStart($event, deskNum, 1+i)"
+                      @dragover.prevent="onSeatDragOver($event, deskNum, 1+i)"
+                      @dragleave="onSeatDragLeave($event)"
+                      @drop.prevent="onSeatDrop($event, deskNum, 1+i)"
+                      @click="onSeatClick(deskNum, 1+i)">
+                      <template v-if="getSeatUser(deskNum, 1+i)">
+                        <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1+i).user_name?.charAt(0) }}</div>
+                        <div class="seat-name">{{ getSeatUser(deskNum, 1+i).user_name }}</div>
+                        <div v-if="getSeatPosition(deskNum, 1+i)" class="seat-position-tag"
+                          :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1+i)) }">
+                          {{ getSeatPosition(deskNum, 1+i) }}
+                        </div>
+                      </template>
+                      <template v-else><div class="seat-avatar empty">+</div></template>
+                    </div>
+                  </div>
+
+                  <!-- 桌面 SVG -->
+                  <div class="desk-wrapper" :style="{ height: deskHeight + 'px' }">
+                    <svg class="desk-table-svg" viewBox="0 0 200 400" :style="{ height: deskHeight + 'px' }">
+                      <defs>
+                        <linearGradient :id="'tg-'+deskNum" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" :style="'stop-color:'+SeatingUtils.lightenColor(config.table_cloth_color,20)+';stop-opacity:1'" />
+                          <stop offset="50%" :style="'stop-color:'+config.table_cloth_color+';stop-opacity:1'" />
+                          <stop offset="100%" :style="'stop-color:'+SeatingUtils.darkenColor(config.table_cloth_color,20)+';stop-opacity:1'" />
+                        </linearGradient>
+                      </defs>
+                      <rect x="10" y="10" width="180" height="380" rx="14" :fill="'url(#tg-'+deskNum+')'"
+                        :stroke="SeatingUtils.darkenColor(config.table_cloth_color,40)" stroke-width="3" />
+                      <rect x="22" y="32" width="156" height="8" fill="rgba(255,255,255,.3)" opacity=".6"/>
+                      <rect x="22" y="360" width="156" height="8" fill="rgba(255,255,255,.3)" opacity=".6"/>
+                      <ellipse cx="100" cy="200" rx="60" ry="40" fill="rgba(255,255,255,.1)" opacity=".8"/>
+                    </svg>
+                    <div class="desk-label">桌 {{ deskNum }}</div>
+                  </div>
+
+                  <div class="seats-right">
+                    <div v-for="i in rightSeats" :key="'r'+i" class="seat-slot"
+                      :class="seatClass(deskNum, 1+leftSeats+i)"
+                      draggable="true"
+                      @dragstart="onSeatDragStart($event, deskNum, 1+leftSeats+i)"
+                      @dragover.prevent="onSeatDragOver($event, deskNum, 1+leftSeats+i)"
+                      @dragleave="onSeatDragLeave($event)"
+                      @drop.prevent="onSeatDrop($event, deskNum, 1+leftSeats+i)"
+                      @click="onSeatClick(deskNum, 1+leftSeats+i)">
+                      <template v-if="getSeatUser(deskNum, 1+leftSeats+i)">
+                        <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1+leftSeats+i).user_name?.charAt(0) }}</div>
+                        <div class="seat-name">{{ getSeatUser(deskNum, 1+leftSeats+i).user_name }}</div>
+                        <div v-if="getSeatPosition(deskNum, 1+leftSeats+i)" class="seat-position-tag"
+                          :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1+leftSeats+i)) }">
+                          {{ getSeatPosition(deskNum, 1+leftSeats+i) }}
+                        </div>
+                      </template>
+                      <template v-else><div class="seat-avatar empty">+</div></template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 下方座位 -->
+                <div class="seats-bottom">
+                  <div class="seat-slot" :class="seatClass(deskNum, config.seats_per_desk)"
+                    draggable="true"
+                    @dragstart="onSeatDragStart($event, deskNum, config.seats_per_desk)"
+                    @dragover.prevent="onSeatDragOver($event, deskNum, config.seats_per_desk)"
+                    @dragleave="onSeatDragLeave($event)"
+                    @drop.prevent="onSeatDrop($event, deskNum, config.seats_per_desk)"
+                    @click="onSeatClick(deskNum, config.seats_per_desk)">
+                    <template v-if="getSeatUser(deskNum, config.seats_per_desk)">
+                      <div class="seat-avatar occupied">{{ getSeatUser(deskNum, config.seats_per_desk).user_name?.charAt(0) }}</div>
+                      <div class="seat-name">{{ getSeatUser(deskNum, config.seats_per_desk).user_name }}</div>
+                      <div v-if="getSeatPosition(deskNum, config.seats_per_desk)" class="seat-position-tag"
+                        :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, config.seats_per_desk)) }">
+                        {{ getSeatPosition(deskNum, config.seats_per_desk) }}
+                      </div>
+                    </template>
+                    <template v-else><div class="seat-avatar empty">+</div></template>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <!-- 备选区域 -->
+          <div class="waiting-area">
+            <div class="waiting-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <strong>备选学员</strong>
+                <t-tag theme="primary" variant="light">{{ waitingStudents.length }}</t-tag>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <t-button size="small" variant="outline" :disabled="selectedWaiting.length===0" @click="randomAssignSelected">
+                  随机分配 ({{ selectedWaiting.length }})
+                </t-button>
+                <t-button size="small" variant="outline" @click="selectAllWaiting">
+                  {{ selectedWaiting.length === waitingStudents.length && waitingStudents.length > 0 ? '取消全选' : '全选' }}
+                </t-button>
+              </div>
+            </div>
+            <div class="waiting-grid" :class="{ 'drag-over': waitingDragOver }"
+              @dragover.prevent="waitingDragOver=true" @dragleave="waitingDragOver=false"
+              @drop.prevent="onWaitingDrop($event)">
+              <div v-if="waitingStudents.length===0" style="width:100%;text-align:center;padding:20px;color:#999;">
+                所有学员已排座
+              </div>
+              <div v-for="stu in waitingStudents" :key="stu.user_id" class="waiting-card"
+                :class="{ selected: selectedWaiting.includes(stu.user_id) }"
+                draggable="true"
+                @dragstart="onWaitingDragStart($event, stu)"
+                @click="toggleWaitingSelect(stu.user_id)">
+                <div class="card-avatar">{{ stu.user_name?.charAt(0) }}</div>
+                <div>
+                  <div class="card-info">{{ stu.user_name }}</div>
+                  <div v-if="positions[stu.user_id]" class="card-position">{{ positions[stu.user_id] }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 人员选择弹窗 -->
+        <t-dialog v-model:visible="pickerVisible" header="选择学员" :footer="false" width="520px">
+          <t-input v-model="pickerKeyword" placeholder="搜索姓名" clearable style="margin-bottom:12px;" />
+          <div class="person-picker-grid">
+            <div v-for="stu in filteredPickerStudents" :key="stu.user_id" class="person-pick-card"
+              @click="onPickPerson(stu)">
+              <div class="card-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;">
+                {{ stu.user_name?.charAt(0) }}
+              </div>
+              <div>
+                <div style="font-size:13px;">{{ stu.user_name }}</div>
+                <div v-if="positions[stu.user_id]" style="font-size:11px;color:#888;">{{ positions[stu.user_id] }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-if="filteredPickerStudents.length===0" style="text-align:center;padding:30px;color:#999;">
+            没有可选学员
+          </div>
+        </t-dialog>
+
+        <!-- 全屏模式 -->
+        <div v-if="isFullscreen" class="fullscreen-overlay">
+          <t-button class="fullscreen-close" theme="primary" @click="toggleFullscreen">退出全屏</t-button>
+          <h2 style="text-align:center;margin-bottom:20px;">
+            {{ scheduleInfo.course_name }} {{ scheduleInfo.period }} - 座位安排
+          </h2>
+          <div class="desk-grid" :style="{ gridTemplateColumns: 'repeat(' + config.display_columns + ', 350px)', justifyContent: 'center' }">
+            <div v-for="deskNum in config.desk_count" :key="'fs-'+deskNum" class="desk-container">
+              <div class="seats-top">
+                <div class="seat-slot">
+                  <template v-if="getSeatUser(deskNum, 1)">
+                    <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1).user_name?.charAt(0) }}</div>
+                    <div class="seat-name">{{ getSeatUser(deskNum, 1).user_name }}</div>
+                    <div v-if="getSeatPosition(deskNum, 1)" class="seat-position-tag"
+                      :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1)) }">
+                      {{ getSeatPosition(deskNum, 1) }}
+                    </div>
+                  </template>
+                  <template v-else><div class="seat-avatar empty">+</div></template>
+                </div>
+              </div>
+              <div class="seats-middle">
+                <div class="seats-left">
+                  <div v-for="i in leftSeats" :key="'fsl'+i" class="seat-slot">
+                    <template v-if="getSeatUser(deskNum, 1+i)">
+                      <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1+i).user_name?.charAt(0) }}</div>
+                      <div class="seat-name">{{ getSeatUser(deskNum, 1+i).user_name }}</div>
+                      <div v-if="getSeatPosition(deskNum, 1+i)" class="seat-position-tag"
+                        :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1+i)) }">
+                        {{ getSeatPosition(deskNum, 1+i) }}
+                      </div>
+                    </template>
+                    <template v-else><div class="seat-avatar empty">+</div></template>
+                  </div>
+                </div>
+                <div class="desk-wrapper" :style="{ height: deskHeight + 'px' }">
+                  <svg class="desk-table-svg" viewBox="0 0 200 400" :style="{ height: deskHeight + 'px' }">
+                    <defs>
+                      <linearGradient :id="'fstg-'+deskNum" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" :style="'stop-color:'+SeatingUtils.lightenColor(config.table_cloth_color,20)+';stop-opacity:1'" />
+                        <stop offset="50%" :style="'stop-color:'+config.table_cloth_color+';stop-opacity:1'" />
+                        <stop offset="100%" :style="'stop-color:'+SeatingUtils.darkenColor(config.table_cloth_color,20)+';stop-opacity:1'" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="10" y="10" width="180" height="380" rx="14" :fill="'url(#fstg-'+deskNum+')'"
+                      :stroke="SeatingUtils.darkenColor(config.table_cloth_color,40)" stroke-width="3" />
+                    <ellipse cx="100" cy="200" rx="60" ry="40" fill="rgba(255,255,255,.1)" opacity=".8"/>
+                  </svg>
+                  <div class="desk-label">桌 {{ deskNum }}</div>
+                </div>
+                <div class="seats-right">
+                  <div v-for="i in rightSeats" :key="'fsr'+i" class="seat-slot">
+                    <template v-if="getSeatUser(deskNum, 1+leftSeats+i)">
+                      <div class="seat-avatar occupied">{{ getSeatUser(deskNum, 1+leftSeats+i).user_name?.charAt(0) }}</div>
+                      <div class="seat-name">{{ getSeatUser(deskNum, 1+leftSeats+i).user_name }}</div>
+                      <div v-if="getSeatPosition(deskNum, 1+leftSeats+i)" class="seat-position-tag"
+                        :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, 1+leftSeats+i)) }">
+                        {{ getSeatPosition(deskNum, 1+leftSeats+i) }}
+                      </div>
+                    </template>
+                    <template v-else><div class="seat-avatar empty">+</div></template>
+                  </div>
+                </div>
+              </div>
+              <div class="seats-bottom">
+                <div class="seat-slot">
+                  <template v-if="getSeatUser(deskNum, config.seats_per_desk)">
+                    <div class="seat-avatar occupied">{{ getSeatUser(deskNum, config.seats_per_desk).user_name?.charAt(0) }}</div>
+                    <div class="seat-name">{{ getSeatUser(deskNum, config.seats_per_desk).user_name }}</div>
+                    <div v-if="getSeatPosition(deskNum, config.seats_per_desk)" class="seat-position-tag"
+                      :style="{ background: SeatingUtils.getPositionColor(getSeatPosition(deskNum, config.seats_per_desk)) }">
+                      {{ getSeatPosition(deskNum, config.seats_per_desk) }}
+                    </div>
+                  </template>
+                  <template v-else><div class="seat-avatar empty">+</div></template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </t-content>
+    </t-layout>
+  </t-layout>
+</div>
+
+<script src="../../assets/libs/vue.global.js"></script>
+<script src="../../assets/libs/tdesign.min.js"></script>
+<script src="../../assets/js/config.js?v=20260313"></script>
+<script src="../../assets/js/cloudbase.js"></script>
+<script src="../../assets/js/admin-api.js?v=20260313"></script>
+<script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
+<script src="../../assets/js/seating-utils.js?v=20260313"></script>
+<!-- Word 导出依赖 -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script>
+const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
+
+    // ==================== 数据状态 ====================
+    const courseList = ref([]);
+    const scheduleList = ref([]);
+    const selectedCourseId = ref(null);
+    const selectedScheduleId = ref(null);
+    const loading = ref(false);
+    const dataLoaded = ref(false);
+    const savingConfig = ref(false);
+    const saving = ref(false);
+    const hasUnsavedChanges = ref(false);
+
+    const config = reactive({
+      desk_count: 4,
+      seats_per_desk: 8,
+      display_columns: 3,
+      table_cloth_color: '#228B22'
+    });
+
+    const students = ref([]);
+    const positions = ref({});
+    const assignments = ref([]);
+    const scheduleInfo = reactive({
+      course_name: '', period: '', class_date: '', class_location: '', course_type: 0
+    });
+
+    // 座位分布计算
+    const leftSeats = computed(() => Math.ceil(Math.max(0, config.seats_per_desk - 2) / 2));
+    const rightSeats = computed(() => Math.floor(Math.max(0, config.seats_per_desk - 2) / 2));
+    const totalSeats = computed(() => config.desk_count * config.seats_per_desk);
+    const assignedCount = computed(() => assignments.value.length);
+    const deskHeight = computed(() => Math.max(160, leftSeats.value * 80));
+    const presetColors = SeatingUtils.PRESET_COLORS;
+
+    // 快速查找映射：`deskNum-seatNum` → assignment
+    const assignmentMap = computed(() => {
+      const m = {};
+      assignments.value.forEach(a => { m[a.desk_number + '-' + a.seat_number] = a; });
+      return m;
+    });
+    // userId → assignment
+    const userAssignmentMap = computed(() => {
+      const m = {};
+      assignments.value.forEach(a => { m[a.user_id] = a; });
+      return m;
+    });
+    // userId → student
+    const studentMap = computed(() => {
+      const m = {};
+      students.value.forEach(s => { m[s.user_id] = s; });
+      return m;
+    });
+
+    // 备选学员 = 未分配座位的学员
+    const waitingStudents = computed(() =>
+      students.value.filter(s => !userAssignmentMap.value[s.user_id])
+    );
+
+    // ==================== 搜索 ====================
+    const searchKeyword = ref('');
+    const highlightedSeat = ref(null);
+
+    function doSearch() {
+      if (!searchKeyword.value.trim()) return;
+      const kw = searchKeyword.value.trim().toLowerCase();
+      for (const a of assignments.value) {
+        const stu = studentMap.value[a.user_id];
+        if (stu && stu.user_name && stu.user_name.toLowerCase().includes(kw)) {
+          highlightedSeat.value = a.desk_number + '-' + a.seat_number;
+          nextTick(() => {
+            const el = document.querySelector(`.seat-slot[data-desk="${a.desk_number}"][data-seat="${a.seat_number}"]`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+          setTimeout(() => { highlightedSeat.value = null; }, 3500);
+          return;
+        }
+      }
+      TDesign.MessagePlugin.warning('未找到该学员的座位');
+    }
+    function clearSearch() { highlightedSeat.value = null; }
+
+    function seatClass(desk, seat) {
+      return { highlighted: highlightedSeat.value === desk + '-' + seat };
+    }
+
+    // ==================== 全屏 ====================
+    const isFullscreen = ref(false);
+    function toggleFullscreen() { isFullscreen.value = !isFullscreen.value; }
+
+    // ==================== 加载数据 ====================
+    async function loadCourses() {
+      try {
+        const res = await AdminAPI.getCourseList({ page: 1, pageSize: 100 });
+        courseList.value = res?.data?.list || res?.list || [];
+      } catch (e) { console.error(e); }
+    }
+
+    async function onCourseChange(courseId) {
+      selectedScheduleId.value = null;
+      dataLoaded.value = false;
+      scheduleList.value = [];
+      if (!courseId) return;
+      try {
+        const res = await AdminAPI.getScheduleList({ course_id: courseId, page: 1, pageSize: 200 });
+        scheduleList.value = res?.data?.list || res?.list || [];
+      } catch (e) { console.error(e); }
+    }
+
+    function onScheduleChange(scheduleId) {
+      if (!scheduleId) { dataLoaded.value = false; return; }
+      if (hasUnsavedChanges.value) {
+        const dialog = TDesign.DialogPlugin.confirm({
+          header: '未保存的更改',
+          body: '当前排座有未保存的更改，切换排期将丢失这些更改。确定继续？',
+          confirmBtn: '确定切换',
+          cancelBtn: '取消',
+          onConfirm: async () => {
+            dialog.hide();
+            await loadSeatingData(scheduleId);
+          },
+          onCancel: () => dialog.hide(),
+          onClose: () => dialog.hide(),
+        });
+      } else {
+        loadSeatingData(scheduleId);
+      }
+    }
+
+    async function loadSeatingData(crId) {
+      loading.value = true;
+      dataLoaded.value = false;
+      try {
+        const res = await AdminAPI.getSeatingData({ classRecordId: crId });
+        const d = res?.data || res;
+        if (!d) throw new Error('无数据返回');
+
+        Object.assign(config, d.config || {});
+        students.value = d.students || [];
+        positions.value = d.positions || {};
+        assignments.value = d.assignments || [];
+        Object.assign(scheduleInfo, d.scheduleInfo || {});
+        hasUnsavedChanges.value = false;
+        dataLoaded.value = true;
+      } catch (e) {
+        console.error(e);
+        TDesign.MessagePlugin.error('加载排座数据失败: ' + (e.message || ''));
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    // ==================== 配置保存 ====================
+    let configTimer = null;
+    function onConfigChange() {
+      clearTimeout(configTimer);
+      configTimer = setTimeout(saveConfig, 600);
+    }
+
+    async function saveConfig() {
+      if (!selectedScheduleId.value) return;
+      savingConfig.value = true;
+      try {
+        await AdminAPI.saveSeatingConfig({
+          classRecordId: selectedScheduleId.value,
+          deskCount: config.desk_count,
+          seatsPerDesk: config.seats_per_desk,
+          displayColumns: config.display_columns,
+          tableClothColor: config.table_cloth_color
+        });
+        // 配置变更可能清理了超范围的分配，重新加载
+        await loadSeatingData(selectedScheduleId.value);
+      } catch (e) {
+        TDesign.MessagePlugin.error('保存配置失败');
+      } finally {
+        savingConfig.value = false;
+      }
+    }
+
+    // ==================== 座位查询辅助 ====================
+    function getSeatUser(desk, seat) {
+      const a = assignmentMap.value[desk + '-' + seat];
+      return a ? studentMap.value[a.user_id] : null;
+    }
+    function getSeatUserId(desk, seat) {
+      const a = assignmentMap.value[desk + '-' + seat];
+      return a ? a.user_id : null;
+    }
+    function getSeatPosition(desk, seat) {
+      const uid = getSeatUserId(desk, seat);
+      return uid ? positions.value[uid] || '' : '';
+    }
+
+    // ==================== 本地座位操作 ====================
+    function localAssign(userId, deskNumber, seatNumber) {
+      assignments.value = assignments.value.filter(a => a.user_id !== userId);
+      assignments.value = assignments.value.filter(a => !(a.desk_number === deskNumber && a.seat_number === seatNumber));
+      assignments.value.push({ user_id: userId, desk_number: deskNumber, seat_number: seatNumber });
+      hasUnsavedChanges.value = true;
+    }
+
+    function localRemove(userId) {
+      assignments.value = assignments.value.filter(a => a.user_id !== userId);
+      hasUnsavedChanges.value = true;
+    }
+
+    function localSwap(userId1, userId2) {
+      const a1 = assignments.value.find(a => a.user_id === userId1);
+      const a2 = assignments.value.find(a => a.user_id === userId2);
+      if (a1 && a2) {
+        const tmpD = a1.desk_number, tmpS = a1.seat_number;
+        a1.desk_number = a2.desk_number; a1.seat_number = a2.seat_number;
+        a2.desk_number = tmpD; a2.seat_number = tmpS;
+      }
+      hasUnsavedChanges.value = true;
+    }
+
+    // ==================== 手动保存 ====================
+    async function saveAll() {
+      if (!selectedScheduleId.value) return;
+      saving.value = true;
+      try {
+        await AdminAPI.syncSeatingAssignments({
+          classRecordId: selectedScheduleId.value,
+          assignments: assignments.value.map(a => ({
+            user_id: a.user_id,
+            desk_number: a.desk_number,
+            seat_number: a.seat_number
+          }))
+        });
+        hasUnsavedChanges.value = false;
+        TDesign.MessagePlugin.success('保存成功');
+      } catch (e) {
+        TDesign.MessagePlugin.error('保存失败: ' + (e.message || ''));
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    // ==================== 拖拽 ====================
+    let dragSource = null;
+    const waitingDragOver = ref(false);
+
+    function onSeatDragStart(ev, desk, seat) {
+      const uid = getSeatUserId(desk, seat);
+      if (!uid) { ev.preventDefault(); return; }
+      dragSource = { type: 'seat', desk, seat, userId: uid };
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', JSON.stringify(dragSource));
+    }
+
+    function onWaitingDragStart(ev, stu) {
+      dragSource = { type: 'waiting', userId: stu.user_id };
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', JSON.stringify(dragSource));
+    }
+
+    function onSeatDragOver(ev, desk, seat) {
+      ev.currentTarget.classList.add('drag-over');
+    }
+    function onSeatDragLeave(ev) {
+      ev.currentTarget.classList.remove('drag-over');
+    }
+
+    function onSeatDrop(ev, desk, seat) {
+      ev.currentTarget.classList.remove('drag-over');
+      if (!dragSource) return;
+
+      const targetUserId = getSeatUserId(desk, seat);
+
+      if (dragSource.type === 'waiting') {
+        localAssign(dragSource.userId, desk, seat);
+      } else if (dragSource.type === 'seat') {
+        if (dragSource.desk === desk && dragSource.seat === seat) return;
+        if (targetUserId) {
+          localSwap(dragSource.userId, targetUserId);
+        } else {
+          localAssign(dragSource.userId, desk, seat);
+        }
+      }
+      dragSource = null;
+    }
+
+    function onWaitingDrop(ev) {
+      waitingDragOver.value = false;
+      if (!dragSource || dragSource.type !== 'seat') return;
+      localRemove(dragSource.userId);
+      dragSource = null;
+    }
+
+    // ==================== 点击座位 ====================
+    const pickerVisible = ref(false);
+    const pickerKeyword = ref('');
+    let pickerTarget = null;
+
+    function onSeatClick(desk, seat) {
+      if (isFullscreen.value) return;
+      const uid = getSeatUserId(desk, seat);
+      if (uid) {
+        localRemove(uid);
+      } else {
+        pickerTarget = { desk, seat };
+        pickerKeyword.value = '';
+        pickerVisible.value = true;
+      }
+    }
+
+    const filteredPickerStudents = computed(() => {
+      const ws = waitingStudents.value;
+      if (!pickerKeyword.value.trim()) return ws;
+      const kw = pickerKeyword.value.trim().toLowerCase();
+      return ws.filter(s => s.user_name && s.user_name.toLowerCase().includes(kw));
+    });
+
+    function onPickPerson(stu) {
+      if (!pickerTarget) return;
+      pickerVisible.value = false;
+      localAssign(stu.user_id, pickerTarget.desk, pickerTarget.seat);
+      pickerTarget = null;
+    }
+
+    // ==================== 备选区 ====================
+    const selectedWaiting = ref([]);
+
+    function toggleWaitingSelect(uid) {
+      const idx = selectedWaiting.value.indexOf(uid);
+      if (idx >= 0) selectedWaiting.value.splice(idx, 1);
+      else selectedWaiting.value.push(uid);
+    }
+
+    function selectAllWaiting() {
+      if (selectedWaiting.value.length === waitingStudents.value.length && waitingStudents.value.length > 0) {
+        selectedWaiting.value = [];
+      } else {
+        selectedWaiting.value = waitingStudents.value.map(s => s.user_id);
+      }
+    }
+
+    function randomAssignSelected() {
+      if (selectedWaiting.value.length === 0) return;
+
+      const occupiedSet = new Set(assignments.value.map(a => `${a.desk_number}-${a.seat_number}`));
+      const assignedUserSet = new Set(assignments.value.map(a => a.user_id));
+      const emptySeats = [];
+      for (let d = 1; d <= config.desk_count; d++) {
+        for (let s = 1; s <= config.seats_per_desk; s++) {
+          if (!occupiedSet.has(`${d}-${s}`)) emptySeats.push({ desk_number: d, seat_number: s });
+        }
+      }
+
+      // Fisher-Yates 洗牌
+      for (let i = emptySeats.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [emptySeats[i], emptySeats[j]] = [emptySeats[j], emptySeats[i]];
+      }
+
+      const toAssign = selectedWaiting.value.filter(uid => !assignedUserSet.has(uid));
+      const count = Math.min(toAssign.length, emptySeats.length);
+
+      for (let i = 0; i < count; i++) {
+        assignments.value.push({
+          user_id: toAssign[i],
+          desk_number: emptySeats[i].desk_number,
+          seat_number: emptySeats[i].seat_number
+        });
+      }
+
+      selectedWaiting.value = [];
+      hasUnsavedChanges.value = true;
+      TDesign.MessagePlugin.success(`已分配 ${count} 个座位（请点击保存）`);
+    }
+
+    // ==================== Word 导出 ====================
+    function buildExportData() {
+      const desks = [];
+      for (let d = 1; d <= config.desk_count; d++) {
+        const deskStudents = [];
+        for (let s = 1; s <= config.seats_per_desk; s++) {
+          const a = assignmentMap.value[d + '-' + s];
+          if (a) {
+            const stu = studentMap.value[a.user_id];
+            if (stu) deskStudents.push({ ...stu, seat_number: s });
+          }
+        }
+        desks.push({ deskNumber: d, students: deskStudents });
+      }
+      return { scheduleInfo: { ...scheduleInfo }, desks, positions: positions.value };
+    }
+
+    async function exportStudentWord() {
+      try {
+        await SeatingUtils.exportStudentInfoWord(buildExportData());
+        TDesign.MessagePlugin.success('导出成功');
+      } catch (e) {
+        TDesign.MessagePlugin.error('导出失败: ' + (e.message || ''));
+      }
+    }
+
+    async function exportSignInWord() {
+      try {
+        await SeatingUtils.exportSignInSheetWord(buildExportData());
+        TDesign.MessagePlugin.success('导出成功');
+      } catch (e) {
+        TDesign.MessagePlugin.error('导出失败: ' + (e.message || ''));
+      }
+    }
+
+    // ==================== 初始化 ====================
+    onMounted(() => { loadCourses(); });
+
+    return {
+      adminInfo, handleLogout,
+      courseList, scheduleList, selectedCourseId, selectedScheduleId,
+      loading, dataLoaded, savingConfig, saving, hasUnsavedChanges,
+      config, students, positions, assignments, scheduleInfo,
+      leftSeats, rightSeats, totalSeats, assignedCount, deskHeight, presetColors,
+      waitingStudents, selectedWaiting,
+      searchKeyword, highlightedSeat, isFullscreen,
+      pickerVisible, pickerKeyword, filteredPickerStudents,
+      waitingDragOver,
+      SeatingUtils,
+      onCourseChange, onScheduleChange, onConfigChange,
+      getSeatUser, getSeatPosition, seatClass,
+      onSeatDragStart, onWaitingDragStart, onSeatDragOver, onSeatDragLeave, onSeatDrop, onWaitingDrop,
+      onSeatClick, onPickPerson, saveAll,
+      doSearch, clearSearch, toggleFullscreen,
+      toggleWaitingSelect, selectAllWaiting, randomAssignSelected,
+      exportStudentWord, exportSignInWord
+    };
+  }
+})
+.use(TDesign)
+.component('sidebar-menu', SidebarNavigation.SidebarMenu)
+.mount('#app');
+</script>
+</body>
+</html>

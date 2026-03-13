@@ -15,15 +15,22 @@ module.exports = async (event, context) => {
   try {
     console.log('[getReferralStats] 获取推荐统计:', user.id);
 
-    // 1. 统计推荐人数（只统计已确认的推荐关系）
-    // 注意：users 表中没有 referee_confirmed_at 字段，只要有 referee_id 就算确认
-    const { count: total_referrals, error: countError } = await db
+    // 1. 统计推荐人数（只统计有 contract_signed=1 课程记录的用户，即正式推荐关系）
+    const { data: allReferees } = await db
       .from('users')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
       .eq('referee_id', user.id);
 
-    if (countError) {
-      throw countError;
+    let total_referrals = 0;
+    if (allReferees && allReferees.length > 0) {
+      const refereeIds = allReferees.map(u => u.id);
+      const { data: confirmedRecords } = await db
+        .from('user_courses')
+        .select('user_id')
+        .in('user_id', refereeIds)
+        .eq('contract_signed', 1);
+      const confirmedSet = new Set((confirmedRecords || []).map(r => r.user_id));
+      total_referrals = confirmedSet.size;
     }
 
     // 2. 获取用户的大使等级信息

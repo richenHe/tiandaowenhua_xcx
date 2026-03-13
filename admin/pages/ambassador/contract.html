@@ -7,7 +7,7 @@
   <title>合约管理 - 天道文化后台</title>
   
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260305">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
   
   <style>
     .alert-card {
@@ -54,6 +54,10 @@
           </t-tabs>
 
           <!-- ========== 录入合约 Tab ========== -->
+          <!-- input 必须放在 v-if 外，否则 ref 在 tab 切换前为 null -->
+          <input type="file" ref="contractFileInput" accept="image/*" multiple
+            style="display:none;" @change="handleContractImageChange" />
+
           <div v-if="activeTab === 'create'" class="table-card" style="padding: 24px;">
             <t-form :data="createForm" label-width="120px" style="max-width: 600px;">
               <t-form-item label="选择用户" required>
@@ -100,8 +104,6 @@
 
               <t-form-item label="上传合同照片" required>
                 <div>
-                  <input type="file" ref="contractFileInput" accept="image/*" multiple
-                    style="display:none;" @change="handleContractImageChange" />
                   <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                     <div
                       v-for="(img, idx) in createForm.contractImages"
@@ -230,8 +232,31 @@
               <t-descriptions-item label="签署时间">{{ formatDateTime(currentContract.signed_at) }}</t-descriptions-item>
               <t-descriptions-item label="到期时间">{{ formatDateTime(currentContract.expires_at) }}</t-descriptions-item>
               <t-descriptions-item label="合约文件" :span="2">
-                <a v-if="currentContract.contract_url" :href="currentContract.contract_url" target="_blank">查看合约</a>
-                <span v-else style="color: #999;">暂无文件</span>
+                <a v-if="currentContract.contract_url" :href="currentContract.contract_url" target="_blank">查看电子合约</a>
+                <span v-else style="color: #999;">暂无电子合约文件</span>
+              </t-descriptions-item>
+              <t-descriptions-item label="合同照片" :span="2">
+                <div>
+                  <!-- 已有照片预览 -->
+                  <div v-if="currentContract.contract_images && currentContract.contract_images.length > 0"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <div v-for="(img, idx) in currentContract.contract_images" :key="idx"
+                      style="position: relative; width: 80px; height: 80px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; cursor: pointer;"
+                      @click="previewContractImage(currentContract.contract_images, idx)">
+                      <img :src="img" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                  </div>
+                  <div v-else style="color: #999; margin-bottom: 8px;">暂无合同照片</div>
+
+                  <!-- 上传照片 -->
+                  <input type="file" ref="detailContractFileInput" accept="image/*" multiple
+                    style="display:none;" @change="handleDetailContractImageChange" />
+                  <t-button size="small" theme="primary" variant="outline"
+                    :loading="detailImageUploading"
+                    @click="triggerDetailContractFileInput">
+                    {{ currentContract.contract_images && currentContract.contract_images.length > 0 ? '补充照片' : '上传合同照片' }}
+                  </t-button>
+                </div>
               </t-descriptions-item>
             </t-descriptions>
           </t-dialog>
@@ -335,11 +360,12 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260306"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260306"></script>
+  <script src="../../assets/libs/cloudbase.full.js"></script>
+  <script src="../../assets/js/config.js?v=20260313"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
   <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260306"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260306"></script>
+  <script src="../../assets/js/admin-api.js?v=20260313"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -608,6 +634,65 @@
           loadData();
         };
         
+        // ── 合约详情照片上传 ──
+        const detailContractFileInput = ref(null);
+        const detailImageUploading = ref(false);
+
+        const triggerDetailContractFileInput = () => {
+          if (detailContractFileInput.value) detailContractFileInput.value.click();
+        };
+
+        const handleDetailContractImageChange = async (e) => {
+          const files = Array.from(e.target.files || []);
+          e.target.value = '';
+          if (files.length === 0) return;
+          if (!currentContract.value) return;
+
+          detailImageUploading.value = true;
+          TDesign.MessagePlugin.loading('上传中，请稍候…', 0);
+          try {
+            const uploadedFileIds = [];
+            for (const file of files) {
+              const ext = file.name.split('.').pop() || 'jpg';
+              const cloudPath = `contracts/supplement/${currentContract.value.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+              const result = await CloudStorageHelper.uploadSingleFile(file, cloudPath);
+              uploadedFileIds.push(result.fileID);
+            }
+
+            // 合并已有照片的 fileID（需从 CDN URL 还原为 fileID，或直接用新照片替换/追加）
+            // 简化处理：传所有新的 fileID 数组给后端，后端直接覆盖
+            // 如果要追加，需要把已有的 fileID 也带上
+            const existingImages = currentContract.value._rawContractImageIds || [];
+            const allFileIds = [...existingImages, ...uploadedFileIds];
+
+            await AdminAPI.updateContractImages({
+              signatureId: currentContract.value.id,
+              contractImages: allFileIds,
+            });
+
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success(`${files.length}张照片上传成功`);
+
+            // 刷新列表数据以获取最新图片 URL
+            await loadData();
+            // 更新当前详情中的照片
+            const updated = tableData.value.find(r => r.id === currentContract.value.id);
+            if (updated) {
+              currentContract.value = updated;
+            }
+          } catch (err) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('上传失败: ' + (err.message || ''));
+          } finally {
+            detailImageUploading.value = false;
+          }
+        };
+
+        // 预览合同照片
+        const previewContractImage = (images, idx) => {
+          window.open(images[idx], '_blank');
+        };
+
         // 查看详情
         const viewDetail = (row) => {
           currentContract.value = row;
@@ -742,6 +827,11 @@
           handleContractImageChange,
           removeContractImage,
           submitCreateContract,
+          detailContractFileInput,
+          detailImageUploading,
+          triggerDetailContractFileInput,
+          handleDetailContractImageChange,
+          previewContractImage,
         };
       }
     });

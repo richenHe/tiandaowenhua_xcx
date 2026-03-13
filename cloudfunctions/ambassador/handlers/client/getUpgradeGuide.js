@@ -126,11 +126,21 @@ module.exports = async (event, context) => {
       applicationApproved: applicationStatus === 1
     });
 
-    // 当前统计数据
-    const { count: refereeCount } = await db
+    // 当前统计数据 — 只计 contract_signed=1 的正式推荐关系
+    const { data: allRefU } = await db
       .from('users')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('referee_id', user.id);
+    let refereeCount = 0;
+    if (allRefU && allRefU.length > 0) {
+      const rIds = allRefU.map(u => u.id);
+      const { data: cRecs } = await db
+        .from('user_courses')
+        .select('user_id')
+        .in('user_id', rIds)
+        .eq('contract_signed', 1);
+      refereeCount = new Set((cRecs || []).map(r => r.user_id)).size;
+    }
 
     const currentStats = {
       referee_count: refereeCount || 0,
@@ -142,8 +152,6 @@ module.exports = async (event, context) => {
     const requirements = {
       referee_count: targetConfig.required_referee_count || 0,
       frozen_points: parseFloat(targetConfig.frozen_points) || 0,
-      gift_quota_basic: targetConfig.gift_quota_basic || 0,
-      gift_quota_advanced: targetConfig.gift_quota_advanced || 0
     };
 
     return response.success({
@@ -187,13 +195,6 @@ function buildBenefits(config) {
   if (config.unfreeze_per_referral > 0) {
     benefits.push(`每次推荐初探班解冻 ${config.unfreeze_per_referral} 元积分`);
   }
-  if (config.gift_quota_basic > 0) {
-    benefits.push(`赠送 ${config.gift_quota_basic} 个初探班名额`);
-  }
-  if (config.gift_quota_advanced > 0) {
-    benefits.push(`赠送 ${config.gift_quota_advanced} 个密训班名额`);
-  }
-
   return benefits;
 }
 

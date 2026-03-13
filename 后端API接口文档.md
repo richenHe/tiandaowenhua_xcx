@@ -233,104 +233,15 @@ ELSE:
 
 **说明**: 如果用户资料不存在，返回 `profile_completed: false` 和基础的 CloudBase 用户信息（uid、openid）
 
-### 🔵 1.4 更新推荐人
-**接口**: `PUT /api/user/referee`
+### ~~🔵 1.4 更新推荐人~~（已废弃 2026-03-09）
 
-**认证**: CloudBase 登录态
+> **已删除**：推荐人改为仅通过扫码绑定，用户端不再提供修改推荐人的功能。后台管理员仍可通过 `admin:updateUserReferee` 修改。
 
-**请求参数**:
-```json
-{
-  "referee_id": 200
-}
-```
+### ~~🔵 1.5 获取可选传播大使列表~~（已废弃 2026-03-09）
 
-**业务规则**:
-- 7天内只能修改1次
-- 不能选择自己
-- 不能选择自己的下级
-- 推荐人必须是准青鸾及以上
-- 首次购买支付后不可修改
-- 使用 CloudBase uid 作为用户唯一标识
+> **已删除**：用户端不再提供选择推荐人功能，此接口已移除。
 
-**业务逻辑**:
-```
-1. 验证用户身份(CloudBase uid)
-2. 查询用户上次修改时间:
-   IF (NOW() - referee_updated_at) < 7天:
-       返回错误: "7天内只能修改1次,下次可修改时间为: {referee_updated_at + 7天}"
-3. 验证推荐人ID:
-   - 不能是自己:
-     IF referee_id = current_user_id:
-         返回错误: "不能选择自己为推荐人"
-   - 不能是自己的下级(递归查询推荐关系树):
-     查询以当前用户为根的推荐树
-     IF referee_id IN 推荐树:
-         返回错误: "不能选择自己的下级为推荐人"
-   - 推荐人必须是准青鸾及以上:
-     IF referee.ambassador_level < 1:
-         返回错误: "推荐人必须是传播大使"
-4. 检查是否首次购买:
-   IF EXISTS(SELECT 1 FROM orders WHERE user_id = ? AND pay_status = 1):
-       返回错误: "首次购买支付后不可修改推荐人"
-5. 更新推荐人并记录日志:
-   UPDATE users SET 
-     referee_id = ?,
-     referee_uid = ?,
-     referee_updated_at = NOW()
-   WHERE id = ?
-   
-   INSERT INTO referee_change_logs (
-     user_id, old_referee_id, new_referee_id,
-     change_type = 2,  // 用户主动修改
-     change_source = 1,  // 小程序用户资料
-     change_ip = ?
-   )
-6. 返回成功及下次可修改时间: NOW() + 7天
-```
-
-**响应数据**:
-```json
-{
-  "success": true,
-  "referee_id": 200,
-  "referee_name": "新推荐人",
-  "can_modify_again_at": "2024-02-01 10:00:00"
-}
-```
-
-### 🔵 1.5 获取可选传播大使列表
-**接口**: `GET /api/user/ambassador-list`
-
-**认证**: CloudBase 登录态
-
-**请求参数**:
-```
-?course_type=1  // 可选：1初探班/2密训班/3咨询/4顾问
-```
-
-**响应数据**:
-```json
-{
-  "list": [
-    {
-      "id": 100,
-      "uid": "cloud-uid-100",
-      "real_name": "大使姓名",
-      "level": 2,
-      "level_name": "青鸾大使",
-      "can_recommend_course": true
-    }
-  ]
-}
-```
-
-**业务规则**:
-- 不传course_type：返回准青鸾及以上
-- course_type=1：返回准青鸾及以上
-- course_type=2/3/4：只返回青鸾及以上
-
-### 🔵 1.6 验证推荐人资格
+### ~~🔵 1.6 验证推荐人资格~~（已废弃 2026-03-09）
 **接口**: `GET /api/user/validate-referee`
 
 **认证**: CloudBase 登录态
@@ -975,8 +886,7 @@ ELSE:
 {
   "order_type": 1,
   "item_id": 1,
-  "class_record_id": 5,
-  "referee_id": 100
+  "class_record_id": 5
 }
 ```
 
@@ -984,7 +894,7 @@ ELSE:
 - `order_type`: 必填,1课程/2复训/4大使升级
 - `item_id`: 必填,项目ID(根据order_type含义不同)
 - `class_record_id`: 可选,上课记录ID(复训专用)
-- `referee_id`: 可选,推荐人ID(不传则使用用户资料中的推荐人)
+- ~~`referee_id`~~: 已废弃（2026-03-09），推荐人直接从用户表读取，不接受前端传参
 
 **业务逻辑**:
 
@@ -1228,16 +1138,7 @@ ELSE:
 2. 从 ambassador_level_configs 读取目标等级配置:
    SELECT * FROM ambassador_level_configs WHERE level = target_level
    
-3. 根据配置发放名额(如配置了 gift_quota_basic > 0):
-   - 插入 ambassador_quotas 表
-   - quota_type = 1(初探班)
-   - total_quantity = config.gift_quota_basic
-   - remaining_quantity = config.gift_quota_basic
-   - expire_date = DATE_ADD(NOW(), INTERVAL 1 YEAR)
-   - source_type = 1(大使升级)
-   
-   如配置了 gift_quota_advanced > 0:
-   - 同理插入密训班名额
+3. ~~根据配置发放名额~~（2026-03-09 已隐藏：gift_quota_basic/gift_quota_advanced 当前全部为 0，升级不再发放名额）
    
 4. 根据配置发放冻结积分(如配置了 frozen_points > 0):
    - 发放 config.frozen_points 冻结积分
@@ -1335,11 +1236,23 @@ ELSE:
 
 ### 🔴 3.7 订单管理 - 列表
 **接口**: `GET /api/admin/order/list`
+**云函数**: `order`，**Action**: `getOrderList`
 
 **请求参数**:
 ```
-?pay_status=1&start_date=2024-01-01&end_date=2024-01-31&keyword=张三&page=1&page_size=20
+?pay_status=1&order_type=1&pay_method=wechat&start_date=2024-01-01&end_date=2024-01-31&keyword=张三&page=1&page_size=20
 ```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
+| keyword | String | 否 | 关键词搜索（订单号/用户姓名/手机号） |
+| pay_status | Number | 否 | 支付状态：0待支付/1已支付/2已取消/3已关闭/4已退款 |
+| order_type | Number | 否 | 订单类型：1课程订单/2复训订单/4大使升级 |
+| pay_method | String | 否 | 支付方式：wechat/alipay/points/offline |
+| startDate | String | 否 | 开始日期（YYYY-MM-DD） |
+| endDate | String | 否 | 结束日期（YYYY-MM-DD） |
 
 **响应数据**:
 ```json
@@ -2250,7 +2163,10 @@ ELSE:
 
 **业务规则**
 - 只返回 status=1 的板块
-- teachers 和 honors 类型中的云存储字段自动转换为 CDN URL
+- hero（content.image）、quick_access（content.items[].image）、teachers（content.items[].avatar）、honors（content.items[].image）中的云存储字段自动转换为 CDN URL
+- hero 类型 content 结构：`{"image":"CDN URL"}` — 整张 Banner 图片
+- quick_access 类型 content 结构：`{"items":[{"image":"CDN URL","link":"跳转路径"}]}` — 图片卡片
+- concepts 中 color 为 HEX 颜色值，teachers 中 theme 为 HEX 头像底色
 
 ### 管理商学院板块
 
@@ -2311,9 +2227,7 @@ ELSE:
     "current_level": 2,
     "next_level": 3,
     "condition": "从 ambassador_level_configs 动态生成升级条件描述",
-    "upgrade_payment_amount": 9800.00,
-    "gift_quota_basic": 10,
-    "gift_quota_advanced": 0
+    "upgrade_payment_amount": 9800.00
   }
 }
 ```
@@ -2604,12 +2518,16 @@ Page({
 ```
 
 ### 🔵 6.7 功德分明细
-**接口**: `GET /api/merit-points/records`
+**云函数**: `user` → Action: `getMeritPointsHistory`
+**调用方**: 客户端（需登录）
+**描述**: 获取当前用户的功德分明细记录，支持分页和按来源分类筛选
 
 **请求参数**:
-```
-?source=1&page=1&page_size=20
-```
+| 参数名 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| sourceFilter | Number[] | 否 | 来源筛选数组，不传返回全部。如 [1,2] 只返回推荐类 |
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
 
 **来源枚举值(source)**:
 - `1`: 推荐初探班
@@ -2617,8 +2535,35 @@ Page({
 - `3`: 辅导员
 - `4`: 义工
 - `5`: 沙龙活动
-- `6`: 兑换
-- `7`: 其他
+- `6`: 兑换（商城兑换商品/课程）
+- `7`: 其他（含活动岗位功德分、管理员调整）
+
+**前端 Tab 映射**:
+| Tab | sourceFilter |
+|-----|-------------|
+| 全部 | 不传 |
+| 推荐 | [1, 2] |
+| 活动 | [3, 4, 5, 7] |
+| 兑换 | [6] |
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| list[].id | Number | 记录ID |
+| list[].change_amount | Number | 变动金额（正数=收入，负数=支出） |
+| list[].balance_after | Number | 变动后余额 |
+| list[].change_type | Number | 1=收入, 2=支出 |
+| list[].source | Number | 来源枚举值 |
+| list[].related_id | String | 关联订单号或兑换单号 |
+| list[].referee_user_name | String | 被推荐人姓名（推荐类有值） |
+| list[].activity_name | String | 活动名称（活动类有值） |
+| list[].remark | String | 备注 |
+| list[].created_at | String | 创建时间 |
+| total | Number | 总记录数 |
+
+**业务规则**:
+- 2026-03-13 新增 sourceFilter 数组参数，支持 Tab 分类筛选
+- 修复前：Tab 切换无效，前端未传参 + 后端不支持筛选
 
 **响应数据**:
 ```json
@@ -2627,13 +2572,14 @@ Page({
   "list": [
     {
       "id": 1,
+      "change_amount": 7777.60,
+      "balance_after": 12777.60,
+      "change_type": 1,
       "source": 2,
-      "source_name": "推荐密训班",
-      "amount": 7777.60,
-      "order_no": "ORD202401150001",
+      "related_id": "ORD202401150001",
       "referee_user_name": "学员姓名",
       "activity_name": null,
-      "remark": "",
+      "remark": "推荐学员购买道天密训班，20%功德分",
       "created_at": "2024-01-15 10:31:00"
     }
   ]
@@ -3207,140 +3153,17 @@ IF 无记录（首次兑换）:
 }
 ```
 
-### 🔵 6.15 查询我的名额
-**接口**: `GET /api/ambassador/my-quotas`
+### ~~6.15 查询我的名额~~（2026-03-09 已隐藏）
 
-**接口概述**: 查询大使的可用名额（适用于所有拥有赠送名额的大使等级，包括但不限于鸿鹄大使、金凤大使等）
+> ⚠️ 赠送名额功能已隐藏。接口 `getMyQuotas` 保留但无实际数据（所有等级 gift_quota 已清零）。
 
-**响应数据**:
-```json
-{
-  "list": [
-    {
-      "id": 1,
-      "quota_type": 1,
-      "quota_type_name": "初探班名额",
-      "source_type": 1,
-      "source_type_name": "大使升级",
-      "total_quantity": 10,
-      "used_quantity": 3,
-      "remaining_quantity": 7,
-      "expire_date": "2025-01-15",
-      "days_remaining": 250,
-      "ambassador_level": 3,
-      "ambassador_level_name": "鸿鹄大使"
-    }
-  ],
-  "summary": {
-    "total_remaining": 7
-  }
-}
-```
+### ~~6.16 赠送名额~~（2026-03-09 已隐藏）
 
-**业务逻辑**:
-- 查询 ambassador_quotas 表
-- 筛选 status=1 且未过期的记录
-- 计算剩余天数
+> ⚠️ 赠送名额功能已隐藏。接口 `giftQuota` 保留但无可用名额。
 
-**数据库设计注意点**:
-- **ambassador_quotas 表**(大使名额表):
-  - `ambassador_id`: 大使ID
-  - `ambassador_level`: 大使等级(2青鸾/3鸿鹄/4金凤等)
-  - `quota_type`: 名额类型(1初探班/2密训班)
-  - `source_type`: 来源类型(1大使升级/2活动奖励/3系统发放)
-  - `total_quantity`: 总数量
-  - `used_quantity`: 已使用数量
-  - `remaining_quantity`: 剩余数量
-  - `expire_date`: 过期日期
-  - `status`: 状态(1有效/0失效)
-- **quota_usage_records 表**(名额使用记录):
-  - `quota_id`: 名额ID
-  - `ambassador_id`: 大使ID
-  - `recipient_id`: 受赠人ID
-  - `recipient_name`: 受赠人姓名
-  - `usage_type`: 使用类型(1赠送/2核销)
-  - `course_id`: 课程ID
-  - `status`: 状态(1已赠送/2已核销/3已取消)
-- **说明**: 名额管理适用于所有拥有赠送权限的大使等级，不同等级的名额数量、类型和有效期可能不同
+### ~~6.17 管理端赠送课程~~（2026-03-03 新增，2026-03-09 已隐藏）
 
-### 🔵 6.16 赠送名额
-**接口**: `POST /api/ambassador/gift-quota`
-
-**接口概述**: 大使赠送名额给用户（适用于所有拥有赠送名额的大使等级）
-
-**请求参数**:
-```json
-{
-  "quota_id": 1,
-  "recipient_phone": "13800138000",
-  "recipient_name": "张三",
-  "message": "赠送初探班名额"
-}
-```
-
-**业务逻辑**:
-```
-1. 验证名额充足(remaining_quantity > 0)
-2. 验证名额未过期
-3. 查询或创建受赠人用户记录
-4. 创建赠送记录(quota_usage_records 表)
-5. 扣减剩余名额:
-   UPDATE ambassador_quotas SET
-     used_quantity = used_quantity + 1,
-     remaining_quantity = remaining_quantity - 1
-   WHERE id = {quota_id}
-6. 生成课程兑换券给受赠人
-7. 发送通知给受赠人
-```
-
-**时区处理（2026-03-02 修复）**:
-- 为受赠人新建 `ambassador_quotas` 记录时，`expire_date` 使用 `Date.now() + 8h` 手动偏移至北京时间后直接用 UTC 方法取日期字符串，不再二次调用 `formatBeijingDate`，避免双重 +8h 导致到期日多一天
-
-**响应数据**:
-```json
-{
-  "success": true,
-  "usage_record_id": 100,
-  "recipient_name": "张三",
-  "remaining_quantity": 6
-}
-```
-
-### 🔴 6.17 管理端赠送课程（2026-03-03 新增）
-
-- **action**: `adminGiftCourse`
-- **调用方**: 管理后台
-- **描述**: 管理员代大使赠送课程给指定用户，自动扣减大使名额并为用户开通/续期课程
-
-**请求参数**
-
-| 参数名 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| ambassadorUserId | Number | 是 | 大使用户ID |
-| recipientUserId | Number | 是 | 接收人用户ID |
-| courseId | Number | 是 | 课程ID |
-
-**返回字段**
-
-| 字段名 | 类型 | 说明 |
-|---|---|---|
-| record_id | Number | quota_usage_records 记录ID |
-| user_course_id | Number | user_courses 记录ID |
-| action | String | 操作类型：新开通 / 延长有效期 / 重新激活并延期 |
-| ambassador_name | String | 大使姓名 |
-| recipient_name | String | 接收人姓名 |
-| course_name | String | 课程名称 |
-| remaining_quota | Number | 大使该类型剩余名额 |
-
-**业务规则**
-1. 仅 course.type=1（初探班）和 type=2（密训班）支持赠送
-2. 大使必须有对应 quota_type 的剩余名额（ambassador_quotas.remaining_quantity > 0）
-3. 扣减名额按 id 升序（最早记录优先）
-4. 接收人未拥有该课程 → 新建 user_courses（is_gift=1, attend_count=0）
-5. 接收人已有且未过期 → 在 expire_at 基础上加 validity_days 天
-6. 接收人已有但已过期/失效 → 从当前时间起算 validity_days 天，恢复 status=1
-7. validity_days 为 NULL → expire_at 设为 NULL（永久有效）
-8. 写入 quota_usage_records（usage_type=1）
+> ⚠️ 赠送课程功能已隐藏。接口 `adminGiftCourse` 保留但后台入口已移除。数据库表 `ambassador_quotas`/`quota_usage_records` 保留，不再写入新数据。
 
 ### 🔴 6.12 大使申请管理 - 列表
 **接口**: `GET /api/admin/ambassador/applications`
@@ -3741,6 +3564,9 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
 **参数说明**:
 - `status`：可选，1=已兑换(待领取) / 2=已领取 / 3=已取消；不传则查全部
 - `keyword`：可选，按用户姓名或兑换单号模糊搜索
+
+**响应新增字段**:
+- `statistics`：全局统计（不受分页/搜索影响），包含 `pending`（已兑换待领取）、`picked`（已领取）、`cancelled`（已取消）数量
 
 **业务逻辑**:
 ```
@@ -4229,7 +4055,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **云函数**: `ambassador` → Action: `getAvailableActivities`
 **权限**: 客户端（需登录）
 
-**功能说明**: 返回当前招募中（status=1）且报名截止日期未到（排课日期 > 今天）的活动列表，附带当前用户等级和已报名状态。
+**功能说明**: 返回当前招募中（status=1）且报名截止日期未到（排课日期 > 今天）的活动列表，附带当前用户等级。**仅展示用户已有有效预约（appointments.status=0）的排期所对应的活动**；响应中已移除 `my_registration` 字段。
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
@@ -4261,11 +4087,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
           }
         ],
         "status": 1,
-        "user_level": 2,
-        "my_registration": {
-          "position_name": "引导员",
-          "status": 1
-        }
+        "user_level": 2
       }
     ],
     "total": 5,
@@ -4308,6 +4130,145 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   }
 }
 ```
+
+---
+
+### 🔵 6.B.14 获取我的报名列表（客户端）
+**云函数**: `ambassador` → Action: `getMyRegistrations`
+**调用方**: 客户端
+**描述**: 获取当前用户的有效活动报名列表
+
+**请求参数**: 无
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| list | Array | 报名记录列表 |
+| list[].registration_id | Number | 报名记录ID |
+| list[].activity_id | Number | 活动ID |
+| list[].activity_name | String | 活动名称 |
+| list[].schedule_date | String | 排期日期 |
+| list[].schedule_location | String | 排期地点 |
+| list[].position_name | String | 岗位名称 |
+| list[].merit_points | Number | 功德分值 |
+| list[].activity_status | Number | 活动状态：1 报名中 / 2 报名截止 |
+| list[].created_at | String | 报名时间 |
+
+**业务规则**: 只返回报名 `status=1` 且活动 `status IN (1,2)` 的记录
+
+---
+
+### 🔵 6.B.15 取消活动报名（客户端）
+**云函数**: `ambassador` → Action: `cancelActivityRegistration`
+**权限**: 客户端（需登录）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+
+**业务规则**:
+- 用户必须有 `status=1` 的有效报名记录
+- 活动 `status != 0`（未结束）且 `status != 2`（报名截止）才允许取消；**活动报名已截止（status=2）时不可取消**
+- 将报名记录 `status` 改为 `0`（已取消）
+- 回写 `ambassador_activities.positions` 中对应岗位 `registered_count - 1`（最小为 0）
+
+**响应数据**:
+```json
+{
+  "success": true,
+  "data": {
+    "activity_id": 10,
+    "position_name": "会务义工"
+  },
+  "message": "取消报名成功"
+}
+```
+
+---
+
+### 🔴 6.B.16 管理员添加报名人员
+**云函数**: `ambassador` → Action: `adminAddRegistrant`
+**调用方**: 管理后台
+**描述**: 管理员手动添加活动报名人员
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityId | Number | 是 | 活动ID |
+| userId | Number | 是 | 用户ID |
+| positionName | String | 是 | 岗位名称 |
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| activity_id | Number | 活动ID |
+| user_id | Number | 用户ID |
+| position_name | String | 岗位名称 |
+| appointment_id | Number | 预约记录ID |
+
+**业务规则**:
+- 用户必须已购买该课程（有对应排期的有效预约或已购课程）
+- 同活动内不可重复报名
+- 若用户无有效预约，自动创建 `status=0` 的预约记录
+- 管理员不受排期名额限制
+
+---
+
+### 🔵 6.B.17 获取活动记录列表（客户端）
+**云函数**: `ambassador` → Action: `getActivityRecords`
+**调用方**: 客户端（需登录）
+**描述**: 获取当前用户的活动记录列表，支持分页和按活动类型筛选
+
+**请求参数**:
+| 参数名 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| activityType | Number | 否 | 活动类型筛选：0=全部（默认）/1=辅导员/2=会务义工/3=沙龙组织/4=其他/5=统筹/6=主持 |
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 10 |
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| list | Array | 活动记录列表 |
+| list[].id | Number | 记录ID |
+| list[].activity_type | Number | 活动类型 |
+| list[].activity_name | String | 活动名称 |
+| list[].activity_desc | String | 活动描述 |
+| list[].location | String | 活动地点 |
+| list[].start_time | String | 开始时间 |
+| list[].duration | String | 时长 |
+| list[].participant_count | Number | 参与人数 |
+| list[].merit_points | Number | 功德分 |
+| list[].note | String | 备注 |
+| list[].images | Array | 活动图片 URL 数组 |
+| total | Number | 总记录数 |
+| stats | Object | 统计信息（同时返回） |
+| stats.total_count | Number | 累计活动总数 |
+| stats.total_merit_points | Number | 累计功德分 |
+| stats.month_count | Number | 本月活动数 |
+| stats.type_stats | Object | 按类型分布统计，key 为 1-6 |
+
+**业务规则**:
+- 仅查询 `status=1` 的有效记录
+- `activityType=0` 或不传时返回全部类型
+- `stats` 为全量统计（不受 activityType 筛选影响）
+- 2026-03-13 修复：前端参数名从 `activity_type`(snake_case) 改为 `activityType`(camelCase)，修复 Tab 筛选无效的 Bug
+
+---
+
+### 🔵 6.B.18 获取活动统计信息（客户端）
+**云函数**: `ambassador` → Action: `getActivityStats`
+**调用方**: 客户端（需登录）
+**描述**: 获取当前用户的活动统计汇总数据
+
+**返回字段**:
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| total_count | Number | 累计活动总数 |
+| total_merit_points | Number | 累计功德分 |
+| month_count | Number | 本月活动数 |
+| type_stats | Object | 按类型分布，key 为 1-6（1=辅导员/2=会务义工/3=沙龙/4=其他/5=统筹/6=主持） |
 
 ---
 
@@ -4536,6 +4497,147 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ```json
 { "success": true, "data": { "message": "补签成功" } }
 ```
+
+---
+
+## 6.C3 管理端积分调整（新增 2026-03）
+
+### 🔴 6.C3.1 调整用户积分
+**云函数**: `ambassador` → Action: `adjustPoints`
+**调用方**: 管理后台
+**描述**: 管理员手动调整用户的功德分或现金积分（可加可减），同时写入对应积分变动明细记录。
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user_id | Number | 是 | 用户 ID |
+| point_type | String | 是 | 积分类型：`merit`（功德分）/ `cash`（现金积分） |
+| amount | Number | 是 | 调整数额（正数=增加，负数=扣减） |
+| reason | String | 是 | 调整原因（写入明细 remark） |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| success | Boolean | 是否成功 |
+| message | String | 操作结果描述 |
+
+**业务规则**
+- `point_type` 仅接受 `merit` 或 `cash`
+- 功德分调整：更新 `users.merit_points`，写入 `merit_points_records`（type=1获得/2使用，source=7 管理员调整）
+- 现金积分调整：更新 `users.cash_points_available`，写入 `cash_points_records`（type=6 系统调整）
+- ⚠️ 注意：此接口参数使用 **snake_case**（`user_id`、`point_type`），与其他管理端接口 camelCase 风格不同
+
+---
+
+## 6.E 排座管理接口（新增 2026-03）
+
+### 🟢 6.E.1 获取排座数据
+
+- **action**: `getSeatingData`
+- **云函数**: `course`
+- **调用方**: 管理后台
+- **描述**: 获取指定排期的完整排座信息，包括配置、学员名单、岗位标签、座位分配
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| classRecordId | Number | 是 | 排期 ID |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| scheduleInfo | Object | 排期基本信息（course_name, period, class_date 等） |
+| config | Object | 排座配置（desk_count, seats_per_desk, display_columns, table_cloth_color） |
+| students | Array | 学员列表（user_id, user_name, user_phone） |
+| positions | Object | 岗位映射 {user_id: position_name}，来自活动报名 |
+| assignments | Array | 座位分配列表（user_id, desk_number, seat_number） |
+
+**业务规则**
+- 学员来自 appointments 表，status IN (0, 1)
+- 岗位标签来自 ambassador_activity_registrations（通过 ambassador_activities.schedule_id 关联）
+- 配置不存在时返回默认值（4桌×8座×3列）
+
+---
+
+### 🔴 6.E.2 保存排座配置
+
+- **action**: `saveSeatingConfig`
+- **云函数**: `course`
+- **调用方**: 管理后台
+- **描述**: 创建或更新排期的排座配置，桌数/座位数减少时自动清理超范围分配
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| classRecordId | Number | 是 | 排期 ID |
+| deskCount | Number | 否 | 桌数（1-50，默认4） |
+| seatsPerDesk | Number | 否 | 每桌座位数（4-12，默认8） |
+| displayColumns | Number | 否 | 显示列数（3-10，默认3） |
+| tableClothColor | String | 否 | 桌布颜色 HEX（默认 #228B22） |
+
+**业务规则**
+- UPSERT 语义：不存在则创建，存在则更新
+- 桌数或座位数减少时，超出范围的已有座位分配会被自动删除
+
+---
+
+### 🔴 6.E.3 保存座位分配
+
+- **action**: `saveSeatingAssignment`
+- **云函数**: `course`
+- **调用方**: 管理后台
+- **描述**: 保存座位分配变更，支持入座、移除、交换三种操作，前端拖拽/点击后自动调用
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| classRecordId | Number | 是 | 排期 ID |
+| operations | Array | 是 | 操作数组 |
+
+**operations 每个元素**
+
+| type | 必填参数 | 说明 |
+|---|---|---|
+| assign | userId, deskNumber, seatNumber | 将用户分配到指定座位（原座位上的人被移除） |
+| remove | userId | 将用户从座位移回备选区 |
+| swap | userId1, userId2 | 交换两个用户的座位 |
+
+**业务规则**
+- assign 操作会先移除该用户的原有座位和目标座位上的人
+- swap 要求两个用户都已有座位
+
+---
+
+### 🔴 6.E.4 随机分配座位
+
+- **action**: `randomAssignSeats`
+- **云函数**: `course`
+- **调用方**: 管理后台
+- **描述**: 将指定用户随机分配到空座位
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| classRecordId | Number | 是 | 排期 ID |
+| userIds | Array | 是 | 要分配的用户 ID 数组 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| assigned | Number | 成功分配的数量 |
+| skipped | Number | 因空位不足而跳过的数量 |
+
+**业务规则**
+- 已有座位的用户不会被重新分配
+- 使用 Fisher-Yates 洗牌算法随机打乱空座位
 
 ---
 
@@ -5078,19 +5180,19 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 
 ---
 
-### 🔴 7.9 审核合同签署记录（v2.8 新增）⚠️ 已废弃
+### 🔴 7.9 审核合同签署记录（v2.8 新增，v2.12 恢复）
 
 - **action**: `auditContractSignature`
 - **云函数**: `ambassador`
 - **调用方**: 管理后台
-- **描述**: 管理员审核用户提交的合同签署记录，通过后合同生效，驳回后用户需重新签署
+- **描述**: 管理员审核用户提交的合同签署记录，通过后合同生效，驳回后用户需重新签署。路由已注册到 ambassador/index.js
 
 **请求参数**
 
 | 参数名 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | signatureId | Number | 是 | 签署记录ID（status=5 待审核） |
-| action | String | 是 | 'approve'（通过）\| 'reject'（驳回） |
+| auditAction | String | 是 | 'approve'（通过）\| 'reject'（驳回）**注意：参数名为 auditAction，非 action** |
 | remark | String | 驳回必填 | 审核备注或驳回原因 |
 
 **返回字段**
@@ -5112,6 +5214,85 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   - 更新 `contract_signatures.status=6`，写入 `audit_admin_id`、`audit_time`、`reject_reason`
   - 用户需重新签署（重新签署时 status=6 的记录不拦截，可新建 status=5 记录）
 - 有效期起点：审核通过日（不是用户签署日）+ `courses.validity_days` 天
+
+---
+
+### 🔴 7.10 管理端合约列表
+
+- **action**: `getContractList`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 分页查询合约签署记录列表，返回合约信息及关联用户名称
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| level | Number | 否 | 筛选大使等级 |
+| status | Number | 否 | 筛选合约状态 |
+| keyword | String | 否 | 关键词搜索 |
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| id | Number | 签署记录 ID |
+| user_id | Number | 用户 ID |
+| ambassador_name | String | 大使姓名（从 users.real_name 获取） |
+| phone | String | 用户手机号 |
+| ambassador_level | Number | 大使等级 |
+| contract_no | String | 合同编号（contract_name + 版本号） |
+| contract_name | String | 合同名称 |
+| contract_version | String | 合同版本 |
+| signed_at | String | 签署时间（对应 sign_time） |
+| expires_at | String | 到期时间（对应 contract_end） |
+| contract_start | String | 合同开始日期 |
+| sign_type | Number | 签署类型（1=用户签署 / 2=管理员续签 / 3=管理员录入） |
+| status | Number | 合约状态 |
+| contract_file_id | String | 电子合约文件 fileID |
+| contract_url | String | 电子合约文件 CDN URL |
+| contract_images | Array\<String\> | 合同照片 CDN URL 数组 |
+| _rawContractImageIds | Array\<String\> | 合同照片原始 fileID 数组（供前端追加上传用） |
+| created_at | String | 记录创建时间 |
+
+**业务规则**
+
+- 关联查询 `users` 表获取 `real_name` 和 `phone`
+- `contract_images` 字段为 JSON 数组，每个元素通过 `cloudFileIDToURL` 转为 CDN URL
+- `_rawContractImageIds` 保留原始 `cloud://` fileID，供前端上传追加时使用
+- `contract_url` 将 `contract_file_id` 转为 CDN URL
+- 支持按 `ambassador_level` 和 `status` 筛选
+
+---
+
+### 🔴 7.11 管理端更新合约照片
+
+- **action**: `updateContractImages`
+- **云函数**: `ambassador`
+- **调用方**: 管理后台
+- **描述**: 补充/更新合约签署记录的合同照片
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| signatureId | Number | 是 | 合约签署记录 ID |
+| contractImages | Array\<String\> | 是 | 合同照片 fileID 数组，至少 1 张 |
+
+**返回字段**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| updated | Boolean | 是否更新成功 |
+
+**业务规则**
+
+- 验证 `signatureId` 对应的合约记录存在（不存在返回"合约记录不存在"）
+- `contractImages` 必须为非空数组（空数组返回"请至少上传一张合同照片"）
+- 直接覆盖原有 `contract_images` 字段（JSON 数组存储）
+- 不校验合约状态，任何状态的合约均可补充照片
 
 ---
 
@@ -5658,8 +5839,6 @@ ALTER TABLE tiandao_culture.mall_exchange_records
       "frozen_points": 0.00,
       "unfreeze_per_referral": 0.00,
       "upgrade_payment_amount": 0.00,
-      "gift_quota_basic": 0,
-      "gift_quota_advanced": 0,
       "can_earn_reward": 0
     },
     {
@@ -5673,8 +5852,6 @@ ALTER TABLE tiandao_culture.mall_exchange_records
       "frozen_points": 1688.00,
       "unfreeze_per_referral": 100.00,
       "upgrade_payment_amount": 9800.00,
-      "gift_quota_basic": 5,
-      "gift_quota_advanced": 0,
       "can_earn_reward": 1
     }
   ]
@@ -5687,8 +5864,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
   "level": 2,
   "updates": {
     "merit_rate_basic": 0.3500,
-    "frozen_points": 2000.00,
-    "gift_quota_basic": 8
+    "frozen_points": 2000.00
   }
 }
 ```
@@ -5703,8 +5879,8 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | frozen_points | 升级发放的冻结积分（必须是 unfreeze_per_referral 的整数倍） | 大使升级 |
 | unfreeze_per_referral | 每次推荐初探班解冻的固定积分金额 | 推荐奖励（仅初探班触发解冻） |
 | upgrade_payment_amount | 支付升级所需金额 | 创建订单 |
-| gift_quota_basic | 升级赠送初探班名额 | 大使升级 |
-| gift_quota_advanced | 升级赠送密训班名额 | 大使升级 |
+| ~~gift_quota_basic~~ | ~~升级赠送初探班名额~~（2026-03-09 已隐藏，当前全部为 0） | — |
+| ~~gift_quota_advanced~~ | ~~升级赠送密训班名额~~（2026-03-09 已隐藏，当前全部为 0） | — |
 | can_earn_reward | 是否可获得推荐奖励 | 推荐奖励前置判断 |
 
 **业务校验规则**（保存时前后端双重校验）:
@@ -6046,11 +6222,11 @@ exports.main = async (event, context) => {
 ```
 注册扫码 → 临时记录推荐人
   ↓
-个人资料 → 可修改推荐人（7天1次）
+扫码绑定推荐人（仅通过二维码，用户无感知）
   ↓
-创建订单 → 验证推荐人资格 → 可修改推荐人
+创建订单 → 推荐人从用户表自动读取（不接受前端传参）
   ↓
-支付成功 → 最终确定推荐人（不可修改）
+支付成功 → 推荐人永久锁定（不可修改，后台管理员除外）
   ↓
 首次购买 → 锁定用户推荐人（永久）
 ```

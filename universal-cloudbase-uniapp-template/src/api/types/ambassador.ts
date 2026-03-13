@@ -407,7 +407,11 @@ export enum ActivityType {
   /** 沙龙组织 */
   SALON = 3,
   /** 其他活动 */
-  OTHER = 4
+  OTHER = 4,
+  /** 统筹 */
+  COORDINATOR = 5,
+  /** 主持 */
+  HOST = 6
 }
 
 /**
@@ -468,18 +472,6 @@ export interface GetActivityRecordsParams extends PaginationParams {
 export interface GetActivityRecordsResponse extends PaginationResponse<ActivityRecord> {
   /** 统计信息 */
   stats: ActivityStats
-}
-
-/**
- * 推荐统计信息
- */
-export interface ReferralStats {
-  /** 总推荐人数 */
-  total_referrals: number
-  /** 成为大使时间 */
-  ambassador_start_date: string | null
-  /** 累计活动次数 */
-  total_activity_count: number
 }
 
 // 兼容旧的类型定义
@@ -625,21 +617,27 @@ export interface ApplyForActivityParams {
 }
 
 /**
- * 用户当前全局有效报名（跨活动唯一报名）
+ * 用户报名列表项（我的报名）
  */
-export interface MyActiveRegistration {
+export interface MyRegistrationItem {
   /** 报名记录ID */
   registration_id: number
   /** 活动ID */
   activity_id: number
   /** 活动名称 */
   activity_name: string
-  /** 已报名的岗位名称 */
-  position_name: string
-  /** 活动排期日期 */
+  /** 排期日期 */
   schedule_date: string
-  /** 活动地点 */
+  /** 排期地点 */
   schedule_location: string
+  /** 报名岗位名称 */
+  position_name: string
+  /** 功德分 */
+  merit_points: number
+  /** 活动状态：1报名中/2报名截止（用于判断能否取消） */
+  activity_status: number
+  /** 报名时间 */
+  created_at: string
 }
 
 /**
@@ -651,13 +649,18 @@ export interface CancelActivityRegistrationParams {
 }
 
 /**
- * 获取可报名活动响应（含全局报名状态）
+ * 获取可报名活动响应
  */
 export interface AvailableActivitiesResult {
   list: AvailableActivity[]
   total: number
-  /** 用户当前全局有效报名（null 表示无有效报名） */
-  my_active_registration: MyActiveRegistration | null
+}
+
+/**
+ * 获取我的报名列表响应
+ */
+export interface MyRegistrationsResult {
+  list: MyRegistrationItem[]
 }
 
 /**

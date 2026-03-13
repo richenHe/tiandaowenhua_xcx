@@ -62,7 +62,7 @@
           <view class="t-card__footer">
             <!-- 管理员录入的线下合同：显示"查看合同照片" -->
             <button
-              v-if="contract.sign_type === 3 && contract.contract_images && contract.contract_images.length > 0"
+              v-if="contract.sign_type === 3"
               class="t-button t-button--theme-primary t-button--variant-base t-button--size-medium"
               style="margin-right: 16rpx;"
               @click.stop="handlePreviewContractImages(contract)"
@@ -174,10 +174,21 @@ const handleViewContract = (contract: Contract) => {
 // 预览合同照片
 const handlePreviewContractImages = (contract: Contract) => {
   const images = contract.contract_images
-  if (!images?.length) return
+  if (!images?.length || images.every(url => !url || !url.startsWith('http'))) {
+    uni.showToast({ title: '暂无合同照片，请联系管理员补充', icon: 'none', duration: 2500 })
+    return
+  }
+  const validImages = images.filter(url => url && url.startsWith('http'))
+  if (validImages.length === 0) {
+    uni.showToast({ title: '合同照片加载失败，请联系管理员', icon: 'none', duration: 2500 })
+    return
+  }
   uni.previewImage({
-    urls: images,
-    current: images[0]
+    urls: validImages,
+    current: validImages[0],
+    fail: () => {
+      uni.showToast({ title: '合同照片加载失败', icon: 'none' })
+    }
   })
 }
 

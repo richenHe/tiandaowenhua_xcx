@@ -6,7 +6,7 @@ const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { OPENID, admin } = context;
-  const { template_id, level, status, page = 1, page_size = 20, pageSize } = event;
+  const { template_id, level, status, keyword, page = 1, page_size = 20, pageSize } = event;
 
   try {
     console.log(`[getSignatureList] 查询签署列表:`, { template_id, level, status, page });
@@ -37,6 +37,11 @@ module.exports = async (event, context) => {
     // 状态筛选
     if (status != null && status !== '') {
       queryBuilder = queryBuilder.eq('status', status);
+    }
+
+    // 关键词搜索（按用户名或手机号，需通过 user_name/user_phone 冗余字段搜索）
+    if (keyword) {
+      queryBuilder = queryBuilder.or(`user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     // 执行分页查询

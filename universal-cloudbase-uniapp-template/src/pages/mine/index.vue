@@ -319,7 +319,7 @@ const getLevelBadge = (level: number): string => {
     1: '🥚',
     2: '🐦',
     3: '🦅',
-    4: '🦚'
+    4: '🐦‍🔥'
   };
   return badges[level] || '🌿';
 };
@@ -355,7 +355,7 @@ const settingsMenu = computed(() => [
   {
     type: 'referral-list',
     icon: '🏇',
-    label: '引荐人列表',
+    label: '我推荐的',
     badge: referralStats.value.total_referrals > 0 ? `${referralStats.value.total_referrals}人` : '',
     badgeTheme: 'primary'
   },
@@ -406,7 +406,6 @@ const handleStatClick = (type: string) => {
 const handleMenuClick = (type: string) => {
   const routeMap: Record<string, string> = {
     'referral-list': '/pages/mine/referral-list/index',
-    'referee-manage': '/pages/mine/referee-manage/index',
     'ambassador': '/pages/ambassador/level/index',
     'profile': '/pages/mine/profile/index',
     'ai-service': '/pages/mine/ai-service/index',

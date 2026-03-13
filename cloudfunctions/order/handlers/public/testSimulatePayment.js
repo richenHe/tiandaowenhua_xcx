@@ -65,13 +65,7 @@ module.exports = async (event, context) => {
           course_id: order.related_id
         });
 
-        // 锁定推荐人（首次购买）
-        if (!user.referee_confirmed_at) {
-          await update('users',
-            { referee_confirmed_at: utils.formatDateTime(new Date()) },
-            { id: user.id }
-          );
-        }
+        // 推荐人锁定时机统一为签合同时（triggerPostContractLogic），支付时不再锁定
 
         // 发放推荐人奖励
         if (order.referee_id) {

@@ -55,7 +55,9 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.eq('status', parseInt(status));
     }
     if (keyword) {
-      queryBuilder = queryBuilder.like('course_name', `%${keyword}%`);
+      // 通过冗余字段 user_name/user_phone 搜索（appointments 表存储了冗余用户信息）
+      // 若表中无冗余字段，则通过 JOIN 的 user 对象在内存中过滤（见下方）
+      queryBuilder = queryBuilder.or(`user_name.like.%${keyword}%,user_phone.like.%${keyword}%`);
     }
 
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);

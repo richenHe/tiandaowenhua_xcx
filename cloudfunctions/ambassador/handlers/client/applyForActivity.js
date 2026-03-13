@@ -3,6 +3,7 @@
  * Action: applyForActivity
  *
  * 入参（camelCase）：activityId、positionName
+ * 前置条件：用户必须已预约了该活动对应的课程排期（appointments.status=0）
  */
 const { db, response, formatDateTime, formatBeijingDate } = require('../../common');
 
@@ -16,7 +17,7 @@ module.exports = async (event, context) => {
     if (!activityId) return response.paramError('缺少必要参数: activityId');
     if (!positionName) return response.paramError('缺少必要参数: positionName（岗位名称）');
 
-    // 预览模式限制：资料未完善的用户不允许报名活动
+    // 资料未完善不允许报名
     if (!user.profile_completed) {
       return response.forbidden('请先完善个人资料后再报名活动');
     }
@@ -57,6 +58,18 @@ module.exports = async (event, context) => {
       }
     }
 
+    // 预约校验：用户必须已预约该活动的排期（status=0 有效预约）
+    const { data: appointmentRows } = await db
+      .from('appointments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('class_record_id', activity.schedule_id)
+      .eq('status', 0);
+    if (!appointmentRows || appointmentRows.length === 0) {
+      return response.error('请先预约该课程排期后再报名活动');
+    }
+    const appointmentId = appointmentRows[0].id;
+
     // 解析岗位列表
     let positions = [];
     try {
@@ -81,31 +94,12 @@ module.exports = async (event, context) => {
       const userLevel = (userRows && userRows[0]) ? (userRows[0].ambassador_level || 0) : 0;
 
       if (userLevel < requiredLevel) {
-        // 获取等级名称给出友好提示
         const { data: levelRows } = await db
           .from('ambassador_level_configs')
           .select('level_name')
           .eq('level', requiredLevel);
         const levelName = (levelRows && levelRows[0]) ? levelRows[0].level_name : `等级${requiredLevel}`;
         return response.error(`报名该岗位需要达到「${levelName}」大使等级`);
-      }
-    }
-
-    // 全局排他校验：是否已在其他未结束活动中有有效报名（status=1）
-    const { data: globalRegs } = await db
-      .from('ambassador_activity_registrations')
-      .select('activity_id, position_name')
-      .eq('user_id', user.id)
-      .eq('status', 1);
-    if (globalRegs && globalRegs.length > 0) {
-      const { data: activeActs } = await db
-        .from('ambassador_activities')
-        .select('id, schedule_name')
-        .in('id', globalRegs.map(r => r.activity_id))
-        .neq('status', 0);
-      if (activeActs && activeActs.length > 0) {
-        const reg = globalRegs.find(r => r.activity_id === activeActs[0].id);
-        return response.error(`您已报名「${activeActs[0].schedule_name}」的「${reg.position_name}」岗位，排期结束后方可报名新活动`);
       }
     }
 
@@ -131,19 +125,18 @@ module.exports = async (event, context) => {
       .eq('status', 0);
 
     if (cancelledRegs && cancelledRegs.length > 0) {
-      // 已取消过：复用原记录，更新字段（避免唯一索引冲突）
       const { error: updateRegError } = await db
         .from('ambassador_activity_registrations')
         .update({
           position_name: positionName,
           merit_points: targetPos.merit_points || 0,
+          appointment_id: appointmentId,
           status: 1,
           updated_at: now
         })
         .eq('id', cancelledRegs[0].id);
       if (updateRegError) throw updateRegError;
     } else {
-      // 首次报名：插入新记录
       const { error: insertError } = await db.from('ambassador_activity_registrations').insert({
         _openid: user._openid || '',
         activity_id: activityId,
@@ -151,12 +144,12 @@ module.exports = async (event, context) => {
         user_uid: user.uid || '',
         user_name: user.real_name || '',
         user_phone: user.phone || '',
+        appointment_id: appointmentId,
         position_name: positionName,
         merit_points: targetPos.merit_points || 0,
         status: 1,
         created_at: now
       });
-      // INSERT 失败必须抛出，否则后续 registered_count++ 会导致名额虚减
       if (insertError) throw insertError;
     }
 

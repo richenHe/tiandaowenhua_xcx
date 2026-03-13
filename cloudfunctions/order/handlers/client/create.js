@@ -13,7 +13,7 @@ const business = require('../../business-logic');
 
 module.exports = async (event, context) => {
   const { OPENID, user } = context;
-  const { order_type, item_id, class_record_id, referee_id } = event;
+  const { order_type, item_id, class_record_id } = event;
 
   try {
     console.log(`[create] 创建订单:`, { user_id: user.id, order_type, item_id });
@@ -60,7 +60,7 @@ module.exports = async (event, context) => {
 
     switch (order_type) {
       case 1: // 课程购买
-        orderData = await handleCourseOrder(user, item_id, referee_id);
+        orderData = await handleCourseOrder(user, item_id);
         break;
 
       case 2: // 复训费
@@ -128,8 +128,9 @@ module.exports = async (event, context) => {
 
 /**
  * 处理课程购买订单
+ * 推荐人直接从用户表读取，不接受前端传参
  */
-async function handleCourseOrder(user, course_id, referee_id) {
+async function handleCourseOrder(user, course_id) {
   // 1. 验证课程存在且上架
   const course = await findOne('courses', { id: course_id });
   if (!course) {
@@ -151,19 +152,13 @@ async function handleCourseOrder(user, course_id, referee_id) {
     throw new Error('您已购买过该课程');
   }
 
-  // 3. 处理推荐人
+  // 3. 处理推荐人（仅从用户表读取，由扫码绑定决定）
   let refereeData = {};
-  const finalRefereeId = referee_id || user.referee_id;
+  const refereeId = user.referee_id;
 
-  if (finalRefereeId) {
-    // 验证：不能选择自己作为推荐人
-    if (finalRefereeId === user.id) {
-      throw new Error('不能选择自己作为推荐人');
-    }
-
-    const referee = await findOne('users', { id: finalRefereeId });
+  if (refereeId) {
+    const referee = await findOne('users', { id: refereeId });
     if (referee) {
-      // 验证推荐人资格（根据课程类型）
       if (course.type === 2 && referee.ambassador_level < 2) {
         throw new Error('密训班需要青鸾及以上等级的推荐人');
       }
