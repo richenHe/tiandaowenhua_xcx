@@ -68,12 +68,28 @@
 
                   <!-- 未申请（null 或 undefined 均视为未申请） -->
                   <template v-if="applicationStatus == null">
-                    <view class="step-desc">请提交申请，等待管理员审核</view>
-                    <view @tap="goToApply">
-                      <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
-                        <span class="t-button__text">📝 立即申请</span>
-                      </button>
-                    </view>
+                    <!-- 普通用户未购买密训班时，显示前置条件提示 -->
+                    <template v-if="currentLevel === 0 && !hasAdvancedCourse">
+                      <view class="step-desc">申请成为准青鸾大使需先购买密训班课程</view>
+                      <view class="step-prerequisite-tip">
+                        <view class="prerequisite-icon">🔒</view>
+                        <view class="prerequisite-text">需购买密训班后方可申请</view>
+                      </view>
+                      <view @tap="goToApply">
+                        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;opacity:0.5;">
+                          <span class="t-button__text">📝 立即申请</span>
+                        </button>
+                      </view>
+                    </template>
+                    <!-- 正常申请状态 -->
+                    <template v-else>
+                      <view class="step-desc">请提交申请，等待管理员审核</view>
+                      <view @tap="goToApply">
+                        <button class="t-button t-button--theme-primary t-button--variant-base t-button--block" style="margin-top:16rpx;">
+                          <span class="t-button__text">📝 立即申请</span>
+                        </button>
+                      </view>
+                    </template>
                   </template>
 
                   <!-- 待审核（status=0） -->
@@ -254,6 +270,9 @@ const applicationStatus = computed<number | null>(() => {
 })
 const rejectReason = computed(() => guideData.value?.application_reject_reason || '')
 
+// 普通用户是否已购买密训班（level=0 时才有意义）
+const hasAdvancedCourse = computed(() => guideData.value?.has_advanced_course !== false)
+
 const contractOption = computed(() =>
   guideData.value?.upgrade_options.find(o => o.type === 'contract') || null
 )
@@ -347,6 +366,16 @@ const fetchGuide = async (urlTargetLevel: number | null = null) => {
 
 // ── 导航函数 ──
 const goToApply = () => {
+  // 普通用户申请准青鸾时，检查是否已购买密训班
+  if (currentLevel.value === 0 && !hasAdvancedCourse.value) {
+    uni.showModal({
+      title: '无法申请',
+      content: '申请成为准青鸾大使需要先购买密训班课程，请前往课程页面了解详情。',
+      showCancel: false,
+      confirmText: '知道了'
+    })
+    return
+  }
   // 普通用户和准青鸾的 target_level 均为 2（青鸾），青鸾的为 3（鸿鹄）
   const tl = currentLevel.value <= 1 ? 2 : currentLevel.value + 1
   uni.navigateTo({
@@ -445,6 +474,20 @@ const goToContractSign = () => {
 .step-title { font-size: 28rpx; font-weight: 500; color: #333; margin-bottom: 12rpx; }
 .step-desc { font-size: 24rpx; color: #666; line-height: 1.6; margin-bottom: 12rpx; }
 .step-desc-reason { font-size: 22rpx; color: #e34d59; margin-top: 8rpx; }
+
+// 密训班前置条件提示
+.step-prerequisite-tip {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #FFF4E5;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 12rpx;
+  border-left: 6rpx solid #D4AF37;
+}
+.prerequisite-icon { font-size: 32rpx; }
+.prerequisite-text { font-size: 24rpx; color: #996600; line-height: 1.5; }
 .step-badge {
   display: inline-block;
   padding: 6rpx 20rpx;

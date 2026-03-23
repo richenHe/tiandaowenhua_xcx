@@ -26,6 +26,9 @@ module.exports = async (event, context) => {
       queryBuilder = queryBuilder.eq('type', parseInt(type));
     }
 
+    // 始终过滤已软删除的课程
+    queryBuilder = queryBuilder.eq('is_deleted', 0);
+
     // 添加状态过滤
     if (status !== undefined && status !== '') {
       queryBuilder = queryBuilder.eq('status', parseInt(status));

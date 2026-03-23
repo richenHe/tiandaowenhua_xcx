@@ -229,20 +229,29 @@ async function rollbackCoursePurchase(order) {
 }
 
 async function rollbackRetrain(order) {
-  await update('appointments', {
-    status: 3,
-    cancel_reason: '订单退款'
-  }, {
-    order_no: order.order_no
-  });
+  // 查出该复训订单关联的所有预约（可能已被用户主动取消）
+  const { data: appts } = await db
+    .from('appointments')
+    .select('id, class_record_id, status')
+    .eq('order_no', order.order_no);
 
-  const appointment = await findOne('appointments', { order_no: order.order_no });
-  if (appointment) {
-    const cr = await findOne('class_records', { id: appointment.class_record_id });
-    if (cr && cr.booked_quota > 0) {
-      await update('class_records', { booked_quota: cr.booked_quota - 1 }, { id: appointment.class_record_id });
+  for (const appt of (appts || [])) {
+    if (appt.status !== 3) {
+      // 仅取消尚未取消的预约，并归还名额
+      await update('appointments', {
+        status: 3,
+        cancel_reason: '订单退款'
+      }, { id: appt.id });
+
+      const cr = await findOne('class_records', { id: appt.class_record_id });
+      if (cr && cr.booked_quota > 0) {
+        await update('class_records', { booked_quota: cr.booked_quota - 1 }, { id: appt.class_record_id });
+      }
+      console.log(`[rollbackRetrain] 取消预约并归还名额: appt.id=${appt.id}`);
     }
+    // 已取消的预约：名额在用户取消时已归还，跳过，避免重复扣减
   }
-  console.log(`[rollbackRetrain] 复训预约回退完成`);
+
+  console.log(`[rollbackRetrain] 复训预约回退完成: order_no=${order.order_no}`);
 }
 

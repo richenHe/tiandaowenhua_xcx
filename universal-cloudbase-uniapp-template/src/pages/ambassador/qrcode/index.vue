@@ -9,14 +9,21 @@
     >
       <view class="page-content">
         
-        <!-- 二维码展示 -->
+        <!-- 二维码展示（长按可保存图片） -->
         <view class="qrcode-section">
           <view class="qrcode-box">
-            <image v-if="qrcodeInfo.qrcode_url" :src="qrcodeInfo.qrcode_url" class="qrcode-image" mode="aspectFit" />
+            <image
+              v-if="qrcodeInfo.qrcode_url"
+              :src="qrcodeInfo.qrcode_url"
+              class="qrcode-image"
+              mode="aspectFit"
+              @longpress="handleLongPressQrcode"
+            />
             <view v-else class="qrcode-placeholder">📱</view>
           </view>
           <view class="qrcode-title">我的推广二维码</view>
           <view class="qrcode-code">邀请码: {{ qrcodeInfo.referee_code || '加载中...' }}</view>
+          <view class="qrcode-hint">长按二维码可保存图片</view>
         </view>
 
         <!-- 推广统计 -->
@@ -37,29 +44,15 @@
         <view class="info-card">
           <view class="info-item">
             <view class="info-icon">1️⃣</view>
-            <view class="info-text">长按保存二维码图片</view>
+            <view class="info-text">长按上方二维码，选择「保存图片」</view>
           </view>
           <view class="info-item">
             <view class="info-icon">2️⃣</view>
-            <view class="info-text">分享给好友扫码注册</view>
+            <view class="info-text">将图片分享给好友扫码注册</view>
           </view>
           <view class="info-item">
             <view class="info-icon">3️⃣</view>
             <view class="info-text">好友购买课程后获得奖励</view>
-          </view>
-        </view>
-
-        <!-- 操作按钮 -->
-        <view class="action-buttons">
-          <view @tap="saveQrcode">
-            <button class="t-button t-button--theme-default t-button--variant-base t-button--block">
-              <span class="t-button__text">💾 保存二维码</span>
-            </button>
-          </view>
-          <view @tap="shareQrcode">
-            <button class="t-button t-button--theme-default t-button--variant-outline t-button--block">
-              <span class="t-button__text">📤 分享给好友</span>
-            </button>
           </view>
         </view>
 
@@ -126,42 +119,43 @@ const loadStats = async () => {
   }
 }
 
+
+// 长按二维码 → 弹出自定义菜单，只保留"保存图片"
+const handleLongPressQrcode = () => {
+  uni.showActionSheet({
+    itemList: ['保存图片'],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        saveQrcode()
+      }
+    }
+  })
+}
+
 const saveQrcode = () => {
   if (!qrcodeInfo.value.qrcode_url) {
-    uni.showToast({
-      title: '二维码加载中',
-      icon: 'none'
-    })
+    uni.showToast({ title: '二维码加载中', icon: 'none' })
     return
   }
-
+  uni.showLoading({ title: '保存中...' })
   uni.downloadFile({
     url: qrcodeInfo.value.qrcode_url,
     success: (res) => {
       uni.saveImageToPhotosAlbum({
         filePath: res.tempFilePath,
         success: () => {
-          uni.showToast({
-            title: '保存成功',
-            icon: 'success'
-          })
+          uni.hideLoading()
+          uni.showToast({ title: '保存成功', icon: 'success' })
         },
         fail: () => {
-          uni.showToast({
-            title: '保存失败',
-            icon: 'none'
-          })
+          uni.hideLoading()
+          uni.showToast({ title: '保存失败，请检查相册权限', icon: 'none' })
         }
       })
-    }
-  })
-}
-
-const shareQrcode = () => {
-  uni.showShareMenu({
-    withShareTicket: true,
-    success: () => {
-      console.log('分享成功')
+    },
+    fail: () => {
+      uni.hideLoading()
+      uni.showToast({ title: '下载失败', icon: 'none' })
     }
   })
 }
@@ -225,6 +219,12 @@ onShow(() => {
   color: #999;
 }
 
+.qrcode-hint {
+  font-size: 24rpx;
+  color: #bbb;
+  margin-top: 16rpx;
+}
+
 .stats-card {
   background: #fff;
   border-radius: 16rpx;
@@ -286,11 +286,6 @@ onShow(() => {
   flex: 1;
 }
 
-.action-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24rpx;
-}
 
 </style>
 

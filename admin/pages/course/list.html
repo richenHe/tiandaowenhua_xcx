@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
   
   <style>
     .type-tag {
@@ -295,6 +295,11 @@
         <t-form-item label="课程详情" name="content">
           <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" :disabled="isCourseLocked" />
         </t-form-item>
+
+        <t-form-item label="课程大纲" name="outline">
+          <t-textarea v-model="editForm.outline" placeholder="每行输入一条大纲内容，例如：&#10;第一讲：天道运行规律&#10;第二讲：因缘际会的哲学" :autosize="{ minRows: 3, maxRows: 8 }" :disabled="isCourseLocked" />
+          <div style="font-size:12px; color:#999; margin-top:4px;">每行一条大纲，保存时自动格式化</div>
+        </t-form-item>
         
         <t-form-item label="讲师" name="teacher">
           <t-input v-model="editForm.teacher" placeholder="请输入讲师姓名" :disabled="isCourseLocked" />
@@ -361,12 +366,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260313"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
-  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/config.js?v=20260323"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260323"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260323"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260313"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260323"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -601,7 +606,15 @@
             duration: course.duration,
             description: course.description,
             content: course.content,
-            outline: course.outline,
+            outline: (() => {
+              // DB 存 JSON 数组字符串，展示时转为每行一条
+              try {
+                const arr = course.outline
+                  ? (typeof course.outline === 'string' ? JSON.parse(course.outline) : course.outline)
+                  : [];
+                return Array.isArray(arr) ? arr.join('\n') : (course.outline || '');
+              } catch (e) { return course.outline || ''; }
+            })(),
             teacher: course.teacher,
             sortOrder: course.sort_order,
             status: course.status,
@@ -644,7 +657,10 @@
               duration: isSalon ? null : editForm.duration,
               description: editForm.description,
               content: editForm.content,
-              outline: editForm.outline,
+              // 多行文本 → JSON 数组字符串存入 DB
+              outline: JSON.stringify(
+                (editForm.outline || '').split('\n').map(s => s.trim()).filter(s => s)
+              ),
               teacher: editForm.teacher,
               sortOrder: editForm.sortOrder,
               status: editForm.status,
@@ -701,15 +717,28 @@
           }
         };
 
-        // 删除课程
-        const deleteCourse = async (course) => {
-          try {
-            await AdminAPI.deleteCourse({ id: course.id });
-            TDesign.MessagePlugin.success('课程删除成功');
-            fetchCourses();
-          } catch (error) {
-            TDesign.MessagePlugin.error('删除失败: ' + error.message);
-          }
+        // 删除课程（二次确认后软删除，课程从列表中消失）
+        const deleteCourse = (course) => {
+          const dialog = TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除课程「${course.name}」吗？删除后课程将不再显示，历史订单数据不受影响。`,
+            confirmBtn: { content: '确认删除', theme: 'danger' },
+            cancelBtn: '取消',
+            onConfirm: async () => {
+              dialog.update({ confirmBtn: { loading: true } });
+              try {
+                await AdminAPI.deleteCourse({ id: course.id });
+                TDesign.MessagePlugin.success('课程删除成功');
+                fetchCourses();
+              } catch (error) {
+                TDesign.MessagePlugin.error('删除失败: ' + error.message);
+              } finally {
+                dialog.hide();
+              }
+            },
+            onCancel: () => dialog.hide(),
+            onClose: () => dialog.hide(),
+          });
         };
 
         // 获取类型文本（DB type 为整数）

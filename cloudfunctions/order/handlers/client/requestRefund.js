@@ -73,19 +73,34 @@ module.exports = async (event, context) => {
       }
     }
 
+    // 复训订单：校验复训资格仍可退（retrain_credit_status=1 表示资格保留未使用）
+    if (order.order_type === 2) {
+      if (order.retrain_credit_status !== 1) {
+        if (order.retrain_credit_status === 2) {
+          return response.error('复训资格已使用，无法退款。如有疑问请联系客服。');
+        }
+        return response.error('该复训订单不满足退款条件。如有疑问请联系客服。');
+      }
+    }
+
     const now = utils.formatDateTime(new Date());
 
-    await update('orders',
-      {
-        refund_status: 1,
-        refund_amount: order.final_amount,
-        refund_reason: refund_reason.trim(),
-        refund_reject_reason: null,
-        refund_audit_admin_id: null,
-        refund_audit_time: null
-      },
-      { order_no }
-    );
+    const updateFields = {
+      refund_status: 1,
+      refund_amount: order.final_amount,
+      refund_reason: refund_reason.trim(),
+      refund_applied_at: now,
+      refund_reject_reason: null,
+      refund_audit_admin_id: null,
+      refund_audit_time: null
+    };
+
+    // 复训订单申请退款时立即将复训资格失效，防止审核期间被重复使用
+    if (order.order_type === 2) {
+      updateFields.retrain_credit_status = 0;
+    }
+
+    await update('orders', updateFields, { order_no });
 
     console.log(`[requestRefund] 退款申请提交成功: order_no=${order_no}`);
 

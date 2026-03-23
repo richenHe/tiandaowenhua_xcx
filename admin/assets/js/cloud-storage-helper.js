@@ -298,6 +298,35 @@ function formatFileSize(bytes) {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
+/**
+ * 将 cloud:// fileID 直接转换为 CDN HTTPS URL，无需 API 调用、无需认证
+ * 格式：cloud://{envId}.{bucket}/{path} → https://{bucket}.tcb.qcloud.la/{path}
+ * @param {string} fileID - cloud:// 格式的文件 ID
+ * @returns {string}
+ */
+function cloudFileIDToURL(fileID) {
+  if (!fileID) return '';
+  if (fileID.startsWith('http://') || fileID.startsWith('https://')) return fileID;
+  if (!fileID.startsWith('cloud://')) return fileID;
+  const withoutScheme = fileID.slice(8);
+  const dotIdx = withoutScheme.indexOf('.');
+  const slashIdx = withoutScheme.indexOf('/');
+  if (dotIdx === -1 || slashIdx === -1 || dotIdx >= slashIdx) return fileID;
+  const bucket = withoutScheme.slice(dotIdx + 1, slashIdx);
+  const filePath = withoutScheme.slice(slashIdx + 1);
+  return `https://${bucket}.tcb.qcloud.la/${filePath}`;
+}
+
+/**
+ * 批量将 cloud:// fileID 转换为 CDN HTTPS URL，无需 API 调用
+ * @param {string[]} fileIDs
+ * @returns {string[]}
+ */
+function batchCloudFileIDToURL(fileIDs) {
+  if (!Array.isArray(fileIDs)) return [];
+  return fileIDs.map(cloudFileIDToURL).filter(Boolean);
+}
+
 // 导出到全局
 window.CloudStorageHelper = {
   waitForAuth,
@@ -305,6 +334,8 @@ window.CloudStorageHelper = {
   uploadMultipleFiles,
   getSingleTempURL,
   getBatchTempURLs,
+  cloudFileIDToURL,
+  batchCloudFileIDToURL,
   deleteFiles,
   replaceFile,
   generateCloudPath,

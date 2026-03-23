@@ -43,7 +43,9 @@ const adminHandlers = {
   removeBlacklist: require('./handlers/admin/removeBlacklist'),
   updateBlacklistConfig: require('./handlers/admin/updateBlacklistConfig'),
   getUserCourseList: require('./handlers/admin/getUserCourseList'),
-  adminAddUserCourse: require('./handlers/admin/adminAddUserCourse')
+  adminAddUserCourse: require('./handlers/admin/adminAddUserCourse'),
+  getUserListForReferee: require('./handlers/admin/getUserListForReferee'),
+  getUserRefereeTree: require('./handlers/admin/getUserRefereeTree')
 };
 
 // 路由配置

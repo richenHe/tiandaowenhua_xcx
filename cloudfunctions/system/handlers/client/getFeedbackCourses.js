@@ -2,7 +2,7 @@
  * 客户端接口：获取可反馈的课程列表
  * Action: getFeedbackCourses
  *
- * 功能：获取用户已购买的课程列表，用于提交反馈
+ * 功能：返回所有上架课程，供用户在提交反馈时选择（不限于已购买）
  */
 const { query } = require('../../common/db');
 const { response } = require('../../common');
@@ -13,28 +13,13 @@ module.exports = async (event, context) => {
   try {
     console.log(`[getFeedbackCourses] 用户 ${user.id} 获取可反馈课程`);
 
-    // 查询用户已购买的课程
-    const userCourses = await query('user_courses', {
-      where: { user_id: user.id },
-      columns: 'course_id'
-    });
-
-    if (!userCourses || userCourses.length === 0) {
-      return response.success({ list: [] }, '暂无已购买的课程');
-    }
-
-    const courseIds = userCourses.map(uc => uc.course_id);
-
-    // 查询课程详情
+    // 返回所有上架课程，不限于已购买
     const courses = await query('courses', {
       where: { status: 1 },
-      columns: 'id, name, cover_image, type'
+      columns: 'id, name, type'
     });
 
-    // 过滤出用户已购买的课程
-    const purchasedCourses = courses.filter(c => courseIds.includes(c.id));
-
-    return response.success({ list: purchasedCourses }, '获取成功');
+    return response.success(courses || [], '获取成功');
 
   } catch (error) {
     console.error('[getFeedbackCourses] 失败:', error);

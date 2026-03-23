@@ -7,7 +7,7 @@ const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user, OPENID } = context;
-  const { realName, phone, city, avatar, backgroundImage, gender, industry, birthday, nickname } = event;
+  const { realName, phone, city, avatar, backgroundImage, gender, industry, birthday, nickname, bankAccountName, bankName, bankAccountNumber } = event;
 
   try {
     console.log('[updateProfile] 更新个人资料:', user.id);
@@ -47,6 +47,16 @@ module.exports = async (event, context) => {
     }
     if (industry) {
       updateData.industry = industry;
+    }
+    // 银行账户信息（选填，用空字符串也允许清空）
+    if (bankAccountName != null) {
+      updateData.bank_account_name = bankAccountName;
+    }
+    if (bankName != null) {
+      updateData.bank_name = bankName;
+    }
+    if (bankAccountNumber != null) {
+      updateData.bank_account_number = bankAccountNumber;
     }
     if (birthday) {
       // birthday 格式为 "年-月-日-时"，解析为 JSON 存储到 birth_bazi

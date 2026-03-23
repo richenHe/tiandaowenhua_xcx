@@ -396,6 +396,31 @@ const handleSubmit = async () => {
   const item = selectedItem.value
   if (!item) return
 
+  // 前置检查：银行账户信息是否已填（财务需要该信息进行线下转账）
+  try {
+    const profile = await UserApi.getProfile()
+    const hasBankInfo = (profile as any).bank_account_name &&
+      (profile as any).bank_name &&
+      (profile as any).bank_account_number
+
+    if (!hasBankInfo) {
+      uni.showModal({
+        title: '请先填写收款银行账户',
+        content: '退款由财务进行线下银行转账，需要您的收款银行账户信息。请前往个人资料填写后再申请退款。',
+        confirmText: '去填写',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({ url: '/pages/mine/profile/index?scrollTo=bank' })
+          }
+        }
+      })
+      return
+    }
+  } catch (err) {
+    console.error('[refund-apply] 获取银行信息失败:', err)
+  }
+
   const isReapply = [2, 4].includes(item.refund_status)
   const confirmTitle = isReapply ? '重新申请退款' : '确认退款'
 

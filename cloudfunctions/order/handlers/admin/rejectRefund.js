@@ -38,15 +38,19 @@ module.exports = async (event, context) => {
 
     const now = utils.formatDateTime(new Date());
 
-    await update('orders',
-      {
-        refund_status: 4,
-        refund_reject_reason: reject_reason,
-        refund_audit_admin_id: admin.id,
-        refund_audit_time: now
-      },
-      { id: order_id }
-    );
+    const updateFields = {
+      refund_status: 4,
+      refund_reject_reason: reject_reason,
+      refund_audit_admin_id: admin.id,
+      refund_audit_time: now
+    };
+
+    // 复训订单驳回时：恢复复训资格，让用户可以继续用资格预约或再次申请退款
+    if (order.order_type === 2) {
+      updateFields.retrain_credit_status = 1;
+    }
+
+    await update('orders', updateFields, { id: order_id });
 
     console.log(`[rejectRefund] 退款驳回成功: order_id=${order_id}`);
 

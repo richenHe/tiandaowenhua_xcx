@@ -62,6 +62,18 @@
                   {{ appointment.canCancel ? '取消预约' : '无法取消预约' }}
                 </view>
               </view>
+
+              <!-- 复训费退款按钮：仅在符合条件的已取消复训预约上显示 -->
+              <view v-if="appointment.showRetrainRefundBtn" class="cancel-section">
+                <text class="cancel-hint">复训费可保留用于下次上课，也可申请退款</text>
+                <view
+                  class="retrain-refund-btn"
+                  :class="{ 'retrain-refund-btn--disabled': retrainRefundLoading }"
+                  @tap="handleRetrainRefund(appointment)"
+                >
+                  复训费退款
+                </view>
+              </view>
             </view>
           </view>
 
@@ -103,7 +115,8 @@ import { onShow } from '@dcloudio/uni-app'
 import CapsuleTabs from '@/components/CapsuleTabs.vue'
 import StickyTabs from '@/components/StickyTabs.vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import { CourseApi } from '@/api'
+import { CourseApi, UserApi } from '@/api'
+import { OrderApi } from '@/api'
 
 const pageHeaderHeight = ref(64)
 const scrollViewHeight = ref(0)
@@ -139,6 +152,7 @@ const finished = ref(false)
 /**
  * 计算非沙龙课程的展示标签和样式
  * 优先级：已取消 > 缺席 > 已结课 > 今日已签到 > 待上课 > 无标签
+ * 复训退款相关徽章（退款中/已退款）在 filteredAppointments 中按 orderNo 最新取消记录单独覆盖
  */
 const getNonSalonDisplay = (item: any) => {
   const today = new Date().toISOString().slice(0, 10)
@@ -201,7 +215,12 @@ const mapAppointmentItem = (item: any) => {
     isRetrain,
     canCancel,
     cancelHint,
-    cancelDeadlineDays
+    cancelDeadlineDays,
+    // 复训专用字段
+    orderNo: item.order_no || '',
+    retrainCreditStatus: item.retrain_credit_status,
+    retrainRefundStatus: item.retrain_refund_status,
+    cancelledAt: item.cancelled_at || ''
   }
 }
 
@@ -261,11 +280,115 @@ const loadMore = () => {
 }
 
 const filteredAppointments = computed(() => {
-  if (activeTab.value === -1) return appointments.value
-  return appointments.value.filter(item => item.dbStatus === activeTab.value)
+  const list = activeTab.value === -1
+    ? appointments.value
+    : appointments.value.filter(item => item.dbStatus === activeTab.value)
+
+  // 第一步：找出每个 orderNo 中取消时间最新的那条（所有已取消复训预约，不限条件）
+  // 用于：① 徽章覆盖（退款中/已退款） ② 退款按钮显示
+  const orderNoBadgeWinnerMap: Record<string, { cancelledAt: string; id: number }> = {}
+  for (const item of list) {
+    if (!item.isRetrain || item.dbStatus !== 3 || !item.orderNo) continue
+    const current = orderNoBadgeWinnerMap[item.orderNo]
+    if (
+      !current ||
+      item.cancelledAt > current.cancelledAt ||
+      (item.cancelledAt === current.cancelledAt && item.id > current.id)
+    ) {
+      orderNoBadgeWinnerMap[item.orderNo] = { cancelledAt: item.cancelledAt, id: item.id }
+    }
+  }
+
+  // 第二步：退款按钮额外条件（资格保留 + 未申请/已驳回）
+  const eligibleForBtn = (item: any) =>
+    item.dbStatus === 3 &&
+    item.isRetrain &&
+    item.orderNo &&
+    item.retrainCreditStatus === 1 &&
+    (item.retrainRefundStatus === 0 || item.retrainRefundStatus === 4)
+
+  return list.map(item => {
+    const isBadgeWinner =
+      item.isRetrain &&
+      item.dbStatus === 3 &&
+      item.orderNo &&
+      orderNoBadgeWinnerMap[item.orderNo]?.id === item.id
+
+    // 只有「最新取消」那条才覆盖徽章，其余已取消的复训预约保持「已取消」不变
+    let statusTag = item.statusTag
+    let statusType = item.statusType
+    if (isBadgeWinner) {
+      if (item.retrainRefundStatus === 3) { statusTag = '已退款'; statusType = 'success' }
+      else if (item.retrainRefundStatus === 1) { statusTag = '退款中'; statusType = 'warning' }
+    }
+
+    return {
+      ...item,
+      statusTag,
+      statusType,
+      showRetrainRefundBtn: eligibleForBtn(item) && isBadgeWinner
+    }
+  })
 })
 
 const cancelLoading = ref(false)
+const retrainRefundLoading = ref(false)
+
+/**
+ * 申请复训费退款
+ */
+const handleRetrainRefund = async (appointment: any) => {
+  if (retrainRefundLoading.value) return
+
+  // 前置检查：银行账户信息是否已填（财务需要该信息进行线下转账）
+  try {
+    const profile = await UserApi.getProfile()
+    const hasBankInfo = (profile as any).bank_account_name &&
+      (profile as any).bank_name &&
+      (profile as any).bank_account_number
+
+    if (!hasBankInfo) {
+      uni.showModal({
+        title: '请先填写收款银行账户',
+        content: '退款由财务进行线下银行转账，需要您的收款银行账户信息。请前往个人资料填写后再申请退款。',
+        confirmText: '去填写',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({ url: '/pages/mine/profile/index?scrollTo=bank' })
+          }
+        }
+      })
+      return
+    }
+  } catch (err) {
+    console.error('[appointments] 获取银行信息失败:', err)
+  }
+
+  uni.showModal({
+    title: '申请复训费退款',
+    content: '退款后，您下次复训将需要重新支付复训费。若不退款，复训费将自动保留，下次上课时可免费复训。',
+    confirmText: '确定退款',
+    cancelText: '保留资格',
+    confirmColor: '#d54941',
+    success: async (res) => {
+      if (!res.confirm) return
+      retrainRefundLoading.value = true
+      try {
+        await OrderApi.requestRefund({
+          order_no: appointment.orderNo,
+          refund_reason: '申请复训费退款'
+        })
+        uni.showToast({ title: '退款申请已提交，请等待审核', icon: 'none', duration: 2500 })
+        loadAppointments(true)
+      } catch (error: any) {
+        uni.showToast({ title: error.message || '申请失败，请稍后重试', icon: 'none' })
+      } finally {
+        retrainRefundLoading.value = false
+      }
+    }
+  })
+}
 
 const handleCancelAppointment = (appointment: any) => {
   if (!appointment.canCancel || cancelLoading.value) return
@@ -511,6 +634,21 @@ onShow(() => {
 }
 
 .cancel-btn--disabled {
+  color: #bbb;
+  border-color: #ddd;
+  background-color: #f5f5f5;
+}
+
+.retrain-refund-btn {
+  font-size: 24rpx;
+  color: #e37318;
+  padding: 8rpx 24rpx;
+  border: 1px solid #e37318;
+  border-radius: 32rpx;
+  flex-shrink: 0;
+}
+
+.retrain-refund-btn--disabled {
   color: #bbb;
   border-color: #ddd;
   background-color: #f5f5f5;

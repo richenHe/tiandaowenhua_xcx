@@ -4,296 +4,539 @@
   <meta charset="UTF-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>推荐关系查询</title>
+  <title>学员推荐关系</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
   <style>
-    .page-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .search-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .result-container {
+    /* 树形文字视图 */
+    .tree-text-view {
+      font-family: 'Courier New', Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre;
+      background: #f9f9f9;
       border: 1px solid #e5e5e5;
       border-radius: 4px;
-      padding: 20px;
-      background: #fafafa;
-      min-height: 300px;
+      padding: 16px;
+      overflow: auto;
+      max-height: 420px;
     }
-    .user-card {
-      background: white;
-      border: 1px solid #e5e5e5;
-      border-radius: 4px;
-      padding: 12px 16px;
-      margin: 8px 0;
+    /* 图形树视图 */
+    .tree-graph-view {
+      overflow: auto;
+      max-height: 420px;
+      padding: 16px;
+    }
+    .tree-graph-root {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .tree-node-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .tree-node-row {
+      display: flex;
       align-items: center;
-      transition: all 0.3s;
+      gap: 4px;
     }
-    .user-card:hover {
+    .tree-node-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid #dcdcdc;
+      background: #fff;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .tree-node-box.is-current {
       border-color: #0052d9;
-      box-shadow: 0 2px 8px rgba(0,82,217,0.1);
-    }
-    .user-info {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-    .section-title {
-      font-size: 16px;
+      background: #edf3ff;
       font-weight: 600;
-      color: #333;
-      margin: 20px 0 12px 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #0052d9;
     }
-    .section-title:first-child {
-      margin-top: 0;
+    .tree-children {
+      display: flex;
+      flex-direction: column;
+      margin-left: 32px;
+      border-left: 2px solid #dcdcdc;
+      padding-left: 16px;
+      margin-top: 4px;
+      gap: 6px;
     }
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #999;
+    .tree-connector {
+      width: 12px;
+      height: 2px;
+      background: #dcdcdc;
+      flex-shrink: 0;
     }
-    .level-tag {
-      margin-left: 8px;
+    /* 推荐人区域 */
+    .referee-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #f0f6ff;
+      border: 1px solid #c7ddff;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .referee-arrow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    /* 批量操作栏 */
+    .batch-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #edf3ff;
+      border-radius: 4px;
+      margin-bottom: 12px;
     }
   </style>
 </head>
 <body>
   <div id="app">
     <t-layout style="height: 100vh;">
-      <!-- 顶部导航 -->
-      <t-header height="64px" style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 24px;
-        background: #fff;
-        border-bottom: 1px solid #dcdcdc;
-      ">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <span style="font-size: 18px; font-weight: 600; color: #333;">🎨 天道文化后台管理</span>
+      <t-header height="64px" style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #dcdcdc;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:18px;font-weight:600;color:#333;">🎨 天道文化后台管理</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display:flex;align-items:center;gap:16px;">
           <span>{{ adminInfo?.real_name || adminInfo?.username || '管理员' }}</span>
           <t-button size="small" @click="handleLogout">退出</t-button>
         </div>
       </t-header>
-      
+
       <t-layout>
-        <!-- 侧边菜单 -->
         <sidebar-menu active-key="user-referee"></sidebar-menu>
-        
-        <!-- 主内容区 -->
+
         <t-content class="page-content">
           <div class="page-container">
-      <!-- 页面头部 -->
-      <div class="page-header">
-        <h1 class="page-title">推荐关系查询</h1>
-        <p class="page-desc">输入用户名字、ID 或手机号，查看其伯乐（推荐人）和千里马（我推荐的人）</p>
-      </div>
+            <!-- 页头 -->
+            <div class="page-header">
+              <h1 class="page-title">学员推荐关系</h1>
+              <p class="page-desc">查看所有学员的推荐关系，支持树状图浏览与导出</p>
+            </div>
 
-      <!-- 搜索栏 -->
-      <t-form layout="inline" style="margin-bottom: 20px; background: white; padding: 16px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-        <t-form-item>
-          <t-input 
-            v-model="searchQuery" 
-            placeholder="输入用户名字 / ID / 手机号"
-            clearable
-            style="width: 320px;"
-            @enter="handleSearch"
-          />
-        </t-form-item>
-        <t-form-item>
-          <t-space>
-            <t-button theme="primary" @click="handleSearch" :loading="loading">查询</t-button>
-            <t-button theme="default" @click="handleReset">重置</t-button>
-          </t-space>
-        </t-form-item>
-      </t-form>
+            <!-- 搜索筛选 -->
+            <div class="search-form">
+              <t-form layout="inline">
+                <t-form-item label="关键词">
+                  <t-input v-model="searchForm.keyword" placeholder="姓名 / 手机号 / ID" clearable style="width:200px;" @enter="handleSearch"></t-input>
+                </t-form-item>
+                <t-form-item label="大使等级">
+                  <t-select v-model="searchForm.ambassadorLevel" clearable placeholder="全部" style="width:140px;">
+                    <t-option :value="0" label="普通用户"></t-option>
+                    <t-option :value="1" label="准青鸾大使"></t-option>
+                    <t-option :value="2" label="青鸾大使"></t-option>
+                    <t-option :value="3" label="鸿鹄大使"></t-option>
+                  </t-select>
+                </t-form-item>
+                <t-form-item>
+                  <t-space>
+                    <t-button theme="primary" @click="handleSearch" :loading="loading">查询</t-button>
+                    <t-button theme="default" @click="handleReset">重置</t-button>
+                  </t-space>
+                </t-form-item>
+              </t-form>
+            </div>
 
-      <!-- 结果展示 -->
-      <div class="result-container">
-        <div v-if="!resultData && !loading" class="empty-state">
-          <t-icon name="search" size="48px" style="color: #ddd; margin-bottom: 12px;" />
-          <p>请输入用户名字、ID 或手机号查询推荐关系</p>
-        </div>
+            <!-- 批量操作栏 -->
+            <div class="batch-bar" v-if="selectedRowKeys.length > 0">
+              <span style="color:#0052d9;font-weight:600;">已选 {{ selectedRowKeys.length }} 人</span>
+              <t-button theme="primary" size="small" @click="handleExportWord" :loading="exportLoading">
+                <template #icon><t-icon name="download"></t-icon></template>
+                导出推荐关系 Word
+              </t-button>
+              <t-button theme="default" size="small" @click="selectedRowKeys = []">取消选择</t-button>
+            </div>
 
-        <div v-else-if="loading" class="empty-state">
-          <t-loading size="large" />
-          <p style="margin-top: 12px;">加载中...</p>
-        </div>
-
-        <div v-else-if="resultData">
-          <!-- 当前用户 -->
-          <div class="section-title">👤 当前用户</div>
-          <div class="user-card">
-            <div class="user-info">
-              <t-avatar :image="resultData.user.avatar" size="48px">{{ resultData.user.real_name?.[0] || '用' }}</t-avatar>
-              <div>
-                <div style="font-weight: 600; color: #333;">
-                  {{ resultData.user.real_name || '未命名用户' }}
-                  <t-tag v-if="resultData.user.ambassador_level" size="small" theme="primary" class="level-tag">
-                    {{ getLevelName(resultData.user.ambassador_level) }}
+            <!-- 数据表格 -->
+            <div class="table-card">
+              <t-table
+                :data="tableData"
+                :columns="columns"
+                :loading="loading"
+                row-key="id"
+                :pagination="pagination"
+                :selected-row-keys="selectedRowKeys"
+                @select-change="handleSelectChange"
+                @page-change="onPageChange"
+                bordered
+                stripe
+                hover
+              >
+                <template #ambassador_level="{ row }">
+                  <t-tag :theme="levelTheme[row.ambassador_level] || 'default'" size="small">
+                    {{ row.ambassador_level_name || levelNameMap[row.ambassador_level] || '-' }}
                   </t-tag>
-                </div>
-                <div style="font-size: 13px; color: #666; margin-top: 4px;">
-                  ID: {{ resultData.user.id }} | 手机: {{ resultData.user.phone || '未绑定' }} | 推荐码: {{ resultData.user.referee_code || '-' }}
-                </div>
-              </div>
+                </template>
+                <template #action="{ row }">
+                  <t-button theme="primary" size="small" variant="text" @click="openTreeDialog(row)">推荐关系</t-button>
+                </template>
+              </t-table>
             </div>
-          </div>
-
-          <!-- 伯乐（推荐人） -->
-          <div class="section-title">🎯 伯乐（推荐人）</div>
-          <div v-if="resultData.referee" class="user-card">
-            <div class="user-info">
-              <t-avatar :image="resultData.referee.avatar" size="40px">{{ resultData.referee.real_name?.[0] || '用' }}</t-avatar>
-              <div>
-                <div style="font-weight: 600; color: #333;">
-                  {{ resultData.referee.real_name || '未命名用户' }}
-                  <t-tag v-if="resultData.referee.ambassador_level" size="small" theme="primary" class="level-tag">
-                    {{ getLevelName(resultData.referee.ambassador_level) }}
-                  </t-tag>
-                </div>
-                <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                  ID: {{ resultData.referee.id }} | 手机: {{ resultData.referee.phone || '未绑定' }}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="user-card" style="color: #999;">
-            暂无推荐人
-          </div>
-
-          <!-- 千里马（我推荐的人） -->
-          <div class="section-title">🐎 千里马（我推荐的人）<span style="font-weight: normal; color: #666; font-size: 14px;"> 共 {{ resultData.referrals?.length || 0 }} 人</span></div>
-          <div v-if="resultData.referrals && resultData.referrals.length > 0">
-            <div v-for="u in resultData.referrals" :key="u.id" class="user-card">
-              <div class="user-info">
-                <t-avatar :image="u.avatar" size="40px">{{ u.real_name?.[0] || '用' }}</t-avatar>
-                <div>
-                  <div style="font-weight: 600; color: #333;">
-                    {{ u.real_name || '未命名用户' }}
-                    <t-tag v-if="u.ambassador_level" size="small" theme="primary" class="level-tag">
-                      {{ getLevelName(u.ambassador_level) }}
-                    </t-tag>
-                  </div>
-                  <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                    ID: {{ u.id }} | 手机: {{ u.phone || '未绑定' }} | 注册: {{ formatDate(u.created_at) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="user-card" style="color: #999;">
-            暂无推荐用户
-          </div>
-        </div>
-
-        <div v-else class="empty-state">
-          <t-icon name="info-circle" size="48px" style="color: #ddd; margin-bottom: 12px;" />
-          <p>未找到相关用户</p>
-        </div>
-      </div>
           </div>
         </t-content>
       </t-layout>
     </t-layout>
+
+    <!-- 推荐关系弹窗 -->
+    <t-dialog
+      v-model:visible="treeDialogVisible"
+      :header="'推荐关系 — ' + (currentRowName || '')"
+      width="720px"
+      :footer="false"
+      @close="treeDialogVisible = false"
+    >
+      <div v-if="treeLoading" style="text-align:center;padding:40px;">
+        <t-loading size="large" />
+        <p style="margin-top:12px;color:#999;">加载中...</p>
+      </div>
+      <div v-else-if="treeData">
+        <!-- 推荐人（伯乐）信息 -->
+        <div class="referee-info-bar">
+          <t-icon name="user" style="color:#0052d9;"></t-icon>
+          <span>推荐人（伯乐）：</span>
+          <template v-if="treeData.referee">
+            <strong>{{ treeData.referee.real_name }}</strong>
+            <t-tag :theme="levelTheme[treeData.referee.ambassador_level] || 'default'" size="small" style="margin-left:4px;">
+              {{ treeData.referee.ambassador_level_name }}
+            </t-tag>
+          </template>
+          <span v-else style="color:#999;">无</span>
+        </div>
+
+        <!-- 树状图标题 -->
+        <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;">树状图</div>
+
+        <!-- 树状图 -->
+        <div class="tree-graph-view">
+          <div v-if="treeData.tree" class="tree-graph-root">
+            <tree-node-graph :node="treeData.tree" :is-current="true"></tree-node-graph>
+          </div>
+          <div v-else style="color:#999;padding:20px;">暂无推荐学员</div>
+        </div>
+      </div>
+      <div v-else style="text-align:center;padding:40px;color:#999;">
+        <t-icon name="info-circle" size="48px" style="color:#ddd;display:block;margin:0 auto 12px;"></t-icon>
+        暂无推荐关系数据
+      </div>
+    </t-dialog>
   </div>
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260313"></script>
-  <script src="../../assets/js/admin-api.js?v=20260313"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="../../assets/js/config.js?v=20260323"></script>
+  <script src="../../assets/js/admin-api.js?v=20260323"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
 
   <script>
-    const { createApp, ref } = Vue;
+    const { createApp, ref, reactive, onMounted } = Vue;
 
+    // ───────── 等级配置 ─────────
+    const levelNameMap = { 0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使' };
+    const levelTheme   = { 0: 'default', 1: 'warning', 2: 'primary', 3: 'danger' };
+
+    // ───────── 递归构建文字树 ─────────
+    function buildTextTree(node, prefix, isLast) {
+      if (!node) return '';
+      const connector = isLast ? '└── ' : '├── ';
+      const label = `${node.real_name || '未命名'} [${node.ambassador_level_name || levelNameMap[node.ambassador_level] || '-'}]`;
+      let result = prefix + connector + label + '\n';
+      const childPrefix = prefix + (isLast ? '    ' : '│   ');
+      const children = node.children || [];
+      children.forEach((child, idx) => {
+        result += buildTextTree(child, childPrefix, idx === children.length - 1);
+      });
+      return result;
+    }
+
+    function buildFullTextTree(treeData) {
+      if (!treeData || !treeData.tree) return '暂无推荐学员';
+      const root = treeData.tree;
+      const rootLabel = `${root.real_name || '未命名'} [${root.ambassador_level_name || levelNameMap[root.ambassador_level] || '-'}]`;
+      let text = rootLabel + '\n';
+      const children = root.children || [];
+      children.forEach((child, idx) => {
+        text += buildTextTree(child, '', idx === children.length - 1);
+      });
+      return text;
+    }
+
+    // ───────── 递归图形树节点组件 ─────────
+    const TreeNodeGraph = {
+      name: 'TreeNodeGraph',
+      props: { node: Object, isCurrent: Boolean },
+      setup(props) {
+        return () => {
+          const n = props.node;
+          if (!n) return null;
+          const children = n.children || [];
+          // 根节点（当前查看对象）不展示自身课程，只有下级推荐人才展示课程标签
+          const courses = props.isCurrent ? [] : (n.courses || []);
+
+          // 节点内容：姓名 + 等级标签 + 课程标签（根节点无课程标签）
+          const nodeContent = [
+            Vue.h('span', {}, n.real_name || '未命名'),
+            Vue.h(TDesign.Tag, {
+              theme: levelTheme[n.ambassador_level] || 'default',
+              size: 'small'
+            }, () => n.ambassador_level_name || levelNameMap[n.ambassador_level] || '-'),
+            ...courses.map(courseName =>
+              Vue.h(TDesign.Tag, { theme: 'success', size: 'small', variant: 'outline' }, () => courseName)
+            )
+          ];
+
+          return Vue.h('div', { class: 'tree-node-wrapper' }, [
+            Vue.h('div', { class: 'tree-node-row' }, [
+              Vue.h('div', {
+                class: ['tree-node-box', props.isCurrent ? 'is-current' : '']
+              }, nodeContent)
+            ]),
+            children.length > 0
+              ? Vue.h('div', { class: 'tree-children' },
+                  children.map(child =>
+                    Vue.h('div', { class: 'tree-node-row' }, [
+                      Vue.h('div', { class: 'tree-connector' }),
+                      Vue.h(TreeNodeGraph, { node: child, isCurrent: false })
+                    ])
+                  )
+                )
+              : null
+          ]);
+        };
+      }
+    };
+
+    // ───────── 主应用 ─────────
     const app = createApp({
+      components: { 'tree-node-graph': TreeNodeGraph },
+
       setup() {
         const adminInfo = ref(null);
-        
+
         const checkAuth = () => {
           adminInfo.value = AdminAPI.getCurrentAdmin();
-          if (!adminInfo.value) {
-            window.location.href = '../../index.html';
-            return false;
-          }
+          if (!adminInfo.value) { window.location.href = '../../index.html'; return false; }
           return true;
         };
-        
-        const handleLogout = () => {
-          AdminAPI.logout();
-        };
-        
-        const searchQuery = ref('');
+        const handleLogout = () => AdminAPI.logout();
+
+        // ── 列表 ──
+        const tableData = ref([]);
         const loading = ref(false);
-        const resultData = ref(null);
+        const selectedRowKeys = ref([]);
 
-        const getLevelName = (level) => {
-          const levels = { 0: '普通用户', 1: '云雀', 2: '青鸾', 3: '鸿鹄' };
-          return levels[level] || '未知';
-        };
+        const searchForm = reactive({ keyword: '', ambassadorLevel: '' });
 
-        const formatDate = (str) => {
-          if (!str) return '-';
-          const d = new Date(str);
-          return d.toLocaleDateString('zh-CN');
-        };
+        const pagination = reactive({ current: 1, pageSize: 20, total: 0 });
 
-        const handleSearch = async () => {
-          if (!searchQuery.value.trim()) {
-            TDesign.MessagePlugin.warning('请输入用户名字、ID 或手机号');
-            return;
-          }
+        const columns = [
+          { colKey: 'row-select', type: 'multiple', width: 50, fixed: 'left' },
+          { colKey: 'id', title: 'ID', width: 80 },
+          { colKey: 'real_name', title: '姓名', width: 110 },
+          { colKey: 'phone', title: '手机号', width: 140 },
+          {
+            colKey: 'ambassador_level',
+            title: '大使等级',
+            width: 130,
+            cell: (h, { row }) =>
+              h(TDesign.Tag, { theme: levelTheme[row.ambassador_level] || 'default', size: 'small' },
+                () => row.ambassador_level_name || levelNameMap[row.ambassador_level] || '-')
+          },
+          { colKey: 'action', title: '操作', width: 100, fixed: 'right' }
+        ];
 
+        const loadData = async () => {
           loading.value = true;
-          resultData.value = null;
-
           try {
-            const data = await AdminAPI.getUserRefereeInfo(searchQuery.value.trim());
-            resultData.value = data;
-            if (!data) {
-              TDesign.MessagePlugin.warning('未找到相关用户');
-            }
-          } catch (error) {
-            TDesign.MessagePlugin.error(error.message || '查询失败');
-            resultData.value = null;
+            const result = await AdminAPI.getUserListForReferee({
+              page: pagination.current,
+              pageSize: pagination.pageSize,
+              keyword: searchForm.keyword,
+              ambassadorLevel: searchForm.ambassadorLevel !== '' ? searchForm.ambassadorLevel : undefined
+            });
+            tableData.value = result.list || [];
+            pagination.total = result.total || 0;
+          } catch (e) {
+            TDesign.MessagePlugin.error('加载失败: ' + e.message);
           } finally {
             loading.value = false;
           }
         };
 
+        const handleSearch = () => { pagination.current = 1; loadData(); };
         const handleReset = () => {
-          searchQuery.value = '';
-          resultData.value = null;
+          searchForm.keyword = '';
+          searchForm.ambassadorLevel = '';
+          handleSearch();
+        };
+        const onPageChange = (pageInfo) => {
+          pagination.current = pageInfo.current;
+          pagination.pageSize = pageInfo.pageSize;
+          loadData();
+        };
+        const handleSelectChange = (keys) => { selectedRowKeys.value = keys; };
+
+        // ── 推荐关系弹窗 ──
+        const treeDialogVisible = ref(false);
+        const treeLoading = ref(false);
+        const treeData = ref(null);
+        const currentRowName = ref('');
+
+        const openTreeDialog = async (row) => {
+          currentRowName.value = row.real_name || '';
+          treeData.value = null;
+          treeDialogVisible.value = true;
+          treeLoading.value = true;
+          try {
+            const data = await AdminAPI.getUserRefereeTree({ userId: row.id });
+            treeData.value = data;
+          } catch (e) {
+            TDesign.MessagePlugin.error('获取推荐关系失败: ' + e.message);
+          } finally {
+            treeLoading.value = false;
+          }
+        };
+
+        // ── Word 导出 ──
+        const exportLoading = ref(false);
+
+        const buildWordTextLines = (node, prefix, isLast) => {
+          if (!node) return [];
+          const connector = isLast ? '└── ' : '├── ';
+          const levelStr = node.ambassador_level_name || levelNameMap[node.ambassador_level] || '-';
+          // 课程名追加在等级后，用书名号括起，多课程用顿号分隔
+          const courseStr = (node.courses || []).length > 0
+            ? ' 【' + node.courses.join('、') + '】'
+            : '';
+          const label = `${node.real_name || '未命名'} [${levelStr}]${courseStr}`;
+          const lines = [prefix + connector + label];
+          const childPrefix = prefix + (isLast ? '    ' : '│   ');
+          const children = node.children || [];
+          children.forEach((child, idx) => {
+            lines.push(...buildWordTextLines(child, childPrefix, idx === children.length - 1));
+          });
+          return lines;
+        };
+
+        const handleExportWord = async () => {
+          if (selectedRowKeys.value.length === 0) return;
+          exportLoading.value = true;
+
+          const loadMsg = TDesign.MessagePlugin.loading('正在生成 Word 文档...', 0);
+          try {
+            const batchData = await AdminAPI.getUserRefereeTree({ userIds: selectedRowKeys.value });
+
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak } = docx;
+
+            const children = [];
+
+            batchData.forEach((item, idx) => {
+              if (idx > 0) {
+                // 每个学员之间加分割线（通过空行模拟）
+                children.push(new Paragraph({ children: [new TextRun({ text: '─'.repeat(40), color: 'AAAAAA' })] }));
+                children.push(new Paragraph(''));
+              }
+
+              const userName = item.user?.real_name || '未命名';
+              const userLevel = item.user?.ambassador_level_name || levelNameMap[item.user?.ambassador_level] || '-';
+
+              // 标题
+              children.push(new Paragraph({
+                children: [new TextRun({ text: `学员推荐关系 — ${userName}`, bold: true, size: 28 })],
+                heading: HeadingLevel.HEADING_2,
+                alignment: AlignmentType.CENTER
+              }));
+
+              // 推荐人（伯乐）信息 - 在标题下方（上级）
+              const refereeText = item.referee
+                ? `推荐人（伯乐）：${item.referee.real_name} [${item.referee.ambassador_level_name}]`
+                : '推荐人（伯乐）：无';
+              children.push(new Paragraph({
+                children: [new TextRun({ text: refereeText, italics: true, color: '555555' })],
+                spacing: { before: 100, after: 200 }
+              }));
+
+              // 推荐树
+              children.push(new Paragraph({
+                children: [new TextRun({ text: '推荐树：', bold: true })]
+              }));
+
+              // 根节点不展示自身课程，仅展示姓名和等级
+              const rootLabel = `  ${userName} [${userLevel}]`;
+              children.push(new Paragraph({
+                children: [new TextRun({ text: rootLabel, font: 'Courier New' })]
+              }));
+
+              // 子树（文字缩进格式）
+              const tree = item.tree;
+              if (tree && tree.children && tree.children.length > 0) {
+                tree.children.forEach((child, idx2) => {
+                  const lines = buildWordTextLines(child, '  ', idx2 === tree.children.length - 1);
+                  lines.forEach(line => {
+                    children.push(new Paragraph({
+                      children: [new TextRun({ text: line, font: 'Courier New' })]
+                    }));
+                  });
+                });
+              } else {
+                children.push(new Paragraph({
+                  children: [new TextRun({ text: '  （暂无推荐学员）', color: '999999' })]
+                }));
+              }
+
+              children.push(new Paragraph(''));
+            });
+
+            const doc = new Document({
+              sections: [{
+                properties: {},
+                children
+              }]
+            });
+
+            const blob = await docx.Packer.toBlob(doc);
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            saveAs(blob, `学员推荐关系_${dateStr}.docx`);
+
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.success(`已导出 ${batchData.length} 名学员的推荐关系`);
+          } catch (e) {
+            TDesign.MessagePlugin.closeAll();
+            TDesign.MessagePlugin.error('导出失败: ' + e.message);
+          } finally {
+            exportLoading.value = false;
+          }
         };
 
         checkAuth();
-        
+        onMounted(() => loadData());
+
         return {
-          adminInfo,
-          handleLogout,
-          searchQuery,
-          loading,
-          resultData,
-          handleSearch,
-          handleReset,
-          getLevelName,
-          formatDate
+          adminInfo, handleLogout,
+          tableData, loading, columns, pagination,
+          selectedRowKeys, handleSelectChange,
+          searchForm, handleSearch, handleReset, onPageChange,
+          treeDialogVisible, treeLoading, treeData,
+          currentRowName, openTreeDialog,
+          exportLoading, handleExportWord,
+          levelNameMap, levelTheme
         };
       }
     });

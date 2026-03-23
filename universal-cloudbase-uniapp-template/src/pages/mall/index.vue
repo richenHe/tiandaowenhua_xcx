@@ -73,7 +73,7 @@
                 <text class="product-name">{{ product.name }}</text>
                 <text class="product-stock">库存: {{ product.stock }}件</text>
                 <view class="product-footer">
-                  <text class="product-points">{{ product.points }}积分</text>
+                  <text class="product-points">{{ Math.round(product.points) }}功德分</text>
                   <view @click.stop="handleExchange(product)">
                     <button class="t-button t-button--theme-default t-button--variant-base t-button--size-small">
                       <span class="t-button__text">兑换</span>
@@ -92,7 +92,7 @@
           <view class="t-alert t-alert--success">
             <view class="alert-icon"><icon type="info" size="20" color="#E6A23C"/></view>
             <view class="alert-content">
-              <text class="alert-message">使用积分兑换课程，开启智慧之旅！兑换后可在"我的课程"中查看。</text>
+              <text class="alert-message">使用功德分兑换课程，开启智慧之旅！兑换后可在"我的课程"中查看。</text>
             </view>
           </view>
 
@@ -122,7 +122,7 @@
                 </view>
                 <view class="course-footer">
                   <view class="course-price">
-                    <text class="course-points">{{ course.points }}积分</text>
+                    <text class="course-points">{{ Math.round(course.points) }}功德分</text>
                   </view>
                   <button 
                     class="course-btn"
@@ -130,22 +130,9 @@
                     :disabled="!canAffordCourse(course.points)"
                     @click.stop="handleExchangeCourse(course)"
                   >
-                    <text class="btn-text">{{ canAffordCourse(course.points) ? '立即兑换' : '积分不足' }}</text>
+                    <text class="btn-text">{{ canAffordCourse(course.points) ? '立即兑换' : '功德分不足' }}</text>
                   </button>
                 </view>
-              </view>
-            </view>
-          </view>
-
-          <!-- 兑换说明 -->
-          <view class="t-alert t-alert--info">
-            <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
-            <view class="alert-content">
-              <text class="alert-title">兑换说明</text>
-              <view class="alert-message">
-                <text>• 兑换的课程永久有效，可无限次观看</text>
-                <text>• 兑换成功后不支持退换</text>
-                <text>• 积分不足时可通过参与活动获取更多积分</text>
               </view>
             </view>
           </view>
@@ -201,9 +188,10 @@ const canAfford = (requiredPoints: number) => {
   return totalAvailable >= requiredPoints;
 };
 
-// 判断积分是否足够兑换课程（课程只能用积分兑换）
+// 判断功德分或积分是否足够兑换课程（优先功德分，不足时可用积分）
 const canAffordCourse = (requiredPoints: number) => {
-  return userCashPoints.value >= requiredPoints;
+  const totalAvailable = userMeritPoints.value + userCashPoints.value;
+  return totalAvailable >= requiredPoints;
 };
 
 // 商品分类
@@ -459,33 +447,59 @@ const handleCourseClick = (course: any) => {
   })
 }
 
-// 兑换课程（课程只能用积分兑换，不使用功德分）
+// 兑换课程（与商品逻辑一致：优先功德分，不足时弹窗询问是否用积分）
 const handleExchangeCourse = (course: any) => {
   const coursePoints = course.points;
+  const meritPoints = userMeritPoints.value;
   const cashPoints = userCashPoints.value;
 
-  if (cashPoints < coursePoints) {
+  // 情况1：功德分和积分都不足
+  if (meritPoints < coursePoints && cashPoints < coursePoints) {
     uni.showModal({
       title: '提示',
-      content: '积分不足，无法兑换该课程',
+      content: '功德分或积分不够',
       showCancel: false,
     });
     return;
   }
 
+  // 情况2：功德分不足，但积分足够 - 只用积分支付
+  if (meritPoints < coursePoints && cashPoints >= coursePoints) {
+    uni.showModal({
+      title: '提示',
+      content: '功德分不足，需要用积分兑换课程吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          const paymentPlan = {
+            meritPointsToUse: 0,
+            cashPointsToUse: coursePoints,
+            needsCashPayment: false,
+            remainingMeritPoints: meritPoints,
+            remainingCashPoints: cashPoints - coursePoints
+          };
+          performExchange('course', course.id, paymentPlan);
+        }
+      },
+    });
+    return;
+  }
+
+  // 情况3：功德分充足 - 只用功德分支付
   uni.showModal({
     title: '提示',
-    content: `确定用 ${coursePoints} 积分兑换课程吗？`,
+    content: '确定用功德分兑换课程吗？',
     confirmText: '确定',
     cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
         const paymentPlan = {
-          meritPointsToUse: 0,
-          cashPointsToUse: coursePoints,
+          meritPointsToUse: coursePoints,
+          cashPointsToUse: 0,
           needsCashPayment: false,
-          remainingMeritPoints: userMeritPoints.value,
-          remainingCashPoints: cashPoints - coursePoints
+          remainingMeritPoints: meritPoints - coursePoints,
+          remainingCashPoints: cashPoints
         };
         performExchange('course', course.id, paymentPlan);
       }
@@ -699,10 +713,6 @@ const performExchange = async (
   background-color: $td-success-color-light;
 }
 
-.t-alert--info {
-  background-color: $td-info-color-light;
-}
-
 .alert-icon {
   font-size: 32rpx;
   flex-shrink: 0;
@@ -713,12 +723,6 @@ const performExchange = async (
   display: flex;
   flex-direction: column;
   gap: 8rpx;
-}
-
-.alert-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: $td-text-color-primary;
 }
 
 .alert-message {

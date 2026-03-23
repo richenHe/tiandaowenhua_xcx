@@ -115,6 +115,17 @@ module.exports = async (event, context) => {
       apply_questions: applyQuestions,
     };
 
+    // 普通用户（level=0）检查是否购买了密训班
+    let hasAdvancedCourse = false;
+    if (currentLevelNum === 0) {
+      const { count: advancedCount } = await db
+        .from('user_courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('course_type', 2);
+      hasAdvancedCourse = (advancedCount || 0) > 0;
+    }
+
     // 构建升级选项（不再有支付步骤）
     const upgradeOptions = buildUpgradeOptions({
       currentLevel: currentLevelNum,
@@ -164,7 +175,9 @@ module.exports = async (event, context) => {
       application_reject_reason: applicationRejectReason,
       application_id: applicationId,
       // 普通用户查看 target=1 时标记即时升级
-      instant_upgrade: target_level === 1 && currentLevelNum === 0
+      instant_upgrade: target_level === 1 && currentLevelNum === 0,
+      // 普通用户是否已购买密训班（仅 level=0 时有效）
+      has_advanced_course: currentLevelNum === 0 ? hasAdvancedCourse : true
     }, '获取升级指南成功');
 
   } catch (error) {

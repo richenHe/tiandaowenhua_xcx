@@ -1,7 +1,8 @@
 /**
  * 删除课程（管理端接口）
+ * 软删除：设置 is_deleted=1，列表查询时过滤掉已删除课程
  */
-const { findOne, softDelete } = require('../../common/db');
+const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -9,26 +10,20 @@ module.exports = async (event, context) => {
   const { id } = event;
 
   try {
-    // 参数验证
     const validation = validateRequired({ id }, ['id']);
     if (!validation.valid) {
       return response.paramError(validation.message);
     }
 
-    // 查询课程是否存在
     const course = await findOne('courses', { id });
     if (!course) {
       return response.notFound('课程不存在');
     }
 
-    // 软删除课程（courses 表没有 deleted_at 字段，使用状态标记）
-    const { update } = require('../../common/db');
-    await update('courses', { status: 0 }, { id });
+    // 软删除：标记 is_deleted=1，不影响历史订单/预约等关联数据
+    await update('courses', { is_deleted: 1 }, { id });
 
-    return response.success({
-      success: true,
-      message: '课程删除成功'
-    });
+    return response.success({ message: '课程删除成功' });
 
   } catch (error) {
     console.error('[Course/deleteCourse] 删除失败:', error);

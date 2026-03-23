@@ -16,7 +16,7 @@ const crypto = require('crypto');
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { id, password, real_name, role, permissions, status } = event;
+  const { id, password, real_name, role, permissions, status, toggle_status, avatar } = event;
 
   try {
     // 参数验证
@@ -32,25 +32,40 @@ module.exports = async (event, context) => {
       return response.notFound('管理员不存在');
     }
 
-    // 不能修改自己的状态
-    if (admin.id === id && status !== undefined) {
-      return response.error('不能修改自己的状态');
-    }
-
     // 构建更新数据（updated_at 使用数据库默认值）
     const updateData = {};
 
-    if (password) {
-      if (password.length < 6) {
-        return response.paramError('密码长度不能少于6位');
+    // 处理状态切换（禁用/启用）
+    if (toggle_status) {
+      if (admin.id === id) {
+        return response.error('不能修改自己的状态');
       }
-      updateData.password = crypto.createHash('md5').update(password).digest('hex');
+      updateData.status = targetAdmin.status === 1 ? 0 : 1;
+    } else {
+      // 不能修改自己的状态
+      if (admin.id === id && status !== undefined) {
+        return response.error('不能修改自己的状态');
+      }
+
+      if (password) {
+        if (password.length < 6) {
+          return response.paramError('密码长度不能少于6位');
+        }
+        updateData.password = crypto.createHash('md5').update(password).digest('hex');
+      }
+
+      if (real_name) updateData.real_name = real_name;
+      if (role) updateData.role = role;
+      // permissions 为数组，CloudBase SDK 不支持直接传数组更新 JSON 字段，需先序列化
+      if (permissions !== undefined) updateData.permissions = JSON.stringify(permissions);
+      if (status !== undefined) updateData.status = status;
+      if (avatar !== undefined) updateData.avatar = avatar;
     }
 
-    if (real_name) updateData.real_name = real_name;
-    if (role) updateData.role = role;
-    if (permissions) updateData.permissions = permissions; // JSON 类型无需 stringify
-    if (status !== undefined) updateData.status = status;
+    // 防止 updateData 为空导致 SQL 语法错误
+    if (Object.keys(updateData).length === 0) {
+      return response.success({ success: true, id }, '无需更新');
+    }
 
     // 更新管理员
     await update('admin_users', updateData, { id });

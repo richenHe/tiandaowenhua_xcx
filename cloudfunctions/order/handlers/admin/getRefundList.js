@@ -12,7 +12,7 @@ const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../..
 
 module.exports = async (event, context) => {
   const { admin } = context;
-  const { page = 1, page_size = 20, pageSize, refund_status, keyword, start_date, end_date } = event;
+  const { page = 1, page_size = 20, pageSize, refund_status, order_type, keyword, start_date, end_date } = event;
 
   try {
     console.log(`[admin:getRefundList] 管理员 ${admin.id} 获取退款列表`);
@@ -40,6 +40,7 @@ module.exports = async (event, context) => {
         refund_amount,
         refund_time,
         refund_reason,
+        refund_applied_at,
         refund_reject_reason,
         refund_audit_admin_id,
         refund_audit_time,
@@ -47,21 +48,27 @@ module.exports = async (event, context) => {
         refund_transfer_no,
         admin_remark,
         created_at,
-        user:users!fk_orders_user(real_name, phone)
+        user:users!fk_orders_user(real_name, phone, bank_account_name, bank_name, bank_account_number)
       `, { count: 'exact' })
       .gt('refund_status', 0)
+      .order('refund_applied_at', { ascending: false })
       .order('id', { ascending: false });
 
     if (refund_status != null && refund_status !== '') {
       queryBuilder = queryBuilder.eq('refund_status', parseInt(refund_status));
     }
 
-    // 日期范围筛选（按退款申请时间 refund_time 过滤）
+    // 按退款分类筛选（1=课程退款，2=复训费退款）
+    if (order_type != null && order_type !== '') {
+      queryBuilder = queryBuilder.eq('order_type', parseInt(order_type));
+    }
+
+    // 日期范围筛选（按退款申请时间 refund_applied_at 过滤）
     if (start_date) {
-      queryBuilder = queryBuilder.gte('refund_time', start_date);
+      queryBuilder = queryBuilder.gte('refund_applied_at', start_date);
     }
     if (end_date) {
-      queryBuilder = queryBuilder.lte('refund_time', end_date + ' 23:59:59');
+      queryBuilder = queryBuilder.lte('refund_applied_at', end_date + ' 23:59:59');
     }
 
     if (keyword) {
@@ -114,10 +121,14 @@ module.exports = async (event, context) => {
       order_name: order.order_name,
       user_name: order.user?.real_name || order.user_name || '',
       user_phone: order.user?.phone || order.user_phone || '',
+      bank_account_name: order.user?.bank_account_name || '',
+      bank_name: order.user?.bank_name || '',
+      bank_account_number: order.user?.bank_account_number || '',
       amount: order.refund_amount || order.final_amount,
       final_amount: order.final_amount,
       refund_reason: order.refund_reason,
       refund_status: order.refund_status,
+      refund_applied_at: order.refund_applied_at,
       refund_time: order.refund_time,
       refund_reject_reason: order.refund_reject_reason,
       refund_audit_time: order.refund_audit_time,

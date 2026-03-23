@@ -45,47 +45,31 @@
           </view>
         </view>
 
-        <!-- 收款银行账户 -->
+        <!-- 收款银行账户（只读展示，修改请前往个人资料） -->
         <view class="t-section-title t-section-title--simple">🏦 收款银行账户</view>
-        <view class="bank-form-card">
-          <view class="form-field">
-            <text class="field-label">收款人姓名</text>
-            <input
-              class="field-input"
-              v-model="bankAccountName"
-              placeholder="请输入银行卡持有人姓名"
-              maxlength="30"
-            />
+        <view v-if="bankAccountName || bankName || bankAccountNumber" class="bank-info-card">
+          <view class="bank-info-row">
+            <text class="bank-info-label">收款人</text>
+            <text class="bank-info-value">{{ bankAccountName || '—' }}</text>
           </view>
-          <view class="form-divider"></view>
-          <view class="form-field">
-            <text class="field-label">开户行</text>
-            <input
-              class="field-input"
-              v-model="bankName"
-              placeholder="如：中国工商银行北京分行"
-              maxlength="60"
-            />
+          <view class="bank-info-divider"></view>
+          <view class="bank-info-row">
+            <text class="bank-info-label">开户支行</text>
+            <text class="bank-info-value">{{ bankName || '—' }}</text>
           </view>
-          <view class="form-divider"></view>
-          <view class="form-field">
-            <text class="field-label">银行卡号</text>
-            <input
-              class="field-input"
-              v-model="bankAccountNumber"
-              placeholder="请输入银行卡号"
-              type="number"
-              maxlength="25"
-            />
+          <view class="bank-info-divider"></view>
+          <view class="bank-info-row">
+            <text class="bank-info-label">银行卡号</text>
+            <text class="bank-info-value">{{ maskedBankCard }}</text>
           </view>
-          <view class="form-divider"></view>
-          <!-- 保存收款信息选项 -->
-          <view class="save-row" @tap="saveAccountInfo = !saveAccountInfo">
-            <view :class="['checkbox', { checked: saveAccountInfo }]">
-              <text v-if="saveAccountInfo" class="check-icon">✓</text>
-            </view>
-            <text class="save-label">保存收款信息，下次提现免填</text>
+          <view class="bank-info-edit" @tap="goToProfileBankSection">
+            <text class="bank-info-edit-text">修改收款信息</text>
+            <text class="bank-info-edit-arrow">›</text>
           </view>
+        </view>
+        <view v-else class="bank-info-empty" @tap="goToProfileBankSection">
+          <text class="bank-info-empty-text">⚠️ 尚未填写收款银行账户，点击前往填写</text>
+          <text class="bank-info-edit-arrow">›</text>
         </view>
 
         <!-- 提现说明 -->
@@ -172,26 +156,32 @@ const recordsLoading = ref(false)
 // 可提现积分
 const availablePoints = ref(0)
 
-// 银行账户信息
+// 银行账户信息（只读，从个人资料读取）
 const bankAccountName = ref('')
 const bankName = ref('')
 const bankAccountNumber = ref('')
-const saveAccountInfo = ref(false)
+
+// 脱敏银行卡号展示
+const maskedBankCard = computed(() => {
+  const card = bankAccountNumber.value.replace(/\s/g, '')
+  if (!card || card.length <= 8) return card || '—'
+  return `${card.substring(0, 4)} **** ${card.substring(card.length - 4)}`
+})
 
 // 提现记录
 const withdrawRecords = ref<WithdrawRecord[]>([])
 
-// 从个人资料预填银行账户信息
-const loadProfile = async () => {
+// 从个人资料读取银行账户信息（只读）
+const loadBankInfo = async () => {
   try {
     const profile = await UserApi.getProfile()
     if (profile) {
-      if (profile.bank_account_name) bankAccountName.value = profile.bank_account_name
-      if (profile.bank_name) bankName.value = profile.bank_name
-      if (profile.bank_account_number) bankAccountNumber.value = profile.bank_account_number
+      bankAccountName.value = (profile as any).bank_account_name || ''
+      bankName.value = (profile as any).bank_name || ''
+      bankAccountNumber.value = (profile as any).bank_account_number || ''
     }
   } catch (err) {
-    console.error('[withdraw] 加载资料失败:', err)
+    console.error('[withdraw] 加载银行信息失败:', err)
   }
 }
 
@@ -220,14 +210,21 @@ const loadWithdrawRecords = async () => {
 
 onMounted(async () => {
   uni.showLoading({ title: '加载中...' })
-  await Promise.all([loadAvailablePoints(), loadProfile(), loadWithdrawRecords()])
+  await Promise.all([loadAvailablePoints(), loadBankInfo(), loadWithdrawRecords()])
   uni.hideLoading()
 })
 
 onShow(() => {
+  // onShow 时刷新银行信息，确保用户从个人资料页返回后能看到最新信息
   loadAvailablePoints()
+  loadBankInfo()
   loadWithdrawRecords()
 })
+
+/** 跳转到个人资料页的银行账户区域 */
+const goToProfileBankSection = () => {
+  uni.navigateTo({ url: '/pages/mine/profile/index?scrollTo=bank' })
+}
 
 const selectQuickAmount = (amount: number | string) => {
   if (amount === 'all') {
@@ -242,16 +239,20 @@ const handleWithdraw = async () => {
     uni.showToast({ title: '请输入提现金额', icon: 'none' })
     return
   }
-  if (!bankAccountName.value.trim()) {
-    uni.showToast({ title: '请填写收款人姓名', icon: 'none' })
-    return
-  }
-  if (!bankName.value.trim()) {
-    uni.showToast({ title: '请填写开户行', icon: 'none' })
-    return
-  }
-  if (!bankAccountNumber.value.trim() || bankAccountNumber.value.replace(/\s/g, '').length < 10) {
-    uni.showToast({ title: '请填写正确的银行卡号', icon: 'none' })
+
+  // 检查银行信息是否已在个人资料中填写
+  if (!bankAccountName.value || !bankName.value || !bankAccountNumber.value) {
+    uni.showModal({
+      title: '请先填写收款银行账户',
+      content: '提现需要银行账户信息，请前往个人资料填写收款人姓名、开户支行和银行卡号',
+      confirmText: '去填写',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          uni.navigateTo({ url: '/pages/mine/profile/index?scrollTo=bank' })
+        }
+      }
+    })
     return
   }
 
@@ -265,23 +266,15 @@ const handleWithdraw = async () => {
     return
   }
 
-  const cardMask = bankAccountNumber.value.replace(/\s/g, '').replace(/^(\d{4})\d+(\d{4})$/, '$1****$2')
-
   uni.showModal({
     title: '确认提现申请',
-    content: `提现 ¥${withdrawAmount.value}\n收款：${bankAccountName.value}\n卡号：${cardMask}\n\n提交后由财务审核处理`,
+    content: `提现 ¥${withdrawAmount.value}\n收款：${bankAccountName.value}\n卡号：${maskedBankCard.value}\n\n提交后由财务审核处理`,
     confirmText: '确认提交',
     success: async (res) => {
       if (res.confirm) {
         submitting.value = true
         try {
-          await UserApi.applyWithdraw({
-            amount,
-            bankAccountName: bankAccountName.value.trim(),
-            bankName: bankName.value.trim(),
-            bankAccountNumber: bankAccountNumber.value.replace(/\s/g, ''),
-            saveAccountInfo: saveAccountInfo.value
-          })
+          await UserApi.applyWithdraw({ amount })
 
           uni.showToast({ title: '提现申请已提交', icon: 'success', duration: 2000 })
           withdrawAmount.value = ''
@@ -448,72 +441,75 @@ const getStatusClass = (status: number) => {
   color: #333;
 }
 
-/* 银行账户表单 */
-.bank-form-card {
+/* 银行账户只读展示卡片 */
+.bank-info-card {
   background: #fff;
   border-radius: 16rpx;
   padding: 0 32rpx;
   margin-bottom: 48rpx;
 }
 
-.form-field {
+.bank-info-row {
   display: flex;
   align-items: center;
-  padding: 32rpx 0;
-  gap: 24rpx;
+  justify-content: space-between;
+  padding: 28rpx 0;
 }
 
-.field-label {
+.bank-info-label {
   font-size: 28rpx;
-  color: #333;
-  white-space: nowrap;
-  min-width: 160rpx;
+  color: #666;
+  min-width: 140rpx;
+  flex-shrink: 0;
 }
 
-.field-input {
-  flex: 1;
+.bank-info-value {
   font-size: 28rpx;
   color: #333;
   text-align: right;
+  flex: 1;
 }
 
-.form-divider {
+.bank-info-divider {
   height: 1rpx;
   background: #F5F5F5;
 }
 
-.save-row {
+.bank-info-edit {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 28rpx 0;
+  justify-content: flex-end;
+  padding: 24rpx 0;
+  gap: 8rpx;
 }
 
-.checkbox {
-  width: 40rpx;
-  height: 40rpx;
-  border: 2rpx solid #DCDCDC;
-  border-radius: 8rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  &.checked {
-    background: #0052D9;
-    border-color: #0052D9;
-  }
-}
-
-.check-icon {
-  font-size: 24rpx;
-  color: #fff;
-  font-weight: 700;
-}
-
-.save-label {
+.bank-info-edit-text {
   font-size: 26rpx;
-  color: #666;
+  color: #0052D9;
+}
+
+.bank-info-edit-arrow {
+  font-size: 32rpx;
+  color: #0052D9;
+}
+
+/* 银行信息未填写时的提示卡片 */
+.bank-info-empty {
+  background: #FFF7E6;
+  border-radius: 16rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1rpx solid #FFD591;
+}
+
+.bank-info-empty-text {
+  font-size: 26rpx;
+  color: #E37318;
+  flex: 1;
+  line-height: 1.5;
 }
 
 /* 提示框 */

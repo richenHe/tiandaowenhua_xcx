@@ -61,10 +61,10 @@ module.exports = async (event, context) => {
 
     // 格式化返回
     const list = (result.list || []).map(record => {
-      // type=3 强制负数（提现申请扣积分），其余按 DB 实际值展示
+      // type=3 强制负数（提现申请扣积分），type=6 强制负数（商城兑换消费扣积分）
       // type=4（提现成功）amount=0，type=5（失败退回）amount 正数
       let changeAmount = record.amount;
-      if (record.type === 3) {
+      if (record.type === 3 || record.type === 6) {
         changeAmount = -Math.abs(record.amount);
       }
 

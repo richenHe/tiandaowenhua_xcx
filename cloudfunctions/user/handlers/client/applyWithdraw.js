@@ -3,35 +3,42 @@
  * Action: client:applyWithdraw
  *
  * 提现方式：银行汇款（公司对私转账）
+ * 银行收款信息统一从用户个人资料（users 表）读取，用户需在"个人资料"页填写后才能提现
  * 入参：
- *   amount           - 提现金额（元）
- *   bankAccountName  - 收款人姓名
- *   bankName         - 开户行名称
- *   bankAccountNumber - 银行卡号
- *   saveAccountInfo  - 是否保存收款信息到个人资料（boolean，默认 false）
+ *   amount - 提现金额（元）
  */
 const { findOne, insert, update } = require('../../common/db');
 const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
   const { user } = context;
-  const { amount, bankAccountName, bankName, bankAccountNumber, saveAccountInfo } = event;
+  const { amount } = event;
 
   try {
     console.log('[applyWithdraw] 申请提现:', user.id, amount);
 
     // 参数验证
-    const err = utils.validateRequired(event, ['amount', 'bankAccountName', 'bankName', 'bankAccountNumber']);
-    if (err) {
-      return response.paramError(err);
+    if (!amount) {
+      return response.paramError('缺少必填参数：amount');
     }
 
     if (amount <= 0) {
       return response.paramError('提现金额必须大于0');
     }
 
-    if (!bankAccountNumber || bankAccountNumber.replace(/\s/g, '').length < 10) {
-      return response.paramError('银行卡号格式不正确');
+    // 从 users 表读取银行收款信息
+    const bankAccountName = user.bank_account_name || '';
+    const bankName = user.bank_name || '';
+    const bankAccountNumber = user.bank_account_number || '';
+
+    // 校验银行信息是否已在个人资料中填写完整
+    if (!bankAccountName || !bankName || !bankAccountNumber) {
+      return response.error('请先在个人资料中填写收款银行账户信息（收款人姓名、开户支行、银行卡号）', null, 400);
+    }
+
+    // 基本卡号格式校验
+    if (bankAccountNumber.replace(/\s/g, '').length < 10) {
+      return response.error('个人资料中的银行卡号格式不正确，请重新填写', null, 400);
     }
 
     // 查询系统配置的最低提现金额
@@ -57,19 +64,7 @@ module.exports = async (event, context) => {
         { id: user.id }
       );
 
-      // 2. 若勾选"保存收款信息"，同步更新 users 表的银行卡字段
-      if (saveAccountInfo) {
-        await update('users',
-          {
-            bank_account_name: bankAccountName,
-            bank_name: bankName,
-            bank_account_number: bankAccountNumber
-          },
-          { id: user.id }
-        );
-      }
-
-      // 3. 创建提现申请记录
+      // 2. 创建提现申请记录（银行信息快照来自个人资料）
       const withdrawNo = utils.generateOrderNo('WD');
       await insert('withdrawals', {
         user_id: user.id,
@@ -87,7 +82,7 @@ module.exports = async (event, context) => {
         apply_time: utils.formatDateTime(new Date())
       });
 
-      // 4. 记录积分流水（type=3：提现申请）
+      // 3. 记录积分流水（type=3：提现申请）
       await insert('cash_points_records', {
         user_id: user.id,
         _openid: user._openid || '',

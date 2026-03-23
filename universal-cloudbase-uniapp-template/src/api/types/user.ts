@@ -102,6 +102,12 @@ export interface UpdateProfileParams {
   industry?: string
   /** 出生八字（格式：年-月-日-时） */
   birthday?: string
+  /** 银行收款人姓名（选填，用于退款/提现转账） */
+  bankAccountName?: string
+  /** 开户支行名称（选填，如"招商银行深圳南山支行"） */
+  bankName?: string
+  /** 银行卡号（选填） */
+  bankAccountNumber?: string
 }
 
 /**
@@ -236,18 +242,11 @@ export interface CashPointsRecord {
 
 /**
  * 申请提现请求参数（银行汇款）
+ * 银行信息由后端从用户个人资料（users 表）读取，前端只需传提现金额
  */
 export interface ApplyWithdrawParams {
   /** 提现金额 */
   amount: number
-  /** 收款人姓名（银行卡持有人） */
-  bankAccountName: string
-  /** 开户行名称 */
-  bankName: string
-  /** 银行卡号 */
-  bankAccountNumber: string
-  /** 是否保存收款信息到个人资料（默认 false） */
-  saveAccountInfo?: boolean
 }
 
 /**

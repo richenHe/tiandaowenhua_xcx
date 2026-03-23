@@ -80,6 +80,30 @@ module.exports = async (event, context) => {
       }
     }
 
+    // 批量查询复训预约关联订单的退款状态与资格状态，用于前端显示复训费退款按钮
+    const retrainOrderNos = [...new Set(
+      rawList
+        .filter(a => a.is_retrain === 1 && a.order_no)
+        .map(a => a.order_no)
+    )];
+
+    let retrainOrderMap = {};
+    if (retrainOrderNos.length > 0) {
+      const { data: retrainOrders } = await db
+        .from('orders')
+        .select('order_no, retrain_credit_status, refund_status')
+        .in('order_no', retrainOrderNos);
+
+      if (retrainOrders) {
+        retrainOrders.forEach(o => {
+          retrainOrderMap[o.order_no] = {
+            retrain_credit_status: o.retrain_credit_status,
+            refund_status: o.refund_status
+          };
+        });
+      }
+    }
+
     const getStatusName = (s, isSalon) => {
       if (isSalon) return { 0: '待上课', 1: '已签到', 2: '已结课', 3: '已取消' }[s] || '未知';
       return { 0: '进行中', 1: '已结课', 3: '已取消', 4: '缺席' }[s] || '未知';
@@ -106,6 +130,7 @@ module.exports = async (event, context) => {
         status_name: getStatusName(a.status, isSalon),
         is_salon: isSalon,
         is_retrain: a.is_retrain || 0,
+        order_no: a.order_no || '',
         cancel_deadline_days: a.class_record?.cancel_deadline_days || 0,
         checkin_code: a.checkin_code,
         checkin_at: a.checkin_time,
@@ -113,7 +138,14 @@ module.exports = async (event, context) => {
         cancelled_at: a.cancel_time,
         // 非沙龙专用：今日签到状态
         today_checked_in: isSalon ? undefined : !!(checkinInfo && checkinInfo.todayChecked),
-        has_ever_checked_in: isSalon ? undefined : !!(checkinInfo && checkinInfo.dates.length > 0)
+        has_ever_checked_in: isSalon ? undefined : !!(checkinInfo && checkinInfo.dates.length > 0),
+        // 复训专用：关联订单的退款状态与资格状态，用于前端判断是否显示复训费退款按钮
+        retrain_credit_status: a.is_retrain === 1 && a.order_no
+          ? (retrainOrderMap[a.order_no]?.retrain_credit_status ?? null)
+          : null,
+        retrain_refund_status: a.is_retrain === 1 && a.order_no
+          ? (retrainOrderMap[a.order_no]?.refund_status ?? null)
+          : null
       };
     });
 

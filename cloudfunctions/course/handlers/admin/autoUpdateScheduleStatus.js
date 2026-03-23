@@ -26,15 +26,18 @@ module.exports = async (event, context) => {
     const now = formatDateTime(new Date());
 
     // 第一步：未开始(1) → 进行中(2)，class_date <= today
+    console.log(`[autoUpdateScheduleStatus] 开始第一步：未开始→进行中，today=${today}`);
     const { data: data1, error: error1 } = await db
       .from('class_records')
       .update({ status: 2 })
       .eq('status', 1)
-      .lte('class_date', today);
+      .lte('class_date', today)
+      .select('id');
 
     if (error1) throw error1;
 
     const toOngoing = Array.isArray(data1) ? data1.length : 0;
+    console.log(`[autoUpdateScheduleStatus] 第一步完成，未开始→进行中: ${toOngoing} 条`);
 
     // 第二步：沙龙自动签到 — 查询所有 type=4 的课程 ID，再找进行中的沙龙排期
     let salonAutoCheckin = 0;
@@ -58,7 +61,8 @@ module.exports = async (event, context) => {
           .from('appointments')
           .update({ status: 1, checkin_time: now })
           .in('class_record_id', salonRecordIds)
-          .eq('status', 0);
+          .eq('status', 0)
+          .select('id');
 
         if (checkinError) throw checkinError;
         salonAutoCheckin = Array.isArray(checkinData) ? checkinData.length : 0;
@@ -66,15 +70,18 @@ module.exports = async (event, context) => {
     }
 
     // 第三步：进行中(2) → 已结束(3)，class_end_date < today
+    console.log(`[autoUpdateScheduleStatus] 开始第三步：进行中→已结束`);
     const { data: data2, error: error2 } = await db
       .from('class_records')
       .update({ status: 3 })
       .eq('status', 2)
-      .lt('class_end_date', today);
+      .lt('class_end_date', today)
+      .select('id');
 
     if (error2) throw error2;
 
     const toEnded = Array.isArray(data2) ? data2.length : 0;
+    console.log(`[autoUpdateScheduleStatus] 第三步完成，进行中→已结束: ${toEnded} 条`);
 
     // 第四步：已结束排期的预约处理，按课程类型区分
     let salonCompleted = 0; // 沙龙已结课(status=2)
@@ -101,7 +108,8 @@ module.exports = async (event, context) => {
           .from('appointments')
           .update({ status: 2 })
           .in('class_record_id', salonEndedIds)
-          .in('status', [0, 1]);
+          .in('status', [0, 1])
+          .select('id');
         if (error4s) throw error4s;
         salonCompleted = Array.isArray(data4s) ? data4s.length : 0;
       }

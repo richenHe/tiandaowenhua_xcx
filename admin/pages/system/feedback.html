@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><title>反馈管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313"><style>.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
+  <link rel="icon" href="data:,"><title>反馈管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323"><style>.c{max-width:1400px;margin:0 auto;background:white;border-radius:8px;padding:24px}
     .feedback-images{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
     .feedback-img-item{width:100px;height:100px;object-fit:cover;border-radius:4px;border:1px solid #dcdcdc;cursor:pointer;}
     .feedback-img-item:hover{opacity:0.85;}
@@ -65,11 +65,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260313"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
-  <script src="../../assets/js/cloud-storage-helper.js"></script>
-  <script src="../../assets/js/admin-api.js?v=20260313"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
+  <script src="../../assets/js/config.js?v=20260323"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260323"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260323"></script>
+  <script src="../../assets/js/admin-api.js?v=20260323"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script><script>const{createApp,ref,onMounted}=Vue;createApp({
       setup() {
         // 引入侧边栏导航功能
         const { adminInfo, handleMenuChange, handleLogout } = SidebarNavigation.useSidebarNavigation();
@@ -104,21 +104,32 @@
         const rs = () => { st.value = null; pg.value.current = 1; ld(); };
         const chg = pi => { pg.value.current = pi.current; pg.value.pageSize = pi.pageSize; ld(); };
 
-        const view = async (row) => {
+        // 将 cloud:// fileID 直接构造为 CDN URL，无需 API 调用
+        const toImgURL = (fileID) => {
+          if (!fileID) return '';
+          if (fileID.startsWith('http://') || fileID.startsWith('https://')) return fileID;
+          if (!fileID.startsWith('cloud://')) return fileID;
+          const s = fileID.slice(8);
+          const dot = s.indexOf('.');
+          const slash = s.indexOf('/');
+          if (dot === -1 || slash === -1 || dot >= slash) return fileID;
+          return `https://${s.slice(dot + 1, slash)}.tcb.qcloud.la/${s.slice(slash + 1)}`;
+        };
+
+        const view = (row) => {
           cr.value = row;
           crImages.value = [];
           v.value = true;
-          // 解析 images 字段并获取临时 URL
-          let imgIDs = [];
+          // 解析 images 字段（云函数已转换为 HTTPS URL 或 cloud:// fileID）
+          let imgs = [];
           if (row.images) {
-            try { imgIDs = typeof row.images === 'string' ? JSON.parse(row.images) : row.images; } catch { imgIDs = []; }
+            try { imgs = typeof row.images === 'string' ? JSON.parse(row.images) : row.images; } catch { imgs = []; }
           }
-          if (Array.isArray(imgIDs) && imgIDs.length > 0) {
-            try {
-              const urls = await CloudStorageHelper.getBatchTempURLs(imgIDs);
-              crImages.value = imgIDs.map((id, i) => urls[i] || '').filter(Boolean);
-            } catch (e) { console.error('获取反馈图片失败', e); }
+          console.log('[feedback] row.images raw:', row.images, 'parsed:', imgs);
+          if (Array.isArray(imgs) && imgs.length > 0) {
+            crImages.value = imgs.map(toImgURL).filter(Boolean);
           }
+          console.log('[feedback] crImages:', crImages.value);
         };
 
         const handle = async (row) => {

@@ -172,8 +172,8 @@ const allRecords = ref<CashPointsRecord[]>([])
 const recordsList = computed(() => {
   switch (activeTab.value) {
     case 'earn':
-      // 获得：type 2（可提现积分，含解冻和直接发放两种渠道）
-      return allRecords.value.filter(r => r.change_type === 2)
+      // 获得：type 2 且 change_amount > 0（排除兑换课程等扣减记录）
+      return allRecords.value.filter(r => r.change_type === 2 && (r.change_amount ?? 0) > 0)
     case 'withdraw':
       // 提现：type 4（已打款成功）
       return allRecords.value.filter(r => r.change_type === 4)

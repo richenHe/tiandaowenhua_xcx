@@ -141,6 +141,7 @@ const loginResult = await signInWithOpenId();
 
 ### 🔵 1.2 保存/更新用户资料
 **接口**: `POST /api/user/profile`
+**Action**: `client:updateProfile`
 
 **接口概述**: 保存或更新用户资料,判断资料是否完善
 
@@ -149,22 +150,21 @@ const loginResult = await signInWithOpenId();
 **请求参数**:
 ```json
 {
-  "real_name": "张三",      // 必填
-  "phone": "13800138000",   // 必填
-  "gender": 1,              // 可选：0女/1男
-  "birth_bazi": {           // 可选
-    "year": "1990",
-    "month": "01",
-    "day": "01",
-    "hour": "10"
-  },
-  "industry": "互联网",      // 可选
-  "province": "广东省",      // 可选
-  "city": "深圳市",          // 可选
-  "personal_intro": "简介",  // 可选
-  "temp_referee_id": 123    // 可选，扫码带来的临时推荐人ID
+  "realName": "张三",         // 必填（camelCase）
+  "phone": "13800138000",    // 必填
+  "gender": 1,               // 可选：0女/1男
+  "birthday": "1990-01-01-10", // 可选，格式：年-月-日-时
+  "industry": "互联网",       // 可选
+  "city": "广东 深圳 南山区", // 可选，省市区以空格分隔
+  "avatar": "cloud://xxx",   // 可选，头像 fileID
+  "backgroundImage": "cloud://xxx", // 可选，背景图 fileID
+  "bankAccountName": "张三", // 可选，收款银行账户持有人姓名
+  "bankName": "招商银行深圳南山支行", // 可选，开户支行全称
+  "bankAccountNumber": "6225880123456789" // 可选，银行卡号
 }
 ```
+
+**变更说明（2026-03-23）**: 新增银行账户三字段（`bankAccountName`、`bankName`、`bankAccountNumber`），用于退款和提现收款。银行字段传空字符串可清空。
 
 **业务逻辑**:
 - 使用 CloudBase 登录态获取当前用户的 `uid`
@@ -1299,20 +1299,26 @@ ELSE:
    - refund_status=0（无退款）/ 2（退款失败）/ 4（已驳回）→ 允许申请
    - refund_status=1（申请中）→ 拒绝：退款审核中，请耐心等待
    - refund_status=3（已退款）→ 拒绝：已退款，无法重复申请
-4. 若订单类型=1（课程订单）：
+4. 大使升级订单（order_type=4）：不支持退款
+5. 若订单类型=1（课程订单）：
    a. 查询主课程 user_courses.contract_signed
       - contract_signed=1：返回错误"已签署学习合同，无法退款"
    b. 查询主课程 courses.included_course_ids（赠送课程）
       - 对每个赠送课程查 user_courses.contract_signed
       - 任一赠送课程 contract_signed=1：返回错误"赠送课程已签署学习合同，无法退款"
-5. 更新 orders 表：
+6. 若订单类型=2（复训订单）：
+   - retrain_credit_status=1（资格保留）→ 允许申请
+   - retrain_credit_status=2（资格已使用）→ 拒绝：复训资格已使用，无法退款
+   - retrain_credit_status=0 或其他 → 拒绝：不满足退款条件
+7. 更新 orders 表：
    - refund_status = 1（申请退款）
    - refund_amount = final_amount
    - refund_reason = 用户填写的原因
    - refund_reject_reason = null（清空之前的驳回原因）
    - refund_audit_admin_id = null
    - refund_audit_time = null
-6. 返回申请成功
+   - 若 order_type=2：retrain_credit_status = 0（立即失效，防止审核期间重复使用）
+8. 返回申请成功
 ```
 
 **响应数据**:
@@ -1333,6 +1339,7 @@ ELSE:
 - `refund_status === 1`：退款审核中，请耐心等待
 - `refund_status === 3`：已退款，无法重复申请
 - `contract_signed = 1`：已签署学习合同，无法退款
+- `retrain_credit_status !== 1`（复训订单）：复训资格已使用或不满足退款条件
 
 ---
 
@@ -1398,6 +1405,7 @@ ELSE:
 **参数说明**:
 - `keyword`：可选，按订单号/用户手机号模糊搜索
 - `refund_status`：可选，1=申请退款 / 3=已退款 / 4=已驳回；不传返回全部
+- `order_type`：可选，1=课程退款 / 2=复训费退款；不传返回全部
 - `start_date` / `end_date`：可选，按申请时间范围筛选
 
 **响应数据**:
@@ -1432,6 +1440,9 @@ ELSE:
         "refund_time": null,
         "refund_transfer_no": "",
         "invoice_url": "",
+        "bank_account_name": "张三",
+        "bank_name": "招商银行深圳南山支行",
+        "bank_account_number": "6225880123456789",
         "created_at": "2026-01-15 10:00:00",
         "pay_time": "2026-01-15 10:30:00"
       }
@@ -1439,6 +1450,8 @@ ELSE:
   }
 }
 ```
+
+**变更说明（2026-03-23）**: 新增返回字段 `bank_account_name`、`bank_name`、`bank_account_number`，从 `users` 表读取用户的银行收款信息，供财务人员在后台退款详情中查看并进行线下转账。如用户未填写则返回空字符串。
 
 ---
 
@@ -1466,6 +1479,7 @@ ELSE:
    - refund_reject_reason = reject_reason
    - refund_audit_admin_id = 当前管理员ID
    - refund_audit_time = NOW()
+   - 若 order_type=2（复训订单）：retrain_credit_status = 1（恢复复训资格，用户可继续使用资格或再次申请退款）
 4. 返回驳回成功（不涉及积分/功德分回退）
 ```
 
@@ -1527,7 +1541,9 @@ ELSE:
           2. 有记录（新建的赠送）→ status=0 失效
           3. 无记录（叠加有效期）→ expire_at 减去赠送课程的 validity_days 天
    b. 复训订单（order_type=2）：
-      - 取消对应预约
+      - 查询关联的所有预约（by order_no）
+      - 仅取消尚未取消（status≠3）的预约，已取消的跳过（避免重复扣减名额）
+      - 归还已取消预约的 class_records.booked_quota
 6. 返回标记成功
 ```
 
@@ -1740,6 +1756,12 @@ ELSE:
 |---|---|---|
 | is_retrain | Number | 是否复训预约（0/1） |
 | cancel_deadline_days | Number | 该排期的取消截止天数 |
+| retrain_credit_status | Number\|null | 复训资格状态（仅 is_retrain=1 时有值）：0=已失效 / 1=资格保留 / 2=已使用 |
+| retrain_refund_status | Number\|null | 关联复训订单的退款状态（仅 is_retrain=1 时有值）：0=无退款 / 1=申请中 / 3=已退款 / 4=已驳回 |
+
+**复训费退款按钮显示逻辑**（前端计算）:
+- `status === 3`（已取消）且 `is_retrain === 1` 且 `retrain_credit_status === 1` 且 `retrain_refund_status` 为 0 或 4
+- 同一 `order_no` 对应多条已取消预约时，仅在 `cancel_time` 最新的那条上显示按钮
 
 ### 🔴 4.5 上课记录管理 - 创建
 
@@ -2631,18 +2653,16 @@ Page({
 
 ### 🔵 6.10 申请提现
 **接口**: `POST /api/cash-points/withdraw`
+**Action**: `client:applyWithdraw`
 
 **请求参数**:
 ```json
 {
-  "amount": 1688.00,
-  "account_type": 1,
-  "account_info": {
-    "account_name": "张三",
-    "account_no": "微信账号"
-  }
+  "amount": 1688.00
 }
 ```
+
+> **变更说明（2026-03-23）**: 银行收款信息不再由前端传入，改为从用户个人资料（`users` 表 `bank_account_name`/`bank_name`/`bank_account_number`）自动读取。用户需在「个人资料」页面预先填写银行账户信息。原 `bankAccountName`、`bankName`、`bankAccountNumber`、`saveAccountInfo` 参数已废弃。
 
 **业务逻辑**:
 ```
@@ -3520,6 +3540,7 @@ SELECT * FROM ambassador_level_configs WHERE level = target_level
 | 返回字段（补充） | 类型 | 说明 |
 |---|---|---|
 | instant_upgrade | Boolean | 普通用户(level=0)是否可即时升级为准青鸾（提交申请即升级） |
+| has_advanced_course | Boolean | 普通用户是否已购买密训班（`course_type=2`），仅 level=0 时返回实际查询结果，其他等级恒为 `true`。前端在普通用户申请准青鸾时，若为 `false` 则拦截申请并提示购买密训班 |
 | upgrade_options | Array | 升级选项，仅包含 `contract`、`instant_apply` 类型，**不包含** `payment` 类型 |
 
 **业务逻辑**:
@@ -5299,19 +5320,26 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 ## 8. 反馈模块
 
 ### 🔵 8.1 获取可反馈课程列表
-**接口**: `GET /api/feedback/my-courses`
+**action**: `getFeedbackCourses`
+**调用方**: 客户端
 
 **响应数据**:
 ```json
-{
-  "list": [
-    {
-      "course_id": 1,
-      "course_name": "初探班"
-    }
-  ]
-}
+[
+  {
+    "id": 1,
+    "name": "初探班",
+    "cover_image": "cloud://xxx",
+    "type": 1
+  }
+]
 ```
+
+**业务规则**:
+- 返回当前登录用户已购买、且课程状态为上架（status=1）的课程列表
+- 返回格式为数组（不再包裹 `list` 字段）
+
+**备注**: 修复了原先返回 `{ list: [...] }` 导致前端无法识别为数组、显示"暂无已购买课程"的 Bug（2026-03-13）
 
 ### 🔵 8.2 获取反馈类型
 **接口**: `GET /api/feedback/types`
@@ -5756,6 +5784,77 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | user | Object | 当前用户信息（id、real_name、phone、avatar、referee_code、ambassador_level） |
 | referee | Object \| null | 伯乐（推荐人），无则为 null |
 | referrals | Array | 千里马（我推荐的人）列表 |
+
+---
+
+### 10.4.2 学员列表（推荐关系管理）
+**action**: `admin:getUserListForReferee`
+
+**调用方**: 管理后台（学员推荐关系页）
+
+**描述**: 分页查询所有学员列表，返回推荐人姓名，支持关键词搜索和大使等级筛选。
+
+**请求参数**:
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| keyword | String | 否 | 姓名模糊匹配 / 手机号精确 / ID 精确 |
+| ambassadorLevel | Number | 否 | 大使等级筛选（0普通/1准青鸾/2青鸾/3鸿鹄） |
+| page | Number | 否 | 页码，默认 1 |
+| pageSize | Number | 否 | 每页条数，默认 20 |
+
+**返回字段**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| list | Array | 学员列表，每项含 id/real_name/phone/ambassador_level/ambassador_level_name/referee_id/referee_name |
+| total | Number | 总条数 |
+| page | Number | 当前页 |
+| pageSize | Number | 每页条数 |
+| totalPages | Number | 总页数 |
+
+---
+
+### 10.4.3 学员推荐关系树
+**action**: `admin:getUserRefereeTree`
+
+**调用方**: 管理后台（学员推荐关系页弹窗 + Word 导出）
+
+**描述**: 查询指定学员的完整推荐关系树。向上仅追溯一层推荐人，向下递归查询所有正式绑定下线（`referee_confirmed_at IS NOT NULL`）。支持单个和批量模式。每个节点附带课程标签列表。
+
+**请求参数**:
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| userId | Number | 单个模式必填 | 目标学员 ID |
+| userIds | Array | 批量模式必填 | 目标学员 ID 数组，用于 Word 导出 |
+
+**返回格式（单个）**:
+```json
+{
+  "user": { "id": 1, "real_name": "李四", "ambassador_level": 1, "ambassador_level_name": "准青鸾大使" },
+  "referee": { "id": 2, "real_name": "张三", "ambassador_level": 2, "ambassador_level_name": "青鸾大使" },
+  "tree": {
+    "id": 1, "real_name": "李四", "ambassador_level": 1, "ambassador_level_name": "准青鸾大使",
+    "courses": ["天道初探班"],
+    "children": [
+      {
+        "id": 3, "real_name": "王五", "ambassador_level": 0, "ambassador_level_name": "普通用户",
+        "courses": ["天道初探班", "天道密训班"],
+        "children": []
+      }
+    ]
+  }
+}
+```
+
+**返回格式（批量）**: 数组，每项格式同单个。
+
+**业务规则**:
+- 向下推荐树只包含 `users.referee_confirmed_at IS NOT NULL` 的正式绑定关系
+- 递归至末端，不限层级深度
+- `courses` 字段（课程标签）统一以 `contract_signed = 1` 为判断依据：
+  - 初探班（need_contract=0）：首次签到时系统自动触发将 `contract_signed` 置 1
+  - 密训班（need_contract=1）：管理员录入合同审核通过后将 `contract_signed` 置 1
+  - 已退款（status=2）或无效（status=0）的记录不计入
+- 管理后台弹窗中课程标签以绿色 outline 标签显示；Word 导出中以【课程名】形式附加在节点名称后
 
 ---
 

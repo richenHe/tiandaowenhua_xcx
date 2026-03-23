@@ -11,11 +11,31 @@
               <text class="t-form-item__label-text">反馈课程</text>
             </view>
             <view class="t-form-item__control">
-              <view class="t-select" @click="handleSelectCourse">
+              <!-- 加载中 -->
+              <view v-if="coursesLoading" class="t-select">
                 <view class="t-select__input">
-                  <text class="t-select__value" :class="{ 'placeholder': !formData.courseName }">
-                    {{ formData.courseName || '选择课程（选填）' }}
-                  </text>
+                  <text class="t-select__value placeholder">加载中…</text>
+                </view>
+              </view>
+              <!-- 有课程时用 picker，无课程时点击提示 -->
+              <picker
+                v-else-if="courses.length > 0"
+                :range="courseNames"
+                :value="selectedCourseIndex"
+                @change="handleCoursePickerChange"
+              >
+                <view class="t-select">
+                  <view class="t-select__input">
+                    <text class="t-select__value" :class="{ 'placeholder': !formData.courseName }">
+                      {{ formData.courseName || '选择课程（选填）' }}
+                    </text>
+                    <text class="t-select__arrow">▼</text>
+                  </view>
+                </view>
+              </picker>
+              <view v-else class="t-select" @click="handleSelectCourse">
+                <view class="t-select__input">
+                  <text class="t-select__value placeholder">选择课程（选填）</text>
                   <text class="t-select__arrow">▼</text>
                 </view>
               </view>
@@ -31,12 +51,18 @@
               <text class="t-form-item__label-text">反馈类型</text>
             </view>
             <view class="t-form-item__control">
-              <view class="t-select" @click="handleSelectType">
-                <view class="t-select__input">
-                  <text class="t-select__value">{{ formData.typeLabel }}</text>
-                  <text class="t-select__arrow">▼</text>
+              <picker
+                :range="feedbackTypeNames"
+                :value="selectedTypeIndex"
+                @change="handleTypePickerChange"
+              >
+                <view class="t-select">
+                  <view class="t-select__input">
+                    <text class="t-select__value">{{ formData.typeLabel }}</text>
+                    <text class="t-select__arrow">▼</text>
+                  </view>
                 </view>
-              </view>
+              </picker>
               <view class="t-form-item__tips">
                 请选择反馈类型
               </view>
@@ -120,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { SystemApi } from '@/api'
 import StorageApi, { StoragePathHelper } from '@/api/modules/storage'
@@ -140,6 +166,17 @@ const formData = ref({
 
 // 可选课程列表
 const courses = ref<FeedbackCourse[]>([])
+const coursesLoading = ref(true)
+
+// picker 用的课程名称数组（不受 showActionSheet 6 条上限限制）
+const courseNames = computed(() => courses.value.map(c => c.name))
+
+// 当前选中课程在列表中的索引（用于 picker 回显）
+const selectedCourseIndex = computed(() => {
+  if (!formData.value.courseId) return 0
+  const idx = courses.value.findIndex(c => c.id === formData.value.courseId)
+  return idx >= 0 ? idx : 0
+})
 
 // 默认反馈类型（本地兜底，防止接口未实现或返回非数组时报错）
 const DEFAULT_FEEDBACK_TYPES: FeedbackType[] = [
@@ -173,50 +210,53 @@ const loadFeedbackTypes = async () => {
 
 // 加载可反馈的课程
 const loadFeedbackCourses = async () => {
+  coursesLoading.value = true
   try {
     const result = await SystemApi.getFeedbackCourses()
-    // 防御性赋值：确保赋值的是数组
     courses.value = Array.isArray(result) ? result : []
   } catch (error) {
     console.error('获取课程列表失败:', error)
     courses.value = []
+  } finally {
+    coursesLoading.value = false
   }
 }
 
-// 选择课程
+// picker 选择课程（支持任意数量课程，不受 showActionSheet 6 条上限限制）
+const handleCoursePickerChange = (e: any) => {
+  const index = Number(e.detail.value)
+  const selectedCourse = courses.value[index]
+  if (selectedCourse) {
+    formData.value.courseId = selectedCourse.id
+    formData.value.courseName = selectedCourse.name
+  }
+}
+
+// 无课程时点击提示（courses 为空时的兜底）
 const handleSelectCourse = () => {
-  if (!Array.isArray(courses.value) || courses.value.length === 0) {
-    uni.showToast({
-      title: '暂无已购买的课程',
-      icon: 'none'
-    })
-    return
-  }
-
-  const itemList = courses.value.map(c => c.name)
-
-  uni.showActionSheet({
-    itemList,
-    success: (res) => {
-      const selectedCourse = courses.value[res.tapIndex]
-      formData.value.courseId = selectedCourse.id
-      formData.value.courseName = selectedCourse.name
-    }
+  uni.showToast({
+    title: '暂无可选课程',
+    icon: 'none'
   })
 }
 
-// 选择反馈类型
-const handleSelectType = () => {
-  const itemList = feedbackTypes.value.map(t => t.label)
+// picker 用的反馈类型名称数组
+const feedbackTypeNames = computed(() => feedbackTypes.value.map(t => t.label))
 
-  uni.showActionSheet({
-    itemList,
-    success: (res) => {
-      const selectedType = feedbackTypes.value[res.tapIndex]
-      formData.value.typeValue = selectedType.value
-      formData.value.typeLabel = selectedType.label
-    }
-  })
+// 当前选中类型在列表中的索引
+const selectedTypeIndex = computed(() => {
+  const idx = feedbackTypes.value.findIndex(t => t.value === formData.value.typeValue)
+  return idx >= 0 ? idx : 0
+})
+
+// picker 选择反馈类型
+const handleTypePickerChange = (e: any) => {
+  const index = Number(e.detail.value)
+  const selectedType = feedbackTypes.value[index]
+  if (selectedType) {
+    formData.value.typeValue = selectedType.value
+    formData.value.typeLabel = selectedType.label
+  }
 }
 
 // 上传图片

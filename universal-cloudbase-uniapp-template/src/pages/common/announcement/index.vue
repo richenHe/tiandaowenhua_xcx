@@ -10,7 +10,7 @@
       <view class="page-content">
         
         <!-- 公告列表 -->
-        <view class="announcement-card" v-for="item in announcements" :key="item.id" @tap="goToDetail(item)">
+        <view class="announcement-card" :class="{ 'is-top': item.is_top === 1 }" v-for="item in announcements" :key="item.id" @tap="goToDetail(item)">
           <view class="announcement-header">
             <!-- 封面图片缩略图（有图时显示，否则显示分类图标） -->
             <view v-if="item.cover_image" class="announcement-thumb">
@@ -20,7 +20,9 @@
               {{ getAnnouncementIcon(item.category) }}
             </view>
             <view class="announcement-info">
-              <view class="announcement-title">{{ item.title }}</view>
+              <view class="announcement-title">
+                {{ item.title }}<text v-if="item.is_top === 1" class="top-badge">置顶</text>
+              </view>
               <view class="announcement-date">{{ formatDate(item.published_at || item.created_at) }}</view>
             </view>
             <view class="announcement-badge" v-if="isNewAnnouncement(item.published_at)">NEW</view>
@@ -165,6 +167,11 @@ const goToDetail = (item: Announcement) => {
   border-radius: 16rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
+
+  &.is-top {
+    border-left: 6rpx solid #D4AF37;
+    padding-left: 26rpx;
+  }
 }
 
 .announcement-header {
@@ -227,6 +234,20 @@ const goToDetail = (item: Announcement) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.top-badge {
+  display: inline-block;
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1rpx solid rgba(212, 175, 55, 0.4);
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  margin-left: 10rpx;
+  vertical-align: middle;
+  line-height: 1.6;
 }
 
 .announcement-date {

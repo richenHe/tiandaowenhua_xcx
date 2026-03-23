@@ -59,15 +59,17 @@ module.exports = async (event, context) => {
     const list = (result.list || []).map(f => {
       let images = [];
 
-      // 安全解析 images 字段
+      // 安全解析 images 字段（JSON 类型列查出来已是数组；TEXT 列则需要 parse）
       if (f.images) {
-        try {
-          // 如果是 JSON 数组字符串
-          images = JSON.parse(f.images);
-        } catch (e) {
-          // 如果解析失败，可能是单个字符串，转为数组
-          if (typeof f.images === 'string' && f.images.trim()) {
-            images = [f.images];
+        if (Array.isArray(f.images)) {
+          images = f.images;
+        } else {
+          try {
+            images = JSON.parse(f.images);
+          } catch (e) {
+            if (typeof f.images === 'string' && f.images.trim()) {
+              images = [f.images];
+            }
           }
         }
       }

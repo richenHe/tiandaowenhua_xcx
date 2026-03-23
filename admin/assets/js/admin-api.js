@@ -875,6 +875,16 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserRefereeInfo', { keyword });
   }
 
+  /** 学员推荐关系管理页：分页列表（含推荐人姓名、搜索、大使等级筛选） */
+  static async getUserListForReferee(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserListForReferee', params);
+  }
+
+  /** 查询学员推荐关系树（单个 userId 或批量 userIds 用于 Word 导出） */
+  static async getUserRefereeTree(params) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'getUserRefereeTree', params);
+  }
+
   // ==================== 排座管理模块 ====================
 
   /** 获取排座数据（配置+学员+岗位+分配） */

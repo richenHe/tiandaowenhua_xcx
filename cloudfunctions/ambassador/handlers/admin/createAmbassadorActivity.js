@@ -28,10 +28,10 @@ module.exports = async (event, context) => {
       if (pos.merit_points == null || pos.merit_points < 0) return response.paramError('岗位功德分不能为负数');
     }
 
-    // 查询排期信息（含结课日期）
+    // 查询排期信息（含结课日期），JOIN courses 表确保获取到课程名称
     const { data: scheduleRows, error: scheduleError } = await db
       .from('class_records')
-      .select('id, course_name, period, class_date, class_end_date, class_location, status')
+      .select('id, course_id, course_name, period, class_date, class_end_date, class_location, status, course:courses!fk_class_records_course(name)')
       .eq('id', scheduleId);
 
     if (scheduleError) throw scheduleError;
@@ -66,7 +66,9 @@ module.exports = async (event, context) => {
       registered_count: 0
     }));
 
-    const scheduleName = `${schedule.course_name || ''}${schedule.period ? ' ' + schedule.period : ''}`.trim();
+    // 优先用 JOIN 查到的课程名，course_name 冗余字段可能为空
+    const courseName = schedule.course?.name || schedule.course_name || '';
+    const scheduleName = `${courseName}${schedule.period ? ' ' + schedule.period : ''}`.trim();
 
     const { data: inserted, error: insertError } = await db
       .from('ambassador_activities')

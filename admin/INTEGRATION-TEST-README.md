@@ -119,11 +119,11 @@
 
   | 流程 | 状态 | 最后验证日期 |
   |------|------|-------------|
-  | F1 用户资料 · 推荐人 · 资格验证 | ✅ 已完成（**4/4 全通过，0 失败，0 warn**；S1.1 profile_completed=1，ambassador_level=3，referee_id=36 无循环✓；S1.2 updateProfile 幂等✓；S1.3 getRefereeInfo 查询推荐人(user_id=36)✓；S1.5 getReferralStats 统计接口✓；2026-03-09变更：已删除 S1.4 searchReferees/S1.6/S1.7 updateReferee（接口已下线，推荐人改为扫码绑定）） | 2026-03-09 |
+  | F1 用户资料 · 推荐人 · 资格验证 | ⏳ 重测（2026-03-23：updateProfile 新增银行账户三字段 bankAccountName/bankName/bankAccountNumber；需验证银行信息保存、清空、提现/退款前置检查跳转等新逻辑） | 2026-03-23 |
   | F1B 边界验证 · 未完善资料 · 无推荐人 · 功德分=0 | ✅ 已完成（**全通过 3/3**；S1B.1 profile_completed=0✓；referee_id展示修正（F1 S1.7设置后不强制null）；S1B.2 referee_count=0✓；S1B.3 merit_points=0.00✓；DB交叉全部一致） | 2026-03-09 |
   | F2 课程浏览 · 详情 · 购买条件验证 | ✅ 已完成（**11/11 全通过**；S2.2 修正课程 id=6（"测试课程"，type=1，user_id=30 未购买），is_purchased=false✓；S2.2b 密训班 included_course_ids=[1]✓；S2.2d 已购课程 is_purchased=true✓；S2.4 日历 4 天排期，status=0 关闭排期已过滤✓；S2.5 案例 2 条 HTTPS URL✓；DB 交叉验证全部一致） | 2026-03-03 |
   | F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成（**20/21 pass，1 warn（非 Bug）**；S3.10 attend_count 修复验证通过✓；S3.6/S3.7/S3.9 写操作多表一致性全通过✓；S3.10b retrain_credit_status✓；S3.MT25 兑换订单✓；S3.12b warn=pending_days 重跑叠加问题（已重置 uc_id=50 pending_days=0，非代码缺陷）；S3.9 备用兑换记录已补充 EX_TST20260309_S39F） | 2026-03-09 |
-  | F4 功德分 · 积分 · 提现 · 余额一致性 | ⏳ 重测（2026-03-13：修复 getMeritPointsHistory Tab 类型筛选 Bug — 前端未传 sourceFilter 参数 + 后端不支持筛选，导致 Tab 切换无效；新增 sourceFilter 数组参数支持按来源分类筛选；修复图标映射字段从 change_type 改为 source） | 2026-03-13 |
+  | F4 功德分 · 积分 · 提现 · 余额一致性 | ⏳ 重测（2026-03-13：修复 getMeritPointsHistory Tab 类型筛选 Bug；2026-03-23：applyWithdraw 接口改为从 users 表读取银行信息，前端不再传银行字段；提现页面移除银行输入表单，改为只读展示并跳转个人资料页修改；需验证银行信息未填时提现跳转拦截逻辑） | 2026-03-23 |
   | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
   | F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（**8/8 全通过**；S5.1 申请状态 status=0(待审核)✓；S5.2 5级配置齐全，青鸾frozen_points=1688✓、鸿鹄frozen_points=16880✓；S5.3 升级指南 current=1，含1个升级选项✓；S5.4 名额 total=5/used=5/available=0，remaining不为负✓；S5.5 活动记录4条均正常✓；S5.6 活动统计✓；S5.7 推荐学员✓；S5.8 二维码✓；DB交叉全部一致；⚠️ MT-34导航栈手动验证登记为MT项不阻塞流程完成） | 2026-03-03 |
   | F5B 边界验证 · 普通用户拦截(level=0) · 升级指南0→1 | ✅ 已完成（全通过 4/4；S5B.1 断言修复：接受 has_application=false 或 status=2 均为可重申状态） | 2026-03-02 |
@@ -138,8 +138,9 @@
   | F10 跨模块数据完整性终极验证 | ✅ 已完成（5/6通过，1 warn：S10.3密训班赠课验证；S10.1循环引用检测全✓(4用户无循环)；S10.2订单→课程记录通过；S10.3 warn：密训班订单ORD202602221434438312的user_courses无is_gift=1赠课记录（主课程记录也为NULL），MT密训班赠课手动测试待验证（MT-36~38）；S10.4推荐人锁定✓(referee_confirmed_at=2026-02-24)；S10.5奖励发放基本一致（TST订单referee_level=3但无积分记录，历史测试数据差异）；S10.6变更日志完整✓(user=30有多条订单修改日志)) | 2026-03-03 |
   | F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ⏳ 重测（2026-03-13：修复 Tab 类型筛选 Bug — 前端 `activity_type`(snake_case) → `activityType`(camelCase) 参数名不匹配导致后端始终默认值0，筛选无效；同时修复 type_stats 缺少统筹(5)/主持(6)的统计；新增 S11.10b 验证 Tab 筛选生效） | 2026-03-13 |
   | F12 课程学习合同 · 合同配置 · 管理员录入合约 · 上架校验 | ⏳ 重测（2026-03-13：新增 S12.N17/N18 后台补充合同照片 updateContractImages 测试；getContractList 返回字段修复验证） | 2026-03-13 |
-  | F13 退款申请 · 合同拦截 · 审核流转 · 业务回滚 | ✅ 已完成（**22/26 pass，0 fail，4 warn（均为手动 MT-39~42）**；S13.4 申请退款✓；S13.4b 重复拦截✓；S13.7 驳回✓；S13.9 驳回后重新申请✓；S13.11 已退款拦截✓（修复 beforeRun 条件 pay_status===1&&refund_status===3→refund_status===3）；S13.12 字段验证✓；S13.B1-B8 边界全通✓；SQL 交叉：ORD202603041653535604 refund_status=4✓；ORD202603041454368398 contract_signed=1/refund_status=0✓；4 个 warn 均为手动测试项，非 Bug） | 2026-03-09 |
+  | F13 退款申请 · 合同拦截 · 审核流转 · 业务回滚 | ⏳ 重测（2026-03-23：新增复训费退款功能；requestRefund 新增 retrain_credit_status 校验与失效逻辑；rejectRefund 新增驳回后恢复复训资格；markRefundTransferred 修复已取消预约不重复扣减 booked_quota；需补充 S13.RT1~RT5 复训费退款测试用例；2026-03-23 新增：退款/复训费退款前置检查银行信息，未填则跳转个人资料页；后台退款列表新增用户银行账户展示） | 2026-03-23 |
   | F14 沙龙课程 · 免费预约 · 自动签到 · 结束清理 | ✅ 已完成（**8/8 全通过**；S14.1~S14.6 自动化全通过；S14.7 MCP验证：排期→进行中+沙龙自动签到 checkin_time=2026-03-03 11:50:08✓；S14.8 MCP验证：salonCleanedCourses=1+courses硬删除cnt=0✓；修复3项Bug：S14.2传参courseId→id、appointments外键CASCADE→SET NULL、S14.7/S14.8定时任务MCP直接触发验证） | 2026-03-03 |
+  | F19 学员推荐关系管理 | ⏳ 待测（2026-03-18 新增：后台学员推荐关系列表页改造；新增 getUserListForReferee/getUserRefereeTree 两个云函数接口；页面支持分页列表、大使等级筛选、关键词搜索、推荐关系树弹窗（文字树/图形树）、多选导出 Word 文档） | 2026-03-18 |
   | F15 ~~管理端大使赠送课程 · 名额扣减 · 课程开通/续期~~ | ⏳ 已隐藏（2026-03-09：赠送名额功能已隐藏，后台赠送课程入口已移除，此流程暂停测试） | 2026-03-09 |
   | F16 合同审核流程 | ⏳ 已合并到 F12（课程合同改为管理员录入直接生效 adminCreateCourseContract，大使合同 signContract 直接生效无待审核，原审核流程不再需要独立测试） | 2026-03-09 |
   | F17 表现分与评估名单 | ✅ 已完成（**14/14 全通过，0 失败，0 warn**；S17.1-3 加分/扣分✓；S17.4 评估名单11条含测试用户✓；S17.5 阈值配置更新✓；S17.6-7 课程/活动拉黑3个月✓；S17.8-9 拦截验证✓；S17.14 重复拉黑幂等✓；S17.10-11 解除拉黑✓；S17.12 解除后恢复（复训费原因，非黑名单）✓；S17.13 缺参验证✓） | 2026-03-09 |
@@ -2916,6 +2917,32 @@
   | S13.B7 | `rejectRefund` | 缺少 reject_reason | 返回"驳回时需要提供原因" |
   | S13.B8 | `getRefundStatus` | 缺少 order_no | 返回"缺少订单号" |
 
+  #### 复训费退款专项测试用例（2026-03-23 新增）
+
+  | 步骤 | 类型 | Action | 描述 |
+  |------|------|--------|------|
+  | S13.RT1 | ⏳ 手动 | `requestRefund` | 复训预约取消后，小程序我的预约页显示「复训费退款」按钮（最新取消时间的预约） |
+  | | 期望 | 前端展示 | 该预约卡片底部出现橙色「复训费退款」按钮，其他预约卡片无此按钮 |
+  | S13.RT2 | ⏳ 手动 | `requestRefund` | 点击「复训费退款」→ 确认弹窗 → 提交 |
+  | | 期望 | `refund_status` | orders.refund_status = 1（申请中） |
+  | | 期望 | `retrain_credit_status` | orders.retrain_credit_status = 0（立即失效） |
+  | | 验证 SQL | `SELECT refund_status, retrain_credit_status FROM tiandao_culture.orders WHERE order_no='<复训订单号>'` | 结果应为 refund_status=1, retrain_credit_status=0 |
+  | S13.RT3 | ⏳ 手动 | `rejectRefund` | 后台驳回该复训费退款 |
+  | | 期望 | `refund_status` | orders.refund_status = 4（已驳回） |
+  | | 期望 | `retrain_credit_status` | orders.retrain_credit_status = 1（资格恢复） |
+  | | 验证 SQL | `SELECT refund_status, retrain_credit_status FROM tiandao_culture.orders WHERE order_no='<复训订单号>'` | 结果应为 refund_status=4, retrain_credit_status=1 |
+  | S13.RT4 | ⏳ 手动 | `markRefundTransferred` | 后台审核通过（标记已转账+上传发票） |
+  | | 期望 | `refund_status` | orders.refund_status = 3（已退款） |
+  | | 期望 | `retrain_credit_status` | orders.retrain_credit_status = 0（永久失效） |
+  | | 期望 | 前端展示 | 小程序该预约卡片状态徽章显示「已退款」而非「已取消」 |
+  | | 验证 SQL | `SELECT refund_status, retrain_credit_status, pay_status FROM tiandao_culture.orders WHERE order_no='<复训订单号>'` | 结果应为 refund_status=3, retrain_credit_status=0, pay_status=4 |
+  | S13.RT5 | ⏳ 手动 | `requestRefund` | 退款审核中（refund_status=1）时，再次申请退款应被拦截 |
+  | | 期望 | 错误信息 | 返回"该订单退款审核中，请耐心等待" |
+  | S13.RT6 | ⏳ 手动 | 后台 getRefundList | 后台退款列表新增「退款分类」列，复训费退款显示橙色「复训费退款」标签 |
+  | | 期望 | 筛选功能 | 选择「复训费退款」后，仅显示 order_type=2 的退款记录 |
+  | S13.RT7 | ⏳ 手动 | `requestRefund` | retrain_credit_status=2（资格已使用）时申请退款应被拦截 |
+  | | 期望 | 错误信息 | 返回"复训资格已使用，无法退款" |
+
   ### biz 断言详情
 
   | 步骤 | 断言 | 期望 | 状态 |
@@ -3099,6 +3126,52 @@
   - **影响**: exchangeCourse叠加有效期、payment赠课叠加、退款回退、管理员赠课、订单过期判断
   - **修复**: 新增 parseBeijingDateStr 工具函数，所有从DB读取日期字符串的地方统一使用
   - **状态**: 已修复并部署全部6个云函数
+
+  ---
+
+  ## F19 学员推荐关系管理（2026-03-18 新增）
+
+  ### 前置条件
+  - 管理后台已登录，权限包含 `user-referee`
+  - 数据库存在若干学员，部分学员有 `referee_id` 且 `referee_confirmed_at IS NOT NULL`
+
+  ### 测试步骤
+
+  | 编号 | 类型 | Action | 描述 |
+  |------|------|--------|------|
+  | S19.1 | ✏️ 读操作 | `admin:getUserListForReferee` | 不带任何参数，查询第 1 页学员列表 |
+  | | 期望 | `list.length > 0` | 返回学员数组 |
+  | | 期望 | `list[0]` 含 `id, real_name, phone, ambassador_level, ambassador_level_name, referee_id, referee_name` | 返回字段完整 |
+  | | 验证 SQL | `SELECT COUNT(*) FROM tiandao_culture.users` | 总数应 = `total` 字段 |
+  | S19.2 | ✏️ 读操作 | `admin:getUserListForReferee` | 关键词搜索（传已知学员姓名片段） |
+  | | 期望 | 返回 `list` 全部匹配关键词 | 搜索正确生效 |
+  | S19.3 | ✏️ 读操作 | `admin:getUserListForReferee` | 大使等级筛选（`ambassadorLevel=2`） |
+  | | 期望 | `list` 每项 `ambassador_level=2` | 筛选正确生效 |
+  | | 验证 SQL | `SELECT COUNT(*) FROM tiandao_culture.users WHERE ambassador_level=2` | 应 = `total` |
+  | S19.4 | ✏️ 读操作 | `admin:getUserRefereeTree` | 单个查询（传有下线的学员 `userId`） |
+  | | 期望 | 返回 `{ user, referee, tree }` | 字段完整 |
+  | | 期望 | `tree.children` 数组每项含 `id, real_name, ambassador_level, ambassador_level_name, children` | 树结构正确 |
+  | | 期望 | 所有 `tree.children` 对应的 `users.referee_confirmed_at IS NOT NULL` | 只含正式绑定下线 |
+  | | 验证 SQL | `SELECT id, real_name, referee_id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=? AND referee_confirmed_at IS NOT NULL` | 结果与 `tree.children` 数量一致 |
+  | S19.5 | ✏️ 读操作 | `admin:getUserRefereeTree` | 单个查询（传无下线的学员 `userId`） |
+  | | 期望 | `tree.children` 为空数组 | 无下线时正常返回 |
+  | S19.6 | ✏️ 读操作 | `admin:getUserRefereeTree` | 批量查询（`userIds=[id1, id2, id3]`） |
+  | | 期望 | 返回数组，长度 = 3 | 批量返回正确 |
+  | | 期望 | 每项结构同 S19.4 | 每项结构完整 |
+  | S19.B1 | 边界 | `admin:getUserListForReferee` | 传不存在的关键词 |
+  | | 期望 | `list=[], total=0` | 无匹配时正常返回 |
+  | S19.B2 | 边界 | `admin:getUserRefereeTree` | 不传 `userId` 也不传 `userIds` |
+  | | 期望 | 返回参数错误 | 缺参拦截正常 |
+  | S19.B3 | 边界 | `admin:getUserRefereeTree` | 传不存在的 `userId` |
+  | | 期望 | 返回 `null` 或提示"未找到该用户" | 不存在用户处理正常 |
+
+  ### 页面功能手动测试
+
+  | 编号 | 场景 | 步骤 | 期望结果 |
+  |------|------|------|---------|
+  | MT-F19-1 | 学员列表加载 | 打开后台推荐关系页 | 自动加载第 1 页学员列表，显示 ID/姓名/手机号/大使等级/推荐人 5 列 |
+  | MT-F19-2 | 推荐关系弹窗 | 点击任意学员「推荐关系」按钮 | 弹出对话框，顶部显示推荐人（伯乐），下方显示推荐树；切换文字树/图形树视图正常 |
+  | MT-F19-3 | 多选导出 | 勾选 2~3 名学员后点击「导出推荐关系 Word」 | 下载 `.docx` 文件，文件中每个学员一个段落，包含推荐人信息和推荐树 |
 
   ---
 

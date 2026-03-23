@@ -39,7 +39,6 @@ const ROUTE_MAP = {
   'banner-list':        'pages/system/banner.html',
   'announcement-list':  'pages/system/announcement.html',
   'feedback-list':      'pages/system/feedback.html',
-  'notification-list':  'pages/system/notification.html',
   'level-config':       'pages/system/level-config.html',
   'auto-test':          'auto-test.html',
   'method-check':       'method-check.html',
@@ -58,7 +57,7 @@ const MENU_STRUCTURE = [
   { key: 'order', children: ['order-list', 'order-refund', 'withdraw-audit', 'mall-goods', 'exchange-records'] },
   { key: 'course', children: ['course-list', 'schedule-list', 'appointment-list', 'seating', 'case-list', 'material-list', 'academy-sections'] },
   { key: 'ambassador', children: ['ambassador-list', 'application-audit', 'activity-list', 'contract-list'] },
-  { key: 'system', children: ['admin-list', 'config', 'banner-list', 'announcement-list', 'feedback-list', 'notification-list', 'level-config', 'auto-test', 'method-check', 'button-test'] }
+  { key: 'system', children: ['admin-list', 'config', 'banner-list', 'announcement-list', 'feedback-list', 'level-config', 'auto-test', 'method-check', 'button-test'] }
 ];
 
 /**
@@ -193,7 +192,7 @@ const SidebarMenu = {
           <template #icon><t-icon name="user" /></template>
           <template #title>用户管理</template>
           <t-menu-item v-if="hasPerm('user-list')" value="user-list">学员列表</t-menu-item>
-          <t-menu-item v-if="hasPerm('user-referee')" value="user-referee">推荐关系查询</t-menu-item>
+          <t-menu-item v-if="hasPerm('user-referee')" value="user-referee">学员推荐关系</t-menu-item>
           <t-menu-item v-if="hasPerm('evaluation-list')" value="evaluation-list">评估名单</t-menu-item>
           <t-menu-item v-if="hasPerm('user-courses')" value="user-courses">用户课程</t-menu-item>
         </t-submenu>
@@ -237,11 +236,7 @@ const SidebarMenu = {
           <t-menu-item v-if="hasPerm('banner-list')" value="banner-list">轮播图管理</t-menu-item>
           <t-menu-item v-if="hasPerm('announcement-list')" value="announcement-list">公告管理</t-menu-item>
           <t-menu-item v-if="hasPerm('feedback-list')" value="feedback-list">反馈管理</t-menu-item>
-          <t-menu-item v-if="hasPerm('notification-list')" value="notification-list">通知管理</t-menu-item>
           <t-menu-item v-if="hasPerm('level-config')" value="level-config">等级配置</t-menu-item>
-          <t-menu-item v-if="hasPerm('auto-test')" value="auto-test">🔍 接口健康检查</t-menu-item>
-          <t-menu-item v-if="hasPerm('method-check')" value="method-check">🔧 前端方法检查</t-menu-item>
-          <t-menu-item v-if="hasPerm('button-test')" value="button-test">🧪 按钮自动化测试</t-menu-item>
         </t-submenu>
       </t-menu>
     </div>

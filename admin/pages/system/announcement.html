@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
   <title>公告管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
   <style>
     .c {
       max-width: 1400px;
@@ -133,6 +133,11 @@
                 <t-tag v-else>通知</t-tag>
               </template>
               
+              <template #isTop="{row}">
+                <t-tag v-if="row.is_top===1" theme="warning">置顶</t-tag>
+                <span v-else style="color:#bbb;">-</span>
+              </template>
+
               <template #status="{row}">
                 <t-tag v-if="row.status===1" theme="success">显示</t-tag>
                 <t-tag v-else>隐藏</t-tag>
@@ -141,6 +146,9 @@
               <template #op="{row}">
                 <t-space>
                   <t-button size="small" variant="text" @click="handleEdit(row)">编辑</t-button>
+                  <t-button size="small" variant="text" :theme="row.is_top === 1 ? 'default' : 'warning'" @click="handleToggleTop(row)">
+                    {{ row.is_top === 1 ? '取消置顶' : '置顶' }}
+                  </t-button>
                   <t-button size="small" variant="text" :theme="row.status === 1 ? 'warning' : 'success'" @click="handleToggleStatus(row)">
                     {{ row.status === 1 ? '隐藏' : '显示' }}
                   </t-button>
@@ -211,12 +219,12 @@
   
   <!-- 🔥 引入云存储相关脚本（使用本地 SDK） -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260313"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
-  <script src="../../assets/js/cloud-storage-helper.js"></script>
+  <script src="../../assets/js/config.js?v=20260323"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260323"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260323"></script>
   
-  <script src="../../assets/js/admin-api.js?v=20260313"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
+  <script src="../../assets/js/admin-api.js?v=20260323"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -255,9 +263,10 @@
         const columns = [
           { colKey: 'title', title: '公告标题', width: 250 },
           { colKey: 'category', title: '类型', width: 100, cell: 'type' },
+          { colKey: 'is_top', title: '置顶', width: 80, cell: 'isTop' },
           { colKey: 'created_at', title: '发布时间', width: 160 },
           { colKey: 'status', title: '状态', width: 100, cell: 'status' },
-          { colKey: 'op', title: '操作', width: 150, cell: 'op' }
+          { colKey: 'op', title: '操作', width: 200, cell: 'op' }
         ];
         
         // 加载数据
@@ -343,7 +352,20 @@
           dialogVisible.value = true;
         };
         
-        // 删除
+        // 切换置顶状态
+        const handleToggleTop = async (row) => {
+          const newIsTop = row.is_top === 1 ? 0 : 1;
+          const action = newIsTop === 1 ? '置顶' : '取消置顶';
+          try {
+            await AdminAPI.updateAnnouncement({ id: row.id, isTop: newIsTop });
+            TDesign.MessagePlugin.success(`公告已${action}`);
+            loadData();
+          } catch (e) {
+            TDesign.MessagePlugin.error(e.message);
+          }
+        };
+
+        // 切换显示/隐藏状态
         const handleToggleStatus = async (row) => {
           const newStatus = row.status === 1 ? 0 : 1;
           const action = newStatus === 1 ? '显示' : '隐藏';
@@ -454,6 +476,7 @@
           handlePageChange,
           handleAdd,
           handleEdit,
+          handleToggleTop,
           handleToggleStatus,
           handleDelete,
           handleSave,

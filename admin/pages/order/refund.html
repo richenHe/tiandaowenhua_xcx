@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>退款管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
   <style>
     .stats-cards {
       display: grid;
@@ -124,6 +124,15 @@
             style="width: 150px;"
           />
         </t-form-item>
+        <t-form-item label="退款分类">
+          <t-select 
+            v-model="filters.orderType" 
+            :options="typeOptions"
+            placeholder="全部"
+            clearable
+            style="width: 150px;"
+          />
+        </t-form-item>
         <t-form-item label="申请时间">
           <t-date-range-picker
             v-model="filters.dateRange"
@@ -165,6 +174,13 @@
         stripe
         hover
       >
+        <!-- 退款分类：order_type 1=课程退款 2=复训费退款 -->
+        <template #refund_type="{ row }">
+          <t-tag v-if="row.order_type === 1" theme="primary" variant="light">课程退款</t-tag>
+          <t-tag v-else-if="row.order_type === 2" theme="warning" variant="light">复训费退款</t-tag>
+          <t-tag v-else theme="default" variant="light">{{ row.order_type_text || '其他' }}</t-tag>
+        </template>
+
         <!-- 退款状态：refund_status 1申请退款/3已退款/4已驳回 -->
         <template #status="{ row }">
           <t-tag v-if="row.refund_status === 1" theme="warning">申请退款</t-tag>
@@ -233,15 +249,28 @@
         <t-descriptions bordered :column="2">
           <t-descriptions-item label="订单号" :span="2">{{ currentRecord.order_no }}</t-descriptions-item>
           <t-descriptions-item label="课程/商品">{{ currentRecord.order_name }}</t-descriptions-item>
-          <t-descriptions-item label="订单类型">{{ currentRecord.order_type_text }}</t-descriptions-item>
+          <t-descriptions-item label="退款分类">
+            <t-tag v-if="currentRecord.order_type === 1" theme="primary" variant="light">课程退款</t-tag>
+            <t-tag v-else-if="currentRecord.order_type === 2" theme="warning" variant="light">复训费退款</t-tag>
+            <span v-else>{{ currentRecord.order_type_text || '其他' }}</span>
+          </t-descriptions-item>
           <t-descriptions-item label="用户姓名">{{ currentRecord.user_name }}</t-descriptions-item>
           <t-descriptions-item label="用户手机">{{ currentRecord.user_phone }}</t-descriptions-item>
+          <t-descriptions-item label="收款银行信息" :span="2">
+            <div v-if="currentRecord.bank_account_name || currentRecord.bank_name || currentRecord.bank_account_number"
+              style="background: #f9f9f9; border-radius: 6px; padding: 10px 14px; font-size: 13px; line-height: 2; color: #333;">
+              <div><strong>收款人：</strong>{{ currentRecord.bank_account_name || '—' }}</div>
+              <div><strong>开户支行：</strong>{{ currentRecord.bank_name || '—' }}</div>
+              <div><strong>银行卡号：</strong>{{ currentRecord.bank_account_number || '—' }}</div>
+            </div>
+            <t-tag v-else theme="warning" variant="light">用户未填写收款银行信息</t-tag>
+          </t-descriptions-item>
           <t-descriptions-item label="退款金额">
             <span style="color: #e37318; font-weight: 600;">¥{{ Number(currentRecord.amount).toFixed(2) }}</span>
           </t-descriptions-item>
           <t-descriptions-item label="订单金额">¥{{ Number(currentRecord.final_amount || currentRecord.amount).toFixed(2) }}</t-descriptions-item>
           <t-descriptions-item label="退款原因" :span="2">{{ currentRecord.refund_reason || '无' }}</t-descriptions-item>
-          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.created_at }}</t-descriptions-item>
+          <t-descriptions-item label="申请时间" :span="2">{{ currentRecord.refund_applied_at || currentRecord.created_at }}</t-descriptions-item>
           <t-descriptions-item label="审核状态" :span="2">
             <t-tag v-if="currentRecord.refund_status === 1" theme="warning">申请退款</t-tag>
             <t-tag v-else-if="currentRecord.refund_status === 2" theme="primary">退款处理中</t-tag>
@@ -311,6 +340,13 @@
             <div><strong>用户手机：</strong>{{ transferTarget.user_phone }}</div>
             <div><strong>退款金额：</strong><span style="color: #e37318; font-weight: 600;">¥{{ Number(transferTarget.amount).toFixed(2) }}</span></div>
             <div><strong>退款原因：</strong>{{ transferTarget.refund_reason || '无' }}</div>
+            <div v-if="transferTarget.bank_account_name || transferTarget.bank_name" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8e8;">
+              <div style="font-size: 12px; color: #888; margin-bottom: 4px;">收款银行账户</div>
+              <div><strong>收款人：</strong>{{ transferTarget.bank_account_name || '—' }}</div>
+              <div><strong>开户支行：</strong>{{ transferTarget.bank_name || '—' }}</div>
+              <div><strong>银行卡号：</strong>{{ transferTarget.bank_account_number || '—' }}</div>
+            </div>
+            <div v-else style="margin-top: 8px; color: #e37318; font-size: 12px;">⚠️ 用户未填写收款银行信息</div>
           </div>
         </div>
 
@@ -393,11 +429,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260313"></script>
-  <script src="../../assets/js/admin-api.js?v=20260313"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260313"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260313"></script>
+  <script src="../../assets/js/config.js?v=20260323"></script>
+  <script src="../../assets/js/admin-api.js?v=20260323"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260323"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260323?v=20260323"></script>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -451,6 +487,7 @@
         const filters = ref({
           keyword: '',
           status: null,
+          orderType: null,
           dateRange: []
         });
 
@@ -462,6 +499,13 @@
           { label: '已驳回', value: 4 }
         ];
 
+        // order_type: 1=课程退款 2=复训费退款
+        const typeOptions = [
+          { label: '全部', value: null },
+          { label: '课程退款', value: 1 },
+          { label: '复训费退款', value: 2 }
+        ];
+
         const pagination = ref({
           current: 1,
           pageSize: 20,
@@ -471,11 +515,12 @@
         const columns = [
           { colKey: 'row-select', type: 'multiple', width: 50, fixed: 'left' },
           { colKey: 'order_no', title: '订单号', width: 180 },
+          { colKey: 'refund_type', title: '退款分类', width: 120, cell: 'refund_type' },
           { colKey: 'user_name', title: '用户姓名', width: 120 },
           { colKey: 'user_phone', title: '手机号', width: 130 },
           { colKey: 'amount', title: '退款金额', width: 140, cell: 'amount' },
           { colKey: 'refund_reason', title: '退款原因', ellipsis: true },
-          { colKey: 'created_at', title: '申请时间', width: 160 },
+          { colKey: 'refund_applied_at', title: '申请时间', width: 160 },
           { colKey: 'status', title: '状态', width: 140, cell: 'status' },
           { colKey: 'operation', title: '操作', width: 240, fixed: 'right', cell: 'operation' }
         ];
@@ -486,7 +531,11 @@
             const params = {
               page: pagination.value.current,
               pageSize: pagination.value.pageSize,
-              ...filters.value
+              keyword: filters.value.keyword,
+              refund_status: filters.value.status,
+              order_type: filters.value.orderType,
+              start_date: filters.value.dateRange?.[0] || undefined,
+              end_date: filters.value.dateRange?.[1] || undefined
             };
 
             const data = await AdminAPI.getRefundList(params);
@@ -515,6 +564,7 @@
           filters.value = {
             keyword: '',
             status: null,
+            orderType: null,
             dateRange: []
           };
           handleSearch();
@@ -723,6 +773,7 @@
           statistics,
           filters,
           statusOptions,
+          typeOptions,
           pagination,
           columns,
           // 转账对话框

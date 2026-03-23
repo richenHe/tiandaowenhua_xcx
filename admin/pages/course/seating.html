@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>排座管理 - 天道文化后台</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260313">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
   <style>
     /* ==================== 页面整体 ==================== */
     .seating-toolbar {
@@ -144,6 +144,45 @@
     }
     .fullscreen-overlay .desk-grid { padding: 16px; width: max-content; min-width: 100%; }
     .fullscreen-overlay .seat-slot { cursor: default; }
+
+    /* ==================== 搜索下拉框 ==================== */
+    .search-box-wrapper { position: relative; }
+    .search-dropdown {
+      position: absolute; top: calc(100% + 4px); right: 0; z-index: 1000;
+      width: 300px; background: #fff; border: 1px solid #e7e7e7;
+      border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .search-dropdown-list { max-height: 360px; overflow-y: auto; }
+    .search-result-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      cursor: pointer; transition: background .15s; border-bottom: 1px solid #f5f5f5;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: rgba(0,82,217,.05); }
+    .search-result-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search-result-position { font-size: 11px; color: #888; }
+    .dropdown-pagination {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 8px 12px; border-top: 1px solid #e7e7e7; background: #fafafa;
+    }
+    .dropdown-pagination span { font-size: 12px; color: #888; }
+
+    /* ==================== 备选区学员高亮 ==================== */
+    .waiting-card.waiting-highlighted {
+      border-color: #e34d59; background: rgba(227,77,89,.08);
+      animation: waitingPulse 1s ease-in-out 3;
+    }
+    @keyframes waitingPulse {
+      0%,100% { box-shadow: 0 0 0 2px #e34d59; }
+      50% { box-shadow: 0 0 0 5px rgba(227,77,89,.3); }
+    }
+
+    /* ==================== 弹窗分页 ==================== */
+    .picker-pagination {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 10px 0 2px; border-top: 1px solid #e7e7e7; margin-top: 8px;
+    }
+    .picker-pagination span { font-size: 13px; color: #666; }
   </style>
 </head>
 <body>
@@ -180,6 +219,12 @@
                 :label="(s.period ? s.period + ' ' : '') + s.class_date + (s.class_location ? ' ' + s.class_location : '')">
               </t-option>
             </t-select>
+            <t-tag v-if="selectedScheduleStatus !== null"
+              :theme="selectedScheduleStatus.theme"
+              variant="light"
+              style="flex-shrink:0;">
+              {{ selectedScheduleStatus.label }}
+            </t-tag>
           </div>
           <t-button v-if="dataLoaded" variant="outline" @click="exportStudentWord">导出学员表</t-button>
           <t-button v-if="dataLoaded" variant="outline" @click="exportSignInWord">导出签到表</t-button>
@@ -239,10 +284,45 @@
                 <t-button theme="primary" :loading="saving" :disabled="!hasUnsavedChanges" @click="saveAll">
                   <t-icon name="save" style="margin-right:4px;" />保存
                 </t-button>
-                <t-input v-model="searchKeyword" placeholder="搜索姓名" clearable style="width:160px;"
-                  @enter="doSearch" @clear="clearSearch">
-                  <template #suffix-icon><t-icon name="search" @click="doSearch" style="cursor:pointer;" /></template>
-                </t-input>
+                <!-- 搜索框 + 下拉结果面板 -->
+                <div class="search-box-wrapper" @click.stop>
+                  <t-input v-model="searchKeyword" placeholder="搜索姓名" clearable style="width:160px;"
+                    @clear="clearSearch">
+                    <template #suffix-icon><t-icon name="search" style="cursor:pointer;" /></template>
+                  </t-input>
+                  <!-- 搜索结果下拉面板 -->
+                  <div v-if="searchDropdownVisible" class="search-dropdown">
+                    <div class="search-dropdown-list">
+                      <template v-if="searchPagedResults.length > 0">
+                        <div v-for="stu in searchPagedResults" :key="stu.user_id"
+                          class="search-result-item" @click="onSearchResultClick(stu)">
+                          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0;">
+                            {{ stu.user_name?.charAt(0) }}
+                          </div>
+                          <div style="flex:1;min-width:0;">
+                            <div class="search-result-name">{{ stu.user_name }}</div>
+                            <div v-if="positions[stu.user_id]" class="search-result-position">{{ positions[stu.user_id] }}</div>
+                          </div>
+                          <span v-if="userAssignmentMap[stu.user_id]"
+                            style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(0,82,217,.1);color:#0052d9;white-space:nowrap;">
+                            桌{{ userAssignmentMap[stu.user_id].desk_number }}-座{{ userAssignmentMap[stu.user_id].seat_number }}
+                          </span>
+                          <span v-else
+                            style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:4px;background:#f5f5f5;color:#888;white-space:nowrap;">
+                            备选区
+                          </span>
+                        </div>
+                      </template>
+                      <div v-else style="text-align:center;padding:24px;color:#999;font-size:13px;">未找到学员</div>
+                    </div>
+                    <!-- 分页 -->
+                    <div v-if="searchTotalPages > 1" class="dropdown-pagination">
+                      <t-button size="small" variant="text" :disabled="searchCurrentPage <= 1" @click.stop="searchCurrentPage--">上页</t-button>
+                      <span>{{ searchCurrentPage }} / {{ searchTotalPages }}</span>
+                      <t-button size="small" variant="text" :disabled="searchCurrentPage >= searchTotalPages" @click.stop="searchCurrentPage++">下页</t-button>
+                    </div>
+                  </div>
+                </div>
                 <t-button variant="outline" @click="toggleFullscreen">
                   <t-icon :name="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" />
                 </t-button>
@@ -386,7 +466,7 @@
                 所有学员已排座
               </div>
               <div v-for="stu in waitingStudents" :key="stu.user_id" class="waiting-card"
-                :class="{ selected: selectedWaiting.includes(stu.user_id) }"
+                :class="{ selected: selectedWaiting.includes(stu.user_id), 'waiting-highlighted': highlightedWaiting === stu.user_id }"
                 draggable="true"
                 @dragstart="onWaitingDragStart($event, stu)"
                 @click="toggleWaitingSelect(stu.user_id)">
@@ -400,25 +480,61 @@
           </div>
         </template>
 
-        <!-- 人员选择弹窗 -->
-        <t-dialog v-model:visible="pickerVisible" header="选择学员" :footer="false" width="520px">
-          <t-input v-model="pickerKeyword" placeholder="搜索姓名" clearable style="margin-bottom:12px;" />
-          <div class="person-picker-grid">
-            <div v-for="stu in filteredPickerStudents" :key="stu.user_id" class="person-pick-card"
-              @click="onPickPerson(stu)">
-              <div class="card-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;">
-                {{ stu.user_name?.charAt(0) }}
+        <!-- 人员选择弹窗：纯原生 HTML，不依赖任何 TDesign 组件，彻底避免 CSS/渲染干扰 -->
+        <div v-if="pickerVisible"
+          style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);"
+          @click.self="pickerVisible=false">
+          <div style="background:#fff;border-radius:8px;width:520px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+            <!-- 头部 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e7e7e7;">
+              <strong style="font-size:15px;">选择学员</strong>
+              <span style="cursor:pointer;font-size:20px;color:#999;" @click="pickerVisible=false">×</span>
+            </div>
+            <!-- 搜索框（原生 input） -->
+            <div style="padding:12px 20px 0;">
+              <input type="text" v-model="pickerKeyword"
+                placeholder="输入姓名搜索（模糊匹配）"
+                style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;box-sizing:border-box;" />
+            </div>
+            <!-- 学员列表 -->
+            <div style="padding:8px 20px;max-height:400px;overflow-y:auto;">
+              <div v-for="stu in pagedPickerStudents" :key="stu.user_id"
+                style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;cursor:pointer;border-bottom:1px solid #f5f5f5;"
+                onmouseover="this.style.background='rgba(0,82,217,.05)'" onmouseout="this.style.background=''"
+                @click="onPickPerson(stu)">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;flex-shrink:0;">
+                  {{ stu.user_name ? stu.user_name.charAt(0) : '?' }}
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:500;">{{ stu.user_name }}</div>
+                  <div v-if="positions[stu.user_id]" style="font-size:11px;color:#888;">{{ positions[stu.user_id] }}</div>
+                </div>
+                <span v-if="userAssignmentMap[stu.user_id]"
+                  style="font-size:11px;padding:2px 7px;border-radius:4px;background:rgba(0,82,217,.1);color:#0052d9;white-space:nowrap;flex-shrink:0;">
+                  桌{{ userAssignmentMap[stu.user_id].desk_number }}-座{{ userAssignmentMap[stu.user_id].seat_number }}
+                </span>
+                <span v-else style="font-size:11px;padding:2px 7px;border-radius:4px;background:rgba(0,168,90,.1);color:#00a85a;white-space:nowrap;flex-shrink:0;">可分配</span>
               </div>
-              <div>
-                <div style="font-size:13px;">{{ stu.user_name }}</div>
-                <div v-if="positions[stu.user_id]" style="font-size:11px;color:#888;">{{ positions[stu.user_id] }}</div>
+              <!-- 空状态 -->
+              <div v-if="pagedPickerStudents.length === 0" style="text-align:center;padding:28px 0;color:#bbb;font-size:13px;">
+                {{ !pickerKeyword.trim() ? '请输入姓名搜索学员' : '未找到匹配学员' }}
+              </div>
+            </div>
+            <!-- 分页 + 底部 -->
+            <div style="padding:10px 20px;border-top:1px solid #e7e7e7;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;color:#999;">
+                {{ pickerKeyword.trim() ? '找到 ' + pickerFilteredAll.length + ' 名学员' : '共 ' + students.length + ' 名学员' }}
+              </span>
+              <div v-if="pickerTotalPages > 1" style="display:flex;align-items:center;gap:8px;">
+                <button :disabled="pickerCurrentPage <= 1" @click="pickerCurrentPage--;rebuildPickerList()"
+                  style="padding:4px 10px;border:1px solid #d9d9d9;border-radius:4px;cursor:pointer;background:#fff;font-size:12px;">上一页</button>
+                <span style="font-size:12px;color:#666;">{{ pickerCurrentPage }}/{{ pickerTotalPages }}</span>
+                <button :disabled="pickerCurrentPage >= pickerTotalPages" @click="pickerCurrentPage++;rebuildPickerList()"
+                  style="padding:4px 10px;border:1px solid #d9d9d9;border-radius:4px;cursor:pointer;background:#fff;font-size:12px;">下一页</button>
               </div>
             </div>
           </div>
-          <div v-if="filteredPickerStudents.length===0" style="text-align:center;padding:30px;color:#999;">
-            没有可选学员
-          </div>
-        </t-dialog>
+        </div>
 
         <!-- 全屏模式 -->
         <div v-if="isFullscreen" class="fullscreen-overlay">
@@ -508,11 +624,11 @@
 
 <script src="../../assets/libs/vue.global.js"></script>
 <script src="../../assets/libs/tdesign.min.js"></script>
-<script src="../../assets/js/config.js?v=20260313"></script>
+<script src="../../assets/js/config.js?v=20260323"></script>
 <script src="../../assets/js/cloudbase.js"></script>
-<script src="../../assets/js/admin-api.js?v=20260313"></script>
-<script src="../../assets/js/sidebar-navigation.js?v=20260313"></script>
-<script src="../../assets/js/seating-utils.js?v=20260313"></script>
+<script src="../../assets/js/admin-api.js?v=20260323"></script>
+<script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
+<script src="../../assets/js/seating-utils.js?v=20260323"></script>
 <!-- Word 导出依赖 -->
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
@@ -580,28 +696,73 @@ createApp({
       students.value.filter(s => !userAssignmentMap.value[s.user_id])
     );
 
+    // 当前选中排期的状态标签
+    const SCHEDULE_STATUS_MAP = {
+      0: { label: '已取消', theme: 'danger' },
+      1: { label: '未开始', theme: 'default' },
+      2: { label: '进行中', theme: 'success' },
+      3: { label: '已结束', theme: 'warning' },
+    };
+    const selectedScheduleStatus = computed(() => {
+      if (!selectedScheduleId.value) return null;
+      const s = scheduleList.value.find(s => s.id === selectedScheduleId.value);
+      if (!s || s.status === undefined || s.status === null) return null;
+      return SCHEDULE_STATUS_MAP[s.status] || { label: '未知', theme: 'default' };
+    });
+
     // ==================== 搜索 ====================
     const searchKeyword = ref('');
     const highlightedSeat = ref(null);
+    const highlightedWaiting = ref(null);
+    const searchDropdownVisible = ref(false);
+    const searchCurrentPage = ref(1);
+    const SEARCH_PAGE_SIZE = 20;
 
-    function doSearch() {
-      if (!searchKeyword.value.trim()) return;
+    // 搜索全部学员（已排座 + 未排座）
+    const searchAllResults = computed(() => {
       const kw = searchKeyword.value.trim().toLowerCase();
-      for (const a of assignments.value) {
-        const stu = studentMap.value[a.user_id];
-        if (stu && stu.user_name && stu.user_name.toLowerCase().includes(kw)) {
-          highlightedSeat.value = a.desk_number + '-' + a.seat_number;
-          nextTick(() => {
-            const el = document.querySelector(`.seat-slot[data-desk="${a.desk_number}"][data-seat="${a.seat_number}"]`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          });
-          setTimeout(() => { highlightedSeat.value = null; }, 3500);
-          return;
-        }
+      if (!kw) return [];
+      return students.value.filter(s => s.user_name && s.user_name.toLowerCase().includes(kw));
+    });
+
+    const searchTotalPages = computed(() =>
+      Math.max(1, Math.ceil(searchAllResults.value.length / SEARCH_PAGE_SIZE))
+    );
+
+    const searchPagedResults = computed(() => {
+      const start = (searchCurrentPage.value - 1) * SEARCH_PAGE_SIZE;
+      return searchAllResults.value.slice(start, start + SEARCH_PAGE_SIZE);
+    });
+
+    // 点击搜索结果：已排座→滚动高亮座位；未排座→滚动高亮备选卡片
+    function onSearchResultClick(stu) {
+      const assignment = userAssignmentMap.value[stu.user_id];
+      searchDropdownVisible.value = false;
+      if (assignment) {
+        highlightedSeat.value = assignment.desk_number + '-' + assignment.seat_number;
+        nextTick(() => {
+          const el = document.querySelector(
+            `.seat-slot[data-desk="${assignment.desk_number}"][data-seat="${assignment.seat_number}"]`
+          );
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        setTimeout(() => { highlightedSeat.value = null; }, 3500);
+      } else {
+        highlightedWaiting.value = stu.user_id;
+        nextTick(() => {
+          const waitingEl = document.querySelector('.waiting-area');
+          if (waitingEl) waitingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        setTimeout(() => { highlightedWaiting.value = null; }, 3500);
       }
-      TDesign.MessagePlugin.warning('未找到该学员的座位');
     }
-    function clearSearch() { highlightedSeat.value = null; }
+
+    function closeSearchDropdown() { searchDropdownVisible.value = false; }
+
+    function clearSearch() {
+      highlightedSeat.value = null;
+      searchDropdownVisible.value = false;
+    }
 
     function seatClass(desk, seat) {
       return { highlighted: highlightedSeat.value === desk + '-' + seat };
@@ -626,7 +787,9 @@ createApp({
       if (!courseId) return;
       try {
         const res = await AdminAPI.getScheduleList({ course_id: courseId, page: 1, pageSize: 200 });
-        scheduleList.value = res?.data?.list || res?.list || [];
+        const allSchedules = res?.data?.list || res?.list || [];
+        // 过滤掉已取消的排期（status=0）
+        scheduleList.value = allSchedules.filter(s => s.status !== 0);
       } catch (e) { console.error(e); }
     }
 
@@ -824,21 +987,49 @@ createApp({
       } else {
         pickerTarget = { desk, seat };
         pickerKeyword.value = '';
+        pickerCurrentPage.value = 1;
+        rebuildPickerList();       // 打开前立即构建列表
         pickerVisible.value = true;
       }
     }
 
-    const filteredPickerStudents = computed(() => {
-      const ws = waitingStudents.value;
-      if (!pickerKeyword.value.trim()) return ws;
+    const pickerCurrentPage = ref(1);
+    const pickerTotalPages = ref(1);
+    const pagedPickerStudents = ref([]);
+    const pickerFilteredAll = ref([]);  // 过滤后的完整列表（用于显示总数）
+
+    // 命令式构建弹窗学员列表（无关键词时不显示列表）
+    function rebuildPickerList() {
       const kw = pickerKeyword.value.trim().toLowerCase();
-      return ws.filter(s => s.user_name && s.user_name.toLowerCase().includes(kw));
-    });
+      if (!kw) {
+        // 未输入关键词：清空列表，不展示
+        pickerFilteredAll.value = [];
+        pickerTotalPages.value = 1;
+        pagedPickerStudents.value = [];
+        return;
+      }
+      const map = userAssignmentMap.value;
+      let list = students.value.slice().filter(s => s.user_name && s.user_name.toLowerCase().includes(kw));
+      // 未排座（可分配）排在前
+      list.sort((a, b) => {
+        const aA = !!map[a.user_id], bA = !!map[b.user_id];
+        if (aA === bA) return 0;
+        return aA ? 1 : -1;
+      });
+      pickerFilteredAll.value = list;
+      pickerTotalPages.value = Math.max(1, Math.ceil(list.length / 20));
+      const start = (pickerCurrentPage.value - 1) * 20;
+      pagedPickerStudents.value = list.slice(start, start + 20);
+    }
+
+    const filteredPickerStudents = pagedPickerStudents;
 
     function onPickPerson(stu) {
       if (!pickerTarget) return;
-      pickerVisible.value = false;
+      // localAssign 内部会先移除该学员的旧座位，再分配到新座位
+      // 无论学员是未排座（直接分配）还是已排座（调换位置），逻辑一致
       localAssign(stu.user_id, pickerTarget.desk, pickerTarget.seat);
+      pickerVisible.value = false;
       pickerTarget = null;
     }
 
@@ -928,25 +1119,45 @@ createApp({
       }
     }
 
+    // ==================== 监听 ====================
+    // 搜索词变化时重置分页并控制下拉框显隐
+    watch(searchKeyword, (val) => {
+      searchCurrentPage.value = 1;
+      searchDropdownVisible.value = val.trim().length > 0;
+    });
+
+    // 弹窗关键词变化时重置分页并重新构建列表
+    watch(pickerKeyword, () => { pickerCurrentPage.value = 1; rebuildPickerList(); });
+
     // ==================== 初始化 ====================
-    onMounted(() => { loadCourses(); });
+    onMounted(() => {
+      loadCourses();
+      // 点击页面任意位置关闭搜索下拉框
+      document.addEventListener('click', () => { searchDropdownVisible.value = false; });
+    });
 
     return {
       adminInfo, handleLogout,
-      courseList, scheduleList, selectedCourseId, selectedScheduleId,
+      courseList, scheduleList, selectedCourseId, selectedScheduleId, selectedScheduleStatus,
       loading, dataLoaded, savingConfig, saving, hasUnsavedChanges,
       config, students, positions, assignments, scheduleInfo,
       leftSeats, rightSeats, totalSeats, assignedCount, deskHeight, presetColors,
       waitingStudents, selectedWaiting,
-      searchKeyword, highlightedSeat, isFullscreen,
+      // 搜索下拉框
+      searchKeyword, highlightedSeat, highlightedWaiting, isFullscreen,
+      searchDropdownVisible, searchCurrentPage, searchTotalPages, searchPagedResults, searchAllResults,
+      userAssignmentMap,
+      // 选择学员弹窗
       pickerVisible, pickerKeyword, filteredPickerStudents,
+      pickerCurrentPage, pickerTotalPages, pagedPickerStudents, pickerFilteredAll,
       waitingDragOver,
       SeatingUtils,
       onCourseChange, onScheduleChange, onConfigChange,
       getSeatUser, getSeatPosition, seatClass,
       onSeatDragStart, onWaitingDragStart, onSeatDragOver, onSeatDragLeave, onSeatDrop, onWaitingDrop,
-      onSeatClick, onPickPerson, saveAll,
-      doSearch, clearSearch, toggleFullscreen,
+      onSeatClick, onPickPerson, saveAll, rebuildPickerList,
+      clearSearch, toggleFullscreen,
+      onSearchResultClick, closeSearchDropdown,
       toggleWaitingSelect, selectAllWaiting, randomAssignSelected,
       exportStudentWord, exportSignInWord
     };
