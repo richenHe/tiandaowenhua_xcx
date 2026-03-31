@@ -166,6 +166,8 @@ const loginResult = await signInWithOpenId();
 
 **变更说明（2026-03-23）**: 新增银行账户三字段（`bankAccountName`、`bankName`、`bankAccountNumber`），用于退款和提现收款。银行字段传空字符串可清空。
 
+**变更说明（2026-03-30）**: 接口保存成功后自动触发历史学员数据导入流程（processLegacyImport）。若用户姓名在 legacy_students 表中有匹配记录，将自动完成历史课程导入、推荐人绑定、大使等级升级等操作，对前端透明（导入失败不影响本接口响应）。
+
 **业务逻辑**:
 - 使用 CloudBase 登录态获取当前用户的 `uid`
 - 通过 `uid` 查询数据库，如果用户资料不存在，则创建新记录
@@ -6428,6 +6430,41 @@ cash_rate>0 → 发 cash_rate 比例的积分到 available → 结束
 | 1 | 有效（未过期） |
 | 2 | 已退款 |
 | 3 | 已过期（定时任务标记） |
+
+---
+
+## 历史学员数据自动导入（v2.13 新增）
+
+### 内部模块：processLegacyImport
+
+- **模块路径**: `cloudfunctions/user/business-logic/legacyImport.js`
+- **调用方式**: 在 `client:updateProfile` 保存成功后自动调用，对前端透明
+- **描述**: 用户填写真实姓名后，自动匹配 legacy_students 表并导入历史数据
+
+**触发条件**
+
+- `updateProfile` 接口中 `realName` 字段非空
+- 当前用户在 legacy_students 中尚无 `linked_user_id` 记录（防重）
+
+**匹配规则**
+
+| 步骤 | 规则 |
+|-----|------|
+| 1 | 清理姓名空格，与 `student_name` 精确匹配 |
+| 2 | 若未匹配，在 `student_aliases` JSON 数组中查找别名 |
+| 3 | 排除 `is_duplicate=2` 和 `import_status=1` 的记录 |
+
+**导入行为**
+
+| 行为 | 详情 |
+|-----|------|
+| 导入初探班 | 有 chutan_date 时创建 user_courses（type=1，source=3，attend_count=1） |
+| 导入密训班 | 有 mixin_date 时创建 user_courses（type=2，source=3，attend_count=1） |
+| 绑定推荐人 | 通过 recommender_alias 查找推荐人账号，仅在 referee_confirmed_at IS NULL 时绑定（会覆盖未确认的旧推荐关系） |
+| 大使升级 | is_ambassador=1 时：更新 ambassador_level，生成 referee_code（若无），插入 ambassador_upgrade_logs，创建 contract_signatures（sign_type=3，365天） |
+| 追溯绑定 | 大使注册后反向查找已注册且未绑定推荐人的学员，自动绑定推荐关系 |
+
+**不影响主流程**：导入失败会记录日志但不影响 updateProfile 的成功响应。
 
 ---
 

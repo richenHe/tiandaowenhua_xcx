@@ -2,8 +2,7 @@
   <view class="page-container">
     <TdPageHeader title="个人资料" :showBack="true" />
 
-    <scroll-view scroll-y class="scroll-area scroll-area--with-header-footer" style="height: calc(100vh - 88rpx - 136rpx);" :scroll-top="bankSectionScrollTop">
-      <view class="page-content page-content--with-bg" style="padding-bottom: 480rpx;">
+    <view class="page-content page-content--with-bg" style="padding-top: 88rpx; padding-bottom: 360rpx;">
         <!-- 表单 -->
         <view class="t-form t-form--label-top">
           <!-- 头像 -->
@@ -252,15 +251,6 @@
             </view>
           </view>
 
-          <!-- 银行卡验证：警告提示（黄色） -->
-          <view v-else-if="bankWarning" class="t-form-item">
-            <view class="t-form-item__control">
-              <view class="bank-validate-msg bank-validate-msg--warning">
-                <text>⚠️ {{ bankWarning }}</text>
-              </view>
-            </view>
-          </view>
-
           <!-- 推荐人信息已隐藏：仅后台可查看 -->
           <!--
           <view class="t-form-item">
@@ -278,8 +268,7 @@
           </view>
           -->
         </view>
-      </view>
-    </scroll-view>
+    </view>
 
     <!-- 固定底部 -->
     <view class="fixed-bottom">
@@ -296,49 +285,10 @@ import { onShow, onLoad } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
 import { UserApi } from '@/api'
 import StorageApi, { StoragePathHelper, cloudFileIDToURL } from '@/api/modules/storage'
-// ---- 银行卡验证工具（内联，避免小程序模块缓存问题） ----
-/** 校验银行卡号格式：10-25 位纯数字 */
+
+/** 校验银行卡号格式：15-19 位纯数字（国内银行卡标准位数） */
 function validateCardNumberFormat(cardNumber: string): boolean {
-  return /^\d{10,25}$/.test(cardNumber.replace(/\s/g, ''))
-}
-
-interface BinLookupResult { bankName: string; keywords: string[] }
-
-const BIN_DATA: { prefixes: string[]; bankName: string; keywords: string[] }[] = [
-  { prefixes: ['622700','622702','622707','622709','621483','621486','621489','621487','955100','622208','622210','621095','621096','621097','621098','621099','621285','621286','621287'], bankName: '中国工商银行', keywords: ['工商银行','工行','ICBC'] },
-  { prefixes: ['622280','622281','622283','622284','622285','622286','622287','622288','622289','622290','621758','621759','621760','621761','621762','621763','621764','621765'], bankName: '中国农业银行', keywords: ['农业银行','农行','ABC'] },
-  { prefixes: ['621226','621227','621228','621229','621230','621231','621232','621233','621234','621235','621236','621237','621238','621239','621240','621241','621260'], bankName: '中国银行', keywords: ['中国银行','中行','BOC'] },
-  { prefixes: ['436742','436745','489734','489735','512315','512316','512317','622200','622202','622203','622204','622205','622206','622207','622209','622210','622211','622212'], bankName: '中国建设银行', keywords: ['建设银行','建行','CCB'] },
-  { prefixes: ['621660','621661','621662','621663','621664','621665','621666','621667','621668','621669','621670','621671','621672','621673','621674','621675'], bankName: '中国邮政储蓄银行', keywords: ['邮政储蓄','邮储银行','邮储','PSBC'] },
-  { prefixes: ['622580','622581','622582','622583','622584','622585','622586','622587','622588','622589','622590','622591','622592','622593','622594','622595'], bankName: '交通银行', keywords: ['交通银行','交行','BOCOM'] },
-  { prefixes: ['621001','621002','621010','621020','621050','621051','621052','621053','621054','621055','621056','621060','621061','621062','621063','621064'], bankName: '招商银行', keywords: ['招商银行','招行','CMB'] },
-  { prefixes: ['622660','622661','622662','622663','622664','622665','622666','622667','622668','622669','622670','622671','622672','622673','622674','622675','621790','621791','621792','621793','621794','621795','621796','621797','621798','621799','621979','621981','621982','621983','621984','621985','621986'], bankName: '浦发银行', keywords: ['浦发银行','浦发','上海浦东发展银行','SPDB'] },
-  { prefixes: ['622400','622401','622402','622403','622404','622405','622406','622407','622408','622409','622410','622411','622412','622413','622414','622415'], bankName: '中信银行', keywords: ['中信银行','中信','CITIC'] },
-  { prefixes: ['622360','622361','622362','622363','622364','622365','622366','622367','622368','622369','622370','622371','622372','622373','622374','622375'], bankName: '光大银行', keywords: ['光大银行','光大','CEB'] },
-  { prefixes: ['621900','621901','621902','621903','621904','621905','621906','621907','621908','621909','621910','621911','621912','621913','621914','621915'], bankName: '华夏银行', keywords: ['华夏银行','华夏','HXB'] },
-  { prefixes: ['622720','622721','622722','622723','622724','622725','622726','622727','622728','622729','622730','622731','622732','622733','622734','622735'], bankName: '民生银行', keywords: ['民生银行','民生','CMBC'] },
-  { prefixes: ['622560','622561','622562','622563','622564','622565','622566','622567','622568','622569','622570','622571','622572','622573','622574','622575'], bankName: '兴业银行', keywords: ['兴业银行','兴业','CIB'] },
-  { prefixes: ['622268','622269','622270','622271','622272','622273','622274','622275','622276','622277','622278','622279','621728','621729','621730','621731'], bankName: '平安银行', keywords: ['平安银行','平安','深圳发展银行','深发展','PAB'] },
-  { prefixes: ['622880','622881','622882','622883','622884','622885','622886','622887','622888','622889','622890','622891','622892','622893','622894','622895'], bankName: '广发银行', keywords: ['广发银行','广发','GDB'] },
-  { prefixes: ['621800','621801','621802','621803','621804','621805','621806','621807','621808','621809','621810','621811','621812','621813','621814','621815'], bankName: '北京银行', keywords: ['北京银行','北京行','BOB'] },
-  { prefixes: ['621700','621701','621702','621703','621704','621705','621706','621707','621708','621709','621710','621711','621712','621713','621714','621715'], bankName: '上海银行', keywords: ['上海银行','BOSC'] },
-]
-
-/** 根据银行卡号前 6 位识别发卡行 */
-function lookupBankByCardNumber(cardNumber: string): BinLookupResult | null {
-  const cleaned = cardNumber.replace(/\s/g, '')
-  if (cleaned.length < 6) return null
-  const prefix6 = cleaned.substring(0, 6)
-  for (const entry of BIN_DATA) {
-    if (entry.prefixes.includes(prefix6)) return { bankName: entry.bankName, keywords: entry.keywords }
-  }
-  return null
-}
-
-/** 校验开户支行名称是否包含发卡行关键词 */
-function isBranchMatchingBin(branchName: string, binResult: BinLookupResult): boolean {
-  const lower = branchName.trim().toLowerCase()
-  return binResult.keywords.some(kw => lower.includes(kw.toLowerCase()))
+  return /^\d{15,19}$/.test(cardNumber.replace(/\s/g, ''))
 }
 
 /** 银行卡号脱敏：保留前4位和后4位 */
@@ -350,7 +300,6 @@ function maskCardNumber(cardNumber: string): string {
   const middle = '*'.repeat(Math.min(cleaned.length - 8, 8))
   return `${head} ${middle} ${tail}`
 }
-// ---- end 银行卡验证工具 ----
 
 // 表单数据
 const formData = ref({
@@ -464,8 +413,7 @@ const regionValue = ref<string[]>([])
 const bankAccountName = ref('') // 收款人姓名
 const bankName = ref('')        // 开户支行
 const bankAccountNumber = ref('') // 银行卡号
-const bankError = ref('')       // 红色错误提示（卡号与开户行不匹配时）
-const bankWarning = ref('')     // 黄色警告提示（BIN 无法识别时）
+const bankError = ref('')       // 红色错误提示（卡号格式不正确时）
 // 记录加载时的原始银行信息，用于检测是否有变更
 const originalBankInfo = ref({ bankAccountName: '', bankName: '', bankAccountNumber: '' })
 
@@ -565,7 +513,6 @@ const loadProfile = async () => {
     }
     // 清空上次验证状态
     bankError.value = ''
-    bankWarning.value = ''
   } catch (error) {
     // console.error('加载用户资料失败:', error)
   }
@@ -587,71 +534,31 @@ onLoad((options: any) => {
       const query = uni.createSelectorQuery()
       query.select('#bank-section').boundingClientRect((rect: any) => {
         if (rect) {
-          // 通过修改 scroll-view 的 scroll-top 实现定位
-          bankSectionScrollTop.value = rect.top
+          uni.pageScrollTo({ scrollTop: rect.top, duration: 300 })
         }
       }).exec()
     }, 500)
   }
 })
 
-// 银行区块滚动定位用的 scroll-top
-const bankSectionScrollTop = ref(0)
-
 /**
- * 银行卡号输入时：触发 BIN 码识别，与开户支行交叉验证
+ * 银行卡号输入时：校验位数格式（15-19位纯数字）
  * 注意：通过事件对象读取当前值，避免 v-model 更新滞后问题
  */
 const onBankCardInput = (e: any) => {
   const cardNo = (e.detail?.value ?? bankAccountNumber.value).replace(/\s/g, '')
   bankError.value = ''
-  bankWarning.value = ''
 
   if (!cardNo) return
 
-  // 基本格式校验（10-25 位纯数字）
   if (!validateCardNumberFormat(cardNo)) {
-    bankError.value = '银行卡号格式不正确（需10-25位数字）'
-    return
-  }
-
-  // BIN 码识别
-  const binResult = lookupBankByCardNumber(cardNo)
-  if (!binResult) {
-    // 无法识别，黄色警告但不阻止保存
-    bankWarning.value = '无法自动识别发卡行，请确认开户行信息无误'
-    return
-  }
-
-  // 如果已填写开户支行，校验是否匹配
-  if (bankName.value && !isBranchMatchingBin(bankName.value, binResult)) {
-    bankError.value = `银行卡号与开户行不匹配（卡号识别为${binResult.bankName}）`
+    bankError.value = '银行卡号格式不正确（需15-19位纯数字）'
   }
 }
 
-/**
- * 开户支行输入时：如果卡号已识别出发卡行，同步校验匹配
- * 注意：通过事件对象读取当前值，避免 v-model 更新滞后问题
- */
-const onBankNameInput = (e: any) => {
-  const currentBranchName = (e.detail?.value ?? bankName.value)
+/** 开户支行输入时：清空卡号错误（不再做BIN交叉校验） */
+const onBankNameInput = (_e: any) => {
   bankError.value = ''
-  bankWarning.value = ''
-
-  const cardNo = bankAccountNumber.value.replace(/\s/g, '')
-  if (!cardNo || !validateCardNumberFormat(cardNo)) return
-
-  const binResult = lookupBankByCardNumber(cardNo)
-  if (!binResult) {
-    if (currentBranchName) {
-      bankWarning.value = '无法自动识别发卡行，请确认开户行信息无误'
-    }
-    return
-  }
-
-  if (currentBranchName && !isBranchMatchingBin(currentBranchName, binResult)) {
-    bankError.value = `银行卡号与开户行不匹配（卡号识别为${binResult.bankName}）`
-  }
 }
 
 // 跳转到推荐人管理
@@ -751,137 +658,49 @@ const onRegionChange = (e: any) => {
 }
 
 /**
+ * 内部校验函数，返回错误信息（null 表示校验通过）
+ * 使用独立函数避免 handleSave 中大量 return 导致 loading 未关闭
+ */
+const validateForm = (): string | null => {
+  if (!formData.value.realName) return '请输入真实姓名'
+  if (!formData.value.phone) return '请输入手机号'
+  if (!/^1[3-9]\d{9}$/.test(formData.value.phone)) return '请输入正确的手机号'
+
+  const { year, month, day, hour } = formData.value.birthdate
+  const hasBirthdateInput = year || month || day || hour
+  if (hasBirthdateInput) {
+    if (!year || !month || !day || !hour) return '生辰八字需要填写完整的年月日时'
+    const yearNum = parseInt(year)
+    if (!/^\d{4}$/.test(year) || yearNum < 1900 || yearNum > 2100) return '年份格式不正确（如：1990）'
+    const monthNum = parseInt(month)
+    if (!/^\d{1,2}$/.test(month) || monthNum < 1 || monthNum > 12) return '月份格式不正确（1-12之间）'
+    const dayNum = parseInt(day)
+    if (!/^\d{1,2}$/.test(day) || dayNum < 1 || dayNum > 31) return '日期格式不正确（1-31之间）'
+    const hourNum = parseInt(hour)
+    if (!/^\d{1,2}$/.test(hour) || hourNum < 0 || hourNum > 23) return '时辰格式不正确（0-23之间）'
+  }
+
+  if (bankAccountNumber.value && bankError.value) return bankError.value
+  return null
+}
+
+/**
  * 保存
  */
 const handleSave = async () => {
-  // 验证必填项
-  if (!formData.value.realName) {
-    uni.showToast({
-      title: '请输入真实姓名',
-      icon: 'none',
-    })
+  // 先校验，校验失败滚动到顶部并弹 toast
+  const errMsg = validateForm()
+  if (errMsg) {
+    // 滚动到顶部，确保用户能看到必填字段
+    uni.pageScrollTo({ scrollTop: 0, duration: 200 })
+    uni.showToast({ title: errMsg, icon: 'none', duration: 2500 })
     return
-  }
-
-  if (!formData.value.phone) {
-    uni.showToast({
-      title: '请输入手机号',
-      icon: 'none',
-    })
-    return
-  }
-
-  // 验证手机号格式
-  const phoneReg = /^1[3-9]\d{9}$/
-  if (!phoneReg.test(formData.value.phone)) {
-    uni.showToast({
-      title: '请输入正确的手机号',
-      icon: 'none',
-    })
-    return
-  }
-
-  // 验证生辰八字格式（如果填写了任何一个字段）
-  const { year, month, day, hour } = formData.value.birthdate
-  const hasBirthdateInput = year || month || day || hour
-  
-  if (hasBirthdateInput) {
-    // 检查是否所有字段都填写完整
-    if (!year || !month || !day || !hour) {
-      uni.showModal({
-        title: '格式错误',
-        content: '生辰八字需要填写完整的年月日时',
-        showCancel: false,
-      })
-      return
-    }
-    
-    // 验证年份：4位数字，范围1900-2100
-    const yearNum = parseInt(year)
-    if (!/^\d{4}$/.test(year) || yearNum < 1900 || yearNum > 2100) {
-      uni.showModal({
-        title: '格式错误',
-        content: '年份格式不正确，请输入4位数字（如：1990）',
-        showCancel: false,
-      })
-      return
-    }
-    
-    // 验证月份：1-12
-    const monthNum = parseInt(month)
-    if (!/^\d{1,2}$/.test(month) || monthNum < 1 || monthNum > 12) {
-      uni.showModal({
-        title: '格式错误',
-        content: '月份格式不正确，请输入1-12之间的数字（如：01或1）',
-        showCancel: false,
-      })
-      return
-    }
-    
-    // 验证日期：1-31
-    const dayNum = parseInt(day)
-    if (!/^\d{1,2}$/.test(day) || dayNum < 1 || dayNum > 31) {
-      uni.showModal({
-        title: '格式错误',
-        content: '日期格式不正确，请输入1-31之间的数字（如：01或1）',
-        showCancel: false,
-      })
-      return
-    }
-    
-    // 验证时辰：0-23
-    const hourNum = parseInt(hour)
-    if (!/^\d{1,2}$/.test(hour) || hourNum < 0 || hourNum > 23) {
-      uni.showModal({
-        title: '格式错误',
-        content: '时辰格式不正确，请输入0-23之间的数字（如：08或8）',
-        showCancel: false,
-      })
-      return
-    }
-  }
-
-  // 银行信息校验：如果填写了卡号但存在错误，阻止保存
-  if (bankAccountNumber.value && bankError.value) {
-    uni.showToast({ title: bankError.value, icon: 'none', duration: 3000 })
-    return
-  }
-
-  // 检测银行信息是否有变更
-  const hasBankChange =
-    bankAccountName.value !== originalBankInfo.value.bankAccountName ||
-    bankName.value !== originalBankInfo.value.bankName ||
-    bankAccountNumber.value !== originalBankInfo.value.bankAccountNumber
-
-  // 如果银行信息有变更且填写了任意银行字段，弹窗让用户二次确认
-  if (hasBankChange && (bankAccountName.value || bankName.value || bankAccountNumber.value)) {
-    const maskedCard = bankAccountNumber.value ? maskCardNumber(bankAccountNumber.value) : '（未填写）'
-    const confirmContent = [
-      `收款人：${bankAccountName.value || '（未填写）'}`,
-      `开户支行：${bankName.value || '（未填写）'}`,
-      `银行卡号：${maskedCard}`,
-      '',
-      '请确认以上信息无误，避免汇款错误。'
-    ].join('\n')
-
-    const confirmed = await new Promise<boolean>((resolve) => {
-      uni.showModal({
-        title: '请确认银行收款信息',
-        content: confirmContent,
-        confirmText: '信息无误，保存',
-        cancelText: '返回修改',
-        success: (res) => resolve(!!res.confirm)
-      })
-    })
-
-    if (!confirmed) return
   }
 
   try {
     // 构建出生八字字符串
     let birthday = ''
     if (formData.value.birthdate.year) {
-      // 格式化为标准格式：YYYY-MM-DD-HH
       const yearStr = formData.value.birthdate.year.padStart(4, '0')
       const monthStr = formData.value.birthdate.month.padStart(2, '0')
       const dayStr = formData.value.birthdate.day.padStart(2, '0')
@@ -889,13 +708,13 @@ const handleSave = async () => {
       birthday = `${yearStr}-${monthStr}-${dayStr}-${hourStr}`
     }
 
-    // 调用API更新资料
+    // 调用 API（callCloudFunction 内部已处理 loading 显示/隐藏及错误弹 toast）
     await UserApi.updateProfile({
       realName: formData.value.realName,
       phone: formData.value.phone,
       city: formData.value.region || '',
-      avatar: formData.value.avatarFileID || '', // 使用 fileID 而不是临时URL
-      backgroundImage: formData.value.backgroundImageFileID || '', // 使用 fileID
+      avatar: formData.value.avatarFileID || '',
+      backgroundImage: formData.value.backgroundImageFileID || '',
       gender: formData.value.gender,
       industry: formData.value.industry || '',
       birthday: birthday,
@@ -904,16 +723,22 @@ const handleSave = async () => {
       bankAccountNumber: bankAccountNumber.value || ''
     })
 
-    uni.showToast({
-      title: '保存成功',
-      icon: 'success',
-    })
+    // 保存成功后同步更新 originalBankInfo，防止下次保存重复弹确认
+    originalBankInfo.value = {
+      bankAccountName: bankAccountName.value,
+      bankName: bankName.value,
+      bankAccountNumber: bankAccountNumber.value
+    }
 
-    setTimeout(() => {
-      uni.navigateBack()
-    }, 1500)
-  } catch (error) {
-    // console.error('保存失败:', error)
+    uni.showToast({ title: '保存成功', icon: 'success' })
+    setTimeout(() => uni.navigateBack(), 1500)
+  } catch (error: any) {
+    // callCloudFunction 对 wx.cloud 错误（有 error.code）已弹 toast；
+    // responseInterceptor 对 API 错误码已弹 toast；
+    // 此处只兜底处理未被上述覆盖的 JS 运行时异常
+    if (!error?.code) {
+      uni.showToast({ title: error?.message || '保存失败，请重试', icon: 'none', duration: 3000 })
+    }
   }
 }
 </script>
@@ -1036,10 +861,5 @@ button::after {
   border: 1px solid rgba(227, 77, 89, 0.2);
 }
 
-.bank-validate-msg--warning {
-  background-color: rgba(212, 175, 55, 0.08);
-  color: $td-warning-color;
-  border: 1px solid rgba(212, 175, 55, 0.2);
-}
 </style>
 

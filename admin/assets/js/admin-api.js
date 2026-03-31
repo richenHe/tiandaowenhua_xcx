@@ -243,6 +243,11 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'adminAddUserCourse', data);
   }
 
+  /** 延长用户课程有效期 */
+  static async adminExtendUserCourse(userCourseId, extendDays) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'adminExtendUserCourse', { userCourseId, extendDays });
+  }
+
   static async updateUserReferee(userId, newRefereeId, reason) {
     // 云函数期望 remark，前端传的是 reason，做映射
     return this.call(CONFIG.CLOUD_FUNCTIONS.USER, 'updateUserReferee', { userId, newRefereeId, remark: reason });
@@ -501,9 +506,9 @@ class AdminAPI {
     return this.deleteClassRecord(id);
   }
 
-  // 获取全部课程
+  // 获取全部课程（仅上架课程）
   static async getAllCourses() {
-    const data = await this.getCourseList({ page: 1, pageSize: 9999 });
+    const data = await this.getCourseList({ page: 1, pageSize: 9999, status: 1 });
     return data.list || [];
   }
 

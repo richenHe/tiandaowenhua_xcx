@@ -75,6 +75,20 @@ module.exports = async (event, context) => {
     await update('users', updateData, { _openid: OPENID });
 
     console.log('[updateProfile] 更新成功');
+
+    // 触发历史学员数据导入（非阻塞，失败不影响本次更新）
+    if (realName) {
+      try {
+        const { processLegacyImport } = require('../../business-logic/legacyImport');
+        const importResult = await processLegacyImport(user.id, realName, OPENID);
+        if (importResult) {
+          console.log('[updateProfile] 历史数据导入完成:', JSON.stringify(importResult));
+        }
+      } catch (legacyError) {
+        console.error('[updateProfile] 历史数据导入失败（不影响本次更新）:', legacyError);
+      }
+    }
+
     return response.success({ profile_completed: 1 }, '更新成功');
 
   } catch (error) {

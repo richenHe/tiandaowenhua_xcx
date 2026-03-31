@@ -98,6 +98,15 @@
               <template #expire_at="{ row }">
                 <span>{{ row.expire_at ? row.expire_at.substring(0, 10) : '-' }}</span>
               </template>
+              <template #operations="{ row }">
+                <t-button
+                  v-if="row.contract_signed === 1 && (row.status === 1 || row.status === 3)"
+                  size="small"
+                  variant="outline"
+                  @click="handleExtend(row)"
+                >延期</t-button>
+                <span v-else>-</span>
+              </template>
             </t-table>
           </div>
 
@@ -189,6 +198,31 @@
             </t-form>
           </t-dialog>
 
+          <!-- 延期弹窗 -->
+          <t-dialog
+            v-model:visible="extendVisible"
+            header="延长课程有效期"
+            width="480px"
+            @confirm="submitExtend"
+            :confirm-btn="{ loading: extendLoading }"
+          >
+            <div v-if="extendTarget" style="margin-bottom:16px;padding:12px;background:#f5f5f5;border-radius:4px;font-size:13px;line-height:1.8;">
+              <div>学员：{{ extendTarget.user_name }}（{{ extendTarget.user_phone }}）</div>
+              <div>课程：{{ extendTarget.course_name }}</div>
+              <div>当前到期日：{{ extendTarget.expire_at ? extendTarget.expire_at.substring(0, 10) : '-' }}</div>
+              <div v-if="extendTarget.status === 3" style="color:#ed7b2f;">当前状态：已过期（延期后将恢复为有效）</div>
+            </div>
+            <t-form label-width="100px">
+              <t-form-item label="延长天数" required>
+                <t-input-number v-model="extendDays" :min="1" :max="3650" style="width:200px;"></t-input-number>
+                <span style="margin-left:8px;font-size:12px;color:#8c8c8c;">天</span>
+              </t-form-item>
+              <t-form-item label="新到期日">
+                <span style="font-size:14px;color:#0052d9;font-weight:500;">{{ computedNewExpireDate }}</span>
+              </t-form-item>
+            </t-form>
+          </t-dialog>
+
         </t-content>
       </t-layout>
     </t-layout>
@@ -238,6 +272,7 @@
           { colKey: 'attend_count', title: '上课次数', width: 80 },
           { colKey: 'contract_signed', title: '合同', width: 70, cell: 'contract_signed' },
           { colKey: 'created_at', title: '创建时间', width: 170 },
+          { colKey: 'operations', title: '操作', width: 80, cell: 'operations' },
         ];
 
         const loadData = async () => {
@@ -278,7 +313,9 @@
         // ── 加载课程选项 ──
         const loadCourses = async () => {
           try {
-            courseOptions.value = await AdminAPI.getAllCourses();
+            const all = await AdminAPI.getAllCourses();
+            // 仅保留初探班(type=1)和密训班(type=2)
+            courseOptions.value = all.filter(c => c.type === 1 || c.type === 2);
           } catch (e) {
             console.error('加载课程列表失败:', e);
           }
@@ -416,6 +453,52 @@
           }
         };
 
+        // ── 延期弹窗 ──
+        const extendVisible = ref(false);
+        const extendLoading = ref(false);
+        const extendTarget = ref(null);
+        const extendDays = ref(30);
+
+        // 预览新到期日
+        const computedNewExpireDate = computed(() => {
+          if (!extendTarget.value || !extendDays.value || extendDays.value <= 0) return '-';
+          const days = Number(extendDays.value);
+          let base;
+          if (extendTarget.value.status === 3 || !extendTarget.value.expire_at) {
+            base = new Date();
+          } else {
+            base = new Date(extendTarget.value.expire_at);
+          }
+          base.setDate(base.getDate() + days);
+          return base.getFullYear() + '-' +
+            String(base.getMonth() + 1).padStart(2, '0') + '-' +
+            String(base.getDate()).padStart(2, '0');
+        });
+
+        const handleExtend = (row) => {
+          extendTarget.value = row;
+          extendDays.value = 30;
+          extendVisible.value = true;
+        };
+
+        const submitExtend = async () => {
+          if (!extendDays.value || extendDays.value <= 0) {
+            TDesign.MessagePlugin.warning('请输入延长天数');
+            return;
+          }
+          extendLoading.value = true;
+          try {
+            await AdminAPI.adminExtendUserCourse(extendTarget.value.id, extendDays.value);
+            TDesign.MessagePlugin.success('延期成功');
+            extendVisible.value = false;
+            loadData();
+          } catch (error) {
+            TDesign.MessagePlugin.error('延期失败: ' + error.message);
+          } finally {
+            extendLoading.value = false;
+          }
+        };
+
         // ── 退出 ──
         const handleLogout = () => {
           AdminAPI.logout();
@@ -458,6 +541,13 @@
           courseTypeText,
           handleAdd,
           submitAdd,
+          extendVisible,
+          extendLoading,
+          extendTarget,
+          extendDays,
+          computedNewExpireDate,
+          handleExtend,
+          submitExtend,
         };
       }
     });

@@ -144,6 +144,7 @@
   | F15 ~~管理端大使赠送课程 · 名额扣减 · 课程开通/续期~~ | ⏳ 已隐藏（2026-03-09：赠送名额功能已隐藏，后台赠送课程入口已移除，此流程暂停测试） | 2026-03-09 |
   | F16 合同审核流程 | ⏳ 已合并到 F12（课程合同改为管理员录入直接生效 adminCreateCourseContract，大使合同 signContract 直接生效无待审核，原审核流程不再需要独立测试） | 2026-03-09 |
   | F17 表现分与评估名单 | ✅ 已完成（**14/14 全通过，0 失败，0 warn**；S17.1-3 加分/扣分✓；S17.4 评估名单11条含测试用户✓；S17.5 阈值配置更新✓；S17.6-7 课程/活动拉黑3个月✓；S17.8-9 拦截验证✓；S17.14 重复拉黑幂等✓；S17.10-11 解除拉黑✓；S17.12 解除后恢复（复训费原因，非黑名单）✓；S17.13 缺参验证✓） | 2026-03-09 |
+  | F21 历史学员数据自动导入 | ⏳ 待测（2026-03-30 新增：legacy_students 表导入644条历史数据；updateProfile 触发 processLegacyImport；需验证课程导入、推荐人绑定、大使升级、防重机制、别名匹配） | 2026-03-30 |
   | F20 用户课程管理 · 手动新增 · 调整积分修复 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S20.1 课程列表20条✓；S20.2 关键词搜索8条✓；S20.3 状态筛选均为有效✓；S20.4 手动新增 uc_id=60 expire_at✓；S20.5 重复新增"已拥有此课程"拦截✓；S20.6 含合同新增 uc_id=61 sig_id=30✓；S20.7 调整功德分+10✓；S20.8 扣现金积分-5✓；修复测试脚本：beforeRun 改用公开接口 getList 替代管理端 getCourseList，解决鉴权失败导致找不到可用课程的问题） | 2026-03-09 |
   | F18 角色权限管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S18.1 创建角色✓；S18.2 角色列表4条含新建✓；S18.3 更新权限✓；S18.4 super_admin权限修改拦截✓；S18.5 内置角色删除拦截✓；S18.6 使用中角色删除拦截✓；S18.7 自定义角色删除并清理✓；S18.8 缺参拦截✓） | 2026-03-09 |
   | F19 商学院板块管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S19.1 小程序7条板块✓；S19.2 后台列表✓；S19.3 新增板块id=9✓（修复：insert未链式.select()导致id为null）；S19.4 修改标题✓；S19.5 切换隐藏status=0✓；S19.6 排序更新✓；S19.7 删除清理✓；S19.8 验证隐藏不出现✓） | 2026-03-09 |
@@ -3544,5 +3545,42 @@
 | S20.8 | ✏️ 写操作 | `adjustPoints` type=cash, action=subtract | 大使列表扣除现金积分 5 分 |
 | | 期望 | 返回成功 | message 包含"调整成功" |
 | | 验证 SQL | `SELECT cash_points_available FROM tiandao_culture.users WHERE id=?` | 减少了 5 |
+
+## F21 历史学员数据自动导入
+
+### 测试目标
+验证用户填写真实姓名后，系统自动从 legacy_students 表匹配并导入历史课程、推荐人绑定、大使升级等逻辑。
+
+### 前置条件
+- legacy_students 表已导入历史数据（644 条）
+- 测试用户已登录但尚未完善资料
+- 选取 legacy_students 中 import_status=0 的真实学员姓名作为测试数据
+
+### 测试步骤
+
+| 步骤 | 类型 | Action/操作 | 描述 |
+|---|---|---|---|
+| S21.1 | 📖 读操作 | 查询 legacy_students | 确认表有数据，选取一个 is_ambassador=0、有 chutan_date 的测试记录 |
+| | 验证 SQL | `SELECT id, student_name, chutan_date, mixin_date, recommender_alias, is_ambassador, import_status FROM tiandao_culture.legacy_students WHERE import_status=0 AND is_duplicate!=2 AND chutan_date IS NOT NULL LIMIT 5` | 应有待导入记录 |
+| S21.2 | ✏️ 写操作 | `client:updateProfile` | 用匹配的真实姓名调用 updateProfile，触发历史导入 |
+| | 期望 | 返回成功 | profile_completed=1 |
+| | 验证 SQL | `SELECT import_status, linked_user_id, imported_at FROM tiandao_culture.legacy_students WHERE student_name=?` | import_status=1，linked_user_id=当前userId，imported_at 不为 NULL |
+| S21.3 | 📖 读操作 | 验证课程导入 | 确认 user_courses 中有对应历史课程记录 |
+| | 验证 SQL | `SELECT course_id, source, attend_count, start_date, status FROM tiandao_culture.user_courses WHERE user_id=? ORDER BY id DESC LIMIT 3` | source=3，attend_count=1，start_date=历史记录中的 chutan_date |
+| S21.4 | 📖 读操作 | 验证推荐人绑定（如 recommender_alias 有值且推荐人已注册） | 确认 users.referee_id 已更新 |
+| | 验证 SQL | `SELECT referee_id FROM tiandao_culture.users WHERE id=?` | referee_id 为推荐人的 users.id |
+| S21.5 | ✏️ 写操作 | `client:updateProfile` 重复触发 | 同一用户再次调用 updateProfile，验证防重机制 |
+| | 期望 | 返回成功（不报错） | - |
+| | 验证 SQL | `SELECT COUNT(*) FROM tiandao_culture.user_courses WHERE user_id=? AND source=3` | 数量不增加（仍为首次导入的条数） |
+| S21.6 | ✏️ 写操作 | `client:updateProfile`（大使用户） | 用 is_ambassador=1 的用户名称调用，验证大使升级 |
+| | 期望 | 返回成功 | - |
+| | 验证 SQL | `SELECT ambassador_level, referee_code FROM tiandao_culture.users WHERE id=?` | ambassador_level=legacy记录中的等级，referee_code 非空 |
+| | 验证 SQL | `SELECT id, sign_type, ambassador_level, status, contract_start, contract_end FROM tiandao_culture.contract_signatures WHERE user_id=? AND sign_type=3` | 有一条 sign_type=3 记录，status=1，有效期365天 |
+| | 验证 SQL | `SELECT id FROM tiandao_culture.ambassador_upgrade_logs WHERE user_id=? ORDER BY id DESC LIMIT 1` | 有升级日志记录 |
+| S21.7 | 📖 读操作 | 验证别名匹配（选取有 student_aliases 的记录） | 用别名（如"明琴"）调用 updateProfile，验证能匹配到"吴秀琴"的记录 |
+| | 验证 SQL | `SELECT student_name, student_aliases, import_status, linked_user_id FROM tiandao_culture.legacy_students WHERE JSON_CONTAINS(student_aliases, '"明琴"')` | import_status=1，linked_user_id=测试用户ID |
+| S21.8 | 📖 读操作 | 验证 is_duplicate=2 排除 | 调用 updateProfile 时姓名匹配到 is_duplicate=2 的记录，验证不导入 |
+| | 期望 | updateProfile 成功 | - |
+| | 验证 SQL | `SELECT import_status FROM tiandao_culture.legacy_students WHERE student_name=? AND is_duplicate=2` | import_status 仍为 0 |
 
   

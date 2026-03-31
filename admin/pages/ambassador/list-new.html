@@ -244,11 +244,6 @@
                 {{ Math.floor(row.cash_points_available || 0) }}
               </template>
               
-              <template #status="{ row }">
-                <t-tag :theme="row.status === 1 ? 'success' : 'danger'">
-                  {{ row.status === 1 ? '正常' : '冻结' }}
-                </t-tag>
-              </template>
               
               <template #action="{ row }">
                 <t-space>
@@ -278,11 +273,6 @@
                     <t-descriptions-item label="大使等级">
                       <t-tag :theme="getLevelTheme(currentAmbassador.ambassador_level)">
                         {{ getLevelText(currentAmbassador.ambassador_level) }}
-                      </t-tag>
-                    </t-descriptions-item>
-                    <t-descriptions-item label="状态">
-                      <t-tag :theme="currentAmbassador.status === 1 ? 'success' : 'danger'">
-                        {{ currentAmbassador.status === 1 ? '正常' : '冻结' }}
                       </t-tag>
                     </t-descriptions-item>
                     <t-descriptions-item label="注册时间">
@@ -477,7 +467,6 @@
           { colKey: 'ambassadorLevel', title: '大使等级', width: 120 },
           { colKey: 'meritPoints', title: '功德积分', width: 100 },
           { colKey: 'cashPoints', title: '现金积分', width: 100 },
-          { colKey: 'status', title: '状态', width: 80 },
           { colKey: 'action', title: '操作', width: 200, fixed: 'right' },
         ];
         

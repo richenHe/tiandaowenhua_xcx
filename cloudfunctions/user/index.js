@@ -44,6 +44,7 @@ const adminHandlers = {
   updateBlacklistConfig: require('./handlers/admin/updateBlacklistConfig'),
   getUserCourseList: require('./handlers/admin/getUserCourseList'),
   adminAddUserCourse: require('./handlers/admin/adminAddUserCourse'),
+  adminExtendUserCourse: require('./handlers/admin/adminExtendUserCourse'),
   getUserListForReferee: require('./handlers/admin/getUserListForReferee'),
   getUserRefereeTree: require('./handlers/admin/getUserRefereeTree')
 };

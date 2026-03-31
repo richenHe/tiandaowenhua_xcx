@@ -138,11 +138,6 @@
                         {{ getLevelText(currentAmbassador.ambassador_level) }}
                       </t-tag>
                     </t-descriptions-item>
-                    <t-descriptions-item label="状态">
-                      <t-tag :theme="currentAmbassador.status === 1 ? 'success' : 'danger'">
-                        {{ currentAmbassador.status === 1 ? '正常' : '冻结' }}
-                      </t-tag>
-                    </t-descriptions-item>
                     <t-descriptions-item label="注册时间">
                       {{ formatDateTime(currentAmbassador.created_at) }}
                     </t-descriptions-item>

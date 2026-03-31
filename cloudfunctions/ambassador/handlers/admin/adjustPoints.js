@@ -34,6 +34,12 @@ module.exports = async (event, context) => {
     if (point_type === 'merit') {
       const prevBalance = parseFloat(user.merit_points || 0);
       const newBalance = prevBalance + amountNum;
+
+      // 扣减时不允许余额变为负数
+      if (newBalance < 0) {
+        return response.paramError(`调整后余额不能为负，当前余额 ${prevBalance}，本次扣减 ${Math.abs(amountNum)}`);
+      }
+
       await update('users', {
         merit_points: newBalance
       }, { id: user_id });
@@ -54,6 +60,12 @@ module.exports = async (event, context) => {
       const prevAvailable = parseFloat(user.cash_points_available || 0);
       const prevFrozen = parseFloat(user.cash_points_frozen || 0);
       const newAvailable = prevAvailable + amountNum;
+
+      // 扣减时不允许余额变为负数
+      if (newAvailable < 0) {
+        return response.paramError(`调整后余额不能为负，当前可用余额 ${prevAvailable}，本次扣减 ${Math.abs(amountNum)}`);
+      }
+
       await update('users', {
         cash_points_available: newAvailable
       }, { id: user_id });
