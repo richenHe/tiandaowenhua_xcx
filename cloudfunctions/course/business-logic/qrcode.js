@@ -248,7 +248,9 @@ async function generateAmbassadorQRCode(options) {
 async function generateCheckinQRCode(options) {
   _checkInit();
 
-  const { classRecordId, width = 430, envVersion = 'trial' } = options;
+  const { classRecordId, width = 430 } = options;
+  // 优先读调用方传入的 envVersion，其次读云函数环境变量，默认 release
+  const envVersion = options.envVersion || process.env.MINIPROGRAM_ENV_VERSION || 'release';
 
   if (!classRecordId) {
     throw new Error('classRecordId 不能为空');
@@ -257,7 +259,6 @@ async function generateCheckinQRCode(options) {
   const scene = `ci=${classRecordId}`;
   const page = 'pages/course/checkin/index';
 
-  // 签到码默认指向体验版（trial），正式上线后改为 release
   const buffer = await generateShareQRCode({ scene, page, width, envVersion });
 
   const timestamp = Date.now();

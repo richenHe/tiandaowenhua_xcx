@@ -22,7 +22,7 @@ export default defineConfig({
     host: '0.0.0.0',  // 使用IP地址代替localhost
     proxy: {
       '/__auth': {
-        target: 'https://envId-appid.tcloudbaseapp.com/',
+        target: 'https://cloud1-0gnn3mn17b581124-wx26753b179de5c25c.tcloudbaseapp.com/',
         changeOrigin: true,
       }
     },

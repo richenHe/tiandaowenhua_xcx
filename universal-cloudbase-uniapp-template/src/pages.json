@@ -336,6 +336,20 @@
 						"navigationBarTitleText": "公告详情",
 						"navigationStyle": "custom"
 					}
+				},
+				{
+					"path": "user-agreement/index",
+					"style": {
+						"navigationBarTitleText": "用户服务协议",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "privacy-policy/index",
+					"style": {
+						"navigationBarTitleText": "隐私政策",
+						"navigationStyle": "custom"
+					}
 				}
 			]
 		}

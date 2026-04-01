@@ -357,7 +357,7 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
  *     v-model:file-id="formData.coverImage"
  *     path-prefix="banners"
  *     :item-id="formData.id || 'new'"
- *     tips="建议尺寸：750×360，支持 JPG/PNG，不超过 5MB"
+ *     tips="建议尺寸：750×720，支持 JPG/PNG，不超过 5MB"
  *   />
  * ===================================================================== */
 (function () {
@@ -417,8 +417,21 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
     },
     emits: ['update:modelValue', 'update:fileId', 'uploaded', 'removed'],
     setup(props, { emit }) {
-      const { ref } = Vue;
+      const { ref, computed } = Vue;
       const uploading = ref(false);
+
+      /** 轮播图等场景：内联 DOM 模板里自闭合标签可能未把 tips 绑到组件上，用 pathPrefix 兜底 */
+      const displayTips = computed(() => {
+        const t = (props.tips || '').trim();
+        if (t) return t;
+        if (props.pathPrefix === 'banners') {
+          return '建议尺寸：750×720（与小程序首页轮播通栏比例一致），支持 JPG / PNG，不超过 5MB';
+        }
+        if (props.pathPrefix === 'courses/covers') {
+          return '建议尺寸 750×420（与小程序课程详情顶图一致）；列表/商城为缩略图 aspectFill 可能裁边，主体宜居中偏下';
+        }
+        return '';
+      });
 
       const w = () => (typeof props.width  === 'number' ? props.width  + 'px' : props.width);
       const h = () => (typeof props.height === 'number' ? props.height + 'px' : props.height);
@@ -483,7 +496,7 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
         TDesign.MessagePlugin.success('已删除');
       }
 
-      return { uploading, openFilePicker, handleRemove, w, h };
+      return { uploading, openFilePicker, handleRemove, w, h, displayTips };
     },
     template: `
       <div class="cu-wrap">
@@ -514,7 +527,7 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
           </div>
         </div>
 
-        <div v-if="tips" class="cu-tips">{{ tips }}</div>
+        <div v-if="displayTips" class="cu-tips">{{ displayTips }}</div>
       </div>
     `
   };

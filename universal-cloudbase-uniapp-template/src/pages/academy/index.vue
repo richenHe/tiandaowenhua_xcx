@@ -171,6 +171,17 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi } from '@/api/modules/course';
+import { ensureLoggedIn } from '@/utils/auth-state';
+
+/** 快捷入口中允许游客访问的路径前缀（其余跳转前需登录） */
+function isGuestAllowedAcademyLink(url: string): boolean {
+  const path = (url || '').split('?')[0];
+  return (
+    path.includes('/pages/academy/cases') ||
+    path.includes('/pages/academy/materials') ||
+    path.includes('/pages/common/')
+  );
+}
 
 const loading = ref(true);
 const sections = ref<any[]>([]);
@@ -188,9 +199,9 @@ const contentSections = computed(() =>
 );
 
 const handleQuickAccess = (link: string) => {
-  if (link) {
-    uni.navigateTo({ url: link });
-  }
+  if (!link) return;
+  if (!isGuestAllowedAcademyLink(link) && !ensureLoggedIn()) return;
+  uni.navigateTo({ url: link });
 };
 
 const loadSections = async () => {

@@ -5,7 +5,7 @@
       class="scroll-content"
       :scroll-y="true"
     >
-      <!-- 轮播 Banner（可以滚动） -->
+      <!-- 轮播 Banner：设计稿 750×720，小程序通栏宽 750rpx、高 720rpx，与后台「轮播图」建议尺寸一致 -->
       <swiper
         class="banner-swiper"
         :indicator-dots="false"
@@ -136,6 +136,7 @@ import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import Calendar from '@/components/Calendar.vue';
 import { CourseApi, SystemApi } from '@/api';
 import { formatPrice } from '@/utils';
+import { ensureLoggedIn, isBusinessLoggedIn, navigateToLogin } from '@/utils/auth-state';
 
 // 轮播图当前索引
 const currentBannerIndex = ref(0);
@@ -234,18 +235,20 @@ const onSwiperChange = (e: any) => {
 
 // 轮播点击事件
 const onBannerClick = (banner: any) => {
-  if (banner.link) {
-    // 规范化链接，确保以 / 开头
-    const link = banner.link.startsWith('/') ? banner.link : '/' + banner.link;
-    // 判断是否为 tabBar 页面
-    const tabBarPages = ['/pages/index/index', '/pages/mall/index', '/pages/academy/index', '/pages/mine/index'];
-    if (tabBarPages.includes(link)) {
-      uni.switchTab({ url: link });
-    } else {
-      uni.navigateTo({ url: link });
+  if (!banner.link) return;
+  const link = banner.link.startsWith('/') ? banner.link : '/' + banner.link;
+  const tabBarPages = ['/pages/index/index', '/pages/mall/index', '/pages/academy/index', '/pages/mine/index'];
+  if (tabBarPages.includes(link)) {
+    if (link === '/pages/mine/index' && !isBusinessLoggedIn()) {
+      navigateToLogin();
+      return;
     }
+    uni.switchTab({ url: link });
+    return;
   }
-}
+  if (!ensureLoggedIn()) return;
+  uni.navigateTo({ url: link });
+};
 
 // 加载轮播图列表
 const loadBannerList = async () => {
@@ -343,26 +346,13 @@ const goToAnnouncement = () => {
   uni.navigateTo({ url: '/pages/common/announcement/index' });
 };
 
-// 跳转到课程详情
+// 跳转到课程详情（需登录：下单/购买链路）
 const goToCourseDetail = (course: any) => {
+  if (!ensureLoggedIn()) return;
   uni.navigateTo({ url: `/pages/course/detail/index?courseId=${course.id}` });
 };
 
-onMounted(() => {
-  loadBannerList();
-  loadCalendarPriceData();
-  loadCourseList();
-  loadAnnouncements();
-});
-
-onShow(() => {
-  loadBannerList();
-  loadCalendarPriceData();
-  loadCourseList();
-  loadAnnouncements();
-});
-
-// 加载公告列表
+// 加载公告列表（须写在 onMounted/onShow 之前，且不能在 setup 中途抛错，否则后续常量未初始化）
 const loadAnnouncements = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
@@ -379,6 +369,20 @@ const loadAnnouncements = async () => {
     uni.hideLoading()
   }
 };
+
+onMounted(() => {
+  loadBannerList();
+  loadCalendarPriceData();
+  loadCourseList();
+  loadAnnouncements();
+});
+
+onShow(() => {
+  loadBannerList();
+  loadCalendarPriceData();
+  loadCourseList();
+  loadAnnouncements();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -391,7 +395,7 @@ const loadAnnouncements = async () => {
   position: relative;
 }
 
-// 轮播图
+// 轮播（与素材规范 750×720 一致：全宽 = 750rpx 设计宽，高度 720rpx）
 .banner-swiper {
   width: 100%;
   height: 720rpx;

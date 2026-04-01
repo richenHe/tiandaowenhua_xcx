@@ -1,7 +1,7 @@
 {
-    "name" : "CloudBase UniApp 模板",
+    "name" : "天道文化",
     "appid" : "",
-    "description" : "基于 UniApp 和腾讯云开发（CloudBase）的跨平台应用模板",
+    "description" : "天道文化课程学习与推广平台",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
@@ -53,7 +53,7 @@
     "mp-weixin" : {
         "appid" : "wx26753b179de5c25c",
         "setting" : {
-            "urlCheck" : false,
+            "urlCheck" : true,
             "minified" : true,
             "ignoreDevUnusedFiles" : false
         },

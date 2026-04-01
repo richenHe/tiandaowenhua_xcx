@@ -4,6 +4,7 @@
  */
 
 import { updateProfileStatus } from './preview-guard'
+import { isBusinessLoggedIn } from '@/utils/auth-state'
 
 /**
  * 处理403错误（资料未完善）
@@ -29,6 +30,8 @@ function handle403Error(response: any) {
 
 /**
  * 处理401错误（未登录）
+ * 游客态下不因公开接口误返回 401 而强制跳转登录页（微信审核：须先可浏览）。
+ * 已写入本地业务登录态但服务端判未登录时仍引导重新登录。
  */
 function handle401Error() {
   uni.showToast({
@@ -36,8 +39,15 @@ function handle401Error() {
     icon: 'none',
     duration: 2000
   })
-  
+  if (!isBusinessLoggedIn()) {
+    return
+  }
   setTimeout(() => {
+    try {
+      uni.removeStorageSync('userInfo')
+    } catch {
+      /* ignore */
+    }
     uni.redirectTo({
       url: '/pages/auth/login/index'
     })

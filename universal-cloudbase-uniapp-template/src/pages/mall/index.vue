@@ -153,6 +153,7 @@ import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi, UserApi, SystemApi } from '@/api';
 import { formatPoints } from '@/utils';
+import { ensureLoggedIn, isBusinessLoggedIn } from '@/utils/auth-state';
 
 // 用户功德分和积分
 const userMeritPoints = ref(0);
@@ -294,9 +295,14 @@ const filteredProducts = computed(() => {
   return products.value.filter(p => p.category === category)
 })
 
-// 每次页面显示时刷新积分（从兑换页返回后同步最新余额）
+// 每次页面显示时刷新积分；游客不请求需登录接口
 onShow(() => {
-  loadUserPoints();
+  if (isBusinessLoggedIn()) {
+    loadUserPoints();
+  } else {
+    userMeritPoints.value = 0;
+    userCashPoints.value = 0;
+  }
 });
 
 onMounted(() => {
@@ -307,9 +313,11 @@ onMounted(() => {
   pageHeaderHeight.value = statusBarHeight + navbarHeight;
 
   // 加载数据
-  loadMallGoods()
-  loadMallCourses()
-  loadUserPoints()
+  loadMallGoods();
+  loadMallCourses();
+  if (isBusinessLoggedIn()) {
+    loadUserPoints();
+  }
 });
 
 // 课程列表
@@ -371,6 +379,7 @@ const handleCategoryChange = (value: number) => {
 
 // 跳转积分明细（功德分管理页面）
 const goToPointsDetail = () => {
+  if (!ensureLoggedIn()) return;
   uni.navigateTo({
     url: '/pages/ambassador/merit-points/index'
   })
@@ -378,6 +387,7 @@ const goToPointsDetail = () => {
 
 // 兑换商品
 const handleExchange = (product: any) => {
+  if (!ensureLoggedIn()) return;
   const productPoints = product.points;
   const meritPoints = userMeritPoints.value;
   const cashPoints = userCashPoints.value;
@@ -442,6 +452,7 @@ const handleExchange = (product: any) => {
 
 // 点击课程 → 跳转课程详情页（兑换模式）
 const handleCourseClick = (course: any) => {
+  if (!ensureLoggedIn()) return;
   uni.navigateTo({
     url: `/pages/course/detail/index?courseId=${course.id}&from=exchange&pointsPrice=${course.points}`
   })
@@ -449,6 +460,7 @@ const handleCourseClick = (course: any) => {
 
 // 兑换课程（与商品逻辑一致：优先功德分，不足时弹窗询问是否用积分）
 const handleExchangeCourse = (course: any) => {
+  if (!ensureLoggedIn()) return;
   const coursePoints = course.points;
   const meritPoints = userMeritPoints.value;
   const cashPoints = userCashPoints.value;

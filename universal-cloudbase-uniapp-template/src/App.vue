@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
-import { checkEnvironment } from "./utils/cloudbase";
 
-onLaunch(async (options: any) => {
+onLaunch(async () => {
   // ========== 初始化 wx.cloud（微信支付等云调用必需） ==========
   // #ifdef MP-WEIXIN
   if (!wx.cloud) {
@@ -20,23 +19,8 @@ onLaunch(async (options: any) => {
   }
   // #endif
 
-  // ========== 登录状态检查 ==========
-  // 签到页（pages/course/checkin）通过二维码扫码直接打开，
-  // wx.cloud.callFunction 会自动注入微信 OPENID，无需本地 userInfo，跳过登录检查。
-  const launchPath: string = options?.path || '';
-  if (launchPath.includes('course/checkin')) {
-    console.log('[App] 扫码签到入口，跳过登录检查，由签到页自行处理');
-    return;
-  }
-
-  // MP-WEIXIN 使用 wx.cloud.callFunction()，不走 CloudBase JS SDK auth。
-  // auth.getLoginState() 对 wx.cloud 用户始终返回 null，不能用于判断登录态。
-  // 改用本地存储：响应拦截器在每次成功 API 调用后写入 userInfo.profile_completed。
-  const storedUser = uni.getStorageSync('userInfo');
-  const isLoggedIn = storedUser && storedUser.profile_completed !== undefined;
-  if (!isLoggedIn) {
-    uni.reLaunch({ url: '/pages/auth/login/index' });
-  }
+  // 不在此强制跳转登录：允许游客浏览首页/商城/商学院（微信审核合规）。
+  // 业务登录态见 utils/auth-state.ts；需登录的操作与「我的」Tab 在各自入口拦截。
 });
 
 onShow(() => {

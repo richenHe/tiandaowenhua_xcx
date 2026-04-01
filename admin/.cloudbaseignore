@@ -1,3 +1,6 @@
+# 云函数目录（通过 MCP 单独部署，不上传到静态网站）
+cloudfunctions/
+
 # 依赖文件
 node_modules/
 **/node_modules/

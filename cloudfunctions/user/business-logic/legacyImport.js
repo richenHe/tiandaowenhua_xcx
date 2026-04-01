@@ -194,19 +194,23 @@ async function importCourses(userId, openid, legacyRecord, result) {
     const { expireAt, status } = calcCourseExpiry(startDate, template.validity_days);
     const now = formatDateTime(new Date());
 
+    // buy_time 用历史开课日期，first_class_time 同样设为开课日
+    const buyTime = formatDateTime(new Date(startDate));
+
     const { data: newCourse, error } = await db
       .from('user_courses')
       .insert({
         _openid: openid,
         user_id: userId,
         course_id: template.id,
-        purchase_time: now,
-        start_date: startDate,
+        course_type: template.type,
+        course_name: template.name,
+        buy_time: buyTime,
+        first_class_time: buyTime,
         expire_at: expireAt,
         status: status,
         attend_count: 1,
-        source: 3,        // source=3: 管理员线下录入
-        remark: '历史数据导入'
+        contract_signed: 1
       })
       .select()
       .single();
@@ -324,11 +328,10 @@ async function upgradeAmbassador(userId, openid, legacyRecord, result) {
     await insert('ambassador_upgrade_logs', {
       _openid: openid,
       user_id: userId,
-      old_level: user.ambassador_level || 0,
-      new_level: targetLevel,
+      from_level: user.ambassador_level || 0,
+      to_level: targetLevel,
       upgrade_type: 3,     // 3=管理员操作
-      remark: `历史数据导入，大使别名：${legacyRecord.ambassador_alias || ''}`,
-      created_at: formatDateTime(new Date())
+      remark: `历史数据导入，大使别名：${legacyRecord.ambassador_alias || ''}`
     });
 
     console.log(`[legacyImport] userId=${userId} 大使升级至等级 ${targetLevel}`);
@@ -399,8 +402,7 @@ async function createLegacyContract(userId, openid, legacyRecord, targetLevel) {
     status: 1,
     sign_type: 3,       // 3=管理员线下录入
     sign_ip: '',
-    sign_device: null,
-    remark: `历史数据导入，大使别名：${legacyRecord.ambassador_alias || ''}`
+    sign_device: null
   });
 
   console.log(`[legacyImport] userId=${userId} 历史合同创建成功，等级=${targetLevel} 有效期365天`);

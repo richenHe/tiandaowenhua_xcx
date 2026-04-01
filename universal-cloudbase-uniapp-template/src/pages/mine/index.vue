@@ -146,6 +146,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { UserApi, SystemApi, CourseApi, AmbassadorApi } from '@/api';
 import { formatPoints } from '@/utils';
+import { isBusinessLoggedIn } from '@/utils/auth-state';
 
 // 获取成长等级显示（四进制图标计数器）
 // 规则：4🌱=1🌿，4🌿=1🍀，4🍀=1🌳，4🌳=1🌟
@@ -336,8 +337,16 @@ const getLevelName = (level: number): string => {
   return names[level] || '普通用户';
 };
 
+/** 未登录误入「我的」页（深链等）时踢回登录，避免无效请求 */
+const redirectIfGuest = (): boolean => {
+  if (isBusinessLoggedIn()) return true;
+  uni.redirectTo({ url: '/pages/auth/login/index' });
+  return false;
+};
+
 // 页面加载时获取数据
 onMounted(() => {
+  if (!redirectIfGuest()) return;
   loadUserProfile();
   loadUserPoints();
   loadStats();
@@ -345,6 +354,7 @@ onMounted(() => {
 
 // 每次进入页面时刷新数据
 onShow(() => {
+  if (!redirectIfGuest()) return;
   loadUserProfile();
   loadUserPoints();
   loadStats();

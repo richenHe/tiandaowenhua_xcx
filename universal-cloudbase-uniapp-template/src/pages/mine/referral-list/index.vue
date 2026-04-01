@@ -42,9 +42,6 @@
                 </view>
                 <text class="info-date">加入时间: {{ formatDate(person.created_at) }}</text>
               </view>
-              <view class="t-badge" :class="`t-badge--${getStatusType(person)}`">
-                {{ getStatusText(person) }}
-              </view>
             </view>
           </view>
 

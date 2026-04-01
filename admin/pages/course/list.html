@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260323">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260331">
   
   <style>
     .type-tag {
@@ -210,16 +210,17 @@
         </t-form-item>
         
         <t-form-item label="课程封面" name="coverImage">
+          <!-- 须闭合标签：内联 DOM 模板里自定义元素 / 不会自闭合，避免 tips 丢失 -->
           <cloud-image-upload
             v-model="editForm.coverImageURL"
             v-model:file-id="editForm.coverImage"
             path-prefix="courses/covers"
             :item-id="editForm.id || 'new'"
             :max-size="3 * 1024 * 1024"
-            tips="建议尺寸 750×400，支持 JPG/PNG，不超过 3MB"
+            tips="建议尺寸 750×420（与小程序课程详情顶图 420rpx 高一致）；首页列表等为缩略区（约 320rpx 高、商城约 280rpx），image 为 aspectFill 会裁边，请把主体放在画面中下部"
             :width="320"
-            :height="160"
-          />
+            :height="179"
+          ></cloud-image-upload>
         </t-form-item>
         
         <!-- 沙龙课程(type=4)免费，隐藏价格/有效期/时长字段 -->
@@ -274,16 +275,9 @@
                 v-model="editForm.includedCourseId"
                 placeholder="请选择赠送课程"
                 :disabled="isCourseLocked"
+                :options="publishedCourseOptions.map(c => ({ label: c.name + (c.status === 0 ? '（未上架）' : '') + ' [' + getTypeText(c.type) + ']', value: c.id }))"
                 clearable
-                filterable
-              >
-                <t-option
-                  v-for="c in publishedCourseOptions"
-                  :key="c.id"
-                  :value="c.id"
-                  :label="c.name + ' (' + getTypeText(c.type) + ')'"
-                ></t-option>
-              </t-select>
+              />
             </div>
           </t-form-item>
         </template>
@@ -366,12 +360,12 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260323"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260323"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260323"></script>
+  <script src="../../assets/js/config.js?v=20260331"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260331"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260402"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260323"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260323"></script>
+  <script src="../../assets/js/admin-api.js?v=20260331"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260331"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -537,13 +531,13 @@
           fetchCourses();
         };
 
-        // 加载上架课程列表（供赠送课程下拉选择，排除自身）
+        // 加载所有课程列表（供赠送课程下拉选择，排除自身；不限状态，方便管理员提前配置）
         const loadPublishedCourses = async (excludeId) => {
           try {
-            const data = await AdminAPI.getCourseList({ status: 1, pageSize: 100 });
+            const data = await AdminAPI.getCourseList({ pageSize: 100 });
             publishedCourseOptions.value = (data.list || []).filter(c => c.id !== excludeId);
           } catch (e) {
-            console.warn('加载上架课程列表失败', e);
+            console.warn('加载课程列表失败', e);
           }
         };
 
