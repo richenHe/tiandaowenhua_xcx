@@ -1,6 +1,6 @@
 /**
- * 获取商城课程列表（客户端接口，需要用户鉴权）
- * @description 展示积分商城的课程商品（初探班和密训班）
+ * 获取商城课程列表（客户端接口）
+ * @description 展示积分商城的课程商品（初探班和密训班）；游客可读，不要求 users 表已注册
  * @param {number} type - 课程类型：1初探班/2密训班（可选）
  * @param {number} page - 页码（默认1）
  * @param {number} page_size - 每页数量（默认10）

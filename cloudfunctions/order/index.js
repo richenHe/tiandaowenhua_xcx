@@ -5,7 +5,7 @@
  * 认证方式：前端使用 wx.cloud.callFunction()，微信运行时自动注入真实 openid 到 context.OPENID
  */
 const cloud = require('wx-server-sdk');
-const { response, checkClientAuth, checkAdminAuth, checkAdminAuthByToken } = require('./common');
+const { response, checkClientAuth, getClientUserOptional, checkAdminAuth, checkAdminAuthByToken } = require('./common');
 const business = require('./business-logic');
 
 // 初始化 wx-server-sdk (用于微信支付等微信 API)
@@ -60,6 +60,9 @@ const ROUTES = {
   client: Object.keys(clientHandlers),
   admin: Object.keys(adminHandlers)
 };
+
+/** 游客可读：不要求 users 表已注册，handler 内 context.user 可能为 null */
+const CLIENT_GUEST_READ_ACTIONS = new Set(['getMallGoods', 'getMallCourses']);
 
 // HTTP Access Service 响应包装器
 function wrapHttpResponse(data) {
@@ -122,7 +125,9 @@ exports.main = async (event, context) => {
     }
     // 客户端接口（需用户鉴权）
     else if (ROUTES.client.includes(action)) {
-      const user = await checkClientAuth(OPENID);
+      const user = CLIENT_GUEST_READ_ACTIONS.has(action)
+        ? await getClientUserOptional(OPENID)
+        : await checkClientAuth(OPENID);
       result = await clientHandlers[action](requestData, { OPENID, user });
     }
     // 管理端接口（需管理员鉴权）

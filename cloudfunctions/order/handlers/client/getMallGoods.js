@@ -1,11 +1,10 @@
 /**
- * 客户端接口：商城商品列表
+ * 客户端接口：商城商品列表（游客可读，不要求 users 表已注册）
  * Action: getMallGoods
  */
 const { db, response, cloudFileIDToURL, executePaginatedQuery } = require('common');
 
 module.exports = async (event, context) => {
-  const { OPENID, user } = context;
   const { keyword, page = 1, page_size = 10, pageSize } = event;
 
   try {

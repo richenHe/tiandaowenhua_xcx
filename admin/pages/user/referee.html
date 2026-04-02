@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>学员推荐关系</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260331">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260403">
   <style>
     /* 树形文字视图 */
     .tree-text-view {
@@ -240,9 +240,9 @@
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260331"></script>
-  <script src="../../assets/js/admin-api.js?v=20260331"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260331"></script>
+  <script src="../../assets/js/config.js?v=20260403"></script>
+  <script src="../../assets/js/admin-api.js?v=20260403"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260403"></script>
 
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;
@@ -251,11 +251,30 @@
     const levelNameMap = { 0: '普通用户', 1: '准青鸾大使', 2: '青鸾大使', 3: '鸿鹄大使' };
     const levelTheme   = { 0: 'default', 1: 'warning', 2: 'primary', 3: 'danger' };
 
+    /** 相对伯乐的绑定状态文案（与树节点 referee_bole_status 一致） */
+    function refereeBoleWordSuffix(status) {
+      if (status === 'bound') return ' 【已绑定】';
+      if (status === 'unbound') return ' 【未绑定】';
+      return ' 【无伯乐】';
+    }
+
+    /** 图形树中与课程标签同风格的 outline 状态标签 */
+    function refereeBoleTagVNode(status) {
+      const s = status || 'none';
+      const cfg = s === 'bound'
+        ? { theme: 'success', label: '已绑定' }
+        : s === 'unbound'
+          ? { theme: 'warning', label: '未绑定' }
+          : { theme: 'default', label: '无伯乐' };
+      return Vue.h(TDesign.Tag, { theme: cfg.theme, size: 'small', variant: 'outline' }, () => cfg.label);
+    }
+
     // ───────── 递归构建文字树 ─────────
     function buildTextTree(node, prefix, isLast) {
       if (!node) return '';
       const connector = isLast ? '└── ' : '├── ';
-      const label = `${node.real_name || '未命名'} [${node.ambassador_level_name || levelNameMap[node.ambassador_level] || '-'}]`;
+      const bole = refereeBoleWordSuffix(node.referee_bole_status);
+      const label = `${node.real_name || '未命名'} [${node.ambassador_level_name || levelNameMap[node.ambassador_level] || '-'}]${bole}`;
       let result = prefix + connector + label + '\n';
       const childPrefix = prefix + (isLast ? '    ' : '│   ');
       const children = node.children || [];
@@ -268,6 +287,7 @@
     function buildFullTextTree(treeData) {
       if (!treeData || !treeData.tree) return '暂无推荐学员';
       const root = treeData.tree;
+      // 本人（根节点）不展示相对伯乐状态，仅姓名 + 等级
       const rootLabel = `${root.real_name || '未命名'} [${root.ambassador_level_name || levelNameMap[root.ambassador_level] || '-'}]`;
       let text = rootLabel + '\n';
       const children = root.children || [];
@@ -289,13 +309,14 @@
           // 根节点（当前查看对象）不展示自身课程，只有下级推荐人才展示课程标签
           const courses = props.isCurrent ? [] : (n.courses || []);
 
-          // 节点内容：姓名 + 等级标签 + 课程标签（根节点无课程标签）
+          // 本人（根节点）仅姓名 + 等级；下级展示相对伯乐状态 + 课程
           const nodeContent = [
             Vue.h('span', {}, n.real_name || '未命名'),
             Vue.h(TDesign.Tag, {
               theme: levelTheme[n.ambassador_level] || 'default',
               size: 'small'
             }, () => n.ambassador_level_name || levelNameMap[n.ambassador_level] || '-'),
+            ...(props.isCurrent ? [] : [refereeBoleTagVNode(n.referee_bole_status)]),
             ...courses.map(courseName =>
               Vue.h(TDesign.Tag, { theme: 'success', size: 'small', variant: 'outline' }, () => courseName)
             )
@@ -420,11 +441,12 @@
           if (!node) return [];
           const connector = isLast ? '└── ' : '├── ';
           const levelStr = node.ambassador_level_name || levelNameMap[node.ambassador_level] || '-';
+          const boleStr = refereeBoleWordSuffix(node.referee_bole_status);
           // 课程名追加在等级后，用书名号括起，多课程用顿号分隔
           const courseStr = (node.courses || []).length > 0
             ? ' 【' + node.courses.join('、') + '】'
             : '';
-          const label = `${node.real_name || '未命名'} [${levelStr}]${courseStr}`;
+          const label = `${node.real_name || '未命名'} [${levelStr}]${boleStr}${courseStr}`;
           const lines = [prefix + connector + label];
           const childPrefix = prefix + (isLast ? '    ' : '│   ');
           const children = node.children || [];
@@ -477,7 +499,7 @@
                 children: [new TextRun({ text: '推荐树：', bold: true })]
               }));
 
-              // 根节点不展示自身课程，仅展示姓名和等级
+              // 根节点（本人）不展示相对伯乐状态，仅姓名 + 等级
               const rootLabel = `  ${userName} [${userLevel}]`;
               children.push(new Paragraph({
                 children: [new TextRun({ text: rootLabel, font: 'Courier New' })]

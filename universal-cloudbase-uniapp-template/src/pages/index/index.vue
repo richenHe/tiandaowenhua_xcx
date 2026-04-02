@@ -48,8 +48,8 @@
 
       <!-- 页面内容 -->
       <view class="page-content">
-        <!-- 通知提示栏 - 轮播公告 -->
-        <view class="notice-bar" @click="goToAnnouncement">
+        <!-- 通知提示栏：仅在有后台公告时展示（无占位文案） -->
+        <view v-if="announcementList.length" class="notice-bar" @click="goToAnnouncement">
           <view class="t-alert t-alert--theme-info">
             <view class="t-alert__icon"><icon type="info" size="16" color="#0052D9"/></view>
             <view class="t-alert__content">
@@ -145,12 +145,8 @@ const currentTab = ref<string | number>('all');
 // 日历弹窗显示状态
 const calendarVisible = ref(false);
 
-// 公告列表数据
-const announcementList = ref([
-  { id: 1, title: '【重要】初探班第12期即将开课' },
-  { id: 2, title: '【通知】密训班报名火热进行中' },
-  { id: 3, title: '【提醒】学员请及时完成课程预约' }
-]);
+// 公告列表（仅展示接口返回数据，无默认占位）
+const announcementList = ref<{ id: number; title: string }[]>([]);
 
 // 轮播图数据
 const bannerList = ref<any[]>([]);
@@ -357,12 +353,14 @@ const loadAnnouncements = async () => {
   try {
     uni.showLoading({ title: '加载中...' })
     const result = await SystemApi.getAnnouncementList({ page: 1, page_size: 3 });
-    if (result.list && result.list.length > 0) {
-      announcementList.value = result.list.map((item: any) => ({
-        id: item.id,
-        title: item.title
-      }));
-    }
+    const list = result?.list || [];
+    announcementList.value =
+      list.length > 0
+        ? list.map((item: any) => ({
+            id: item.id,
+            title: item.title
+          }))
+        : [];
     uni.hideLoading()
   } catch (error) {
     console.error('加载公告失败:', error);

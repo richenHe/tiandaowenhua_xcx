@@ -71,6 +71,8 @@
 - 获取大使信息
 - 功德分/积分余额查询
 
+**order 云函数游客可读（2026-04-02）**：`action` 为 `getMallGoods`、`getMallCourses` 时，**不要求** `users` 表已存在业务用户记录（未注册/未登录业务态也可拉取上架商品与可兑换课程列表）；`exchangeGoods`、`exchangeCourse`、`getExchangeRecords` 等仍强制 `checkClientAuth`。
+
 ### 关键设计原则
 1. **主键使用 id**：所有表使用自增 `id INT AUTO_INCREMENT PRIMARY KEY` 作为主键
 2. **uid 唯一索引**：CloudBase 的 `uid` 设置为 `UNIQUE NOT NULL`，用于用户身份识别
@@ -2758,6 +2760,8 @@ Page({
 **接口**: `GET /api/mall/goods/list`
 
 **接口概述**: 获取商城可兑换商品列表
+
+**云函数对齐（2026-04-02）**：小程序实际调用 `order` 云函数 `action: getMallGoods`，**游客可读**（不要求 `users` 表已注册）。商城内「兑换课程」Tab 列表为同云函数 `action: getMallCourses`，**同为游客可读**。
 
 **请求参数**:
 ```
@@ -5826,7 +5830,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 
 **调用方**: 管理后台（学员推荐关系页弹窗 + Word 导出）
 
-**描述**: 查询指定学员的完整推荐关系树。向上仅追溯一层推荐人，向下递归查询所有正式绑定下线（`referee_confirmed_at IS NOT NULL`）。支持单个和批量模式。每个节点附带课程标签列表。
+**描述**: 查询指定学员的完整推荐关系树。向上仅追溯一层推荐人；向下递归**全部**下线（凡 `referee_id` 指向当前节点或其祖先均计入，**包含**仅有扫码关系、`referee_confirmed_at` 仍为空的学员）。支持单个和批量模式。每个节点附带相对伯乐的绑定状态与课程标签列表。
 
 **请求参数**:
 | 参数名 | 类型 | 必填 | 说明 |
@@ -5837,14 +5841,16 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 **返回格式（单个）**:
 ```json
 {
-  "user": { "id": 1, "real_name": "李四", "ambassador_level": 1, "ambassador_level_name": "准青鸾大使" },
+  "user": { "id": 1, "real_name": "李四", "ambassador_level": 1, "ambassador_level_name": "准青鸾大使", "referee_bole_status": "bound" },
   "referee": { "id": 2, "real_name": "张三", "ambassador_level": 2, "ambassador_level_name": "青鸾大使" },
   "tree": {
     "id": 1, "real_name": "李四", "ambassador_level": 1, "ambassador_level_name": "准青鸾大使",
+    "referee_bole_status": "bound",
     "courses": ["天道初探班"],
     "children": [
       {
         "id": 3, "real_name": "王五", "ambassador_level": 0, "ambassador_level_name": "普通用户",
+        "referee_bole_status": "unbound",
         "courses": ["天道初探班", "天道密训班"],
         "children": []
       }
@@ -5853,16 +5859,28 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 }
 ```
 
+**`referee_bole_status` 取值**（相对直接推荐人 `referee_id`，与 `users.referee_confirmed_at` 一致）:
+
+| 值 | 含义 |
+|----|------|
+| `none` | 无推荐人（`referee_id` 为空） |
+| `bound` | 已正式绑定（`referee_confirmed_at` 非空） |
+| `unbound` | 有推荐人但未正式绑定（`referee_id` 有值且 `referee_confirmed_at` 为空） |
+
 **返回格式（批量）**: 数组，每项格式同单个。
 
 **业务规则**:
-- 向下推荐树只包含 `users.referee_confirmed_at IS NOT NULL` 的正式绑定关系
+- 向下推荐树包含所有 `referee_id` 指向树内上级的用户，**不**再按 `referee_confirmed_at` 过滤；未正式绑定者通过 `referee_bole_status=unbound` 区分
 - 递归至末端，不限层级深度
 - `courses` 字段（课程标签）统一以 `contract_signed = 1` 为判断依据：
   - 初探班（need_contract=0）：首次签到时系统自动触发将 `contract_signed` 置 1
   - 密训班（need_contract=1）：管理员录入合同审核通过后将 `contract_signed` 置 1
   - 已退款（status=2）或无效（status=0）的记录不计入
-- 管理后台弹窗中课程标签以绿色 outline 标签显示；Word 导出中以【课程名】形式附加在节点名称后
+- 管理后台弹窗：课程标签以绿色 outline 标签显示；**下级节点**将 `referee_bole_status` 以 outline 标签显示（已绑定/未绑定/无伯乐）；**根节点（当前查看的本人）不展示**上述状态标签，仅姓名与大使等级。Word 导出：根行仅姓名+等级；子树节点仍带【已绑定】/【未绑定】/【无伯乐】及【课程名】
+
+**备注（2026-04-02）**: 向下树从「仅正式绑定下线」改为「全部下线 + 状态字段」；新增 `user` 与树节点上的 `referee_bole_status`。
+
+**备注（2026-04-03）**: 后台弹窗与 Word 导出中，**本人（树根）不展示**伯乐绑定状态标签/【已绑定】等文案，仅下级节点展示。
 
 ---
 

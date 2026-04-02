@@ -53,6 +53,24 @@ async function checkClientAuth(identifier) {
 }
 
 /**
+ * 可选客户端用户：按 openid 查 users，不存在返回 null（不抛错）
+ * 用于商城商品/课程列表等游客可读接口；兑换等写操作仍须 checkClientAuth
+ *
+ * @param {string} identifier - 微信 OPENID（与 checkClientAuth 一致，支持 _openid / openid 两列）
+ * @returns {Promise<Object|null>}
+ */
+async function getClientUserOptional(identifier) {
+  if (!identifier) {
+    return null;
+  }
+  let user = await findOne('users', { _openid: identifier });
+  if (!user) {
+    user = await findOne('users', { openid: identifier });
+  }
+  return user || null;
+}
+
+/**
  * 验证管理员权限
  * 查询 admin_users 表确认管理员身份和权限等级
  * 
@@ -196,6 +214,7 @@ function checkAdminAuthByToken(token, requiredRole = null) {
 
 module.exports = {
   checkClientAuth,
+  getClientUserOptional,
   checkAdminAuth,
   generateAdminToken,
   verifyAdminToken,

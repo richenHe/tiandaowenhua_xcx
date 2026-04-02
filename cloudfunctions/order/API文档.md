@@ -321,7 +321,7 @@ wx.cloud.callFunction({
 ### 6. getMallGoods - 商城商品列表
 
 **Action**: `getMallGoods`
-**权限**: 需要登录
+**权限**: 游客可读（不要求 `users` 表已注册，2026-04-02）；兑换类接口仍须登录
 
 **说明**: 查询商城可兑换商品列表
 

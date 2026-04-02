@@ -122,7 +122,7 @@
   | F1 用户资料 · 推荐人 · 资格验证 | ⏳ 重测（2026-03-23：updateProfile 新增银行账户三字段 bankAccountName/bankName/bankAccountNumber；需验证银行信息保存、清空、提现/退款前置检查跳转等新逻辑） | 2026-03-23 |
   | F1B 边界验证 · 未完善资料 · 无推荐人 · 功德分=0 | ✅ 已完成（**全通过 3/3**；S1B.1 profile_completed=0✓；referee_id展示修正（F1 S1.7设置后不强制null）；S1B.2 referee_count=0✓；S1B.3 merit_points=0.00✓；DB交叉全部一致） | 2026-03-09 |
   | F2 课程浏览 · 详情 · 购买条件验证 | ✅ 已完成（**11/11 全通过**；S2.2 修正课程 id=6（"测试课程"，type=1，user_id=30 未购买），is_purchased=false✓；S2.2b 密训班 included_course_ids=[1]✓；S2.2d 已购课程 is_purchased=true✓；S2.4 日历 4 天排期，status=0 关闭排期已过滤✓；S2.5 案例 2 条 HTTPS URL✓；DB 交叉验证全部一致） | 2026-03-03 |
-  | F3 订单 · 商城兑换 · 多表数据一致性 | ✅ 已完成（**20/21 pass，1 warn（非 Bug）**；S3.10 attend_count 修复验证通过✓；S3.6/S3.7/S3.9 写操作多表一致性全通过✓；S3.10b retrain_credit_status✓；S3.MT25 兑换订单✓；S3.12b warn=pending_days 重跑叠加问题（已重置 uc_id=50 pending_days=0，非代码缺陷）；S3.9 备用兑换记录已补充 EX_TST20260309_S39F） | 2026-03-09 |
+  | F3 订单 · 商城兑换 · 多表数据一致性 | ⏳ 重测（2026-04-02：`order` 游客可读 `getMallGoods`/`getMallCourses`，需确认自动化/手测仍通过；此前 20/21 pass 基线见 2026-03-09） | 2026-04-02 |
   | F4 功德分 · 积分 · 提现 · 余额一致性 | ⏳ 重测（2026-03-13：修复 getMeritPointsHistory Tab 类型筛选 Bug；2026-03-23：applyWithdraw 接口改为从 users 表读取银行信息，前端不再传银行字段；提现页面移除银行输入表单，改为只读展示并跳转个人资料页修改；需验证银行信息未填时提现跳转拦截逻辑） | 2026-03-23 |
   | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
   | F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（**8/8 全通过**；S5.1 申请状态 status=0(待审核)✓；S5.2 5级配置齐全，青鸾frozen_points=1688✓、鸿鹄frozen_points=16880✓；S5.3 升级指南 current=1，含1个升级选项✓；S5.4 名额 total=5/used=5/available=0，remaining不为负✓；S5.5 活动记录4条均正常✓；S5.6 活动统计✓；S5.7 推荐学员✓；S5.8 二维码✓；DB交叉全部一致；⚠️ MT-34导航栈手动验证登记为MT项不阻塞流程完成） | 2026-03-03 |
@@ -140,7 +140,7 @@
   | F12 课程学习合同 · 合同配置 · 管理员录入合约 · 上架校验 | ⏳ 重测（2026-03-13：新增 S12.N17/N18 后台补充合同照片 updateContractImages 测试；getContractList 返回字段修复验证） | 2026-03-13 |
   | F13 退款申请 · 合同拦截 · 审核流转 · 业务回滚 | ⏳ 重测（2026-03-23：新增复训费退款功能；requestRefund 新增 retrain_credit_status 校验与失效逻辑；rejectRefund 新增驳回后恢复复训资格；markRefundTransferred 修复已取消预约不重复扣减 booked_quota；需补充 S13.RT1~RT5 复训费退款测试用例；2026-03-23 新增：退款/复训费退款前置检查银行信息，未填则跳转个人资料页；后台退款列表新增用户银行账户展示） | 2026-03-23 |
   | F14 沙龙课程 · 免费预约 · 自动签到 · 结束清理 | ✅ 已完成（**8/8 全通过**；S14.1~S14.6 自动化全通过；S14.7 MCP验证：排期→进行中+沙龙自动签到 checkin_time=2026-03-03 11:50:08✓；S14.8 MCP验证：salonCleanedCourses=1+courses硬删除cnt=0✓；修复3项Bug：S14.2传参courseId→id、appointments外键CASCADE→SET NULL、S14.7/S14.8定时任务MCP直接触发验证） | 2026-03-03 |
-  | F19 学员推荐关系管理 | ⏳ 待测（2026-03-18 新增：后台学员推荐关系列表页改造；新增 getUserListForReferee/getUserRefereeTree 两个云函数接口；页面支持分页列表、大使等级筛选、关键词搜索、推荐关系树弹窗（文字树/图形树）、多选导出 Word 文档） | 2026-03-18 |
+  | F19 学员推荐关系管理 | ⏳ 重测（2026-04-02：`getUserRefereeTree` 向下树含未正式绑定下线；节点与 `user` 增加 `referee_bole_status`；后台树与 Word 展示已绑定/未绑定/无伯乐标识；需重跑 S19.4~S19.6 与 MT-F19） | 2026-04-02 |
   | F15 ~~管理端大使赠送课程 · 名额扣减 · 课程开通/续期~~ | ⏳ 已隐藏（2026-03-09：赠送名额功能已隐藏，后台赠送课程入口已移除，此流程暂停测试） | 2026-03-09 |
   | F16 合同审核流程 | ⏳ 已合并到 F12（课程合同改为管理员录入直接生效 adminCreateCourseContract，大使合同 signContract 直接生效无待审核，原审核流程不再需要独立测试） | 2026-03-09 |
   | F17 表现分与评估名单 | ✅ 已完成（**14/14 全通过，0 失败，0 warn**；S17.1-3 加分/扣分✓；S17.4 评估名单11条含测试用户✓；S17.5 阈值配置更新✓；S17.6-7 课程/活动拉黑3个月✓；S17.8-9 拦截验证✓；S17.14 重复拉黑幂等✓；S17.10-11 解除拉黑✓；S17.12 解除后恢复（复训费原因，非黑名单）✓；S17.13 缺参验证✓） | 2026-03-09 |
@@ -149,7 +149,7 @@
   | F18 角色权限管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S18.1 创建角色✓；S18.2 角色列表4条含新建✓；S18.3 更新权限✓；S18.4 super_admin权限修改拦截✓；S18.5 内置角色删除拦截✓；S18.6 使用中角色删除拦截✓；S18.7 自定义角色删除并清理✓；S18.8 缺参拦截✓） | 2026-03-09 |
   | F19 商学院板块管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S19.1 小程序7条板块✓；S19.2 后台列表✓；S19.3 新增板块id=9✓（修复：insert未链式.select()导致id为null）；S19.4 修改标题✓；S19.5 切换隐藏status=0✓；S19.6 排序更新✓；S19.7 删除清理✓；S19.8 验证隐藏不出现✓） | 2026-03-09 |
   | F21 排座管理 · 配置 · 分配 · 随机 · 导出 | ✅ 已完成（**9/9 全通过，0 失败，0 warn**；S21.1 getSeatingData结构✓；S21.2 保存5桌×6座配置✓；S21.3 assign学员A→桌1座1✓；S21.4 assign学员B→桌1座2✓；S21.5 swap互换座位✓；S21.6 remove移回备选✓；S21.7 randomAssignSeats assigned=1✓；S21.8 缩减1桌×4座超范围清理✓；S21.9 最终状态验证✓；修复2项Bug：getSeatingData用findOne查ambassador_activities返回3行报错→改用query；class_records.course_name字段为NULL→补全数据+加固断言） | 2026-03-09 |
-  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（2026-04-01：清除小程序存储后冷启动应直达首页而非登录页；未登录可逛首页/商城/商学院；**原生 tabBar 始终可见**；点「我的」未登录应跳转登录；登录页未勾选协议不可登录；协议两页可打开有正文；首页点课程详情应引导登录；商城兑换/明细应引导登录；401 在游客态不自动整页踢登录） | 2026-04-01 |
+  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（2026-04-02：`order.getMallGoods`/`getMallCourses` 游客可读；未登录进商城应能加载商品与课程列表、无「用户未注册」；2026-04-01：冷启动首页；原生 tabBar；我的→登录；协议；课程详情/兑换/明细引导；401 不整页踢） | 2026-04-02 |
 
   > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
@@ -159,6 +159,7 @@
   |------|------|------|
   | MP.1 | 清除缓存与存储，重新打开小程序 | 进入首页 Tab，**不**自动打开登录页 |
   | MP.2 | 切换商城、商学院 Tab | 可正常进入；底栏选中态与当前页一致 |
+  | MP.2b | 商城 Tab（未登录 / 清除存储） | 「兑换商品」网格有数据；切到「兑换课程」列表有数据；控制台无 `用户未注册`（依赖 `order` 云函数已部署游客可读） |
   | MP.3 | 点击「我的」（未登录） | 短暂进入「我的」后重定向登录页；**底部原生 tabBar 始终可见** |
   | MP.3a | 登录页顶部品牌区 | 可见 **Logo**（圆形容器内、非空白/仅阴影）；资源须为不透明主体 PNG（由 `static/logo.png` 生成 `static/login/logo.png`） |
   | MP.4 | 登录页不勾选协议点一键登录 | Toast 提示须同意协议 |
@@ -174,6 +175,7 @@
 
   | 变更日期 | 变更模块 | 变更内容 | 影响测试项 |
   |---|---|---|---|
+  | 2026-04-02 | `cloudfunctions/order/index.js`、`order/common/auth.js` | **商城列表游客可读**：`getMallGoods`、`getMallCourses` 不再强制 `checkClientAuth`；未注册 `users` 也可拉列表；兑换类 action 仍强制鉴权。 | MP-合规 MP.2b；F3 重测 |
   | 2026-03-13 | `cloudfunctions/callbacks/handlers/payment.js`<br>`cloudfunctions/order/handlers/public/testSimulatePayment.js` | **推荐人锁定时机变更**：`referee_confirmed_at` 不再在首次支付时写入，改为**仅在首次签署学习合同时**（`adminCreateCourseContract`）写入。已删除 payment.js 第 361-375 行的锁定逻辑。 | MT-03（边界：已签合同用户扫码无法换推荐人 ✅）；MT-03b（未签合同用户扫码可换推荐人 ⏳） |
   | 2026-03-13 | `cloudfunctions/ambassador/common/grantRefereeReward.js` | **奖励发放规则变更**：删除 `can_earn_reward=0` 时的硬拦截逻辑。奖励是否发放**仅由费率配置**（`merit_rate_basic`/`merit_rate_advanced`/`cash_rate_basic`/`cash_rate_advanced`）决定，`can_earn_reward` 字段不再起拦截作用。 | MT-30（后台录入合约触发奖励 ✅） |
 
@@ -3165,11 +3167,13 @@
   | | 验证 SQL | `SELECT COUNT(*) FROM tiandao_culture.users WHERE ambassador_level=2` | 应 = `total` |
   | S19.4 | ✏️ 读操作 | `admin:getUserRefereeTree` | 单个查询（传有下线的学员 `userId`） |
   | | 期望 | 返回 `{ user, referee, tree }` | 字段完整 |
-  | | 期望 | `tree.children` 数组每项含 `id, real_name, ambassador_level, ambassador_level_name, children` | 树结构正确 |
-  | | 期望 | 所有 `tree.children` 对应的 `users.referee_confirmed_at IS NOT NULL` | 只含正式绑定下线 |
-  | | 验证 SQL | `SELECT id, real_name, referee_id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=? AND referee_confirmed_at IS NOT NULL` | 结果与 `tree.children` 数量一致 |
+  | | 期望 | `user.referee_bole_status` 为 `none` / `bound` / `unbound` 之一 | 与 `users.referee_id`、`referee_confirmed_at` 一致 |
+  | | 期望 | `tree` 根节点及递归子节点均含 `referee_bole_status`，且与各自 DB 记录一致 | 绑定状态字段完整 |
+  | | 期望 | `tree.children` 含**全部**直接下线（`referee_id` = 该学员），含 `referee_confirmed_at IS NULL` 的未锁定学员 | 向下树不再过滤未绑定 |
+  | | 验证 SQL | `SELECT id, referee_confirmed_at FROM tiandao_culture.users WHERE referee_id=?` | 行数 = `tree.children.length`；每行 `referee_confirmed_at` 是否与节点 `referee_bole_status`（bound/unbound）一致 |
   | S19.5 | ✏️ 读操作 | `admin:getUserRefereeTree` | 单个查询（传无下线的学员 `userId`） |
   | | 期望 | `tree.children` 为空数组 | 无下线时正常返回 |
+  | | 期望 | `tree.referee_bole_status` 与 `user.referee_bole_status` 一致 | 根节点状态与顶层 user 一致 |
   | S19.6 | ✏️ 读操作 | `admin:getUserRefereeTree` | 批量查询（`userIds=[id1, id2, id3]`） |
   | | 期望 | 返回数组，长度 = 3 | 批量返回正确 |
   | | 期望 | 每项结构同 S19.4 | 每项结构完整 |
@@ -3185,8 +3189,9 @@
   | 编号 | 场景 | 步骤 | 期望结果 |
   |------|------|------|---------|
   | MT-F19-1 | 学员列表加载 | 打开后台推荐关系页 | 自动加载第 1 页学员列表，显示 ID/姓名/手机号/大使等级/推荐人 5 列 |
-  | MT-F19-2 | 推荐关系弹窗 | 点击任意学员「推荐关系」按钮 | 弹出对话框，顶部显示推荐人（伯乐），下方显示推荐树；切换文字树/图形树视图正常 |
-  | MT-F19-3 | 多选导出 | 勾选 2~3 名学员后点击「导出推荐关系 Word」 | 下载 `.docx` 文件，文件中每个学员一个段落，包含推荐人信息和推荐树 |
+  | MT-F19-2 | 推荐关系弹窗 | 点击任意学员「推荐关系」按钮 | 弹出对话框，顶部显示推荐人（伯乐），下方显示推荐树；**本人（根节点）仅姓名+等级标签**，不显示伯乐绑定状态；**下级**在等级后显示 outline 状态（已绑定/未绑定/无伯乐），风格与课程标签一致 |
+  | MT-F19-3 | 多选导出 | 勾选 2~3 名学员后点击「导出推荐关系 Word」 | 下载 `.docx` 文件，含推荐人信息与推荐树；**根行**仅姓名+等级；**子树节点**含【已绑定】/【未绑定】/【无伯乐】及课程【】 |
+  | MT-F19-4 | 未绑定下线入树 | 选一名有「仅扫码未签合同」下线的推广大使打开推荐树 | 该下线出现在树中，节点显示「未绑定」；已签合同锁定的显示「已绑定」；无 `referee_id` 的显示「无伯乐」 |
 
   ---
 

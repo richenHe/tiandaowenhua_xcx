@@ -2,11 +2,12 @@
   页面说明：微信授权登录；须明示勾选协议后方可登录（合规）。
   路由参数：scene（扫码推广，可选）
 
-  【登录页 Logo】
-  - 品牌图：`brand-logo.png`（与本页同目录，166×166 px 透明底）。须 **`import` + `:src`**：模板里写死 `/static/...` 会与 payment 等页的静态图共用编译槽位 `_imports_0`，真机常表现为 image src 错位或空白。
+  【登录页背景】
+  - 全屏底图含品牌 Logo 与文案，须 **`import` + 内联 `background-image`**，避免静态路径与编译槽位冲突。
+  - 操作区（微信登录、协议勾选）直接叠在底图上，无底部白底卡片。
 -->
 <template>
-  <!-- 全屏渐变；左上角返回与 TdPageHeader 同款（边框旋转箭头），勿用 global page-header 的 ‹ 字符 -->
+  <!-- 全屏背景图；左上角返回与 TdPageHeader 同款（边框旋转箭头） -->
   <view class="page-container login-page-root">
     <view
       class="login-back-bar"
@@ -19,44 +20,33 @@
       </view>
     </view>
 
-    <view class="login-body">
-      <view class="login-container">
-        <view class="login-logo">
-          <image
-            class="login-logo__img"
-            :src="loginBrandSrc"
-            mode="aspectFit"
+    <view
+      class="login-body"
+      :style="{ backgroundImage: 'url(' + loginBgSrc + ')' }"
+    >
+      <!-- 约位于底图副标题下方，避开山水区域；不同机型 cover 裁切略有差异 -->
+      <view class="login-actions">
+        <button
+          class="t-button t-button--theme-light t-button--variant-base t-button--block t-button--size-large"
+          @click="handleWechatLogin"
+        >
+          <text class="t-button__icon">🔐</text>
+          <text class="t-button__text">微信一键登录</text>
+        </button>
+
+        <!-- 明示同意：默认不勾选，禁止「登录即代表同意」文案 -->
+        <view class="agree-row" @tap="toggleAgree">
+          <checkbox
+            :checked="agreedToTerms"
+            class="agree-checkbox"
+            :color="checkboxBrandColor"
+            @tap.stop="toggleAgree"
           />
-        </view>
-
-        <view class="login-title">天道文化课程平台</view>
-        <view class="login-subtitle">传承国学智慧 · 弘扬天道文化</view>
-
-        <view class="t-card t-card--bordered login-card">
-          <view class="t-card__body">
-            <button
-              class="t-button t-button--theme-light t-button--variant-base t-button--block t-button--size-large"
-              @click="handleWechatLogin"
-            >
-              <text class="t-button__icon">🔐</text>
-              <text class="t-button__text">微信一键登录</text>
-            </button>
-
-            <!-- 明示同意：默认不勾选，禁止「登录即代表同意」文案 -->
-            <view class="agree-row" @tap="toggleAgree">
-              <checkbox
-                :checked="agreedToTerms"
-                class="agree-checkbox"
-                color="#0052D9"
-                @tap.stop="toggleAgree"
-              />
-              <view class="agree-text-wrap">
-                <text class="agree-text">已阅读并同意</text>
-                <text class="agree-link" @tap.stop="goToAgreement">《用户服务协议》</text>
-                <text class="agree-text">与</text>
-                <text class="agree-link" @tap.stop="goToPrivacy">《隐私政策》</text>
-              </view>
-            </view>
+          <view class="agree-text-wrap">
+            <text class="agree-text">已阅读并同意</text>
+            <text class="agree-link" @tap.stop="goToAgreement">《用户服务协议》</text>
+            <text class="agree-text">与</text>
+            <text class="agree-link" @tap.stop="goToPrivacy">《隐私政策》</text>
           </view>
         </view>
       </view>
@@ -68,10 +58,13 @@
 import { ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { UserApi } from '@/api'
-import loginBrandAsset from './brand-logo.png'
+import loginBgAsset from './b705a3324ae986f25d7ee4899831b272.jpg'
 
-/** 同目录 import，避免与 common/assets 静态槽位冲突导致登录 logo 不显示 */
-const loginBrandSrc = loginBrandAsset as string
+/** 同目录 import，背景 URL 供内联 background-image 使用 */
+const loginBgSrc = loginBgAsset as string
+
+/** 小程序 checkbox 的 color 需实色字符串，与 $td-brand-color 一致 */
+const checkboxBrandColor = '#0052D9'
 
 /** 状态栏高度（px），用于返回按钮垂直对齐 */
 const statusBarPx = ref(20)
@@ -231,58 +224,29 @@ const goToPrivacy = () => {
 }
 
 .login-body {
+  position: relative;
   min-height: 100vh;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
 }
 
-.login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48rpx 32rpx 80rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/** 登录 Logo：166×166 设计稿单位（750 宽下 166rpx），透明底、无圆形裁切与衬底 */
-.login-logo {
-  width: 166rpx;
-  height: 166rpx;
-  margin-bottom: 48rpx;
-  flex-shrink: 0;
-  display: block;
-  background: transparent;
-}
-
-.login-logo__img {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.login-title {
-  font-size: 48rpx;
-  font-weight: 600;
-  color: white;
-  margin-bottom: 16rpx;
-  text-align: center;
-}
-
-.login-subtitle {
-  font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 48rpx;
-  text-align: center;
-}
-
-.login-card {
+/**
+ * 操作区：叠在底图副标题下方（百分比对齐底图构图），左右留白与山水区错开
+ */
+.login-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
   width: 100%;
   max-width: 680rpx;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 $td-page-margin;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
 .agree-row {
@@ -338,7 +302,8 @@ const goToPrivacy = () => {
   }
 
   &--theme-light {
-    background-color: rgba($td-brand-color, 0.1);
+    /* 底图为浅米色时：白底不透明，区别于原先半透明浅蓝 */
+    background-color: $td-bg-color-container;
 
     .t-button__text,
     .t-button__icon {
