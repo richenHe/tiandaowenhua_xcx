@@ -20,6 +20,7 @@ module.exports = async (event, context) => {
       .from('courses')
       .select('*', { count: 'exact' })
       .eq('status', 1)  // 只查询上架课程
+      .eq('is_deleted', 0)  // 排除后台软删除，与公开课程列表一致
       .in('type', [1, 2])  // 只查询初探班和密训班
       .order('id', { ascending: true });
 

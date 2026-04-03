@@ -46,8 +46,12 @@ module.exports = async (event, context) => {
         ? level.level_desc
         : getLevelDesc(level.level);
 
-      // 申请列表文案（JSON 数组，每项 {question: string}）
-      const applyQuestions = safeParseJson(level.apply_questions) || [];
+      // 申请列表文案（JSON 数组，每项 { question, is_required? }；缺省 is_required 时与历史逻辑一致：仅第一题必填）
+      const rawApplyQuestions = safeParseJson(level.apply_questions) || [];
+      const applyQuestions = (Array.isArray(rawApplyQuestions) ? rawApplyQuestions : []).map((q, i) => ({
+        question: (q && q.question != null) ? String(q.question) : '',
+        is_required: typeof q?.is_required === 'boolean' ? q.is_required : (i === 0),
+      }));
 
       // 升级权益文案（JSON 数组，每项 {title, desc}）
       const upgradeBenefits = safeParseJson(level.upgrade_benefits) || null;

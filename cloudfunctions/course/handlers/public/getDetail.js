@@ -20,6 +20,7 @@ module.exports = async (event, context) => {
       .select('*')
       .eq('id', id)
       .eq('status', 1)
+      .eq('is_deleted', 0)
       .single();
 
     if (error || !course) {
@@ -99,6 +100,7 @@ module.exports = async (event, context) => {
           .from('courses')
           .select('id, name, type, cover_image, validity_days, description, content, outline, teacher')
           .eq('id', giftId)
+          .eq('is_deleted', 0)
           .single();
         if (gc) {
           const typeNames2 = { 1: '初探班', 2: '密训班', 3: '咨询服务', 4: '沙龙' };

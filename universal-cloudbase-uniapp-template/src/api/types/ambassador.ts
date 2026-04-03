@@ -103,6 +103,8 @@ export interface UpgradeBenefitItem {
 export interface ApplyQuestion {
   /** 问题文本 */
   question: string
+  /** 是否必填（后台「申请列表文案」开关；缺省时小程序按「仅第一题必填」兼容旧数据） */
+  is_required?: boolean
 }
 
 /**

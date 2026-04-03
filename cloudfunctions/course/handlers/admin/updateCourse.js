@@ -110,12 +110,31 @@ module.exports = async (event, context) => {
     if (outline !== undefined) fieldsToUpdate.outline = outline;
     if (teacher !== undefined) fieldsToUpdate.teacher = teacher;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
-    // 密训班赠送课程：将单个 ID 转为 JSON 数组；传 null/0 表示清除
+    // 密训班赠送课程：将单个 ID 转为 JSON 数组；传 null 表示清除；目标须为未删除的初探班
     if (includedCourseIds !== undefined) {
-      const effectiveTypeForGift = type !== undefined ? parseInt(type) : course.type;
-      if (effectiveTypeForGift === 2 && includedCourseIds) {
-        const giftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
-        fieldsToUpdate.included_course_ids = giftId ? JSON.stringify([parseInt(giftId)]) : null;
+      const effectiveTypeForGift = type !== undefined ? parseInt(type, 10) : parseInt(course.type, 10);
+      if (effectiveTypeForGift === 2) {
+        if (!includedCourseIds) {
+          fieldsToUpdate.included_course_ids = null;
+        } else {
+          const rawGiftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
+          const gid = parseInt(rawGiftId, 10);
+          if (!gid) {
+            fieldsToUpdate.included_course_ids = null;
+          } else {
+            const giftCourse = await findOne('courses', { id: gid });
+            if (!giftCourse || Number(giftCourse.is_deleted) === 1) {
+              return response.error('赠送课程不存在或已删除');
+            }
+            if (parseInt(giftCourse.type, 10) !== 1) {
+              return response.error('赠送课程只能选择初探班类型的课程');
+            }
+            if (gid === parseInt(id, 10)) {
+              return response.error('不能将赠送课程设置为本密训班自身');
+            }
+            fieldsToUpdate.included_course_ids = JSON.stringify([gid]);
+          }
+        }
       } else {
         fieldsToUpdate.included_course_ids = null;
       }

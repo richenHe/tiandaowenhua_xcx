@@ -564,10 +564,12 @@ ELSE:
 ```
 
 **业务逻辑**:
-1. 查询 courses 表,type 支持 1/2/3(咨询服务作为课程类型统一管理)
+1. 查询 courses 表,type 支持 1/2/3(咨询服务作为课程类型统一管理)；**仅** `status=1` 且 **`is_deleted=0`**（未软删除），与后台课程列表可见范围一致
 2. 未登录用户 is_purchased 默认 false
 3. 已登录用户 LEFT JOIN user_courses 判断是否已购买
 4. 咨询服务(type=3)购买后由客服联系,无需预约排期
+
+> **备注（2026-04-03）**：修复前公开列表未过滤 `is_deleted`，后台软删除后仍为上架的课程会与小程列表重复展示；现已与 `is_deleted` 对齐。
 
 **响应数据**:
 ```json
@@ -608,7 +610,7 @@ ELSE:
 ```
 
 **业务逻辑**:
-1. 查询 courses 基本信息
+1. 查询 courses 基本信息（**需** `status=1` 且 **`is_deleted=0`**，否则视为不存在）
 2. 如已登录且已购买,查询 user_courses 返回:
    - user_course_id: 用户课程记录ID
    - attend_count: 已结课次数(初始值为0，排期结束且有签到记录时由定时任务+1)
@@ -757,9 +759,10 @@ ELSE:
 > - `original_price`、`retrain_price`、`allow_retrain` 均自动设为 0
 > - `duration` 自动设为 NULL
 
-> **密训班赠送课程（2026-03 新增）**：
+> **密训班赠送课程（2026-03 新增，2026-04-03 收紧校验）**：
 > - `includedCourseIds`（可选）：赠送课程 ID（单个 ID 或数组），仅 `type=2` 密训班有效
 > - 服务端将其转为 JSON 数组 `[courseId]` 写入 `courses.included_course_ids`
+> - **2026-04-03**：赠送目标必须是 `courses` 中 **`type=1`（初探班）** 且 **`is_deleted=0`** 的课程；否则返回错误（「赠送课程只能选择初探班类型的课程」/「赠送课程不存在或已删除」）
 > - **新课程强制 `status=0`（下架）**，忽略前端传入的 status 值
 
 ### 🔴 2.5 课程管理 - 更新课程
@@ -799,9 +802,10 @@ ELSE:
 > - 尝试修改已上架课程的其他字段将返回错误：`"课程已上架，不可修改任何字段。如需修改请先下架课程。"`
 > - 允许的操作：仅传 `{ id, status: 0 }` 执行下架，下架后恢复可编辑
 
-> **密训班赠送课程（2026-03 新增）**：
+> **密训班赠送课程（2026-03 新增，2026-04-03 收紧校验）**：
 > - 新增 `includedCourseIds` 参数：赠送课程 ID（单个 ID），仅 `type=2` 密训班有效
-> - 传 `null` 或 `0` 清除赠送课程绑定
+> - 传 `null` 或空值清除赠送课程绑定
+> - **2026-04-03**：赠送目标须为 **`type=1` 初探班** 且未软删除；不可将本密训班 `id` 设为赠送对象
 
 ### 🔴 2.6 课程管理 - 删除课程
 **接口**: `DELETE /api/admin/course/delete`
@@ -2264,6 +2268,21 @@ ELSE:
 }
 ```
 
+### 🔵 6.1.1 获取大使等级体系配置
+- **action**: `getLevelSystem`
+- **云函数**: ambassador
+- **调用方**: 小程序客户端
+- **描述**: 返回启用状态的大使等级配置列表，含等级描述、升级权益文案、**申请页问题列表**等。
+
+**返回字段（节选）**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| levels | Array | 各等级配置 |
+| levels[].apply_questions | Array \| null | 该等级申请页动态问题；每项 `question`（string）、`is_required`（boolean）。接口会对库内 JSON 归一化：**未写 `is_required` 的旧数据**按「仅第一题为必填」补全，与改版前小程序行为一致 |
+
+**备注（2026-04-03）**：后台 `system.updateAmbassadorLevelConfig` 保存的 `apply_questions` 为 JSON 字符串，数组项为 `{ question, is_required }`；管理端「等级配置 → 申请列表文案」中「必填」开关对应 `is_required`。
+
 ### 🔵 6.2 申请成为大使/升级
 **接口**: `POST /api/ambassador/apply`  
 **action**: `apply`（ambassador 云函数）
@@ -2761,7 +2780,7 @@ Page({
 
 **接口概述**: 获取商城可兑换商品列表
 
-**云函数对齐（2026-04-02）**：小程序实际调用 `order` 云函数 `action: getMallGoods`，**游客可读**（不要求 `users` 表已注册）。商城内「兑换课程」Tab 列表为同云函数 `action: getMallCourses`，**同为游客可读**。
+**云函数对齐（2026-04-02）**：小程序实际调用 `order` 云函数 `action: getMallGoods`，**游客可读**（不要求 `users` 表已注册）。商城内「兑换课程」Tab 列表为同云函数 `action: getMallCourses`，**同为游客可读**；`getMallCourses` 与首页课程列表一致，仅返回 `status=1` 且 **`is_deleted=0`** 的初探班/密训班（2026-04-03）。
 
 **请求参数**:
 ```
@@ -3058,7 +3077,7 @@ Page({
 **业务逻辑**:
 ```
 1. 权限验证：检查用户资料是否完善（profile_completed=1）
-2. 查询课程：courses WHERE id=course_id AND status=1 AND type IN (1,2)
+2. 查询课程：courses WHERE id=course_id AND status=1 AND is_deleted=0 AND type IN (1,2)
    - 课程不存在或未上架 → 返回错误
 3. 库存验证：stock=-1（无限库存）跳过；stock>0 才允许兑换
 4. 计算价格：price = courses.current_price（精确到分，取整）
@@ -5926,6 +5945,11 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 - `DELETE /api/admin/announcement/delete`
 - `GET /api/admin/announcement/list`
 
+**云函数 action（管理端，与上表语义对应）**  
+- `deleteAnnouncement`：`id` 必填；**物理删除** `tiandao_culture.announcements` 对应行。若 `cover_image` 为 `cloud://` 文件 ID，删除行前会尝试删除云存储文件（失败不阻塞删库）。与 `updateAnnouncement` 仅改 `status` 的「隐藏」不同。
+
+**备注（2026-04-03）**：此前 `deleteAnnouncement` 仅将 `status` 置为 0，列表仍展示，易与「删除」语义不符；已改为物理删除。
+
 ### 🔴 10.7 系统配置管理
 **接口**:
 - `GET /api/admin/config/get`
@@ -6007,6 +6031,7 @@ ALTER TABLE tiandao_culture.mall_exchange_records
 | ~~gift_quota_basic~~ | ~~升级赠送初探班名额~~（2026-03-09 已隐藏，当前全部为 0） | — |
 | ~~gift_quota_advanced~~ | ~~升级赠送密训班名额~~（2026-03-09 已隐藏，当前全部为 0） | — |
 | can_earn_reward | 是否可获得推荐奖励 | 推荐奖励前置判断 |
+| apply_questions | 申请列表文案（JSON 字符串或数组） | 数组项 `{ question, is_required }`；管理端「申请列表文案」；小程序经 `getLevelSystem` 读取归一化后的 `is_required`（2026-04-03） |
 
 **业务校验规则**（保存时前后端双重校验）:
 1. `merit_rate_basic` 和 `cash_rate_basic` 不能同时 > 0（功德分和积分互斥）

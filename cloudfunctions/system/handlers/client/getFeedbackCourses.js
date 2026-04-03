@@ -15,7 +15,7 @@ module.exports = async (event, context) => {
 
     // 返回所有上架课程，不限于已购买
     const courses = await query('courses', {
-      where: { status: 1 },
+      where: { status: 1, is_deleted: 0 },
       columns: 'id, name, type'
     });
 

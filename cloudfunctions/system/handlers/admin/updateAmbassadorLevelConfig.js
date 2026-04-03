@@ -10,7 +10,7 @@
  * - upgrade_conditions: 升级条件（JSON 数组）
  * - benefits: 权益说明（JSON 数组）
  * - upgrade_benefits: 升级权益文案（JSON 数组，{title, desc}）
- * - apply_questions: 申请列表文案（JSON 数组，{question}）
+ * - apply_questions: 申请列表文案（JSON 数组，{question, is_required}）
  */
 const { findOne, update } = require('../../common/db');
 const { response, formatDateTime } = require('../../common');
@@ -67,7 +67,7 @@ module.exports = async (event, context) => {
         : JSON.stringify(upgrade_benefits);
     }
 
-    // 申请列表文案（JSON 数组，每项 {question: string}）
+    // 申请列表文案（JSON 数组，每项 { question: string, is_required: boolean }）
     if (apply_questions !== undefined) {
       updateData.apply_questions = typeof apply_questions === 'string'
         ? apply_questions

@@ -27,7 +27,7 @@
  * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
  * @param {number}  event.needContract  - 是否需要签订合同：0不需要/1需要，对应 DB 字段 need_contract
  */
-const { insert } = require('../../common/db');
+const { insert, findOne } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -71,12 +71,20 @@ module.exports = async (event, context) => {
       }
     }
 
-    // 密训班赠送课程：将单个 ID 转为 JSON 数组
+    // 密训班赠送课程：仅允许绑定未删除的初探班（type=1）
     let includedCourseIdsJson = null;
     if (parseInt(type) === 2 && includedCourseIds) {
-      const giftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
-      if (giftId) {
-        includedCourseIdsJson = JSON.stringify([parseInt(giftId)]);
+      const rawGiftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
+      const gid = parseInt(rawGiftId, 10);
+      if (gid) {
+        const giftCourse = await findOne('courses', { id: gid });
+        if (!giftCourse || Number(giftCourse.is_deleted) === 1) {
+          return response.error('赠送课程不存在或已删除');
+        }
+        if (parseInt(giftCourse.type, 10) !== 1) {
+          return response.error('赠送课程只能选择初探班类型的课程');
+        }
+        includedCourseIdsJson = JSON.stringify([gid]);
       }
     }
 

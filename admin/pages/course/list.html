@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260402">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260403">
   
   <style>
     .type-tag {
@@ -264,20 +264,23 @@
           </t-form-item>
         </template>
 
-        <!-- 密训班(type=2)专属：赠送课程配置 -->
+        <!-- 密训班(type=2)专属：赠送初探班（必选具体课程；清空=不赠送） -->
         <template v-if="editForm.type === 2">
-          <t-form-item label="赠送课程">
-            <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
-              <t-switch v-model="editForm.enableGiftCourse" :disabled="isCourseLocked" />
-              <span style="font-size:12px;color:#999;">开启后，购买该密训班将同时赠送绑定的课程</span>
-              <t-select
-                v-if="editForm.enableGiftCourse"
-                v-model="editForm.includedCourseId"
-                placeholder="请选择赠送课程"
-                :disabled="isCourseLocked"
-                :options="publishedCourseOptions.map(c => ({ label: c.name + (c.status === 0 ? '（未上架）' : '') + ' [' + getTypeText(c.type) + ']', value: c.id }))"
-                clearable
-              />
+          <t-form-item label="赠送初探班">
+            <t-select
+              v-model="editForm.includedCourseId"
+              placeholder="请选择要赠送的初探班（可清空表示不赠送）"
+              :disabled="isCourseLocked"
+              :options="giftBasicCourseSelectOptions"
+              clearable
+              filterable
+              style="width:100%;max-width:520px;"
+            />
+            <div style="font-size:12px;color:#999;margin-top:6px;">
+              规则：仅允许选择<strong>初探班</strong>课程；保存后会写入「赠送课程」配置，小程序详情与购课赠课逻辑依赖此处，请务必选择正确的一门初探班。
+            </div>
+            <div v-if="editForm.type === 2 && giftBasicCourseSelectOptions.length === 0" style="font-size:12px;color:#e37318;margin-top:4px;">
+              当前无可用初探班（请先新增 type=初探班 的课程，或检查是否均被删除）。
             </div>
           </t-form-item>
         </template>
@@ -360,15 +363,15 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260402"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260402"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260402"></script>
+  <script src="../../assets/js/config.js?v=20260403"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260403"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260403"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260402"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260402"></script>
+  <script src="../../assets/js/admin-api.js?v=20260403"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260403"></script>
 
   <script>
-    const { createApp, ref, reactive, onMounted } = Vue;
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
 
     createApp({
       setup() {
@@ -462,11 +465,21 @@
           sortOrder: 0,
           status: 0,
           needContract: 1,
-          enableGiftCourse: false,  // 赠送课程开关（仅密训班）
-          includedCourseId: null    // 赠送课程ID（单选）
+          includedCourseId: null    // 密训班赠送的初探班 course id；null=不赠送
         });
         const isCourseLocked = ref(false);        // 课程已上架时锁定编辑
-        const publishedCourseOptions = ref([]);   // 上架课程列表（供赠送课程下拉选择）
+        const publishedCourseOptions = ref([]);   // 管理端课程列表（供赠送初探班下拉）
+
+        // 密训班赠课下拉：仅 type=1 初探班，排除当前编辑中的课程
+        const giftBasicCourseSelectOptions = computed(() => {
+          const selfId = editForm.id;
+          return publishedCourseOptions.value
+            .filter(c => Number(c.type) === 1 && c.id !== selfId)
+            .map(c => ({
+              label: `${c.name}${Number(c.status) === 0 ? '（未上架）' : ''} · ID:${c.id}`,
+              value: c.id
+            }));
+        });
 
 
         // 表格列配置
@@ -534,7 +547,7 @@
         // 加载所有课程列表（供赠送课程下拉选择，排除自身；不限状态，方便管理员提前配置）
         const loadPublishedCourses = async (excludeId) => {
           try {
-            const data = await AdminAPI.getCourseList({ pageSize: 100 });
+            const data = await AdminAPI.getCourseList({ page: 1, pageSize: 200 });
             publishedCourseOptions.value = (data.list || []).filter(c => c.id !== excludeId);
           } catch (e) {
             console.warn('加载课程列表失败', e);
@@ -564,7 +577,6 @@
             sortOrder: 0,
             status: 0,
             needContract: 1,
-            enableGiftCourse: false,
             includedCourseId: null
           });
           loadPublishedCourses(null);
@@ -613,7 +625,6 @@
             sortOrder: course.sort_order,
             status: course.status,
             needContract: course.need_contract ?? 1,
-            enableGiftCourse: !!giftId,
             includedCourseId: giftId
           });
           // 将 fileID 转为临时 URL 用于预览
@@ -659,8 +670,11 @@
               sortOrder: editForm.sortOrder,
               status: editForm.status,
               needContract: isSalon ? 0 : editForm.needContract,
-              includedCourseIds: (editForm.type === 2 && editForm.enableGiftCourse && editForm.includedCourseId)
-                ? editForm.includedCourseId
+              // 密训班：有选中初探班则传 ID，否则传 null 清空赠课；非密训班传 null
+              includedCourseIds: editForm.type === 2
+                ? (editForm.includedCourseId != null && editForm.includedCourseId !== ''
+                  ? Number(editForm.includedCourseId)
+                  : null)
                 : null
             };
 
@@ -897,6 +911,7 @@
           editForm,
           isCourseLocked,
           publishedCourseOptions,
+          giftBasicCourseSelectOptions,
           handleSearch,
           handleReset,
           handlePageChange,

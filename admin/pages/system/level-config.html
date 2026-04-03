@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><title>等级配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260402"><style>.c{max-width:1200px;margin:0 auto;background:white;border-radius:8px;padding:24px}
+  <link rel="icon" href="data:,"><title>等级配置</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260403"><style>.c{max-width:1200px;margin:0 auto;background:white;border-radius:8px;padding:24px}
 
     /* 详情入口按钮网格 */
     .detail-panel-grid {
@@ -113,6 +113,9 @@
     }
     .list-item-fields { flex:1;display:flex;flex-direction:column;gap:6px; }
     .field-row { display:flex;flex-direction:column;gap:3px; }
+    .field-row--question { flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:12px; }
+    .field-row--question .field-q-input { flex:1;min-width:220px; }
+    .field-row--question .field-required-wrap { flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:2px; }
     .field-label { font-size:12px;color:#666;font-weight:500; }
   </style></head><body>
   <div id="app">
@@ -378,9 +381,15 @@
               <div v-for="(item, index) in detailQuestions" :key="index" class="list-editor-item">
                 <div class="list-item-index">{{ index + 1 }}</div>
                 <div class="list-item-fields">
-                  <div class="field-row">
-                    <span class="field-label">问题</span>
-                    <t-input v-model="item.question" placeholder="如：您为何想成为天道文化传播大使？" size="small"/>
+                  <div class="field-row field-row--question">
+                    <div class="field-q-input">
+                      <span class="field-label">问题</span>
+                      <t-input v-model="item.question" placeholder="如：您为何想成为天道文化传播大使？" size="small"/>
+                    </div>
+                    <div class="field-required-wrap">
+                      <span class="field-label">必填</span>
+                      <t-switch v-model="item.is_required" size="small"/>
+                    </div>
                   </div>
                 </div>
                 <t-button size="small" variant="text" theme="danger" @click="removeQuestion(index)" style="flex-shrink:0;margin-top:4px;">删除</t-button>
@@ -451,11 +460,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260402"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260402"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260402"></script>
-  <script src="../../assets/js/admin-api.js?v=20260402"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260402"></script>
+  <script src="../../assets/js/config.js?v=20260403"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260403"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260403"></script>
+  <script src="../../assets/js/admin-api.js?v=20260403"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260403"></script>
   <script>
   const { createApp, ref, onMounted, nextTick } = Vue;
   createApp({
@@ -808,7 +817,10 @@
               ? JSON.parse(row.apply_questions)
               : row.apply_questions;
             detailQuestions.value = Array.isArray(parsed)
-              ? parsed.map(q => ({ question: q.question || '' }))
+              ? parsed.map((q, i) => ({
+                  question: q.question || '',
+                  is_required: typeof q.is_required === 'boolean' ? q.is_required : (i === 0),
+                }))
               : [];
           } catch (e) { detailQuestions.value = []; }
         } else {
@@ -819,7 +831,7 @@
 
       const addQuestion = () => {
         if (detailQuestions.value.length >= 10) return;
-        detailQuestions.value.push({ question: '' });
+        detailQuestions.value.push({ question: '', is_required: false });
       };
 
       const removeQuestion = index => { detailQuestions.value.splice(index, 1); };
@@ -827,7 +839,12 @@
       const saveQuestions = async () => {
         questionsSaving.value = true;
         try {
-          const validItems = detailQuestions.value.filter(q => q.question.trim());
+          const validItems = detailQuestions.value
+            .filter(q => q.question.trim())
+            .map(q => ({
+              question: q.question.trim(),
+              is_required: !!q.is_required,
+            }));
           await AdminAPI.updateLevelConfig({
             level: detailRow.value.level,
             apply_questions: JSON.stringify(validItems)

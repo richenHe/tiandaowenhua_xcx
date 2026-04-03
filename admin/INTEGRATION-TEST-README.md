@@ -125,7 +125,7 @@
   | F3 订单 · 商城兑换 · 多表数据一致性 | ⏳ 重测（2026-04-02：`order` 游客可读 `getMallGoods`/`getMallCourses`，需确认自动化/手测仍通过；此前 20/21 pass 基线见 2026-03-09） | 2026-04-02 |
   | F4 功德分 · 积分 · 提现 · 余额一致性 | ⏳ 重测（2026-03-13：修复 getMeritPointsHistory Tab 类型筛选 Bug；2026-03-23：applyWithdraw 接口改为从 users 表读取银行信息，前端不再传银行字段；提现页面移除银行输入表单，改为只读展示并跳转个人资料页修改；需验证银行信息未填时提现跳转拦截逻辑） | 2026-03-23 |
   | F4B 边界验证 · 无推荐人+完整资料 · 积分余额 | ✅ 已完成（全通过 3/3） | 2026-02-27 |
-  | F5 大使体系 · 等级配置 · 升级条件 | ✅ 已完成（**8/8 全通过**；S5.1 申请状态 status=0(待审核)✓；S5.2 5级配置齐全，青鸾frozen_points=1688✓、鸿鹄frozen_points=16880✓；S5.3 升级指南 current=1，含1个升级选项✓；S5.4 名额 total=5/used=5/available=0，remaining不为负✓；S5.5 活动记录4条均正常✓；S5.6 活动统计✓；S5.7 推荐学员✓；S5.8 二维码✓；DB交叉全部一致；⚠️ MT-34导航栈手动验证登记为MT项不阻塞流程完成） | 2026-03-03 |
+  | F5 大使体系 · 等级配置 · 升级条件 | ⏳ 重测（2026-04-03：申请列表文案支持每题「必填」开关 + `getLevelSystem` 返回 `is_required`；需手测 S5.9/S5.10 与既有 S5.1~S5.8） | 2026-04-03 |
   | F5B 边界验证 · 普通用户拦截(level=0) · 升级指南0→1 | ✅ 已完成（全通过 4/4；S5B.1 断言修复：接受 has_application=false 或 status=2 均为可重申状态） | 2026-03-02 |
   | F5C 边界验证 · 准青鸾升级路径(level=1) · target≤current拒绝 | ✅ 已完成（全通过 2/2） | 2026-02-27 |
   | F5D 流程5-D: 青鸾大使升级路径(level=2→3) · ~~名额remaining=0边界~~ | ✅ 已完成（**2/2 全通过**；S5D.1 current_level=2✓，upgrade_options含contract✓；S5D.2 softFail接口仍可用，1条名额remaining=0✓；DB交叉全部一致） | 2026-03-09 |
@@ -134,7 +134,7 @@
   | F6 协议模板 · 我的协议 · 签署验证 | ⏳ 重测（2026-03-13：新增 S6.11 客户端无合同照片提示验证；修复 contracts/index.vue 无照片时无限加载 Bug） | 2026-03-13 |
   | F7 预约 · 排期 · 学习进度 · 签到 | ✅ 已完成（**20/22 通过，0 失败，2 warn（均为 softFail）**；S7.1b 首次预约✓ appointment_id=69；S7.1c 客户端截止日前取消✓；S7.4c 复训拦截✓；S7.QR1-QR3 签到码生成/覆盖/列表✓；S7.SC1 扫码签到"不在签到时间内"合法边界✓（scanCheckin Bug 已修复）；S7.MC1-MC3 补签/取消/查询✓；S7.RC1 has_credit 字段✓；S7.8 warn：沙龙课 type=4 豁免合同拦截，正确行为非 Bug；S7.CA2 warn：appointmentId=0 被拒为缺参，需手动测试；DB 交叉：appointment id=69 status=3✓，booked_quota 与实际预约数一致✓） | 2026-03-09 |
   | F8 反馈 · 类型联动 · 课程关联 | ✅ 已完成（8/8 全通过；getMyFeedback 修复降序排列；S8.5 feedback_type 5种全覆盖✓、status 全合法✓、reply验证✓；DB交叉4项全一致） | 2026-03-02 |
-  | F9 系统公共 · 公告 · Banner · 配置 · 通知 | ✅ 已完成（全通过 7/7；S9.6修复：公告id从1改为2（id=1已下架）；客服电话/通知配置/Banner均正常） | 2026-03-02 |
+  | F9 系统公共 · 公告 · Banner · 配置 · 通知 | ⏳ 重测（2026-04-03：`deleteAnnouncement` 改为物理删除 announcements 行；需手测后台「删除」后列表消失 + SQL 无该行；与「隐藏」区分） | 2026-04-03 |
   | F10 跨模块数据完整性终极验证 | ✅ 已完成（5/6通过，1 warn：S10.3密训班赠课验证；S10.1循环引用检测全✓(4用户无循环)；S10.2订单→课程记录通过；S10.3 warn：密训班订单ORD202602221434438312的user_courses无is_gift=1赠课记录（主课程记录也为NULL），MT密训班赠课手动测试待验证（MT-36~38）；S10.4推荐人锁定✓(referee_confirmed_at=2026-02-24)；S10.5奖励发放基本一致（TST订单referee_level=3但无积分记录，历史测试数据差异）；S10.6变更日志完整✓(user=30有多条订单修改日志)) | 2026-03-03 |
   | F11 大使志愿活动 · 岗位管理 · 报名 · 功德分发放 | ⏳ 重测（2026-03-13：修复 Tab 类型筛选 Bug — 前端 `activity_type`(snake_case) → `activityType`(camelCase) 参数名不匹配导致后端始终默认值0，筛选无效；同时修复 type_stats 缺少统筹(5)/主持(6)的统计；新增 S11.10b 验证 Tab 筛选生效） | 2026-03-13 |
   | F12 课程学习合同 · 合同配置 · 管理员录入合约 · 上架校验 | ⏳ 重测（2026-03-13：新增 S12.N17/N18 后台补充合同照片 updateContractImages 测试；getContractList 返回字段修复验证） | 2026-03-13 |
@@ -149,7 +149,7 @@
   | F18 角色权限管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S18.1 创建角色✓；S18.2 角色列表4条含新建✓；S18.3 更新权限✓；S18.4 super_admin权限修改拦截✓；S18.5 内置角色删除拦截✓；S18.6 使用中角色删除拦截✓；S18.7 自定义角色删除并清理✓；S18.8 缺参拦截✓） | 2026-03-09 |
   | F19 商学院板块管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S19.1 小程序7条板块✓；S19.2 后台列表✓；S19.3 新增板块id=9✓（修复：insert未链式.select()导致id为null）；S19.4 修改标题✓；S19.5 切换隐藏status=0✓；S19.6 排序更新✓；S19.7 删除清理✓；S19.8 验证隐藏不出现✓） | 2026-03-09 |
   | F21 排座管理 · 配置 · 分配 · 随机 · 导出 | ✅ 已完成（**9/9 全通过，0 失败，0 warn**；S21.1 getSeatingData结构✓；S21.2 保存5桌×6座配置✓；S21.3 assign学员A→桌1座1✓；S21.4 assign学员B→桌1座2✓；S21.5 swap互换座位✓；S21.6 remove移回备选✓；S21.7 randomAssignSeats assigned=1✓；S21.8 缩减1桌×4座超范围清理✓；S21.9 最终状态验证✓；修复2项Bug：getSeatingData用findOne查ambassador_activities返回3行报错→改用query；class_records.course_name字段为NULL→补全数据+加固断言） | 2026-03-09 |
-  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（2026-04-02：`order.getMallGoods`/`getMallCourses` 游客可读；未登录进商城应能加载商品与课程列表、无「用户未注册」；2026-04-01：冷启动首页；原生 tabBar；我的→登录；协议；课程详情/兑换/明细引导；401 不整页踢） | 2026-04-02 |
+  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（2026-04-03：`course.getList`/`getDetail`、`order.getMallCourses`、`system.getFeedbackCourses` 均过滤 `is_deleted=0`，与后台软删除一致；后台删过的课程不应再出现在首页/商城列表；2026-04-02：`getMallGoods`/`getMallCourses` 游客可读；2026-04-01：冷启动首页；原生 tabBar；我的→登录；协议；课程详情/兑换/明细引导；401 不整页踢） | 2026-04-03 |
 
   > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
@@ -165,6 +165,7 @@
   | MP.4 | 登录页不勾选协议点一键登录 | Toast 提示须同意协议 |
   | MP.5 | 打开《用户服务协议》《隐私政策》 | 独立页有正文，顶栏可返回 |
   | MP.6 | 首页点击某一课程卡片 | 未登录时跳转登录；登录后可进详情 |
+  | MP.6b | 后台对某门**已上架**课程执行删除（软删除）后，小程序下拉刷新首页 | 该课程不再出现在列表；密训班等与后台「未删除」条数一致 |
   | MP.7 | 商城点击「兑换」或积分「明细」 | 未登录时跳转登录 |
 
   ---
@@ -175,6 +176,8 @@
 
   | 变更日期 | 变更模块 | 变更内容 | 影响测试项 |
   |---|---|---|---|
+  | 2026-04-03 | `admin/pages/course/list.html`；`course/createCourse`、`updateCourse` | **密训班赠课配置**：后台改为下拉选择具体**初探班**（仅 type=1）；服务端校验赠课目标须为未删除初探班。手测：编辑密训班→选一门初探班→保存→`courses.included_course_ids` 非空→小程序详情可见赠课。 | 课程管理手测；S2.2b 自动化 |
+  | 2026-04-03 | `course/handlers/public/getList.js`、`getDetail.js`；`order/handlers/client/getMallCourses.js`、`exchangeCourse.js`；`system/handlers/client/getFeedbackCourses.js` | **公开课程列表与软删除对齐**：客户端/游客可见的课程查询增加 `is_deleted=0`，避免后台已软删除仍 `status=1` 的课程在小程序重复出现；兑换接口主课与赠课均排除已删课程。 | MP-合规；F8（反馈选课程）；自动化若依赖 getList 计数需对照后台未删课程 |
   | 2026-04-02 | `cloudfunctions/order/index.js`、`order/common/auth.js` | **商城列表游客可读**：`getMallGoods`、`getMallCourses` 不再强制 `checkClientAuth`；未注册 `users` 也可拉列表；兑换类 action 仍强制鉴权。 | MP-合规 MP.2b；F3 重测 |
   | 2026-03-13 | `cloudfunctions/callbacks/handlers/payment.js`<br>`cloudfunctions/order/handlers/public/testSimulatePayment.js` | **推荐人锁定时机变更**：`referee_confirmed_at` 不再在首次支付时写入，改为**仅在首次签署学习合同时**（`adminCreateCourseContract`）写入。已删除 payment.js 第 361-375 行的锁定逻辑。 | MT-03（边界：已签合同用户扫码无法换推荐人 ✅）；MT-03b（未签合同用户扫码可换推荐人 ⏳） |
   | 2026-03-13 | `cloudfunctions/ambassador/common/grantRefereeReward.js` | **奖励发放规则变更**：删除 `can_earn_reward=0` 时的硬拦截逻辑。奖励是否发放**仅由费率配置**（`merit_rate_basic`/`merit_rate_advanced`/`cash_rate_basic`/`cash_rate_advanced`）决定，`can_earn_reward` 字段不再起拦截作用。 | MT-30（后台录入合约触发奖励 ✅） |
@@ -524,6 +527,7 @@
   | MT-53 | ~~排期日期云函数拦截~~（已变更）取消排期+自动取消预约 | 调用 `updateClassRecord {id:<排期id>, status:0}` | 排期 status=0，关联预约 status=3，复训预约释放资格 | ⏳ 重测（2026-03-06 updateClassRecord 仅允许 status=0） |
   | MT-13 | 等级配置互斥校验 | 后台→等级配置→功德率和积分率同时填>0 | 报错"不能同时大于0" | ✅ 已通过（2026-03-04） |
   | MT-14 | 等级配置倍数校验 | 后台→等级配置→设置非整数倍关系 | 报错"必须是整数倍" | ✅ 已通过（2026-03-04） |
+  | MT-54 | 申请列表文案必填开关 | 后台→等级配置→详情→申请列表文案 | 每题「必填」开关可保存；`apply_questions` JSON 含 `is_required`；与 F5 S5.9/S5.10 联测 | ⏳ 待测（2026-04-03 新增） |
 
   ---
 
@@ -1716,6 +1720,17 @@
   | 5 | 二维码生成仅限准青鸾+ (level≥1) | 需求 3.1.7.4 |
   | 6 | 活动记录应与功德分记录关联 | 需求 3.1.7.2 |
 
+  **新增测试步骤（2026-04-03 申请问题必填开关）**：
+
+  | 步骤 | 类型 | Action / 操作 | 描述 |
+  |------|------|-----------------|------|
+  | S5.9 | 📖 手动（后台+小程序） | 后台「等级配置」→ 某等级 → 申请列表文案 | 将第 2 题「必填」开关打开并保存；小程序进入该等级申请页 |
+  | | 期望 | UI / 校验 | 第 2 题标签带红色 `*`；第 1、2 题均留空点提交 → 应提示「请回答第1个问题」；仅填第 1 题、第 2 题空 → 应提示「请回答第2个问题」 |
+  | | 期望 | `getLevelSystem` | 对应 `levels[].apply_questions[1].is_required === true` |
+  | | 验证 SQL | `SELECT apply_questions FROM tiandao_culture.ambassador_level_configs WHERE level=?` | JSON 中第二项含 `"is_required":true` |
+  | S5.10 | 📖 手动（后台+小程序） | 同上 | 将第 1 题「必填」关闭、第 2 题打开并保存 |
+  | | 期望 | UI / 校验 | 第 1 题无 `*`、占位含「选填」；第 2 题有 `*`；仅填第 2 题应可提交（第 1 题空） |
+
   **多表验证 SQL**：
   ```sql
   -- 活动记录与功德分关联验证
@@ -2361,6 +2376,12 @@
   **测试目的**：验证系统公共接口的基础连通性。
 
   **涉及表**：`announcements`, `banners`, `system_configs`, `notification_configs`
+
+  | 步骤 | 类型 | Action / 操作 | 描述 |
+  |------|------|---------------|------|
+  | S9.7 | ✏️ 写操作（手测） | 后台公告管理「删除」或 `deleteAnnouncement` | 删除指定 id 后 **数据库无该 id 行**（非仅 status=0） |
+  | | 期望 | `tiandao_culture.announcements` | `SELECT id FROM tiandao_culture.announcements WHERE id=?` 结果为空 |
+  | | 对比 | 「隐藏」按钮 / `updateAnnouncement` status | 仅改 `status`，行仍存在 |
 
   ---
 

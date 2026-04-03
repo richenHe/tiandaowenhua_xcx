@@ -13,11 +13,12 @@ module.exports = async (event, context) => {
     // 兼容 pageSize 参数
     const finalPageSize = pageSize || page_size || 10;
 
-    // 构建查询（courses 表没有 deleted_at 字段）
+    // 构建查询：上架且未软删除（与后台列表一致，避免已删除课程仍出现在小程序）
     let queryBuilder = db
       .from('courses')
       .select('*', { count: 'exact' })
       .eq('status', 1)
+      .eq('is_deleted', 0)
       .order('sort_order', { ascending: false })
       .order('id', { ascending: false });
 

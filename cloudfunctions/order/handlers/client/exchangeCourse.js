@@ -100,8 +100,8 @@ module.exports = async (event, context) => {
       return response.paramError('课程ID不能为空');
     }
 
-    // 3. 查询课程信息（只允许初探班 type=1 和密训班 type=2）
-    const course = await findOne('courses', { id: course_id });
+    // 3. 查询课程信息（只允许初探班 type=1 和密训班 type=2；排除后台软删除）
+    const course = await findOne('courses', { id: course_id, is_deleted: 0 });
     if (!course) {
       return response.notFound('课程不存在或已下架');
     }
@@ -199,9 +199,9 @@ module.exports = async (event, context) => {
         }
         if (giftIds && giftIds.length > 0) {
           for (const giftCourseId of giftIds) {
-            const giftCourse = await findOne('courses', { id: giftCourseId });
+            const giftCourse = await findOne('courses', { id: giftCourseId, is_deleted: 0 });
             if (!giftCourse) {
-              console.warn('[exchangeCourse] 赠送课程不存在:', giftCourseId);
+              console.warn('[exchangeCourse] 赠送课程不存在或已删除:', giftCourseId);
               continue;
             }
             await applyCourseDays(db, user.id, OPENID, giftCourse, {

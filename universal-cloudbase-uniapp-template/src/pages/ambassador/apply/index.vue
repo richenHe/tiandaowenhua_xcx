@@ -32,11 +32,11 @@
             :key="index" 
             class="form-item"
           >
-            <view class="form-label" :class="{ required: index === 0 }">{{ q.question }}</view>
+            <view class="form-label" :class="{ required: isQuestionRequired(q, index) }">{{ q.question }}</view>
             <textarea 
               class="form-textarea" 
               v-model="answers[index]" 
-              :placeholder="`请填写您的回答${index === 0 ? '' : '（选填）'}…`"
+              :placeholder="`请填写您的回答${isQuestionRequired(q, index) ? '' : '（选填）'}…`"
               :maxlength="500"
             />
           </view>
@@ -165,6 +165,10 @@ const scrollHeight = computed(() =>
   'calc(100vh - var(--status-bar-height) - var(--td-page-header-height) - 120rpx)'
 )
 
+/** 是否与历史行为一致：未配置 is_required 时仅第一题必填 */
+const isQuestionRequired = (q: ApplyQuestion, index: number) =>
+  typeof q.is_required === 'boolean' ? q.is_required : index === 0
+
 /** 提交申请 */
 const handleSubmit = async () => {
   if (isSubmitted.value) return
@@ -173,10 +177,14 @@ const handleSubmit = async () => {
     return
   }
 
-  // 有动态问题时校验第一项
-  if (applyQuestions.value.length > 0 && !answers.value[0]?.trim()) {
-    uni.showToast({ title: '请回答第一个问题', icon: 'none' })
-    return
+  if (applyQuestions.value.length > 0) {
+    const missingIdx = applyQuestions.value.findIndex(
+      (q, i) => isQuestionRequired(q, i) && !answers.value[i]?.trim()
+    )
+    if (missingIdx !== -1) {
+      uni.showToast({ title: `请回答第${missingIdx + 1}个问题`, icon: 'none' })
+      return
+    }
   }
 
   // 无动态问题时校验申请理由

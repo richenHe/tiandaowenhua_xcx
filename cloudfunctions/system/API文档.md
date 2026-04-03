@@ -530,7 +530,7 @@
 
 - **createAnnouncement**: 创建公告
 - **updateAnnouncement**: 更新公告
-- **deleteAnnouncement**: 删除公告（软删除）
+- **deleteAnnouncement**: 删除公告（物理删除 `announcements` 记录；删除前若 `cover_image` 为 `cloud://` 则尝试删除云存储文件）
 - **getAnnouncementList**: 获取公告列表
 
 **公告类型**：
