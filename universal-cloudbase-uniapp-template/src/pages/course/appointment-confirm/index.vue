@@ -10,7 +10,8 @@
           <view class="t-card__body">
             <view class="info-title">{{ courseInfo.courseName }}</view>
             <view class="info-details">
-              <view class="info-item">📅 {{ courseInfo.startDate }}{{ courseInfo.startTime ? ' ' + courseInfo.startTime : '' }}</view>
+              <view class="info-item">📅 {{ scheduleDateRangeText }}</view>
+              <view v-if="scheduleTimeRangeText" class="info-item">🕐 {{ scheduleTimeRangeText }}</view>
               <view class="info-item">📍 {{ courseInfo.location }}</view>
             </view>
           </view>
@@ -97,11 +98,31 @@ const courseInfo = ref({
   courseType: 0,
   courseName: '',
   startDate: '',
+  endDate: '',
   startTime: '',
+  endTime: '',
   location: '',
   userAttendCount: 0,
   retrainPrice: 0,
   userCourseId: 0,
+});
+
+/** 开课日～结课日；单日课只显示一天 */
+const scheduleDateRangeText = computed(() => {
+  const start = courseInfo.value.startDate;
+  const end = courseInfo.value.endDate || start;
+  if (!start) return '';
+  if (end && end !== start) return `${start} 至 ${end}`;
+  return start;
+});
+
+/** 当天上课开始～结束时刻 */
+const scheduleTimeRangeText = computed(() => {
+  const st = courseInfo.value.startTime;
+  const et = courseInfo.value.endTime;
+  if (!st && !et) return '';
+  if (st && et) return `${st} - ${et}`;
+  return st || et || '';
 });
 
 const loading = ref(true);
@@ -132,20 +153,39 @@ const buttonText = computed(() => {
   return '立即预约';
 });
 
-// 加载排期详情（URL 未直传展示数据时回退使用）
-const loadClassRecordDetail = async (classRecordId: number) => {
+/**
+ * 按当前 courseId + classRecordId 拉取排期列表，填充展示字段与复训价（复训费以排期为准）
+ */
+const loadScheduleRow = async () => {
+  const cid = courseInfo.value.courseId;
+  const crid = courseInfo.value.classRecordId;
+  if (!cid || !crid) return;
   try {
     const result = await CourseApi.getClassRecords({
-      course_id: courseInfo.value.courseId,
+      course_id: cid,
       page: 1,
       page_size: 100
     });
-    const record = result.list.find((item: any) => item.id === classRecordId);
+    // 接口 JSON 常见 number/string 混用，严格 === 会导致匹配不到当前排期 → retrainPrice 恒为 0 → 无法进入支付预约流程
+    const record = (result?.list || []).find((item: any) => Number(item.id) === Number(crid));
     if (record) {
-      courseInfo.value.courseName = record.course_name;
-      courseInfo.value.startDate = record.class_date || '';
-      courseInfo.value.startTime = record.start_time || '';
-      courseInfo.value.location = record.location;
+      courseInfo.value.courseName = record.course_name || courseInfo.value.courseName;
+      if (record.class_date) {
+        courseInfo.value.startDate = record.class_date;
+      }
+      // class_end_date 为空时表示单日课，展示上用开课日作为结束日（日期行只显示一天）
+      const endFromApi = record.class_end_date || record.class_date;
+      if (endFromApi) {
+        courseInfo.value.endDate = endFromApi;
+      }
+      if (record.start_time) {
+        courseInfo.value.startTime = record.start_time;
+      }
+      if (record.end_time != null && String(record.end_time).trim() !== '') {
+        courseInfo.value.endTime = String(record.end_time).trim();
+      }
+      courseInfo.value.location = record.location || courseInfo.value.location;
+      courseInfo.value.retrainPrice = parseFloat(String(record.retrain_price)) || 0;
     }
   } catch (error) {
     console.error('加载排期详情失败:', error);
@@ -154,7 +194,7 @@ const loadClassRecordDetail = async (classRecordId: number) => {
 };
 
 /**
- * 通过 getMyCourses 获取用户在指定课程的 attend_count、retrain_price
+ * 通过 getMyCourses 获取用户在指定课程的 attend_count、user_course id
  * 沙龙课程（type=4）不需要查询
  */
 const loadUserCourseInfo = async (courseId: number) => {
@@ -162,10 +202,9 @@ const loadUserCourseInfo = async (courseId: number) => {
   try {
     const result = await UserApi.getMyCourses({ page: 1, page_size: 100 });
     const list = result?.list || result || [];
-    const matched = list.find((item: any) => item.course_id === courseId);
+    const matched = list.find((item: any) => Number(item.course_id) === Number(courseId));
     if (matched) {
       courseInfo.value.userAttendCount = matched.attend_count || 0;
-      courseInfo.value.retrainPrice = parseFloat(matched.retrain_price) || 0;
       courseInfo.value.userCourseId = matched.id;
     }
   } catch (error) {
@@ -189,7 +228,7 @@ const checkAlreadyBooked = async (classRecordId: number) => {
     const result = await CourseApi.getMyAppointments({ page: 1, page_size: 100 });
     const list = result?.list || [];
     alreadyBooked.value = list.some(
-      (item: any) => item.class_record_id === classRecordId && item.status !== 3
+      (item: any) => Number(item.class_record_id) === Number(classRecordId) && item.status !== 3
     );
   } catch (error) {
     console.error('检查预约状态失败:', error);
@@ -286,30 +325,34 @@ onLoad(async (options: any) => {
   if (options?.classDate) {
     courseInfo.value.startDate = decodeURIComponent(options.classDate);
   }
+  if (options?.classEndDate) {
+    courseInfo.value.endDate = decodeURIComponent(options.classEndDate);
+  }
   if (options?.classTime) {
     courseInfo.value.startTime = decodeURIComponent(options.classTime);
+  }
+  if (options?.endTime) {
+    courseInfo.value.endTime = decodeURIComponent(options.endTime);
   }
   if (options?.location) {
     courseInfo.value.location = decodeURIComponent(options.location);
   }
 
-  // URL 没有展示数据时通过 API 加载
-  if (!courseInfo.value.courseName && courseInfo.value.classRecordId && courseInfo.value.courseId) {
-    loadClassRecordDetail(courseInfo.value.classRecordId);
-  } else {
-    loading.value = false;
-  }
-
-  // 加载用户课程信息、检查已预约状态、复训资格
+  // 加载用户课程信息、排期（含复训价）、已预约状态、复训资格
   if (courseInfo.value.courseId) {
     uni.showLoading({ title: '加载中...' });
-    await Promise.all([
+    const tasks: Promise<void>[] = [
       loadUserCourseInfo(courseInfo.value.courseId),
       checkAlreadyBooked(courseInfo.value.classRecordId),
       loadRetrainCreditStatus(courseInfo.value.courseId),
-    ]);
+    ];
+    if (courseInfo.value.classRecordId) {
+      tasks.push(loadScheduleRow());
+    }
+    await Promise.all(tasks);
     uni.hideLoading();
   }
+  loading.value = false;
 
 });
 </script>

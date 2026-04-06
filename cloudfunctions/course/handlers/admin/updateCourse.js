@@ -15,7 +15,6 @@
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
  * @param {number}  event.currentPrice  - 现价，对应 DB 字段 current_price
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
- * @param {number}  event.retrainPrice  - 重训价，对应 DB 字段 retrain_price
  * @param {number}  event.allowRetrain  - 是否允许重训，对应 DB 字段 allow_retrain
  * @param {number} event.validityDays - 课程有效期（天），必填正整数，对应 DB 字段 validity_days
  * @param {string}  event.duration      - 课程时长
@@ -31,6 +30,12 @@
 const { db, findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
+const {
+  sanitizeBlocksInput,
+  serializeBlocksForDb,
+  blocksToDescriptionPlain,
+  blocksToOutlineLegacyJson,
+} = require('../../common/courseRichBlocks');
 
 module.exports = async (event, context) => {
   // 接收 camelCase 参数（id 用于定位记录）
@@ -42,7 +47,6 @@ module.exports = async (event, context) => {
     coverImage,
     currentPrice,
     originalPrice,
-    retrainPrice,
     allowRetrain,
     validityDays,
     duration,
@@ -55,6 +59,9 @@ module.exports = async (event, context) => {
     includedCourseIds,
     needContract
   } = event;
+
+  const descriptionBlocksRaw = event.descriptionBlocks !== undefined ? event.descriptionBlocks : event.description_blocks;
+  const outlineBlocksRaw = event.outlineBlocks !== undefined ? event.outlineBlocks : event.outline_blocks;
 
   try {
     // 参数验证
@@ -72,8 +79,9 @@ module.exports = async (event, context) => {
     // 上架锁定：已上架课程只允许下架操作（修改 status），其他字段禁止修改
     if (course.status === 1) {
       const editFields = ['name', 'nickname', 'type', 'coverImage', 'currentPrice', 'originalPrice',
-        'retrainPrice', 'allowRetrain', 'validityDays', 'duration', 'description', 'content',
-        'outline', 'teacher', 'sortOrder', 'includedCourseIds', 'needContract'];
+        'allowRetrain', 'validityDays', 'duration', 'description', 'content',
+        'outline', 'teacher', 'sortOrder', 'includedCourseIds', 'needContract',
+        'descriptionBlocks', 'description_blocks', 'outlineBlocks', 'outline_blocks'];
       const hasEditField = editFields.some(k => event[k] !== undefined);
       if (hasEditField) {
         return response.error('课程已上架，不可修改任何字段。如需修改请先下架课程。');
@@ -92,7 +100,6 @@ module.exports = async (event, context) => {
     if (coverImage !== undefined) fieldsToUpdate.cover_image = coverImage;
     if (currentPrice !== undefined) fieldsToUpdate.current_price = currentPrice;
     if (originalPrice !== undefined) fieldsToUpdate.original_price = originalPrice;
-    if (retrainPrice !== undefined) fieldsToUpdate.retrain_price = retrainPrice;
     if (allowRetrain !== undefined) fieldsToUpdate.allow_retrain = allowRetrain ? 1 : 0;
     // 沙龙课程(type=4)跳过有效期校验，其余类型必须为正整数
     const effectiveType = type !== undefined ? parseInt(type) : course.type;
@@ -105,9 +112,25 @@ module.exports = async (event, context) => {
       fieldsToUpdate.validity_days = vd;
     }
     if (duration !== undefined) fieldsToUpdate.duration = duration;
-    if (description !== undefined) fieldsToUpdate.description = description;
+    // 图文块优先：与 createCourse 一致；否则允许单独改 description / outline（兼容旧调用）
+    if (descriptionBlocksRaw !== undefined || event.description_blocks !== undefined) {
+      const raw = descriptionBlocksRaw !== undefined ? descriptionBlocksRaw : event.description_blocks;
+      const descBlocks = sanitizeBlocksInput(raw);
+      fieldsToUpdate.description_blocks = serializeBlocksForDb(descBlocks);
+      fieldsToUpdate.description = blocksToDescriptionPlain(descBlocks, 500);
+    } else if (description !== undefined) {
+      fieldsToUpdate.description = description;
+    }
     if (content !== undefined) fieldsToUpdate.content = content;
-    if (outline !== undefined) fieldsToUpdate.outline = outline;
+    if (outlineBlocksRaw !== undefined || event.outline_blocks !== undefined) {
+      const raw = outlineBlocksRaw !== undefined ? outlineBlocksRaw : event.outline_blocks;
+      const ob = sanitizeBlocksInput(raw);
+      fieldsToUpdate.outline_blocks = serializeBlocksForDb(ob);
+      const leg = blocksToOutlineLegacyJson(ob);
+      fieldsToUpdate.outline = leg === '[]' ? null : leg;
+    } else if (outline !== undefined) {
+      fieldsToUpdate.outline = outline;
+    }
     if (teacher !== undefined) fieldsToUpdate.teacher = teacher;
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     // 密训班赠送课程：将单个 ID 转为 JSON 数组；传 null 表示清除；目标须为未删除的初探班

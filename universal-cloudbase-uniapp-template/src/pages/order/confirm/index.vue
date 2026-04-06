@@ -187,6 +187,14 @@ const loadPageData = async () => {
       return;
     }
 
+    if (isRetrain.value && !classRecordId.value) {
+      isLoading.value = false;
+      uni.hideLoading();
+      uni.showToast({ title: '缺少排期信息', icon: 'none' });
+      setTimeout(() => uni.navigateBack(), 1500);
+      return;
+    }
+
     const [profile, course] = await Promise.all([
       UserApi.getProfile(),
       CourseApi.getDetail(courseId)
@@ -197,10 +205,27 @@ const loadPageData = async () => {
       phone: profile.phone ? profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''
     };
 
-    // 复训订单使用 retrain_price，普通订单使用 current_price
-    const price = isRetrain.value
-      ? (parseFloat(course.retrain_price) || 0)
-      : (course.current_price || 0);
+    // 复训订单金额以排期 class_records.retrain_price 为准；0 元不应进入本页
+    let price = course.current_price || 0;
+    if (isRetrain.value) {
+      const cr = await CourseApi.getClassRecords({ course_id: courseId, page: 1, page_size: 100 });
+      const row = (cr?.list || []).find((item: any) => item.id === classRecordId.value);
+      if (!row) {
+        isLoading.value = false;
+        uni.hideLoading();
+        uni.showToast({ title: '排期不存在', icon: 'none' });
+        setTimeout(() => uni.navigateBack(), 1500);
+        return;
+      }
+      price = parseFloat(String(row.retrain_price)) || 0;
+      if (price <= 0) {
+        isLoading.value = false;
+        uni.hideLoading();
+        uni.showToast({ title: '本排期无需支付复训费，请返回预约', icon: 'none' });
+        setTimeout(() => uni.navigateBack(), 1800);
+        return;
+      }
+    }
 
     courseInfo.value = {
       id: course.id,
@@ -260,6 +285,10 @@ const handleConfirm = () => {
 
 /** 复训订单确认 */
 const handleRetrainConfirm = () => {
+  if (totalAmount.value <= 0) {
+    uni.showToast({ title: '无需支付，请返回预约页', icon: 'none' });
+    return;
+  }
   uni.showModal({
     title: '复训费支付',
     content: `确认支付复训费 ¥${formatPrice(totalAmount.value)} 吗？\n支付后无法取消预约且不退费。`,

@@ -32,7 +32,7 @@
 | MT-24 | 推荐人资格验证失败（准青鸾推荐密训班） | ⏳ 待测 | 需将 user_id=34 升至 level=1 后设为 user_id=30 的推荐人 |
 | MT-25 | 课程续期兑换（exchangeCourse） | ✅ 已通过 | S3.6b 自动化测试已覆盖 exchangeCourse 全链路（quota_exchange_records + merit_points 变化） |
 | MT-26 | 签到二维码生成与扫码签到全链路 | ✅ 已通过 | MT-17（生成二维码）+ MT-18（扫码签到 + attend_count+1）均已验证通过 |
-| MT-27 | 复训预约流程（attend_count≥1后再次预约） | ⏳ 待测 | 需 user_id=30 对某课程 attend_count≥1，且课程 retrain_price>0 |
+| MT-27 | 复训预约流程（attend_count≥1后再次预约） | ⏳ 待测 | 需 attend_count≥1，且所选排期 `class_records.retrain_price>0` |
 | MT-28 | 预览模式功能拦截验证（profile_completed=0） | ⏳ 待测 | 需准备 profile_completed=0 的测试账号 |
 | MT-29 | 协议到期与续约（管理员手动续签） | ⏳ 待测 | 需存在 contract_end 在 30 天内的 contract_signatures 记录 |
 

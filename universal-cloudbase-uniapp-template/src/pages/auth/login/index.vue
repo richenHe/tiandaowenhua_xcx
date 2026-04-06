@@ -3,12 +3,19 @@
   路由参数：scene（扫码推广，可选）
 
   【登录页背景】
-  - 全屏底图含品牌 Logo 与文案，须 **`import` + 内联 `background-image`**，避免静态路径与编译槽位冲突。
+  - 底图须 `import` 为本地资源；**禁止**仅用 view 的 `background-image: url(本地)`：模拟器可见、真机常空白（微信限制）。
+  - 使用 **`<image mode="aspectFill">` 全屏垫底** + 内容区叠在其上；单图建议压缩至约 200KB 内。
   - 操作区（微信登录、协议勾选）直接叠在底图上，无底部白底卡片。
 -->
 <template>
-  <!-- 全屏背景图；左上角返回与 TdPageHeader 同款（边框旋转箭头） -->
+  <!-- 全屏背景：image 组件真机可用；view 的本地 background-image 在真机常失效 -->
   <view class="page-container login-page-root">
+    <image
+      class="login-bg-layer"
+      :src="loginBgSrc"
+      mode="aspectFill"
+      aria-hidden="true"
+    />
     <view
       class="login-back-bar"
       :style="{ paddingTop: statusBarPx + 'px' }"
@@ -20,10 +27,7 @@
       </view>
     </view>
 
-    <view
-      class="login-body"
-      :style="{ backgroundImage: 'url(' + loginBgSrc + ')' }"
-    >
+    <view class="login-body">
       <!-- 约位于底图副标题下方，避开山水区域；不同机型 cover 裁切略有差异 -->
       <view class="login-actions">
         <button
@@ -58,7 +62,7 @@
 import { ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { UserApi } from '@/api'
-import loginBgAsset from './b705a3324ae986f25d7ee4899831b272.jpg'
+import loginBgAsset from './login-bg.jpg'
 
 /** 同目录 import，背景 URL 供内联 background-image 使用 */
 const loginBgSrc = loginBgAsset as string
@@ -186,6 +190,19 @@ const goToPrivacy = () => {
   position: relative;
 }
 
+/* 全屏底图：与原先 background-size:cover + center top 对齐 */
+.login-bg-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  object-fit: cover;
+  object-position: center top;
+}
+
 .login-back-bar {
   position: fixed;
   top: 0;
@@ -225,11 +242,9 @@ const goToPrivacy = () => {
 
 .login-body {
   position: relative;
+  z-index: 1;
   min-height: 100vh;
   box-sizing: border-box;
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
 }
 
 /**

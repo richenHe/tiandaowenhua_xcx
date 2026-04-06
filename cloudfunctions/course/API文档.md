@@ -241,7 +241,10 @@
         "course_id": 1,
         "course_name": "初探班",
         "class_date": "2026-03-01",
+        "class_end_date": "2026-03-02",
         "class_time": "09:00-18:00",
+        "start_time": "09:00",
+        "end_time": "18:00",
         "location": "北京",
         "teacher": "老师姓名",
         "max_students": 30,
@@ -267,6 +270,7 @@
 - `course_id` 为必填参数，缺少该参数将返回400错误
 - `is_appointed` 表示当前用户是否已预约该排期（1=已预约，0=未预约）
 - 仅返回状态为启用（status=1）的排期
+- `class_end_date`：结课日期，与库一致可为 `null`（单日课）；`start_time` / `end_time` 由 `class_time` 按首个 `-` 切分得到（如 `09:00-18:00`）
 
 ---
 

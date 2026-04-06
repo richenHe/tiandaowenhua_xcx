@@ -118,14 +118,15 @@ const SQL_MODULES = {
       name VARCHAR(100) NOT NULL COMMENT '课程名称',
       type TINYINT NOT NULL COMMENT '课程类型：1初探班/2密训班/3咨询服务',
       cover_image VARCHAR(255) COMMENT '封面图片URL',
-      description VARCHAR(500) COMMENT '课程简介',
+      description VARCHAR(500) COMMENT '课程简介（纯文本摘要，列表检索用）',
+      description_blocks MEDIUMTEXT NULL COMMENT '课程简介图文 JSON：[{type:text|image,...}]',
       content TEXT COMMENT '详细介绍（HTML）',
-      outline TEXT COMMENT '课程大纲',
+      outline TEXT COMMENT '课程大纲（纯文字 JSON 数组，兼容旧版）',
+      outline_blocks MEDIUMTEXT NULL COMMENT '课程大纲图文 JSON',
       teacher VARCHAR(100) COMMENT '讲师信息',
       duration VARCHAR(50) COMMENT '课程时长（如：2天）',
       original_price DECIMAL(10,2) NOT NULL COMMENT '原价',
       current_price DECIMAL(10,2) NOT NULL COMMENT '现价',
-      retrain_price DECIMAL(10,2) DEFAULT 0.00 COMMENT '复训价格',
       allow_retrain TINYINT(1) DEFAULT 1 COMMENT '是否允许复训：0否/1是',
       included_course_ids JSON COMMENT '包含的课程ID列表',
       stock INT DEFAULT -1 COMMENT '库存数量（-1表示无限）',
@@ -243,6 +244,7 @@ const SQL_MODULES = {
       booked_quota INT DEFAULT 0 COMMENT '已预约名额',
       booking_deadline DATETIME COMMENT '预约截止时间',
       retrain_deadline DATETIME COMMENT '复训报名截止时间（开课前3天）',
+      retrain_price DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '该排期复训费，0表示免费',
       status TINYINT DEFAULT 1 COMMENT '状态：0取消/1正常/2已结束',
       remark VARCHAR(500) COMMENT '备注',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -312,6 +314,39 @@ SQL_MODULES.remaining = [
 ];
 
 /**
+ * 旧库仅有 courses 表但无图文列时，增量补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）
+ */
+async function ensureCourseRichColumns(connection) {
+  const schema = DATABASE_NAME;
+  const [trows] = await connection.query(
+    `SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'courses'`,
+    [schema]
+  );
+  if (!trows[0]?.c) return;
+
+  const hasColumn = async (col) => {
+    const [crows] = await connection.query(
+      `SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'courses' AND COLUMN_NAME = ?`,
+      [schema, col]
+    );
+    return Number(crows[0].c) > 0;
+  };
+
+  if (!(await hasColumn('description_blocks'))) {
+    await connection.query(
+      `ALTER TABLE courses ADD COLUMN description_blocks MEDIUMTEXT NULL COMMENT '课程简介图文 JSON：[{type:text|image,...}]' AFTER description`
+    );
+    console.log('  ✓ 增量迁移: 已添加 courses.description_blocks');
+  }
+  if (!(await hasColumn('outline_blocks'))) {
+    await connection.query(
+      `ALTER TABLE courses ADD COLUMN outline_blocks MEDIUMTEXT NULL COMMENT '课程大纲图文 JSON' AFTER outline`
+    );
+    console.log('  ✓ 增量迁移: 已添加 courses.outline_blocks');
+  }
+}
+
+/**
  * 主函数
  */
 async function main() {
@@ -319,14 +354,14 @@ async function main() {
 
   try {
     // 1. 初始化 CloudBase
-    console.log('[1/6] 初始化 CloudBase SDK...');
+    console.log('[1/7] 初始化 CloudBase SDK...');
     const app = cloudbase.init({
       env: ENV_ID
     });
     console.log('✓ CloudBase SDK 初始化成功\n');
 
     // 2. 连接 MySQL
-    console.log('[2/6] 连接 CloudBase MySQL...');
+    console.log('[2/7] 连接 CloudBase MySQL...');
     console.log('提示: 请确保已在 CloudBase 控制台启用 MySQL 实例');
     console.log('提示: 如果连接失败，请检查以下内容：');
     console.log('  1. MySQL 实例是否已启动');
@@ -351,13 +386,13 @@ async function main() {
     console.log('✓ MySQL 连接成功\n');
 
     // 3. 创建数据库
-    console.log('[3/6] 创建数据库...');
+    console.log('[3/7] 创建数据库...');
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${DATABASE_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await connection.query(`USE ${DATABASE_NAME}`);
     console.log(`✓ 数据库 ${DATABASE_NAME} 已创建/选择\n`);
 
     // 4. 执行建表 SQL
-    console.log('[4/6] 执行建表 SQL...');
+    console.log('[4/7] 执行建表 SQL...');
     const sqlToExecute = getSQLToExecute(deployModule);
     let successCount = 0;
     let failCount = 0;
@@ -380,8 +415,17 @@ async function main() {
 
     console.log(`\n✓ 建表完成: 成功 ${successCount} 个, 失败 ${failCount} 个\n`);
 
+    // 4b. 课程表图文列增量迁移（与 docs/database/数据库详细信息.md 一致）
+    console.log('[5/7] 检查 courses 图文列...');
+    try {
+      await ensureCourseRichColumns(connection);
+      console.log('✓ courses 图文列检查完成\n');
+    } catch (e) {
+      console.error('✗ courses 图文列迁移失败:', e.message);
+    }
+
     // 5. 验证表创建
-    console.log('[5/6] 验证表创建结果...');
+    console.log('[6/7] 验证表创建结果...');
     const [tables] = await connection.query('SHOW TABLES');
     console.log(`✓ 当前数据库共有 ${tables.length} 张表:\n`);
 
@@ -392,7 +436,7 @@ async function main() {
     console.log('');
 
     // 6. 输出部署报告
-    console.log('[6/6] 部署报告');
+    console.log('[7/7] 部署报告');
     console.log('='.repeat(80));
     console.log(`部署模块: ${deployModule}`);
     console.log(`数据库名: ${DATABASE_NAME}`);

@@ -86,7 +86,7 @@ import { ref, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { OrderApi } from '@/api';
-import { useCountdownTimer } from '@/utils/timer';
+import { useCountdownTimer } from '../utils/timer';
 
 // 订单信息
 const orderInfo = ref({

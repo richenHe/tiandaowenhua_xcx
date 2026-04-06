@@ -631,7 +631,6 @@ ELSE:
   "duration": "2天",
   "current_price": 1688.00,
   "original_price": 1688.00,
-  "retrain_price": 500.00,
   "allow_retrain": true,
   "is_purchased": false,
   "user_course_id": 10,
@@ -651,9 +650,15 @@ ELSE:
 ```
 
 **字段说明**:
+- `description_blocks`（2026-04-04）: 课程简介**图文**有序数组。元素：`{ type: 'text', text }` 或 `{ type: 'image', image }`；`type=text` 时 **`text` 可为 HTML 片段**（管理端 contenteditable + 加粗/列表/链接等，与 `level_desc` 类似），小程序用 `rich-text` 渲染；`image` 已为 **HTTPS CDN URL**（由云函数从 `cloud://` 转换）。无配置时可能由服务端用纯 `description` 合成仅文字块。
+- `outline_blocks`（2026-04-04）: 课程大纲图文数组，格式同上（`text` 同样支持 HTML）。无配置时由旧版 `outline` 纯文字列表合成。
+- `outline`: 纯文字大纲字符串数组（仅含文字块拆行结果），兼容旧前端；小程序详情优先渲染 `outline_blocks`。
 - `included_courses`: 包含的赠送课程列表（仅密训班等组合课程有此字段）
 - `combo_note`: 组合课程说明文案
-- `gift_courses`（2026-03 新增）: 赠送课程详细信息数组，每项包含 `id, name, type, type_name, cover_image, validity_days, description, content, outline, teacher`。当 `courses.included_course_ids` 有值时返回，供前端展示赠送课程 tab
+- `gift_courses`（2026-03 新增）: 赠送课程详细信息数组，每项包含 `id, name, type, type_name, cover_image, validity_days, description, description_blocks, content, outline, outline_blocks, teacher`（图文块规则同主课）。当 `courses.included_course_ids` 有值时返回，供前端展示赠送课程 tab
+  - **2026-04-04（小程序展示约定）**：课程详情页「赠送课程」tab **仅**使用卡片级字段（封面、名称、类型名、有效期等），**不在该 tab 内展示**赠送项的 `description` / `outline` / `content`；接口仍可返回完整对象供扩展或其它端使用。
+
+> **2026-04-04**：课程详情接口不再返回 `retrain_price`（字段已从 `courses` 表移除）；复训费见排期 `getClassRecords` 的 `retrain_price`。
 
 **数据库设计注意点**:
 - user_courses 表:
@@ -689,7 +694,6 @@ ELSE:
       "first_class_time": "2024-02-01 09:00:00",
       "attend_count": 3,
       "allow_retrain": true,
-      "retrain_price": 500.00,
       "is_gift": false,
       "gift_source": null,
       "status": 1
@@ -702,7 +706,6 @@ ELSE:
       "first_class_time": null,
       "attend_count": 1,
       "allow_retrain": true,
-      "retrain_price": 500.00,
       "is_gift": true,
       "gift_source": "购买密训班赠送",
       "status": 1
@@ -717,6 +720,8 @@ ELSE:
 - `is_gift`: 是否为赠送课程
 - `gift_source`: 赠送来源说明（如"购买密训班赠送"）
 - `status`: 课程状态（1有效/0失效，退款后失效）
+
+> **2026-04-04**：`getMyCourses` 不再返回 `retrain_price`；复训费按排期 `class_records.retrain_price`，通过 `getClassRecords` 按所选排期读取。
 
 ### 🔴 2.4 课程管理 - 创建课程
 **接口**: `POST /api/admin/course/create`
@@ -734,7 +739,6 @@ ELSE:
   "duration": "2天",
   "original_price": 1688.00,
   "current_price": 1688.00,
-  "retrain_price": 500.00,
   "allow_retrain": true,
   "validityDays": 365,
   "included_course_ids": [2],
@@ -756,7 +760,7 @@ ELSE:
 > **沙龙课程（type=4）特殊处理**（2026-03 新增）：
 > - `currentPrice` 不再必填，服务端自动设为 0
 > - `validityDays` 不再必填，服务端自动设为 NULL
-> - `original_price`、`retrain_price`、`allow_retrain` 均自动设为 0
+> - `original_price`、`allow_retrain` 均自动设为 0（**2026-04-04**：课程表已移除 `retrain_price`，复训价在排期创建时设置）
 > - `duration` 自动设为 NULL
 
 > **密训班赠送课程（2026-03 新增，2026-04-03 收紧校验）**：
@@ -928,7 +932,7 @@ ELSE:
 | order_type | item_id 含义 | 业务处理 |
 |-----------|-------------|---------|
 | 1 课程 | 课程ID | 验证课程存在;验证推荐人资格;检查重复购买;密训班标记需赠送初探班 |
-| 2 复训 | 用户课程ID | 验证用户已购买;检查复训截止时间(开课前3天);检查是否已预约 |
+| 2 复训 | 用户课程ID | 验证用户已购买；排期未开始；未重复预约；**金额 = 该排期 `class_records.retrain_price`**；若为 0 则拒绝创建（提示用户直接预约） |
 | 4 升级 | 目标等级 | 验证当前等级;验证升级条件;验证协议是否签署;金额从 ambassador_level_configs.upgrade_payment_amount 读取 |
 
 4. **生成订单**
@@ -1605,12 +1609,17 @@ ELSE:
       "remaining_quota": 15,
       "booking_deadline": "2024-01-31 18:00:00",
       "retrain_deadline": "2024-01-29 00:00:00",
+      "retrain_price": 500.00,
       "is_booked": false,
       "can_book": true
     }
   ]
 }
 ```
+
+> **2026-04-04**：列表项新增 `retrain_price`（该排期复训费，0 表示本排期免费复训）。
+
+> **2026-04-04**：小程序通过 **course 云函数** `action: getClassRecords` 拉取排期列表（非上表 REST）。列表项在 `class_date`、`class_time`、`retrain_price` 等之外，另返回 **`class_end_date`**（结课日，单日课可为 `null`）、**`end_time`**（由 `class_time` 按首个 `-` 切分的结束时刻，与原有 `start_time` 成对）；用于预约确认页与课程计划展示「开课～结课日期」与「当天时段」。
 
 ### 🔵 4.2 创建预约
 **接口**: `POST /api/appointment/create`  
@@ -1638,7 +1647,8 @@ ELSE:
 5. 非沙龙课程：
    a. 验证 user_courses 存在（已购买，status=1）
    b. 复训校验：attend_count >= 1 时：
-      - 优先检查当前排期是否有已支付的复训订单（orders: order_type=2, pay_status=1）
+      - 若本排期 `class_records.retrain_price <= 0`：视为免费复训，直接通过（is_retrain=1）
+      - 否则：优先检查当前排期是否有已支付的复训订单（orders: order_type=2, pay_status=1）
       - 若无，检查是否有可抵用的复训资格（retrain_credit_status=1，同课程）
       - 若有复训资格，直接创建预约并标记资格为已抵用（retrain_credit_status=2）
       - 若均无，拒绝预约
@@ -1652,7 +1662,7 @@ ELSE:
 **特别说明（2026-03-06 更新）**:
 - `attend_count` 初始值为 **0**（购课时写入），排期结束且有签到记录时由定时任务 +1
 - `attend_count = 0` 表示首次上课，直接预约无需支付
-- `attend_count >= 1` 且非沙龙 → 必须先通过订单确认页支付复训费（order_type=2），支付回调自动创建预约
+- `attend_count >= 1` 且非沙龙 → 若该排期 `retrain_price > 0`：须先通过订单确认页支付复训费（order_type=2），支付回调自动创建预约；若 `retrain_price = 0` 可直接预约
 - 沙龙课程（type=4）免复训费
 - **复训资格抵用**：复训用户如有可抵用复训资格（retrain_credit_status=1），可免付复训费直接预约
 - **同课程去重**：同一课程只能有一个进行中(status=0)的预约，跨排期也不允许，提示"您已预约了该课程的其他排期，如需预约当前排期，请先取消已有的预约"
@@ -1793,6 +1803,7 @@ ELSE:
 | classLocation | String | 否 | 上课地点 |
 | teacher | String | 否 | 主讲老师 |
 | totalQuota | Number | 否 | 总名额，默认 30 |
+| retrainPrice | Number | 否 | 该排期复训费（元），默认 0（0=本排期免费复训） |
 | cancelDeadlineDays | Number | 是 | 取消预约截止天数，必须为大于0的整数 |
 | remark | String | 否 | 备注 |
 
@@ -1847,6 +1858,7 @@ ELSE:
 | 字段名 | 类型 | 说明 |
 |---|---|---|
 | cancel_deadline_days | Number | 取消预约截止天数 |
+| retrain_price | Number | 该排期复训费（元） |
 
 ### 🔴 4.6 签到管理 - 签到
 **接口**: `POST /api/admin/attendance/checkin`

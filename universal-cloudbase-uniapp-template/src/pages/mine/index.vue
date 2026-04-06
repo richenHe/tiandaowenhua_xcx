@@ -774,4 +774,3 @@ const handleMenuClick = (type: string) => {
   }
 }
 </style>
-

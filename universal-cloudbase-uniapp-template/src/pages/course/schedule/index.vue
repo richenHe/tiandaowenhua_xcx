@@ -17,7 +17,8 @@
             <view class="schedule-title">{{ schedule.courseName }}</view>
 
             <view class="schedule-info">
-              <view class="info-item">📅 {{ schedule.startDate }}{{ schedule.startTime ? ' ' + schedule.startTime : '' }}</view>
+              <view class="info-item">📅 {{ schedule.dateRangeText }}</view>
+              <view v-if="schedule.timeRangeText" class="info-item">🕐 {{ schedule.timeRangeText }}</view>
               <view class="info-item">📍 {{ schedule.location }}</view>
               <view class="info-item">👨‍🏫 {{ schedule.instructor }}</view>
               <view class="info-item">👥 剩余: {{ schedule.remainingSlots }}/{{ schedule.totalSlots }}</view>
@@ -60,6 +61,23 @@ const courseId = ref<number>(0);
 // 课程类型（4=沙龙，通过 URL 参数传入）
 const courseType = ref<number>(0);
 
+/** 开课～结课日期文案（单日只显示一天） */
+const formatScheduleDateRange = (classDate: string, classEndDate?: string | null) => {
+  if (!classDate) return '';
+  const end = classEndDate || classDate;
+  if (end !== classDate) return `${classDate} 至 ${end}`;
+  return classDate;
+};
+
+/** 当天上课时段文案 */
+const formatScheduleTimeRange = (start?: string | null, end?: string | null) => {
+  const st = start ? String(start).trim() : '';
+  const et = end ? String(end).trim() : '';
+  if (!st && !et) return '';
+  if (st && et) return `${st} - ${et}`;
+  return st || et;
+};
+
 // 加载课程排期
 const loadSchedules = async () => {
   if (!courseId.value) return;
@@ -96,7 +114,11 @@ const loadSchedules = async () => {
       courseName: item.course_name,
       period: '',
       startDate: item.class_date,
-      startTime: item.start_time || '',   // 格式: "HH:mm-HH:mm"
+      endDate: item.class_end_date || item.class_date,
+      startTime: item.start_time || '',
+      endTime: item.end_time || '',
+      dateRangeText: formatScheduleDateRange(item.class_date, item.class_end_date),
+      timeRangeText: formatScheduleTimeRange(item.start_time, item.end_time),
       location: item.location,
       instructor: item.teacher,
       remainingSlots: item.available_quota,
@@ -123,7 +145,9 @@ const goToAppointmentConfirm = (schedule: any) => {
     `courseType=${courseType.value}`,
     `courseName=${encodeURIComponent(schedule.courseName || '')}`,
     `classDate=${encodeURIComponent(schedule.startDate || '')}`,
+    `classEndDate=${encodeURIComponent(schedule.endDate || '')}`,
     `classTime=${encodeURIComponent(schedule.startTime || '')}`,
+    `endTime=${encodeURIComponent(schedule.endTime || '')}`,
     `location=${encodeURIComponent(schedule.location || '')}`
   ].join('&')
   uni.navigateTo({

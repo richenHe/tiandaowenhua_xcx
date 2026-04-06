@@ -8,13 +8,6 @@
         "navigationStyle": "custom"
       }
     },
-		{
-			"path": "pages/auth/login/index",
-			"style": {
-        "navigationBarTitleText": "登录",
-        "navigationStyle": "custom"
-      }
-    },
     {
       "path": "pages/mall/index",
       "style": {
@@ -33,13 +26,6 @@
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "我的",
-        "navigationStyle": "custom"
-      }
-    },
-		{
-			"path": "pages/auth/complete-profile/index",
-			"style": {
-        "navigationBarTitleText": "完善资料",
         "navigationStyle": "custom"
       }
     },
@@ -122,6 +108,25 @@
 		}
 	],
 	"subPackages": [
+		{
+			"root": "pages/auth",
+			"pages": [
+				{
+					"path": "login/index",
+					"style": {
+						"navigationBarTitleText": "登录",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "complete-profile/index",
+					"style": {
+						"navigationBarTitleText": "完善资料",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		},
 		{
 			"root": "pages/course",
 			"pages": [

@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260403">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260409">
   
   <style>
     .type-tag {
@@ -21,6 +21,78 @@
     .type-intensive { background: #fce4ec; color: #c2185b; }
     .type-consultation { background: #f3e5f5; color: #7b1fa2; }
     .type-salon { background: #fff3e0; color: #e65100; }
+
+    /* 课程简介/大纲：图文块编辑器 */
+    .rich-block-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 640px; }
+    .rich-block-row {
+      border: 1px solid #e7e7e7;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafafa;
+    }
+    .rich-block-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    /* 课程图文块·文字：内联富文本（与 level-config 同源：execCommand） */
+    .course-rt-wrap {
+      border: 1px solid #dcdcdc;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .course-rt-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 8px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #dcdcdc;
+      flex-wrap: wrap;
+    }
+    .course-rt-toolbar .crt-btn {
+      min-width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      padding: 0 6px;
+    }
+    .course-rt-toolbar .crt-btn:hover { background: #e0e0e0; }
+    .course-rt-toolbar .crt-sep { width: 1px; height: 20px; background: #dcdcdc; margin: 0 4px; }
+    .course-rt-body {
+      min-height: 88px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #333;
+      cursor: text;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .course-rt-body[data-placeholder]:empty::before {
+      content: attr(data-placeholder);
+      color: #bbb;
+    }
+    .course-rt-body--readonly {
+      background: #f5f5f5;
+      color: #666;
+      cursor: default;
+      user-select: text;
+    }
 
     .status-tag {
       display: inline-block;
@@ -182,7 +254,7 @@
     <t-dialog 
       v-model:visible="editDialogVisible" 
       :header="editMode === 'add' ? '新增课程' : '编辑课程'" 
-      width="800px"
+      width="920px"
       @confirm="handleSave"
     >
       <t-form :data="editForm" ref="editFormRef" label-width="120px">
@@ -231,10 +303,6 @@
           
           <t-form-item label="原价（元）" name="originalPrice">
             <t-input-number v-model="editForm.originalPrice" :min="0" :step="0.01" style="width:100%;" :disabled="isCourseLocked" />
-          </t-form-item>
-          
-          <t-form-item label="重训价（元）" name="retrainPrice">
-            <t-input-number v-model="editForm.retrainPrice" :min="0" :step="0.01" style="width:100%;" :disabled="isCourseLocked" />
           </t-form-item>
 
           <!-- courses.validity_days: 必填正整数，单位：天 -->
@@ -285,17 +353,134 @@
           </t-form-item>
         </template>
         
-        <t-form-item label="课程简介" name="description">
-          <t-textarea v-model="editForm.description" placeholder="请输入课程简介" :maxlength="500" :disabled="isCourseLocked" />
+        <t-form-item label="课程简介（图文）" name="descriptionBlocks">
+          <div class="rich-block-list">
+            <div v-for="(b, i) in editForm.descriptionBlocks" :key="'db-' + b.__blockUid" class="rich-block-row">
+              <div class="rich-block-toolbar">
+                <t-tag size="small" theme="primary" variant="light">{{ b.type === 'text' ? '文字' : '图片' }}</t-tag>
+                <t-button size="small" variant="text" theme="danger" :disabled="isCourseLocked" @click="removeDescBlock(i)">删除</t-button>
+                <t-button size="small" variant="text" :disabled="isCourseLocked || i <= 0" @click="moveDescBlock(i, -1)">上移</t-button>
+                <t-button size="small" variant="text" :disabled="isCourseLocked || i >= descBlocksLen - 1" @click="moveDescBlock(i, 1)">下移</t-button>
+              </div>
+              <!-- 文字块：contenteditable + 工具栏（工具类 AdminRichTextInline，与等级配置页一致） -->
+              <template v-if="b.type === 'text'">
+                <div class="course-rt-wrap">
+                  <div v-if="!isCourseLocked" class="course-rt-toolbar">
+                    <button type="button" class="crt-btn" title="加粗" @mousedown.prevent="courseRichExec(b, 'desc', 'bold')"><b>B</b></button>
+                    <button type="button" class="crt-btn" title="斜体" @mousedown.prevent="courseRichExec(b, 'desc', 'italic')"><i>I</i></button>
+                    <button type="button" class="crt-btn" title="下划线" @mousedown.prevent="courseRichExec(b, 'desc', 'underline')"><u>U</u></button>
+                    <button type="button" class="crt-btn" title="删除线" @mousedown.prevent="courseRichExec(b, 'desc', 'strikeThrough')"><s>S</s></button>
+                    <span class="crt-sep"></span>
+                    <span class="crt-btn" title="文字颜色" style="position:relative;overflow:hidden;cursor:pointer;">A<input type="color" style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;cursor:pointer;" @input="e => courseRichColor(b, 'desc', e)"/></span>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="有序列表" @mousedown.prevent="courseRichExec(b, 'desc', 'insertOrderedList')">1.</button>
+                    <button type="button" class="crt-btn" title="无序列表" @mousedown.prevent="courseRichExec(b, 'desc', 'insertUnorderedList')">•</button>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="插入链接" @mousedown.prevent="courseRichLink(b, 'desc')">🔗</button>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="清除格式" @mousedown.prevent="courseRichExec(b, 'desc', 'removeFormat')">✕</button>
+                  </div>
+                  <!-- 可编辑区用 v-editable-html 指令：避免 v-html 与中文输入法合成冲突导致字符顺序错乱；失焦/外部改值再同步 DOM -->
+                  <div
+                    v-if="isCourseLocked"
+                    class="course-rt-body course-rt-body--readonly"
+                    v-html="b.text || ''"
+                  ></div>
+                  <div
+                    v-else
+                    :id="'course-rt-desc-' + b.__blockUid"
+                    class="course-rt-body"
+                    contenteditable="true"
+                    spellcheck="false"
+                    data-placeholder="输入文字，支持加粗、列表、链接等（小程序以富文本展示）"
+                    v-editable-html="b.text"
+                    @input="onCourseRichInput($event, b)"
+                    @compositionend="onCourseRichCompositionEnd($event, b)"
+                  ></div>
+                </div>
+              </template>
+              <cloud-image-upload
+                v-else
+                v-model="b.imageDisplay"
+                v-model:file-id="b.image"
+                path-prefix="courses/description"
+                :item-id="editForm.id || 'new'"
+                :max-size="3 * 1024 * 1024"
+                tips="简介配图，建议宽度 ≤750px；存云存储 fileID"
+                :width="320"
+                :height="180"
+              ></cloud-image-upload>
+            </div>
+            <t-space v-if="!isCourseLocked">
+              <t-button size="small" variant="outline" @click="addDescTextBlock">+ 文字</t-button>
+              <t-button size="small" variant="outline" @click="addDescImageBlock">+ 图片</t-button>
+            </t-space>
+            <div style="font-size:12px;color:#999;margin-top:4px;">小程序「课程介绍」按顺序展示；文字块支持简单 HTML（加粗等）；列表搜索摘要由纯文字自动生成（最多500字）。</div>
+          </div>
         </t-form-item>
-        
-        <t-form-item label="课程详情" name="content">
-          <t-textarea v-model="editForm.content" placeholder="请输入课程详细内容" :maxlength="5000" :disabled="isCourseLocked" />
-        </t-form-item>
+        <!-- 课程详情 courses.content：管理端不展示；保存时仍透传 editForm.content -->
 
-        <t-form-item label="课程大纲" name="outline">
-          <t-textarea v-model="editForm.outline" placeholder="每行输入一条大纲内容，例如：&#10;第一讲：天道运行规律&#10;第二讲：因缘际会的哲学" :autosize="{ minRows: 3, maxRows: 8 }" :disabled="isCourseLocked" />
-          <div style="font-size:12px; color:#999; margin-top:4px;">每行一条大纲，保存时自动格式化</div>
+        <t-form-item label="课程大纲（图文）" name="outlineBlocks">
+          <div class="rich-block-list">
+            <div v-for="(b, i) in editForm.outlineBlocks" :key="'ob-' + b.__blockUid" class="rich-block-row">
+              <div class="rich-block-toolbar">
+                <t-tag size="small" theme="success" variant="light">{{ b.type === 'text' ? '文字' : '图片' }}</t-tag>
+                <t-button size="small" variant="text" theme="danger" :disabled="isCourseLocked" @click="removeOutlineBlock(i)">删除</t-button>
+                <t-button size="small" variant="text" :disabled="isCourseLocked || i <= 0" @click="moveOutlineBlock(i, -1)">上移</t-button>
+                <t-button size="small" variant="text" :disabled="isCourseLocked || i >= outlineBlocksLen - 1" @click="moveOutlineBlock(i, 1)">下移</t-button>
+              </div>
+              <template v-if="b.type === 'text'">
+                <div class="course-rt-wrap">
+                  <div v-if="!isCourseLocked" class="course-rt-toolbar">
+                    <button type="button" class="crt-btn" title="加粗" @mousedown.prevent="courseRichExec(b, 'outline', 'bold')"><b>B</b></button>
+                    <button type="button" class="crt-btn" title="斜体" @mousedown.prevent="courseRichExec(b, 'outline', 'italic')"><i>I</i></button>
+                    <button type="button" class="crt-btn" title="下划线" @mousedown.prevent="courseRichExec(b, 'outline', 'underline')"><u>U</u></button>
+                    <button type="button" class="crt-btn" title="删除线" @mousedown.prevent="courseRichExec(b, 'outline', 'strikeThrough')"><s>S</s></button>
+                    <span class="crt-sep"></span>
+                    <span class="crt-btn" title="文字颜色" style="position:relative;overflow:hidden;cursor:pointer;">A<input type="color" style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;cursor:pointer;" @input="e => courseRichColor(b, 'outline', e)"/></span>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="有序列表" @mousedown.prevent="courseRichExec(b, 'outline', 'insertOrderedList')">1.</button>
+                    <button type="button" class="crt-btn" title="无序列表" @mousedown.prevent="courseRichExec(b, 'outline', 'insertUnorderedList')">•</button>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="插入链接" @mousedown.prevent="courseRichLink(b, 'outline')">🔗</button>
+                    <span class="crt-sep"></span>
+                    <button type="button" class="crt-btn" title="清除格式" @mousedown.prevent="courseRichExec(b, 'outline', 'removeFormat')">✕</button>
+                  </div>
+                  <div
+                    v-if="isCourseLocked"
+                    class="course-rt-body course-rt-body--readonly"
+                    v-html="b.text || ''"
+                  ></div>
+                  <div
+                    v-else
+                    :id="'course-rt-outline-' + b.__blockUid"
+                    class="course-rt-body"
+                    contenteditable="true"
+                    spellcheck="false"
+                    data-placeholder="大纲说明文字，支持加粗、列表等"
+                    v-editable-html="b.text"
+                    @input="onCourseRichInput($event, b)"
+                    @compositionend="onCourseRichCompositionEnd($event, b)"
+                  ></div>
+                </div>
+              </template>
+              <cloud-image-upload
+                v-else
+                v-model="b.imageDisplay"
+                v-model:file-id="b.image"
+                path-prefix="courses/outline"
+                :item-id="editForm.id || 'new'"
+                :max-size="3 * 1024 * 1024"
+                tips="大纲配图；纯文字大纲仍会同步到 outline 字段供检索"
+                :width="320"
+                :height="180"
+              ></cloud-image-upload>
+            </div>
+            <t-space v-if="!isCourseLocked">
+              <t-button size="small" variant="outline" @click="addOutlineTextBlock">+ 文字</t-button>
+              <t-button size="small" variant="outline" @click="addOutlineImageBlock">+ 图片</t-button>
+            </t-space>
+          </div>
         </t-form-item>
         
         <t-form-item label="讲师" name="teacher">
@@ -363,12 +548,14 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260403"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260403"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260403"></script>
+  <script src="../../assets/js/config.js?v=20260409"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260409"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260409"></script>
+  <script src="../../assets/js/admin-rich-text-inline.js?v=20260409"></script>
+  <script src="../../assets/js/vue-editable-html-directive.js?v=20260409"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260403"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260403"></script>
+  <script src="../../assets/js/admin-api.js?v=20260409"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260409"></script>
 
   <script>
     const { createApp, ref, reactive, computed, onMounted } = Vue;
@@ -454,14 +641,13 @@
           coverImageURL: '',   // 临时 URL，仅用于显示预览
           currentPrice: 0,
           originalPrice: 0,
-          retrainPrice: 0,
           // courses.validity_days：必填正整数，单位：天
           validityDays: 365,
           duration: '',
-          description: '',
           content: '',
-          outline: '',
           teacher: '',
+          descriptionBlocks: [],
+          outlineBlocks: [],
           sortOrder: 0,
           status: 0,
           needContract: 1,
@@ -469,6 +655,10 @@
         });
         const isCourseLocked = ref(false);        // 课程已上架时锁定编辑
         const publishedCourseOptions = ref([]);   // 管理端课程列表（供赠送初探班下拉）
+
+        /** 块数量用 computed，保证上移/下移 disabled 与 t-button 响应一致 */
+        const descBlocksLen = computed(() => (editForm.descriptionBlocks && editForm.descriptionBlocks.length) || 0);
+        const outlineBlocksLen = computed(() => (editForm.outlineBlocks && editForm.outlineBlocks.length) || 0);
 
         // 密训班赠课下拉：仅 type=1 初探班，排除当前编辑中的课程
         const giftBasicCourseSelectOptions = computed(() => {
@@ -481,6 +671,166 @@
             }));
         });
 
+        /** 图文块稳定 key / 富文本区 id（勿提交到接口） */
+        const genCourseBlockUid = () =>
+          'cb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
+        const ensureCourseBlockUids = (blocks) => {
+          (blocks || []).forEach((b) => {
+            if (!b.__blockUid) b.__blockUid = genCourseBlockUid();
+          });
+        };
+
+        /** 保存前从 DOM 拉回 HTML，避免未触发 input 的改动丢失 */
+        const flushCourseRichEditorsFromDom = () => {
+          const pull = (blocks, prefix) => {
+            (blocks || []).forEach((b) => {
+              if (b.type !== 'text' || !b.__blockUid) return;
+              const el = document.getElementById(prefix + b.__blockUid);
+              if (el) b.text = el.innerHTML;
+            });
+          };
+          pull(editForm.descriptionBlocks, 'course-rt-desc-');
+          pull(editForm.outlineBlocks, 'course-rt-outline-');
+        };
+
+        /** AdminRichTextInline：与 system/level-config 一致 */
+        const courseRichExec = (b, section, cmd, value) => {
+          const prefix = section === 'desc' ? 'course-rt-desc-' : 'course-rt-outline-';
+          const rt = window.AdminRichTextInline;
+          if (rt && b && b.__blockUid) rt.focusExec(prefix + b.__blockUid, cmd, value);
+        };
+        const courseRichColor = (b, section, e) => {
+          courseRichExec(b, section, 'foreColor', e.target.value);
+        };
+        const courseRichLink = (b, section) => {
+          const url = prompt('请输入链接地址：', 'https://');
+          if (url) courseRichExec(b, section, 'createLink', url);
+        };
+        const onCourseRichInput = (e, b) => {
+          if (e && e.isComposing) return;
+          b.text = e.target.innerHTML;
+        };
+        const onCourseRichCompositionEnd = (e, b) => {
+          b.text = e.target.innerHTML;
+        };
+
+        /** 解析 DB 中的 JSON 图文块 */
+        const parseBlocksFromDb = (raw) => {
+          if (!raw) return [];
+          try {
+            const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return Array.isArray(p) ? p : [];
+          } catch (e) {
+            return [];
+          }
+        };
+
+        /** 旧 outline（JSON 字符串数组）→ 仅文字块 */
+        const legacyOutlineToTextBlocks = (outlineVal) => {
+          if (outlineVal == null || outlineVal === '') return [];
+          let arr = [];
+          if (typeof outlineVal === 'string') {
+            try {
+              const p = JSON.parse(outlineVal);
+              arr = Array.isArray(p) ? p : (outlineVal.trim() ? [outlineVal] : []);
+            } catch (e) {
+              arr = outlineVal.trim() ? [outlineVal] : [];
+            }
+          } else if (Array.isArray(outlineVal)) {
+            arr = outlineVal;
+          }
+          return arr
+            .filter((x) => x != null && String(x).trim())
+            .map((x) => ({ type: 'text', text: String(x).trim() }));
+        };
+
+        const decorateImageBlocks = (blocks) => {
+          const helper = window.CloudStorageHelper;
+          return (blocks || []).map((b) => {
+            const o = { ...b };
+            if (b.type === 'image') {
+              o.imageDisplay = b.image ? helper.cloudFileIDToURL(b.image) : '';
+            }
+            return o;
+          });
+        };
+
+        const buildDescriptionBlocksForEditor = (course) => {
+          let blocks = parseBlocksFromDb(course.description_blocks).filter(
+            (b) => b && (b.type === 'text' || b.type === 'image')
+          );
+          if (blocks.length === 0 && course.description) {
+            blocks = [{ type: 'text', text: String(course.description) }];
+          }
+          const out = decorateImageBlocks(blocks);
+          ensureCourseBlockUids(out);
+          return out;
+        };
+
+        const buildOutlineBlocksForEditor = (course) => {
+          let blocks = parseBlocksFromDb(course.outline_blocks).filter(
+            (b) => b && (b.type === 'text' || b.type === 'image')
+          );
+          if (blocks.length === 0) {
+            blocks = legacyOutlineToTextBlocks(course.outline);
+          }
+          const out = decorateImageBlocks(blocks);
+          ensureCourseBlockUids(out);
+          return out;
+        };
+
+        /** 提交前去掉预览字段，仅保留 type + text/image */
+        const pluckBlocksForApi = (blocks) => {
+          if (!blocks || !blocks.length) return [];
+          return blocks
+            .map((b) => {
+              if (b.type === 'text') {
+                return { type: 'text', text: typeof b.text === 'string' ? b.text : '' };
+              }
+              if (b.type === 'image' && b.image) {
+                return { type: 'image', image: b.image };
+              }
+              return null;
+            })
+            .filter(Boolean);
+        };
+
+        const addDescTextBlock = () => {
+          editForm.descriptionBlocks.push({ type: 'text', text: '', __blockUid: genCourseBlockUid() });
+        };
+        const addDescImageBlock = () => {
+          editForm.descriptionBlocks.push({ type: 'image', image: '', imageDisplay: '', __blockUid: genCourseBlockUid() });
+        };
+        const removeDescBlock = (i) => {
+          editForm.descriptionBlocks.splice(i, 1);
+        };
+        const moveDescBlock = (i, delta) => {
+          const j = i + delta;
+          const arr = editForm.descriptionBlocks;
+          if (j < 0 || j >= arr.length) return;
+          const t = arr[i];
+          arr[i] = arr[j];
+          arr[j] = t;
+        };
+
+        const addOutlineTextBlock = () => {
+          editForm.outlineBlocks.push({ type: 'text', text: '', __blockUid: genCourseBlockUid() });
+        };
+        const addOutlineImageBlock = () => {
+          editForm.outlineBlocks.push({ type: 'image', image: '', imageDisplay: '', __blockUid: genCourseBlockUid() });
+        };
+        const removeOutlineBlock = (i) => {
+          editForm.outlineBlocks.splice(i, 1);
+        };
+        const moveOutlineBlock = (i, delta) => {
+          const j = i + delta;
+          const arr = editForm.outlineBlocks;
+          if (j < 0 || j >= arr.length) return;
+          const t = arr[i];
+          arr[i] = arr[j];
+          arr[j] = t;
+        };
 
         // 表格列配置
         const columns = [
@@ -567,17 +917,16 @@
             coverImageURL: '',
             currentPrice: 0,
             originalPrice: 0,
-            retrainPrice: 0,
             validityDays: null,
             duration: '',
-            description: '',
             content: '',
-            outline: '',
             teacher: '',
             sortOrder: 0,
             status: 0,
             needContract: 1,
-            includedCourseId: null
+            includedCourseId: null,
+            descriptionBlocks: [{ type: 'text', text: '', __blockUid: genCourseBlockUid() }],
+            outlineBlocks: [{ type: 'text', text: '', __blockUid: genCourseBlockUid() }]
           });
           loadPublishedCourses(null);
           editDialogVisible.value = true;
@@ -607,26 +956,23 @@
             coverImageURL: '',
             originalPrice: course.original_price,
             currentPrice: course.current_price,
-            retrainPrice: course.retrain_price,
             validityDays: vd,
             duration: course.duration,
-            description: course.description,
             content: course.content,
-            outline: (() => {
-              // DB 存 JSON 数组字符串，展示时转为每行一条
-              try {
-                const arr = course.outline
-                  ? (typeof course.outline === 'string' ? JSON.parse(course.outline) : course.outline)
-                  : [];
-                return Array.isArray(arr) ? arr.join('\n') : (course.outline || '');
-              } catch (e) { return course.outline || ''; }
-            })(),
             teacher: course.teacher,
             sortOrder: course.sort_order,
             status: course.status,
             needContract: course.need_contract ?? 1,
             includedCourseId: giftId
           });
+          editForm.descriptionBlocks = buildDescriptionBlocksForEditor(course);
+          editForm.outlineBlocks = buildOutlineBlocksForEditor(course);
+          if (!editForm.descriptionBlocks.length) {
+            editForm.descriptionBlocks = [{ type: 'text', text: '', __blockUid: genCourseBlockUid() }];
+          }
+          if (!editForm.outlineBlocks.length) {
+            editForm.outlineBlocks = [{ type: 'text', text: '', __blockUid: genCourseBlockUid() }];
+          }
           // 将 fileID 转为临时 URL 用于预览
           if (course.cover_image) {
             try {
@@ -650,6 +996,7 @@
               TDesign.MessagePlugin.error('课程有效期为必填项，请输入大于 0 的天数');
               return;
             }
+            flushCourseRichEditorsFromDom();
             const params = {
               name: editForm.name,
               nickname: editForm.nickname,
@@ -657,15 +1004,11 @@
               coverImage: editForm.coverImage,
               currentPrice: isSalon ? 0 : editForm.currentPrice,
               originalPrice: isSalon ? 0 : editForm.originalPrice,
-              retrainPrice: isSalon ? 0 : editForm.retrainPrice,
               validityDays: isSalon ? null : editForm.validityDays,
               duration: isSalon ? null : editForm.duration,
-              description: editForm.description,
               content: editForm.content,
-              // 多行文本 → JSON 数组字符串存入 DB
-              outline: JSON.stringify(
-                (editForm.outline || '').split('\n').map(s => s.trim()).filter(s => s)
-              ),
+              descriptionBlocks: pluckBlocksForApi(editForm.descriptionBlocks),
+              outlineBlocks: pluckBlocksForApi(editForm.outlineBlocks),
               teacher: editForm.teacher,
               sortOrder: editForm.sortOrder,
               status: editForm.status,
@@ -922,6 +1265,21 @@
           deleteCourse,
           getTypeText,
           getTypeClass,
+          addDescTextBlock,
+          addDescImageBlock,
+          removeDescBlock,
+          moveDescBlock,
+          addOutlineTextBlock,
+          addOutlineImageBlock,
+          removeOutlineBlock,
+          moveOutlineBlock,
+          courseRichExec,
+          courseRichColor,
+          courseRichLink,
+          onCourseRichInput,
+          onCourseRichCompositionEnd,
+          descBlocksLen,
+          outlineBlocksLen,
           contractDialogVisible,
           contractLoading,
           contractSaving,
@@ -937,6 +1295,7 @@
           };
       }
     }).use(TDesign)
+      .directive('editable-html', window.VueEditableHtmlDirective)
       .component('sidebar-menu', SidebarNavigation.SidebarMenu)
       .component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
       .mount('#app');

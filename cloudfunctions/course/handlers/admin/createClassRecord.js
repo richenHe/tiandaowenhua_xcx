@@ -15,6 +15,7 @@
  * @param {string} event.teacher               - 讲师
  * @param {number} event.totalQuota            - 总名额，对应 DB 字段 total_quota（默认 30）
  * @param {number} event.cancelDeadlineDays    - 取消预约截止天数（必填，上课前X天不可取消）
+ * @param {number} event.retrainPrice          - 该排期复训费（元），对应 DB retrain_price，默认 0（0=本排期免费复训）
  * @param {string} event.remark                - 备注，对应 DB 字段 remark
  */
 const { db, insert, findOne } = require('../../common/db');
@@ -31,6 +32,7 @@ module.exports = async (event, context) => {
   const teacher = event.teacher;
   const totalQuota = event.totalQuota || event.total_quota;
   const cancelDeadlineDays = event.cancelDeadlineDays ?? event.cancel_deadline_days;
+  const retrainPriceRaw = event.retrainPrice ?? event.retrain_price;
   const remark = event.remark;
 
   try {
@@ -58,6 +60,11 @@ module.exports = async (event, context) => {
       return response.paramError('结课日期不能早于上课时间');
     }
 
+    const retrainPriceNum =
+      retrainPriceRaw !== undefined && retrainPriceRaw !== null && retrainPriceRaw !== ''
+        ? Math.max(0, parseFloat(retrainPriceRaw) || 0)
+        : 0;
+
     // 沙龙课程(type=4)只允许创建一个有效排期
     const course = await findOne('courses', { id: courseId });
     if (course && course.type === 4) {
@@ -81,6 +88,7 @@ module.exports = async (event, context) => {
       total_quota: totalQuota || 30,
       booked_quota: 0,
       cancel_deadline_days: parsedDays,
+      retrain_price: retrainPriceNum,
       remark: remark || null,
       status: 1
     });

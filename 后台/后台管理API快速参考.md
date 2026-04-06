@@ -291,7 +291,6 @@ const result = await app.callFunction({
     outline: '课程大纲',
     teacher: '王老师',
     duration: '2天1夜',
-    retrain_price: 980.00,
     allow_retrain: 1,            // 0=否，1=是
     sort_order: 1,
     status: 1                    // 0=下架，1=上架

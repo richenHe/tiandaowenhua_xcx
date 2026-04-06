@@ -104,45 +104,50 @@ module.exports = async (event, context) => {
       }
       userCourseId = userCourses.id;
 
-      // 复训校验：attend_count >= 1 时必须已支付复训费或拥有可抵用的复训资格
+      // 复训校验：attend_count >= 1 时，若本排期 retrain_price>0 须已付复训费或可抵用资格；若为 0 则免费复训直接通过
       if ((userCourses.attend_count || 0) >= 1) {
-        // 优先检查当前排期是否有已支付的复训订单
-        const { data: retrainOrder } = await db
-          .from('orders')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('order_type', 2)
-          .eq('class_record_id', finalClassRecordId)
-          .eq('pay_status', 1)
-          .single();
-
-        if (!retrainOrder) {
-          // 检查是否有可抵用的复训资格（同课程，retrain_credit_status=1）
-          const { data: creditOrder } = await db
+        const scheduleRetrainPrice = parseFloat(classRecord.retrain_price) || 0;
+        if (scheduleRetrainPrice <= 0) {
+          isRetrainAppointment = true;
+        } else {
+          // 优先检查当前排期是否有已支付的复训订单
+          const { data: retrainOrder } = await db
             .from('orders')
-            .select('id, order_no')
+            .select('id')
             .eq('user_id', user.id)
             .eq('order_type', 2)
+            .eq('class_record_id', finalClassRecordId)
             .eq('pay_status', 1)
-            .eq('retrain_credit_status', 1)
-            .eq('related_id', userCourseId)
-            .limit(1)
             .single();
 
-          if (creditOrder) {
-            // 使用复训资格：标记为已抵用
-            await db
+          if (!retrainOrder) {
+            // 检查是否有可抵用的复训资格（同课程，retrain_credit_status=1）
+            const { data: creditOrder } = await db
               .from('orders')
-              .update({ retrain_credit_status: 2 })
-              .eq('id', creditOrder.id);
-            usedRetrainCredit = true;
-            retrainCreditOrderNo = creditOrder.order_no;
-            console.log(`[Course/createAppointment] 使用复训资格, order_no: ${creditOrder.order_no}`);
-          } else {
-            return response.error('复训课程需先支付复训费');
+              .select('id, order_no')
+              .eq('user_id', user.id)
+              .eq('order_type', 2)
+              .eq('pay_status', 1)
+              .eq('retrain_credit_status', 1)
+              .eq('related_id', userCourseId)
+              .limit(1)
+              .single();
+
+            if (creditOrder) {
+              // 使用复训资格：标记为已抵用
+              await db
+                .from('orders')
+                .update({ retrain_credit_status: 2 })
+                .eq('id', creditOrder.id);
+              usedRetrainCredit = true;
+              retrainCreditOrderNo = creditOrder.order_no;
+              console.log(`[Course/createAppointment] 使用复训资格, order_no: ${creditOrder.order_no}`);
+            } else {
+              return response.error('复训课程需先支付复训费');
+            }
           }
+          isRetrainAppointment = true;
         }
-        isRetrainAppointment = true;
       }
     }
 

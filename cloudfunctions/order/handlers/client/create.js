@@ -222,12 +222,18 @@ async function handleRetrainOrder(user, user_course_id, class_record_id) {
     throw new Error('您已预约该课程');
   }
 
-  // 5. 获取课程信息
+  // 5. 复训费以排期 class_records.retrain_price 为准；0 元不应走本接口（请用户直接预约）
+  const amount = parseFloat(classRecord.retrain_price);
+  const finalAmount = Number.isFinite(amount) && amount > 0 ? amount : 0;
+  if (finalAmount <= 0) {
+    throw new Error('该排期复训费为 0，请返回课程页直接预约，无需创建复训订单');
+  }
+
   const course = await findOne('courses', { id: classRecord.course_id });
 
   return {
     order_name: `${course.name} - 复训费`,
-    amount: course.retrain_price || 500.00,
+    amount: finalAmount,
     referee_id: null, // 复训不涉及推荐人
     referee_uid: null
   };

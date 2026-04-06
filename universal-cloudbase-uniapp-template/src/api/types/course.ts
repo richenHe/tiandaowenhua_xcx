@@ -4,6 +4,11 @@
 
 import type { PaginationParams, PaginationResponse } from '../types'
 
+/** 课程简介/大纲图文块（DB JSON；详情接口图片字段已为 HTTPS） */
+export type CourseRichBlock =
+  | { type: 'text'; text?: string }
+  | { type: 'image'; image?: string }
+
 /**
  * 课程信息
  */
@@ -22,14 +27,16 @@ export interface Course {
   original_price: number
   /** 当前价格 */
   current_price: number
-  /** 复训价格 */
-  retrain_price: number
   /** 课程简介 */
   description: string
+  /** 课程简介图文块 JSON（详情接口返回，图片已为 CDN URL） */
+  description_blocks?: CourseRichBlock[]
   /** 课程详细内容 */
   content?: string
   /** 课程大纲 */
-  outline?: string
+  outline?: string | string[]
+  /** 课程大纲图文块 JSON */
+  outline_blocks?: CourseRichBlock[]
   /** 课程时长 */
   duration?: string
   /** 授课老师 */
@@ -72,9 +79,17 @@ export interface ClassRecord {
   course_id: number
   /** 课程名称 */
   course_name: string
-  /** 开始时间 */
+  /** 该排期复训费（0=本排期免费复训） */
+  retrain_price?: number
+  /** 上课日期 */
+  class_date?: string
+  /** 结课日期（NULL 表示单日课，与 class_date 相同理解） */
+  class_end_date?: string | null
+  /** 上课时段 */
+  class_time?: string
+  /** 当天开始时刻（由 class_time 解析，如 09:00） */
   start_time: string
-  /** 结束时间 */
+  /** 当天结束时刻（由 class_time 解析，如 17:00） */
   end_time: string
   /** 上课地点 */
   location: string

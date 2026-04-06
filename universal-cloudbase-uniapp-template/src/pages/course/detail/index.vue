@@ -57,20 +57,50 @@
           <view class="t-tabs__content">
             <view class="t-card t-card--bordered">
               <view class="t-card__body">
-                <!-- 课程介绍 -->
+                <!-- 课程介绍（图文块，接口已转 CDN URL） -->
                 <view v-if="activeTabIndex === 0">
                   <view class="section-heading">📖 课程介绍</view>
-                  <view class="section-text">{{ courseInfo.description }}</view>
+                  <view v-if="courseInfo.descriptionBlocks.length" class="rich-body">
+                    <template v-for="(b, bi) in courseInfo.descriptionBlocks" :key="'db-' + bi">
+                      <rich-text
+                        v-if="b.type === 'text' && courseRichTextHasContent(b.text)"
+                        class="section-text course-rich-text"
+                        :nodes="b.text"
+                      />
+                      <image
+                        v-else-if="b.type === 'image' && b.image"
+                        :src="b.image"
+                        class="rich-img"
+                        mode="widthFix"
+                      />
+                    </template>
+                  </view>
+                  <view v-else-if="courseInfo.description" class="section-text">{{ courseInfo.description }}</view>
+                  <view v-else class="section-text section-text--muted">暂无介绍</view>
                 </view>
 
-                <!-- 课程大纲 -->
+                <!-- 课程大纲（图文块） -->
                 <view v-if="activeTabIndex === 1">
                   <view class="section-heading">📋 课程大纲</view>
-                  <view class="section-list">
+                  <view v-if="courseInfo.outlineBlocks.length" class="rich-body">
+                    <template v-for="(b, bi) in courseInfo.outlineBlocks" :key="'ob-' + bi">
+                      <view v-if="b.type === 'text' && courseRichTextHasContent(b.text)" class="rich-outline-rich-wrap">
+                        <rich-text class="section-text course-rich-text" :nodes="b.text" />
+                      </view>
+                      <image
+                        v-else-if="b.type === 'image' && b.image"
+                        :src="b.image"
+                        class="rich-img"
+                        mode="widthFix"
+                      />
+                    </template>
+                  </view>
+                  <view v-else-if="courseInfo.outline.length" class="section-list">
                     <view v-for="(item, index) in courseInfo.outline" :key="index" class="list-item">
                       {{ item }}
                     </view>
                   </view>
+                  <view v-else class="section-text section-text--muted">暂无大纲</view>
                 </view>
 
                 <!-- 讲师介绍 -->
@@ -94,12 +124,7 @@
                         </view>
                       </view>
                     </view>
-                    <view v-if="gc.outline && gc.outline.length > 0" style="margin-top: 24rpx;">
-                      <view class="section-heading">📋 课程大纲</view>
-                      <view class="section-list">
-                        <view v-for="(item, idx) in gc.outline" :key="idx" class="list-item">{{ item }}</view>
-                      </view>
-                    </view>
+                    <!-- 赠送课程 tab 仅展示赠送课卡片，不展示大纲等附加块 -->
                   </view>
                 </template>
               </view>
@@ -132,6 +157,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi, OrderApi, SystemApi } from '@/api';
+import type { CourseRichBlock } from '@/api/types/course';
 import { formatPrice } from '@/utils';
 
 // 当前选中的标签页
@@ -155,6 +181,10 @@ const courseInfo = ref({
   soldCount: 0,
   coverImage: '',
   description: '',
+  /** 图文介绍（优先展示） */
+  descriptionBlocks: [] as CourseRichBlock[],
+  /** 图文大纲（优先展示） */
+  outlineBlocks: [] as CourseRichBlock[],
   outline: [] as string[],
   instructor: '',
   is_purchased: false,
@@ -185,6 +215,16 @@ const getCourseGradient = (type: number): string => {
   return map[type] || 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
 };
 
+/** 图文块文字：纯文本或 HTML，判断是否应有展示（与后台 contenteditable 一致） */
+const courseRichTextHasContent = (raw?: string | null): boolean => {
+  if (raw == null || !String(raw).trim()) return false;
+  const plain = String(raw)
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+  return plain.length > 0;
+};
+
 // 加载状态
 const isLoading = ref(true);
 
@@ -208,14 +248,29 @@ const loadCourseDetail = async (courseId: number) => {
     courseInfo.value.attend_count = course.attend_count || 0;
     courseInfo.value.user_course_status = course.user_course_status ?? null;
 
-    // 解析课程大纲
+    const descBlocks = Array.isArray((course as any).description_blocks)
+      ? ((course as any).description_blocks as CourseRichBlock[])
+      : [];
+    courseInfo.value.descriptionBlocks = descBlocks.filter(
+      (b) => b && (b.type === 'text' || b.type === 'image')
+    );
+
+    const outBlocks = Array.isArray((course as any).outline_blocks)
+      ? ((course as any).outline_blocks as CourseRichBlock[])
+      : [];
+    courseInfo.value.outlineBlocks = outBlocks.filter(
+      (b) => b && (b.type === 'text' || b.type === 'image')
+    );
+
+    // 纯文字大纲（无 outline_blocks 时的兜底，与云函数 enrich 返回的 outline 数组一致）
+    courseInfo.value.outline = [];
     if (course.outline) {
       try {
         courseInfo.value.outline = typeof course.outline === 'string'
           ? JSON.parse(course.outline)
-          : course.outline;
+          : (Array.isArray(course.outline) ? course.outline : []);
       } catch (e) {
-        courseInfo.value.outline = course.outline ? [course.outline] : [];
+        courseInfo.value.outline = course.outline ? [String(course.outline)] : [];
       }
     }
 
@@ -545,6 +600,32 @@ const handleBuy = () => {
   color: $td-text-color-secondary;
   line-height: 1.8;
   font-size: 28rpx;
+}
+
+.section-text--muted {
+  color: $td-text-color-placeholder;
+}
+
+.rich-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.course-rich-text {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: $td-text-color-secondary;
+}
+
+.rich-outline-rich-wrap {
+  margin-bottom: 8rpx;
+}
+
+.rich-img {
+  width: 100%;
+  display: block;
+  border-radius: $td-radius-default;
 }
 
 .section-list {

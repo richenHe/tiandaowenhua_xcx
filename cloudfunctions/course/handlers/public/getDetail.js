@@ -3,6 +3,7 @@
  * 包括购买状态和上课次数
  */
 const { db, findOne, response, validateRequired, cloudFileIDToURL } = require('common');
+const { enrichCourseRichFieldsForClient } = require('../../common/courseRichBlocks');
 
 module.exports = async (event, context) => {
   const { id } = event;
@@ -30,18 +31,6 @@ module.exports = async (event, context) => {
     // 添加类型名称
     const typeNames = { 1: '初探班', 2: '密训班', 3: '咨询服务' };
     course.type_name = typeNames[course.type] || '未知';
-
-    // 🔥 处理课程大纲 JSON 解析
-    if (course.outline && typeof course.outline === 'string') {
-      try {
-        course.outline = JSON.parse(course.outline);
-      } catch (e) {
-        // 如果解析失败，转换为数组
-        course.outline = [course.outline];
-      }
-    } else if (!course.outline) {
-      course.outline = [];
-    }
 
     // 如果用户已登录，查询购买状态和上课次数
     if (OPENID) {
@@ -88,6 +77,9 @@ module.exports = async (event, context) => {
       course.cover_image = cloudFileIDToURL(course.cover_image);
     }
 
+    // 课程简介 / 大纲图文块（含图片 CDN URL）+ outline 纯文字数组兼容
+    enrichCourseRichFieldsForClient(course);
+
     // 密训班赠送课程信息：查询 included_course_ids 对应课程的基本信息
     course.gift_courses = [];
     let giftIds = course.included_course_ids;
@@ -98,7 +90,7 @@ module.exports = async (event, context) => {
       for (const giftId of giftIds) {
         const { data: gc } = await db
           .from('courses')
-          .select('id, name, type, cover_image, validity_days, description, content, outline, teacher')
+          .select('id, name, type, cover_image, validity_days, description, description_blocks, content, outline, outline_blocks, teacher')
           .eq('id', giftId)
           .eq('is_deleted', 0)
           .single();
@@ -106,11 +98,7 @@ module.exports = async (event, context) => {
           const typeNames2 = { 1: '初探班', 2: '密训班', 3: '咨询服务', 4: '沙龙' };
           gc.type_name = typeNames2[gc.type] || '未知';
           if (gc.cover_image) gc.cover_image = cloudFileIDToURL(gc.cover_image);
-          if (gc.outline && typeof gc.outline === 'string') {
-            try { gc.outline = JSON.parse(gc.outline); } catch (e) { gc.outline = [gc.outline]; }
-          } else if (!gc.outline) {
-            gc.outline = [];
-          }
+          enrichCourseRichFieldsForClient(gc);
           course.gift_courses.push(gc);
         }
       }

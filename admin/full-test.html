@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>全量接口测试工具</title>
   <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260403">
+  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260404">
   <style>
     *{box-sizing:border-box}
     html,body{height:auto!important;overflow:auto!important}
@@ -179,7 +179,7 @@
 
 <script src="./assets/libs/vue.global.js"></script>
 <script src="./assets/libs/tdesign.min.js"></script>
-<script src="./assets/js/config.js?v=20260403"></script>
+<script src="./assets/js/config.js?v=20260404"></script>
 <script>
 const {createApp,ref,reactive,computed,onMounted}=Vue;
 
@@ -560,7 +560,7 @@ setup(){
     params:{page:1,page_size:10,type:'',status:'',keyword:''},
     fields:['total:n','list:a']},
   {id:'ca_createCourse',fn:'course',act:'createCourse',type:'admin',name:'createCourse · 创建课程',write:true,
-    params:{name:'测试课程_可删除',nickname:'测试',type:1,coverImage:'',currentPrice:1688,originalPrice:2000,retrainPrice:500,allowRetrain:1,duration:2,description:'描述',content:'内容',outline:'[]',teacher:'测试老师',sortOrder:99,status:0},
+    params:{name:'测试课程_可删除',nickname:'测试',type:1,coverImage:'',currentPrice:1688,originalPrice:2000,allowRetrain:1,duration:2,description:'描述',content:'内容',outline:'[]',teacher:'测试老师',sortOrder:99,status:0},
     fields:['course_id:n']},
   {id:'ca_updateCourse',fn:'course',act:'updateCourse',type:'admin',name:'updateCourse · 更新课程',write:true,
     params:{id:1,name:'更新课程_测试',currentPrice:1888,status:1},
@@ -573,7 +573,7 @@ setup(){
     params:{page:1,page_size:10,course_id:'',status:'',start_date:'',end_date:''},
     fields:['total:n','list:a']},
   {id:'ca_createClassRecord',fn:'course',act:'createClassRecord',type:'admin',name:'createClassRecord · 创建排期',write:true,
-    params:{courseId:1,classDate:'2026-12-01',classTime:'09:00-17:00',classLocation:'北京测试地点',teacher:'测试老师',totalQuota:20,remark:'测试排期'},
+    params:{courseId:1,classDate:'2026-12-01',classTime:'09:00-17:00',classLocation:'北京测试地点',teacher:'测试老师',totalQuota:20,cancelDeadlineDays:3,retrainPrice:500,remark:'测试排期'},
     fields:['class_record_id:n']},
   {id:'ca_updateClassRecord',fn:'course',act:'updateClassRecord',type:'admin',name:'updateClassRecord · 更新排期',write:true,
     params:{id:1,status:1,remark:'更新排期测试'},

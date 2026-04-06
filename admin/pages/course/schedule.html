@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>排期管理</title>
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260403">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260404">
   <!-- 页面专属样式（布局由 tokens.css 统一管理）-->
   <style>
   </style>
@@ -66,6 +66,7 @@
         </template>
         <template #operation="{ row }">
           <t-space size="small">
+            <t-button theme="primary" size="small" variant="text" @click="openScheduleDetail(row)">详情</t-button>
             <t-button v-if="row.status !== 0" theme="default" size="small" variant="text" @click="handleGenerateQRCode(row)">生成签到码</t-button>
             <t-button v-if="row.status !== 0" theme="warning" size="small" variant="text" @click="handleCancel(row)">取消</t-button>
             <t-button v-else theme="default" size="small" variant="text" disabled>已取消</t-button>
@@ -101,6 +102,9 @@
         <t-form-item label="总名额" name="totalQuota">
           <t-input-number v-model="formData.totalQuota" :min="1" :max="100" style="width: 100%;" />
         </t-form-item>
+        <t-form-item label="复训价（元）" name="retrainPrice" tips="该期复训费；0 表示本排期免费复训（沙龙可填 0）">
+          <t-input-number v-model="formData.retrainPrice" :min="0" :step="0.01" style="width: 100%;" />
+        </t-form-item>
         <t-form-item label="取消截止(天)" name="cancelDeadlineDays">
           <t-input-number v-model="formData.cancelDeadlineDays" :min="1" :max="30" style="width: 100%;" placeholder="上课前X天不可取消预约" />
         </t-form-item>
@@ -108,6 +112,22 @@
           <t-textarea v-model="formData.remark" placeholder="选填" :maxlength="200" />
         </t-form-item>
       </t-form>
+    </t-dialog>
+
+    <t-dialog v-model:visible="detailVisible" header="排期详情" width="560px" :footer="false">
+      <div v-if="detailRow" style="font-size: 14px; line-height: 1.75; color: #333;">
+        <p><strong>排期 ID</strong>：{{ detailRow.id }}</p>
+        <p><strong>课程</strong>：{{ detailRow.course_name }}（ID {{ detailRow.course_id }}）</p>
+        <p><strong>上课日期</strong>：{{ detailRow.class_date }}<template v-if="detailRow.class_end_date"> ～ {{ detailRow.class_end_date }}</template></p>
+        <p><strong>上课时段</strong>：{{ detailRow.class_time || '—' }}</p>
+        <p><strong>地点</strong>：{{ detailRow.class_location || '—' }}</p>
+        <p><strong>讲师</strong>：{{ detailRow.teacher || '—' }}</p>
+        <p><strong>名额</strong>：已约 {{ detailRow.booked_quota }} / 总计 {{ detailRow.total_quota }}</p>
+        <p><strong>复训价（元）</strong>：{{ detailRow.retrain_price != null ? detailRow.retrain_price : 0 }}</p>
+        <p><strong>取消截止(天)</strong>：{{ detailRow.cancel_deadline_days }}</p>
+        <p><strong>状态</strong>：{{ detailRow.status === 1 ? '未开始' : detailRow.status === 2 ? '进行中' : detailRow.status === 3 ? '已结束' : '已取消' }}</p>
+        <p v-if="detailRow.remark"><strong>备注</strong>：{{ detailRow.remark }}</p>
+      </div>
     </t-dialog>
 
     <!-- 生成签到码结果弹窗 -->
@@ -132,9 +152,9 @@
 
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
-  <script src="../../assets/js/config.js?v=20260403"></script>
-  <script src="../../assets/js/admin-api.js?v=20260403"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260403"></script>
+  <script src="../../assets/js/config.js?v=20260404"></script>
+  <script src="../../assets/js/admin-api.js?v=20260404"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260404"></script>
 
   <script>
     const { createApp, ref, computed, onMounted } = Vue;
@@ -274,7 +294,14 @@
         const handleSearch = () => { pagination.value.current = 1; fetchData(); };
         const handleReset = () => { filters.value = { courseId: null, dateRange: [], status: null }; handleSearch(); };
         const handlePageChange = (pageInfo) => { pagination.value.current = pageInfo.current; pagination.value.pageSize = pageInfo.pageSize; fetchData(); };
-        const handleAdd = () => { formData.value = { totalQuota: 30, classTime: '' }; formVisible.value = true; };
+        const detailVisible = ref(false);
+        const detailRow = ref(null);
+        const openScheduleDetail = (row) => {
+          detailRow.value = row;
+          detailVisible.value = true;
+        };
+
+        const handleAdd = () => { formData.value = { totalQuota: 30, classTime: '', retrainPrice: 0 }; formVisible.value = true; };
         const handleCancel = (row) => {
           const dialog = TDesign.DialogPlugin.confirm({
             header: '取消排期',
@@ -341,6 +368,7 @@
           handleLogout, handleMenuChange,
           loading, tableData, formVisible, formData, filters, courseOptions, courseTitle, statusOptions, pagination, columns, rules,
           handleSearch, handleReset, handlePageChange, handleAdd, handleCancel, handleSubmit,
+          detailVisible, detailRow, openScheduleDetail,
           qrPreviewVisible, qrGenerating, qrPreviewUrl, qrPreviewInfo,
           handleGenerateQRCode
         };

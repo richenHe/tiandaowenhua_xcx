@@ -420,6 +420,14 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
       const { ref, computed } = Vue;
       const uploading = ref(false);
 
+      /** 预览 URL：统一从 props 推导，避免内联 DOM 模板下对 modelValue 解析差异导致上传区不渲染 */
+      const previewSrc = computed(() => {
+        const v = props.modelValue;
+        if (v == null || v === '') return '';
+        return String(v).trim();
+      });
+      const showUploadZone = computed(() => !previewSrc.value);
+
       /** 轮播图等场景：内联 DOM 模板里自闭合标签可能未把 tips 绑到组件上，用 pathPrefix 兜底 */
       const displayTips = computed(() => {
         const t = (props.tips || '').trim();
@@ -496,13 +504,13 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
         TDesign.MessagePlugin.success('已删除');
       }
 
-      return { uploading, openFilePicker, handleRemove, w, h, displayTips };
+      return { uploading, openFilePicker, handleRemove, w, h, displayTips, previewSrc, showUploadZone };
     },
     template: `
       <div class="cu-wrap">
         <!-- 无图片时：点击整块上传 -->
         <div
-          v-if="!modelValue"
+          v-if="showUploadZone"
           class="cu-area"
           :class="{ 'cu-uploading': uploading }"
           :style="{ width: w(), height: h() }"
@@ -515,7 +523,7 @@ console.log('✅ CloudStorageHelper 工具函数挂载成功');
         <!-- 有图片时：显示预览 + 操作按钮 -->
         <div v-else>
           <div class="cu-preview" :style="{ width: w() }">
-            <img :src="modelValue" :style="{ height: h() }" />
+            <img :src="previewSrc" :style="{ height: h() }" />
           </div>
           <div class="cu-actions">
             <button

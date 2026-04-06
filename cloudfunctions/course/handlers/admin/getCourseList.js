@@ -52,6 +52,7 @@ module.exports = async (event, context) => {
         case 1: return '初探班';
         case 2: return '密训班';
         case 3: return '咨询服务';
+        case 4: return '沙龙';
         default: return '未知';
       }
     };

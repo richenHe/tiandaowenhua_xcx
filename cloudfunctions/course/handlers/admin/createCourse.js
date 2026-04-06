@@ -14,7 +14,6 @@
  * @param {number}  event.currentPrice  - 现价（必填），对应 DB 字段 current_price
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
- * @param {number}  event.retrainPrice  - 重训价，对应 DB 字段 retrain_price
  * @param {number}  event.allowRetrain  - 是否允许重训，对应 DB 字段 allow_retrain
  * @param {number} event.validityDays - 课程有效期（天），必填正整数，对应 DB 字段 validity_days
  * @param {string}  event.duration      - 课程时长
@@ -30,6 +29,13 @@
 const { insert, findOne } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
+const {
+  sanitizeBlocksInput,
+  serializeBlocksForDb,
+  blocksToDescriptionPlain,
+  blocksToOutlineLegacyJson,
+  legacyOutlineToBlocks,
+} = require('../../common/courseRichBlocks');
 
 module.exports = async (event, context) => {
   // 接收 camelCase 参数，同时兼容 snake_case（防止旧客户端传参）
@@ -39,13 +45,14 @@ module.exports = async (event, context) => {
   const coverImage = event.coverImage || event.cover_image;
   const currentPrice = event.currentPrice || event.current_price;
   const originalPrice = event.originalPrice || event.original_price;
-  const retrainPrice = event.retrainPrice || event.retrain_price;
   const allowRetrain = event.allowRetrain !== undefined ? event.allowRetrain : event.allow_retrain;
   const validityDays = event.validityDays !== undefined ? event.validityDays : event.validity_days;
   const duration = event.duration;
   const description = event.description;
   const content = event.content;
   const outline = event.outline;
+  const descriptionBlocksRaw = event.descriptionBlocks !== undefined ? event.descriptionBlocks : event.description_blocks;
+  const outlineBlocksRaw = event.outlineBlocks !== undefined ? event.outlineBlocks : event.outline_blocks;
   const teacher = event.teacher;
   const sortOrder = event.sortOrder || event.sort_order;
   const includedCourseIds = event.includedCourseIds || event.included_course_ids;
@@ -88,20 +95,33 @@ module.exports = async (event, context) => {
       }
     }
 
+    // 图文块：优先 descriptionBlocks / outlineBlocks；兼容仅传 description、outline 的旧客户端
+    let descBlocks = sanitizeBlocksInput(descriptionBlocksRaw);
+    if (descBlocks.length === 0 && description) {
+      descBlocks = [{ type: 'text', text: String(description) }];
+    }
+    let outBlocks = sanitizeBlocksInput(outlineBlocksRaw);
+    if (outBlocks.length === 0 && outline) {
+      outBlocks = legacyOutlineToBlocks(outline);
+    }
+    const outlineLegacy = blocksToOutlineLegacyJson(outBlocks);
+    const descPlain = blocksToDescriptionPlain(descBlocks, 500);
+
     // camelCase → snake_case，写入 DB（新课程强制 status=0 下架）
     const [result] = await insert('courses', {
       name,
       nickname: nickname || null,
       type,
       cover_image: coverImage || null,
-      description: description || null,
+      description: descPlain,
+      description_blocks: serializeBlocksForDb(descBlocks),
       content: content || null,
-      outline: outline || null,
+      outline: outlineLegacy === '[]' ? null : outlineLegacy,
+      outline_blocks: serializeBlocksForDb(outBlocks),
       teacher: teacher || null,
       duration: isSalon ? null : (duration || null),
       current_price: isSalon ? 0 : currentPrice,
       original_price: isSalon ? 0 : (originalPrice || currentPrice),
-      retrain_price: isSalon ? 0 : (retrainPrice || 0),
       allow_retrain: isSalon ? 0 : (allowRetrain ? 1 : 0),
       validity_days: validityDaysParsed,
       included_course_ids: includedCourseIdsJson,

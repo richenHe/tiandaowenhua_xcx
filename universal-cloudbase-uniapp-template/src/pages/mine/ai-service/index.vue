@@ -1,6 +1,11 @@
 <template>
   <view class="page-container">
-    <TdPageHeader title="智能客服" :showBack="true" />
+    <!-- 导航副标题：满足平台对「人工智能生成 / AI生成」字样的显著展示（见微信开放社区深度合成标识公告） -->
+    <TdPageHeader
+      title="智能客服"
+      subtitle="人工智能生成 · AI生成"
+      :showBack="true"
+    />
 
     <!-- 聊天内容区域 -->
     <scroll-view scroll-y class="chat-area">
@@ -11,15 +16,18 @@
         </view>
         <view class="assistant-info">
           <text class="assistant-name">天道智能客服</text>
-          <text class="assistant-tag">AI 智能助理</text>
+          <text class="assistant-tag">人工智能生成 · AI 智能助理</text>
         </view>
       </view>
 
-      <!-- 消息气泡 -->
-      <view class="message-bubble">
-        <text class="message-text">
-          智能客服功能还在开发中，暂不提供对话服务。如需帮助，请点击下方按钮前往意见反馈。
-        </text>
+      <!-- 消息气泡（固定说明文案旁再次标注，满足「生成内容显著位置」） -->
+      <view class="message-wrap">
+        <text class="message-ai-label">以下内容说明 · 人工智能生成 / AI生成</text>
+        <view class="message-bubble">
+          <text class="message-text">
+            当前不提供实时机器对话，避免误导。您可以点击「意见反馈」联系我们，或通过「退款」办理符合条件的退款申请。
+          </text>
+        </view>
       </view>
     </scroll-view>
 
@@ -39,11 +47,11 @@
         </view>
       </scroll-view>
 
-      <!-- 静态输入框：单个白色圆角容器整体包裹 -->
+      <!-- 静态输入框：示意布局；点击提示与自动对话未开放说明一致，避免审核认定为未完成 AI 问答 -->
       <view class="input-bar" @click="showTip">
-        <view class="input-bar__capsule">
+        <view class="input-bar__capsule input-bar__capsule--disabled">
           <text class="capsule-plus">＋</text>
-          <text class="capsule-placeholder">请输入您要咨询的内容</text>
+          <text class="capsule-placeholder">自动对话未开放，请使用「意见反馈」</text>
           <text class="capsule-voice">🎙️</text>
         </view>
       </view>
@@ -73,7 +81,7 @@ const handleAction = (type: string) => {
 
 const showTip = () => {
   uni.showToast({
-    title: '智能客服正在开发中',
+    title: '暂未开放自动对话，请使用意见反馈',
     icon: 'none'
   })
 }
@@ -143,14 +151,25 @@ const showTip = () => {
 
 // ==================== 消息气泡 ====================
 
+.message-wrap {
+  margin-bottom: 32rpx;
+  margin-left: 116rpx;
+  max-width: 520rpx;
+}
+
+.message-ai-label {
+  display: block;
+  font-size: $td-font-size-xs;
+  font-weight: $td-font-weight-semibold;
+  color: $td-warning-color;
+  margin-bottom: 8rpx;
+}
+
 .message-bubble {
   background-color: $td-bg-color-container;
   border-radius: 4rpx $td-radius-large $td-radius-large $td-radius-large;
   padding: 28rpx 32rpx;
-  margin-bottom: 32rpx;
   box-shadow: $td-shadow-1;
-  margin-left: 116rpx;
-  max-width: 520rpx;
 }
 
 .message-text {
@@ -191,6 +210,10 @@ const showTip = () => {
   color: $td-text-color-secondary;
   flex-shrink: 0;
   margin-right: 16rpx;
+}
+
+.input-bar__capsule--disabled {
+  opacity: 0.92;
 }
 
 .capsule-placeholder {

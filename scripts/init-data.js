@@ -58,13 +58,12 @@ const INIT_DATA_SQL = {
 
   // 课程数据
   courses: `
-    INSERT INTO courses (id, name, type, current_price, original_price, retrain_price, description, status, sort_order) VALUES
-    (1, '初探班', 1, 1688.00, 1688.00, 500.00, '天道文化初探班课程，带您初探天道奥秘', 1, 100),
-    (2, '密训班', 2, 38888.00, 38888.00, 11666.00, '天道文化密训班课程，深度掌握天道文化精髓', 1, 90)
+    INSERT INTO courses (id, name, type, current_price, original_price, description, status, sort_order) VALUES
+    (1, '初探班', 1, 1688.00, 1688.00, '天道文化初探班课程，带您初探天道奥秘', 1, 100),
+    (2, '密训班', 2, 38888.00, 38888.00, '天道文化密训班课程，深度掌握天道文化精髓', 1, 90)
     ON DUPLICATE KEY UPDATE
       current_price=VALUES(current_price),
       original_price=VALUES(original_price),
-      retrain_price=VALUES(retrain_price),
       description=VALUES(description)
   `,
 

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>小程序端 · 端到端集成测试</title>
   <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260403">
+  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260404">
   <style>
     *{box-sizing:border-box}
     /* 覆盖 tokens.css 为 admin 布局设置的 overflow:hidden，此页面是独立测试页，不用 t-layout 骨架 */
@@ -217,7 +217,7 @@
 
 <script src="./assets/libs/vue.global.js"></script>
 <script src="./assets/libs/tdesign.min.js"></script>
-<script src="./assets/js/config.js?v=20260403"></script>
+<script src="./assets/js/config.js?v=20260404"></script>
 <script>
 const {createApp,ref,reactive,computed,nextTick,onMounted}=Vue;
 
@@ -1733,27 +1733,33 @@ WHERE a.user_id=${U.id} ORDER BY a.created_at DESC LIMIT 10`
         biz:[(d,raw)=>({r:'学习进度接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message})],
         sql:()=>`SELECT * FROM tiandao_culture.academy_progress WHERE user_id=${U.id}`
       },
-      // ── S7.4a: 复训费流程 — getMyCourses 验证 attend_count/retrain_price 字段 ──
-      {name:'S7.4a 复训费流程: getMyCourses 含 attend_count/retrain_price',fn:'user',act:'getMyCourses',
+      // ── S7.4a: 复训相关 — getMyCourses 验证 attend_count；复训费改在排期 retrain_price ──
+      {name:'S7.4a 复训: getMyCourses 含 attend_count',fn:'user',act:'getMyCourses',
         biz:[
           (d,raw)=>({r:'getMyCourses 接口应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{
             const list=Array.isArray(d)?d:(d?.list||[]);
             const bad=list.filter(c=>c.attend_count===undefined);
             return{r:'S7.4a: getMyCourses 应返回 attend_count 字段（复训页面依赖）',p:bad.length===0,a:bad.length?`❌${bad.length}门课缺少attend_count`:`✓${list.length}门课均含attend_count`}
-          },
-          (d)=>{
-            const list=Array.isArray(d)?d:(d?.list||[]);
-            const bad=list.filter(c=>c.retrain_price===undefined);
-            return{r:'S7.4a: getMyCourses 应返回 retrain_price 字段（复训费用来源）',p:bad.length===0,a:bad.length?`❌${bad.length}门课缺少retrain_price`:`✓${list.length}门课均含retrain_price`}
           }
         ],
         save:(d,_,C)=>{C.myCoursesList=Array.isArray(d)?d:(d?.list||[])},
-        sql:()=>`SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, c.retrain_price, uc.buy_time
+        sql:()=>`SELECT uc.id, uc.course_id, c.name, c.type, uc.attend_count, uc.buy_time
 FROM tiandao_culture.user_courses uc
 JOIN tiandao_culture.courses c ON c.id=uc.course_id
 WHERE uc.user_id=${U.id} AND uc.status=1
 ORDER BY uc.id DESC LIMIT 10`
+      },
+      {name:'S7.4a2 复训费来源: getClassRecords 含 retrain_price',fn:'course',act:'getClassRecords',params:{course_id:1,page:1,page_size:50},
+        biz:[
+          (d,raw)=>({r:'getClassRecords 应正常返回',p:raw.success===true,a:raw.success?'OK':raw.message}),
+          (d)=>{
+            const list=d?.list||[];
+            const bad=list.filter(r=>r.retrain_price===undefined);
+            return{r:'S7.4a2: 每条排期应有 retrain_price（复训费按排期）',p:bad.length===0,a:bad.length?`❌${bad.length}条缺retrain_price`:`✓${list.length}条排期均含retrain_price`}
+          }
+        ],
+        sql:()=>`SELECT id, course_id, class_date, retrain_price FROM tiandao_culture.class_records WHERE course_id=1 AND status=1 ORDER BY id DESC LIMIT 5`
       },
 
       // ── S7.4c: 复训拦截边界 — attend_count≥1 未支付复训费时 createAppointment 应被拦截 ──
@@ -3449,7 +3455,7 @@ ORDER BY uc.id DESC LIMIT 10
           }
         },
         sql:(C)=>C.salonCourseId?`-- S14.1: 验证沙龙课程字段
-SELECT id, name, type, current_price, original_price, retrain_price, validity_days, status
+SELECT id, name, type, current_price, original_price, validity_days, status
 FROM tiandao_culture.courses WHERE id=${C.salonCourseId}
 -- 期望: type=4, current_price=0, original_price=0, validity_days IS NULL, status=0`:null
       },

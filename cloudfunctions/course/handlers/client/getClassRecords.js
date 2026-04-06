@@ -3,6 +3,25 @@
  */
 const { db, response, executePaginatedQuery } = require('../../common');
 
+/**
+ * 从 class_time 解析当天开始/结束时刻（库内格式如 09:00-17:00）
+ * @param {string|null|undefined} classTime
+ * @returns {{ start_time: string|null, end_time: string|null }}
+ */
+function parseClassTimeSlots(classTime) {
+  if (classTime == null || String(classTime).trim() === '') {
+    return { start_time: null, end_time: null };
+  }
+  const s = String(classTime).trim();
+  const i = s.indexOf('-');
+  if (i < 0) {
+    return { start_time: s, end_time: null };
+  }
+  const left = s.slice(0, i).trim();
+  const right = s.slice(i + 1).trim();
+  return { start_time: left || null, end_time: right || null };
+}
+
 module.exports = async (event, context) => {
   // 支持驼峰和下划线两种参数格式
   const {
@@ -52,11 +71,13 @@ module.exports = async (event, context) => {
         id,
         course_id,
         class_date,
+        class_end_date,
         class_time,
         class_location,
         teacher,
         total_quota,
-        booked_quota
+        booked_quota,
+        retrain_price
       `, { count: 'exact' })
       .eq('course_id', finalCourseId)
       .eq('status', 1)
@@ -90,20 +111,26 @@ module.exports = async (event, context) => {
     }
 
     // 格式化数据
-    const list = (result.list || []).map(cr => ({
+    const list = (result.list || []).map((cr) => {
+      const slots = parseClassTimeSlots(cr.class_time);
+      return {
       id: cr.id,
       course_id: cr.course_id,
       course_name: courseName,
       class_date: cr.class_date,
+      class_end_date: cr.class_end_date != null ? cr.class_end_date : null,
       class_time: cr.class_time,
-      start_time: cr.class_time ? cr.class_time.split('-')[0] : null,
+      start_time: slots.start_time,
+      end_time: slots.end_time,
       location: cr.class_location,
       teacher: cr.teacher,
       total_quota: cr.total_quota,
       booked_quota: cr.booked_quota,
       available_quota: cr.total_quota - cr.booked_quota,
+      retrain_price: cr.retrain_price != null ? parseFloat(cr.retrain_price) : 0,
       is_appointed: userAppointments.includes(cr.id) ? 1 : 0
-    }));
+    };
+    });
 
     console.log(`[Course/getClassRecords] 查询成功，共 ${result.total} 条排期`);
 
