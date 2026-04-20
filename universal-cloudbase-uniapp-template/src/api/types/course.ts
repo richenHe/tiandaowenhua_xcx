@@ -67,6 +67,11 @@ export interface Course {
   purchase_date?: string
   /** 类型名称（前端使用） */
   type_name?: string
+  /**
+   * 最近一场可展示排期的上课首日（YYYY-MM-DD，北京日历；来自 class_records.status=1）
+   * 由公开列表接口聚合，供首页倒计时角标等
+   */
+  next_class_date?: string | null
 }
 
 /**
@@ -385,6 +390,8 @@ export interface CalendarCourseInfo {
   courseId: number
   /** 课程昵称 */
   nickname: string
+  /** 当日涉及的全部课程昵称（多排期同日或多日课展开后合并，按 course_id 升序去重；弹窗「课程：」用中文逗号拼接） */
+  nicknames?: string[]
   /** 课程名称 */
   courseName: string
   /** 上课时间 */

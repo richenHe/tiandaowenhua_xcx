@@ -1,0 +1,1320 @@
+- generic [ref=e3]:
+  - paragraph [ref=e5]:
+    - img [ref=e6]
+    - link "Lucide v1 is out!" [ref=e9] [cursor=pointer]:
+      - /url: /guide/version-1
+    - text: You're looking at the site for v1, for v0 go to
+    - link "v0 site" [ref=e10] [cursor=pointer]:
+      - /url: https://v0.lucide.dev
+  - link "Skip to content" [ref=e11] [cursor=pointer]:
+    - /url: "#VPContent"
+  - banner:
+    - generic:
+      - generic:
+        - generic:
+          - link "Lucide" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e14]: Lucide
+          - generic [ref=e15]:
+            - navigation "Main Navigation" [ref=e16]:
+              - generic [ref=e17]: Main Navigation
+              - link "Icons" [ref=e18] [cursor=pointer]:
+                - /url: /icons/
+                - generic [ref=e19]: Icons
+              - link "Guide" [ref=e20] [cursor=pointer]:
+                - /url: /guide/
+                - generic [ref=e21]: Guide
+              - button "Resources" [ref=e23] [cursor=pointer]:
+                - generic [ref=e25]: Resources
+              - link "Packages" [ref=e27] [cursor=pointer]:
+                - /url: /packages
+                - generic [ref=e28]: Packages
+              - link "Showcase" [ref=e29] [cursor=pointer]:
+                - /url: /showcase
+                - generic [ref=e30]: Showcase
+            - button "extra navigation" [ref=e32] [cursor=pointer]
+  - complementary [ref=e34]:
+    - navigation "Sidebar Navigation" [ref=e36]:
+      - generic [ref=e37]: Sidebar Navigation
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - heading "Customizer" [level=2] [ref=e43]
+            - button [ref=e44] [cursor=pointer]:
+              - img [ref=e45]
+          - generic [ref=e49]:
+            - generic [ref=e50]: Color
+            - generic [ref=e52]:
+              - textbox "Color" [ref=e54]: "#000000"
+              - textbox "Color picker input" [ref=e55]:
+                - /placeholder: "[default]"
+                - text: "#000000"
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - generic [ref=e58]: Stroke width
+              - generic [ref=e59]: 2px
+            - slider "Stroke width" [ref=e61] [cursor=pointer]: "2"
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - generic [ref=e65]: Size
+              - generic [ref=e66]: 24px
+            - slider "Size" [ref=e68] [cursor=pointer]: "24"
+          - generic [ref=e70]:
+            - generic [ref=e72]: Absolute stroke width
+            - switch "Absolute stroke width" [ref=e73] [cursor=pointer]
+        - generic [ref=e75]:
+          - heading "Include external libs" [level=2] [ref=e76]
+          - list [ref=e77]:
+            - listitem [ref=e78]:
+              - generic [ref=e79]:
+                - checkbox "Lab" [ref=e80] [cursor=pointer]
+                - generic [ref=e81]: Lab
+        - generic [ref=e82]:
+          - heading "View" [level=2] [ref=e83]
+          - link "All" [ref=e84] [cursor=pointer]:
+            - /url: /icons/
+          - link "Categories" [ref=e85] [cursor=pointer]:
+            - /url: /icons/categories
+          - navigation [ref=e88]:
+            - list [ref=e89]:
+              - listitem [ref=e90]:
+                - link "Accessibility Count of icons in Accessibility" [ref=e91] [cursor=pointer]:
+                  - /url: /icons/categories#accessibility
+                  - generic [ref=e92]: Accessibility
+                  - generic "Count of icons in Accessibility" [ref=e93]: "30"
+              - listitem [ref=e94]:
+                - link "Accounts & access Count of icons in Accounts & access" [ref=e95] [cursor=pointer]:
+                  - /url: /icons/categories#account
+                  - generic [ref=e96]: Accounts & access
+                  - generic "Count of icons in Accounts & access" [ref=e97]: "137"
+              - listitem [ref=e98]:
+                - link "Animals Count of icons in Animals" [ref=e99] [cursor=pointer]:
+                  - /url: /icons/categories#animals
+                  - generic [ref=e100]: Animals
+                  - generic "Count of icons in Animals" [ref=e101]: "23"
+              - listitem [ref=e102]:
+                - link "Arrows Count of icons in Arrows" [ref=e103] [cursor=pointer]:
+                  - /url: /icons/categories#arrows
+                  - generic [ref=e104]: Arrows
+                  - generic "Count of icons in Arrows" [ref=e105]: "211"
+              - listitem [ref=e106]:
+                - link "Buildings Count of icons in Buildings" [ref=e107] [cursor=pointer]:
+                  - /url: /icons/categories#buildings
+                  - generic [ref=e108]: Buildings
+                  - generic "Count of icons in Buildings" [ref=e109]: "24"
+              - listitem [ref=e110]:
+                - link "Charts Count of icons in Charts" [ref=e111] [cursor=pointer]:
+                  - /url: /icons/categories#charts
+                  - generic [ref=e112]: Charts
+                  - generic "Count of icons in Charts" [ref=e113]: "31"
+              - listitem [ref=e114]:
+                - link "Communication Count of icons in Communication" [ref=e115] [cursor=pointer]:
+                  - /url: /icons/categories#communication
+                  - generic [ref=e116]: Communication
+                  - generic "Count of icons in Communication" [ref=e117]: "55"
+              - listitem [ref=e118]:
+                - link "Connectivity Count of icons in Connectivity" [ref=e119] [cursor=pointer]:
+                  - /url: /icons/categories#connectivity
+                  - generic [ref=e120]: Connectivity
+                  - generic "Count of icons in Connectivity" [ref=e121]: "93"
+              - listitem [ref=e122]:
+                - link "Cursors Count of icons in Cursors" [ref=e123] [cursor=pointer]:
+                  - /url: /icons/categories#cursors
+                  - generic [ref=e124]: Cursors
+                  - generic "Count of icons in Cursors" [ref=e125]: "33"
+              - listitem [ref=e126]:
+                - link "Design Count of icons in Design" [ref=e127] [cursor=pointer]:
+                  - /url: /icons/categories#design
+                  - generic [ref=e128]: Design
+                  - generic "Count of icons in Design" [ref=e129]: "143"
+              - listitem [ref=e130]:
+                - link "Coding & development Count of icons in Coding & development" [ref=e131] [cursor=pointer]:
+                  - /url: /icons/categories#development
+                  - generic [ref=e132]: Coding & development
+                  - generic "Count of icons in Coding & development" [ref=e133]: "242"
+              - listitem [ref=e134]:
+                - link "Devices Count of icons in Devices" [ref=e135] [cursor=pointer]:
+                  - /url: /icons/categories#devices
+                  - generic [ref=e136]: Devices
+                  - generic "Count of icons in Devices" [ref=e137]: "171"
+              - listitem [ref=e138]:
+                - link "Emoji Count of icons in Emoji" [ref=e139] [cursor=pointer]:
+                  - /url: /icons/categories#emoji
+                  - generic [ref=e140]: Emoji
+                  - generic "Count of icons in Emoji" [ref=e141]: "41"
+              - listitem [ref=e142]:
+                - link "File icons Count of icons in File icons" [ref=e143] [cursor=pointer]:
+                  - /url: /icons/categories#files
+                  - generic [ref=e144]: File icons
+                  - generic "Count of icons in File icons" [ref=e145]: "162"
+              - listitem [ref=e146]:
+                - link "Finance Count of icons in Finance" [ref=e147] [cursor=pointer]:
+                  - /url: /icons/categories#finance
+                  - generic [ref=e148]: Finance
+                  - generic "Count of icons in Finance" [ref=e149]: "56"
+              - listitem [ref=e150]:
+                - link "Food & beverage Count of icons in Food & beverage" [ref=e151] [cursor=pointer]:
+                  - /url: /icons/categories#food-beverage
+                  - generic [ref=e152]: Food & beverage
+                  - generic "Count of icons in Food & beverage" [ref=e153]: "71"
+              - listitem [ref=e154]:
+                - link "Gaming Count of icons in Gaming" [ref=e155] [cursor=pointer]:
+                  - /url: /icons/categories#gaming
+                  - generic [ref=e156]: Gaming
+                  - generic "Count of icons in Gaming" [ref=e157]: "149"
+              - listitem [ref=e158]:
+                - link "Home Count of icons in Home" [ref=e159] [cursor=pointer]:
+                  - /url: /icons/categories#home
+                  - generic [ref=e160]: Home
+                  - generic "Count of icons in Home" [ref=e161]: "61"
+              - listitem [ref=e162]:
+                - link "Layout Count of icons in Layout" [ref=e163] [cursor=pointer]:
+                  - /url: /icons/categories#layout
+                  - generic [ref=e164]: Layout
+                  - generic "Count of icons in Layout" [ref=e165]: "141"
+              - listitem [ref=e166]:
+                - link "Mail Count of icons in Mail" [ref=e167] [cursor=pointer]:
+                  - /url: /icons/categories#mail
+                  - generic [ref=e168]: Mail
+                  - generic "Count of icons in Mail" [ref=e169]: "26"
+              - listitem [ref=e170]:
+                - link "Mathematics Count of icons in Mathematics" [ref=e171] [cursor=pointer]:
+                  - /url: /icons/categories#math
+                  - generic [ref=e172]: Mathematics
+                  - generic "Count of icons in Mathematics" [ref=e173]: "75"
+              - listitem [ref=e174]:
+                - link "Medical Count of icons in Medical" [ref=e175] [cursor=pointer]:
+                  - /url: /icons/categories#medical
+                  - generic [ref=e176]: Medical
+                  - generic "Count of icons in Medical" [ref=e177]: "42"
+              - listitem [ref=e178]:
+                - link "Multimedia Count of icons in Multimedia" [ref=e179] [cursor=pointer]:
+                  - /url: /icons/categories#multimedia
+                  - generic [ref=e180]: Multimedia
+                  - generic "Count of icons in Multimedia" [ref=e181]: "141"
+              - listitem [ref=e182]:
+                - link "Nature Count of icons in Nature" [ref=e183] [cursor=pointer]:
+                  - /url: /icons/categories#nature
+                  - generic [ref=e184]: Nature
+                  - generic "Count of icons in Nature" [ref=e185]: "23"
+              - listitem [ref=e186]:
+                - link "Navigation, Maps, and POIs Count of icons in Navigation, Maps, and POIs" [ref=e187] [cursor=pointer]:
+                  - /url: /icons/categories#navigation
+                  - generic [ref=e188]: Navigation, Maps, and POIs
+                  - generic "Count of icons in Navigation, Maps, and POIs" [ref=e189]: "87"
+              - listitem [ref=e190]:
+                - link "Notification Count of icons in Notification" [ref=e191] [cursor=pointer]:
+                  - /url: /icons/categories#notifications
+                  - generic [ref=e192]: Notification
+                  - generic "Count of icons in Notification" [ref=e193]: "40"
+              - listitem [ref=e194]:
+                - link "People Count of icons in People" [ref=e195] [cursor=pointer]:
+                  - /url: /icons/categories#people
+                  - generic [ref=e196]: People
+                  - generic "Count of icons in People" [ref=e197]: "3"
+              - listitem [ref=e198]:
+                - link "Photography Count of icons in Photography" [ref=e199] [cursor=pointer]:
+                  - /url: /icons/categories#photography
+                  - generic [ref=e200]: Photography
+                  - generic "Count of icons in Photography" [ref=e201]: "75"
+              - listitem [ref=e202]:
+                - link "Science Count of icons in Science" [ref=e203] [cursor=pointer]:
+                  - /url: /icons/categories#science
+                  - generic [ref=e204]: Science
+                  - generic "Count of icons in Science" [ref=e205]: "36"
+              - listitem [ref=e206]:
+                - link "Seasons Count of icons in Seasons" [ref=e207] [cursor=pointer]:
+                  - /url: /icons/categories#seasons
+                  - generic [ref=e208]: Seasons
+                  - generic "Count of icons in Seasons" [ref=e209]: "5"
+              - listitem [ref=e210]:
+                - link "Security Count of icons in Security" [ref=e211] [cursor=pointer]:
+                  - /url: /icons/categories#security
+                  - generic [ref=e212]: Security
+                  - generic "Count of icons in Security" [ref=e213]: "58"
+              - listitem [ref=e214]:
+                - link "Shapes Count of icons in Shapes" [ref=e215] [cursor=pointer]:
+                  - /url: /icons/categories#shapes
+                  - generic [ref=e216]: Shapes
+                  - generic "Count of icons in Shapes" [ref=e217]: "55"
+              - listitem [ref=e218]:
+                - link "Shopping Count of icons in Shopping" [ref=e219] [cursor=pointer]:
+                  - /url: /icons/categories#shopping
+                  - generic [ref=e220]: Shopping
+                  - generic "Count of icons in Shopping" [ref=e221]: "27"
+              - listitem [ref=e222]:
+                - link "Social Count of icons in Social" [ref=e223] [cursor=pointer]:
+                  - /url: /icons/categories#social
+                  - generic [ref=e224]: Social
+                  - generic "Count of icons in Social" [ref=e225]: "127"
+              - listitem [ref=e226]:
+                - link "Sports Count of icons in Sports" [ref=e227] [cursor=pointer]:
+                  - /url: /icons/categories#sports
+                  - generic [ref=e228]: Sports
+                  - generic "Count of icons in Sports" [ref=e229]: "15"
+              - listitem [ref=e230]:
+                - link "Sustainability Count of icons in Sustainability" [ref=e231] [cursor=pointer]:
+                  - /url: /icons/categories#sustainability
+                  - generic [ref=e232]: Sustainability
+                  - generic "Count of icons in Sustainability" [ref=e233]: "24"
+              - listitem [ref=e234]:
+                - link "Text formatting Count of icons in Text formatting" [ref=e235] [cursor=pointer]:
+                  - /url: /icons/categories#text
+                  - generic [ref=e236]: Text formatting
+                  - generic "Count of icons in Text formatting" [ref=e237]: "247"
+              - listitem [ref=e238]:
+                - link "Time & calendar Count of icons in Time & calendar" [ref=e239] [cursor=pointer]:
+                  - /url: /icons/categories#time
+                  - generic [ref=e240]: Time & calendar
+                  - generic "Count of icons in Time & calendar" [ref=e241]: "59"
+              - listitem [ref=e242]:
+                - link "Tools Count of icons in Tools" [ref=e243] [cursor=pointer]:
+                  - /url: /icons/categories#tools
+                  - generic [ref=e244]: Tools
+                  - generic "Count of icons in Tools" [ref=e245]: "71"
+              - listitem [ref=e246]:
+                - link "Transportation Count of icons in Transportation" [ref=e247] [cursor=pointer]:
+                  - /url: /icons/categories#transportation
+                  - generic [ref=e248]: Transportation
+                  - generic "Count of icons in Transportation" [ref=e249]: "64"
+              - listitem [ref=e250]:
+                - link "Travel Count of icons in Travel" [ref=e251] [cursor=pointer]:
+                  - /url: /icons/categories#travel
+                  - generic [ref=e252]: Travel
+                  - generic "Count of icons in Travel" [ref=e253]: "70"
+              - listitem [ref=e254]:
+                - link "Weather Count of icons in Weather" [ref=e255] [cursor=pointer]:
+                  - /url: /icons/categories#weather
+                  - generic [ref=e256]: Weather
+                  - generic "Count of icons in Weather" [ref=e257]: "45"
+  - generic [ref=e264]:
+    - generic [ref=e266]:
+      - img
+      - searchbox "Search 1695 icons…" [active] [ref=e267]
+      - generic: Ctrl+K
+    - generic [ref=e268]:
+      - generic [ref=e269]:
+        - generic [ref=e270]:
+          - generic "a-arrow-down" [ref=e272] [cursor=pointer]:
+            - img
+          - generic: a-arrow-down
+        - generic [ref=e273]:
+          - generic "a-arrow-up" [ref=e275] [cursor=pointer]:
+            - img
+          - generic: a-arrow-up
+        - generic [ref=e276]:
+          - generic "a-large-small" [ref=e278] [cursor=pointer]:
+            - img
+          - generic: a-large-small
+        - generic [ref=e279]:
+          - generic "accessibility" [ref=e281] [cursor=pointer]:
+            - img
+          - generic: accessibility
+        - generic [ref=e282]:
+          - generic "activity" [ref=e284] [cursor=pointer]:
+            - img
+          - generic: activity
+        - generic [ref=e285]:
+          - generic "air-vent" [ref=e287] [cursor=pointer]:
+            - img
+          - generic: air-vent
+        - generic [ref=e288]:
+          - generic "airplay" [ref=e290] [cursor=pointer]:
+            - img
+          - generic: airplay
+        - generic [ref=e291]:
+          - generic "alarm-clock" [ref=e293] [cursor=pointer]:
+            - img
+          - generic: alarm-clock
+        - generic [ref=e294]:
+          - generic "alarm-clock-check" [ref=e296] [cursor=pointer]:
+            - img
+          - generic: alarm-clock-check
+        - generic [ref=e297]:
+          - generic "alarm-clock-minus" [ref=e299] [cursor=pointer]:
+            - img
+          - generic: alarm-clock-minus
+      - generic [ref=e300]:
+        - generic [ref=e301]:
+          - generic "alarm-clock-off" [ref=e303] [cursor=pointer]:
+            - img
+          - generic: alarm-clock-off
+        - generic [ref=e304]:
+          - generic "alarm-clock-plus" [ref=e306] [cursor=pointer]:
+            - img
+          - generic: alarm-clock-plus
+        - generic [ref=e307]:
+          - generic "alarm-smoke" [ref=e309] [cursor=pointer]:
+            - img
+          - generic: alarm-smoke
+        - generic [ref=e310]:
+          - generic "album" [ref=e312] [cursor=pointer]:
+            - img
+          - generic: album
+        - generic [ref=e313]:
+          - generic "align-center-horizontal" [ref=e315] [cursor=pointer]:
+            - img
+          - generic: align-center-horizontal
+        - generic [ref=e316]:
+          - generic "align-center-vertical" [ref=e318] [cursor=pointer]:
+            - img
+          - generic: align-center-vertical
+        - generic [ref=e319]:
+          - generic "align-end-horizontal" [ref=e321] [cursor=pointer]:
+            - img
+          - generic: align-end-horizontal
+        - generic [ref=e322]:
+          - generic "align-end-vertical" [ref=e324] [cursor=pointer]:
+            - img
+          - generic: align-end-vertical
+        - generic [ref=e325]:
+          - generic "align-horizontal-distribute-center" [ref=e327] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-distribute-center
+        - generic [ref=e328]:
+          - generic "align-horizontal-distribute-end" [ref=e330] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-distribute-end
+      - generic [ref=e331]:
+        - generic [ref=e332]:
+          - generic "align-horizontal-distribute-start" [ref=e334] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-distribute-start
+        - generic [ref=e335]:
+          - generic "align-horizontal-justify-center" [ref=e337] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-justify-center
+        - generic [ref=e338]:
+          - generic "align-horizontal-justify-end" [ref=e340] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-justify-end
+        - generic [ref=e341]:
+          - generic "align-horizontal-justify-start" [ref=e343] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-justify-start
+        - generic [ref=e344]:
+          - generic "align-horizontal-space-around" [ref=e346] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-space-around
+        - generic [ref=e347]:
+          - generic "align-horizontal-space-between" [ref=e349] [cursor=pointer]:
+            - img
+          - generic: align-horizontal-space-between
+        - generic [ref=e350]:
+          - generic "align-start-horizontal" [ref=e352] [cursor=pointer]:
+            - img
+          - generic: align-start-horizontal
+        - generic [ref=e353]:
+          - generic "align-start-vertical" [ref=e355] [cursor=pointer]:
+            - img
+          - generic: align-start-vertical
+        - generic [ref=e356]:
+          - generic "align-vertical-distribute-center" [ref=e358] [cursor=pointer]:
+            - img
+          - generic: align-vertical-distribute-center
+        - generic [ref=e359]:
+          - generic "align-vertical-distribute-end" [ref=e361] [cursor=pointer]:
+            - img
+          - generic: align-vertical-distribute-end
+      - generic [ref=e362]:
+        - generic [ref=e363]:
+          - generic "align-vertical-distribute-start" [ref=e365] [cursor=pointer]:
+            - img
+          - generic: align-vertical-distribute-start
+        - generic [ref=e366]:
+          - generic "align-vertical-justify-center" [ref=e368] [cursor=pointer]:
+            - img
+          - generic: align-vertical-justify-center
+        - generic [ref=e369]:
+          - generic "align-vertical-justify-end" [ref=e371] [cursor=pointer]:
+            - img
+          - generic: align-vertical-justify-end
+        - generic [ref=e372]:
+          - generic "align-vertical-justify-start" [ref=e374] [cursor=pointer]:
+            - img
+          - generic: align-vertical-justify-start
+        - generic [ref=e375]:
+          - generic "align-vertical-space-around" [ref=e377] [cursor=pointer]:
+            - img
+          - generic: align-vertical-space-around
+        - generic [ref=e378]:
+          - generic "align-vertical-space-between" [ref=e380] [cursor=pointer]:
+            - img
+          - generic: align-vertical-space-between
+        - generic [ref=e381]:
+          - generic "ambulance" [ref=e383] [cursor=pointer]:
+            - img
+          - generic: ambulance
+        - generic [ref=e384]:
+          - generic "ampersand" [ref=e386] [cursor=pointer]:
+            - img
+          - generic: ampersand
+        - generic [ref=e387]:
+          - generic "ampersands" [ref=e389] [cursor=pointer]:
+            - img
+          - generic: ampersands
+        - generic [ref=e390]:
+          - generic "amphora" [ref=e392] [cursor=pointer]:
+            - img
+          - generic: amphora
+      - generic [ref=e393]:
+        - generic [ref=e394]:
+          - generic "anchor" [ref=e396] [cursor=pointer]:
+            - img
+          - generic: anchor
+        - generic [ref=e397]:
+          - generic "angry" [ref=e399] [cursor=pointer]:
+            - img
+          - generic: angry
+        - generic [ref=e400]:
+          - generic "annoyed" [ref=e402] [cursor=pointer]:
+            - img
+          - generic: annoyed
+        - generic [ref=e403]:
+          - generic "antenna" [ref=e405] [cursor=pointer]:
+            - img
+          - generic: antenna
+        - generic [ref=e406]:
+          - generic "anvil" [ref=e408] [cursor=pointer]:
+            - img
+          - generic: anvil
+        - generic [ref=e409]:
+          - generic "aperture" [ref=e411] [cursor=pointer]:
+            - img
+          - generic: aperture
+        - generic [ref=e412]:
+          - generic "app-window" [ref=e414] [cursor=pointer]:
+            - img
+          - generic: app-window
+        - generic [ref=e415]:
+          - generic "app-window-mac" [ref=e417] [cursor=pointer]:
+            - img
+          - generic: app-window-mac
+        - generic [ref=e418]:
+          - generic "apple" [ref=e420] [cursor=pointer]:
+            - img
+          - generic: apple
+        - generic [ref=e421]:
+          - generic "archive" [ref=e423] [cursor=pointer]:
+            - img
+          - generic: archive
+      - generic [ref=e424]:
+        - generic [ref=e425]:
+          - generic "archive-restore" [ref=e427] [cursor=pointer]:
+            - img
+          - generic: archive-restore
+        - generic [ref=e428]:
+          - generic "archive-x" [ref=e430] [cursor=pointer]:
+            - img
+          - generic: archive-x
+        - generic [ref=e431]:
+          - generic "armchair" [ref=e433] [cursor=pointer]:
+            - img
+          - generic: armchair
+        - generic [ref=e434]:
+          - generic "arrow-big-down" [ref=e436] [cursor=pointer]:
+            - img
+          - generic: arrow-big-down
+        - generic [ref=e437]:
+          - generic "arrow-big-down-dash" [ref=e439] [cursor=pointer]:
+            - img
+          - generic: arrow-big-down-dash
+        - generic [ref=e440]:
+          - generic "arrow-big-left" [ref=e442] [cursor=pointer]:
+            - img
+          - generic: arrow-big-left
+        - generic [ref=e443]:
+          - generic "arrow-big-left-dash" [ref=e445] [cursor=pointer]:
+            - img
+          - generic: arrow-big-left-dash
+        - generic [ref=e446]:
+          - generic "arrow-big-right" [ref=e448] [cursor=pointer]:
+            - img
+          - generic: arrow-big-right
+        - generic [ref=e449]:
+          - generic "arrow-big-right-dash" [ref=e451] [cursor=pointer]:
+            - img
+          - generic: arrow-big-right-dash
+        - generic [ref=e452]:
+          - generic "arrow-big-up" [ref=e454] [cursor=pointer]:
+            - img
+          - generic: arrow-big-up
+      - generic [ref=e455]:
+        - generic [ref=e456]:
+          - generic "arrow-big-up-dash" [ref=e458] [cursor=pointer]:
+            - img
+          - generic: arrow-big-up-dash
+        - generic [ref=e459]:
+          - generic "arrow-down" [ref=e461] [cursor=pointer]:
+            - img
+          - generic: arrow-down
+        - generic [ref=e462]:
+          - generic "arrow-down-0-1" [ref=e464] [cursor=pointer]:
+            - img
+          - generic: arrow-down-0-1
+        - generic [ref=e465]:
+          - generic "arrow-down-1-0" [ref=e467] [cursor=pointer]:
+            - img
+          - generic: arrow-down-1-0
+        - generic [ref=e468]:
+          - generic "arrow-down-a-z" [ref=e470] [cursor=pointer]:
+            - img
+          - generic: arrow-down-a-z
+        - generic [ref=e471]:
+          - generic "arrow-down-from-line" [ref=e473] [cursor=pointer]:
+            - img
+          - generic: arrow-down-from-line
+        - generic [ref=e474]:
+          - generic "arrow-down-left" [ref=e476] [cursor=pointer]:
+            - img
+          - generic: arrow-down-left
+        - generic [ref=e477]:
+          - generic "arrow-down-narrow-wide" [ref=e479] [cursor=pointer]:
+            - img
+          - generic: arrow-down-narrow-wide
+        - generic [ref=e480]:
+          - generic "arrow-down-right" [ref=e482] [cursor=pointer]:
+            - img
+          - generic: arrow-down-right
+        - generic [ref=e483]:
+          - generic "arrow-down-to-dot" [ref=e485] [cursor=pointer]:
+            - img
+          - generic: arrow-down-to-dot
+      - generic [ref=e486]:
+        - generic [ref=e487]:
+          - generic "arrow-down-to-line" [ref=e489] [cursor=pointer]:
+            - img
+          - generic: arrow-down-to-line
+        - generic [ref=e490]:
+          - generic "arrow-down-up" [ref=e492] [cursor=pointer]:
+            - img
+          - generic: arrow-down-up
+        - generic [ref=e493]:
+          - generic "arrow-down-wide-narrow" [ref=e495] [cursor=pointer]:
+            - img
+          - generic: arrow-down-wide-narrow
+        - generic [ref=e496]:
+          - generic "arrow-down-z-a" [ref=e498] [cursor=pointer]:
+            - img
+          - generic: arrow-down-z-a
+        - generic [ref=e499]:
+          - generic "arrow-left" [ref=e501] [cursor=pointer]:
+            - img
+          - generic: arrow-left
+        - generic [ref=e502]:
+          - generic "arrow-left-from-line" [ref=e504] [cursor=pointer]:
+            - img
+          - generic: arrow-left-from-line
+        - generic [ref=e505]:
+          - generic "arrow-left-right" [ref=e507] [cursor=pointer]:
+            - img
+          - generic: arrow-left-right
+        - generic [ref=e508]:
+          - generic "arrow-left-to-line" [ref=e510] [cursor=pointer]:
+            - img
+          - generic: arrow-left-to-line
+        - generic [ref=e511]:
+          - generic "arrow-right" [ref=e513] [cursor=pointer]:
+            - img
+          - generic: arrow-right
+        - generic [ref=e514]:
+          - generic "arrow-right-from-line" [ref=e516] [cursor=pointer]:
+            - img
+          - generic: arrow-right-from-line
+      - generic [ref=e517]:
+        - generic [ref=e518]:
+          - generic "arrow-right-left" [ref=e520] [cursor=pointer]:
+            - img
+          - generic: arrow-right-left
+        - generic [ref=e521]:
+          - generic "arrow-right-to-line" [ref=e523] [cursor=pointer]:
+            - img
+          - generic: arrow-right-to-line
+        - generic [ref=e524]:
+          - generic "arrow-up" [ref=e526] [cursor=pointer]:
+            - img
+          - generic: arrow-up
+        - generic [ref=e527]:
+          - generic "arrow-up-0-1" [ref=e529] [cursor=pointer]:
+            - img
+          - generic: arrow-up-0-1
+        - generic [ref=e530]:
+          - generic "arrow-up-1-0" [ref=e532] [cursor=pointer]:
+            - img
+          - generic: arrow-up-1-0
+        - generic [ref=e533]:
+          - generic "arrow-up-a-z" [ref=e535] [cursor=pointer]:
+            - img
+          - generic: arrow-up-a-z
+        - generic [ref=e536]:
+          - generic "arrow-up-down" [ref=e538] [cursor=pointer]:
+            - img
+          - generic: arrow-up-down
+        - generic [ref=e539]:
+          - generic "arrow-up-from-dot" [ref=e541] [cursor=pointer]:
+            - img
+          - generic: arrow-up-from-dot
+        - generic [ref=e542]:
+          - generic "arrow-up-from-line" [ref=e544] [cursor=pointer]:
+            - img
+          - generic: arrow-up-from-line
+        - generic [ref=e545]:
+          - generic "arrow-up-left" [ref=e547] [cursor=pointer]:
+            - img
+          - generic: arrow-up-left
+      - generic [ref=e548]:
+        - generic [ref=e549]:
+          - generic "arrow-up-narrow-wide" [ref=e551] [cursor=pointer]:
+            - img
+          - generic: arrow-up-narrow-wide
+        - generic [ref=e552]:
+          - generic "arrow-up-right" [ref=e554] [cursor=pointer]:
+            - img
+          - generic: arrow-up-right
+        - generic [ref=e555]:
+          - generic "arrow-up-to-line" [ref=e557] [cursor=pointer]:
+            - img
+          - generic: arrow-up-to-line
+        - generic [ref=e558]:
+          - generic "arrow-up-wide-narrow" [ref=e560] [cursor=pointer]:
+            - img
+          - generic: arrow-up-wide-narrow
+        - generic [ref=e561]:
+          - generic "arrow-up-z-a" [ref=e563] [cursor=pointer]:
+            - img
+          - generic: arrow-up-z-a
+        - generic [ref=e564]:
+          - generic "arrows-up-from-line" [ref=e566] [cursor=pointer]:
+            - img
+          - generic: arrows-up-from-line
+        - generic [ref=e567]:
+          - generic "asterisk" [ref=e569] [cursor=pointer]:
+            - img
+          - generic: asterisk
+        - generic [ref=e570]:
+          - generic "at-sign" [ref=e572] [cursor=pointer]:
+            - img
+          - generic: at-sign
+        - generic [ref=e573]:
+          - generic "atom" [ref=e575] [cursor=pointer]:
+            - img
+          - generic: atom
+        - generic [ref=e576]:
+          - generic "audio-lines" [ref=e578] [cursor=pointer]:
+            - img
+          - generic: audio-lines
+      - generic [ref=e579]:
+        - generic [ref=e580]:
+          - generic "audio-waveform" [ref=e582] [cursor=pointer]:
+            - img
+          - generic: audio-waveform
+        - generic [ref=e583]:
+          - generic "award" [ref=e585] [cursor=pointer]:
+            - img
+          - generic: award
+        - generic [ref=e586]:
+          - generic "axe" [ref=e588] [cursor=pointer]:
+            - img
+          - generic: axe
+        - generic [ref=e589]:
+          - generic "axis-3d" [ref=e591] [cursor=pointer]:
+            - img
+          - generic: axis-3d
+        - generic [ref=e592]:
+          - generic "baby" [ref=e594] [cursor=pointer]:
+            - img
+          - generic: baby
+        - generic [ref=e595]:
+          - generic "backpack" [ref=e597] [cursor=pointer]:
+            - img
+          - generic: backpack
+        - generic [ref=e598]:
+          - generic "badge" [ref=e600] [cursor=pointer]:
+            - img
+          - generic: badge
+        - generic [ref=e601]:
+          - generic "badge-alert" [ref=e603] [cursor=pointer]:
+            - img
+          - generic: badge-alert
+        - generic [ref=e604]:
+          - generic "badge-cent" [ref=e606] [cursor=pointer]:
+            - img
+          - generic: badge-cent
+        - generic [ref=e607]:
+          - generic "badge-check" [ref=e609] [cursor=pointer]:
+            - img
+          - generic: badge-check
+      - generic [ref=e610]:
+        - generic [ref=e611]:
+          - generic "badge-dollar-sign" [ref=e613] [cursor=pointer]:
+            - img
+          - generic: badge-dollar-sign
+        - generic [ref=e614]:
+          - generic "badge-euro" [ref=e616] [cursor=pointer]:
+            - img
+          - generic: badge-euro
+        - generic [ref=e617]:
+          - generic "badge-indian-rupee" [ref=e619] [cursor=pointer]:
+            - img
+          - generic: badge-indian-rupee
+        - generic [ref=e620]:
+          - generic "badge-info" [ref=e622] [cursor=pointer]:
+            - img
+          - generic: badge-info
+        - generic [ref=e623]:
+          - generic "badge-japanese-yen" [ref=e625] [cursor=pointer]:
+            - img
+          - generic: badge-japanese-yen
+        - generic [ref=e626]:
+          - generic "badge-minus" [ref=e628] [cursor=pointer]:
+            - img
+          - generic: badge-minus
+        - generic [ref=e629]:
+          - generic "badge-percent" [ref=e631] [cursor=pointer]:
+            - img
+          - generic: badge-percent
+        - generic [ref=e632]:
+          - generic "badge-plus" [ref=e634] [cursor=pointer]:
+            - img
+          - generic: badge-plus
+        - generic [ref=e635]:
+          - generic "badge-pound-sterling" [ref=e637] [cursor=pointer]:
+            - img
+          - generic: badge-pound-sterling
+        - generic [ref=e638]:
+          - generic "badge-question-mark" [ref=e640] [cursor=pointer]:
+            - img
+          - generic: badge-question-mark
+      - generic [ref=e641]:
+        - generic [ref=e642]:
+          - generic "badge-russian-ruble" [ref=e644] [cursor=pointer]:
+            - img
+          - generic: badge-russian-ruble
+        - generic [ref=e645]:
+          - generic "badge-swiss-franc" [ref=e647] [cursor=pointer]:
+            - img
+          - generic: badge-swiss-franc
+        - generic [ref=e648]:
+          - generic "badge-turkish-lira" [ref=e650] [cursor=pointer]:
+            - img
+          - generic: badge-turkish-lira
+        - generic [ref=e651]:
+          - generic "badge-x" [ref=e653] [cursor=pointer]:
+            - img
+          - generic: badge-x
+        - generic [ref=e654]:
+          - generic "baggage-claim" [ref=e656] [cursor=pointer]:
+            - img
+          - generic: baggage-claim
+        - generic [ref=e657]:
+          - generic "balloon" [ref=e659] [cursor=pointer]:
+            - img
+          - generic: balloon
+        - generic [ref=e660]:
+          - generic "ban" [ref=e662] [cursor=pointer]:
+            - img
+          - generic: ban
+        - generic [ref=e663]:
+          - generic "banana" [ref=e665] [cursor=pointer]:
+            - img
+          - generic: banana
+        - generic [ref=e666]:
+          - generic "bandage" [ref=e668] [cursor=pointer]:
+            - img
+          - generic: bandage
+        - generic [ref=e669]:
+          - generic "banknote" [ref=e671] [cursor=pointer]:
+            - img
+          - generic: banknote
+      - generic [ref=e672]:
+        - generic [ref=e673]:
+          - generic "banknote-arrow-down" [ref=e675] [cursor=pointer]:
+            - img
+          - generic: banknote-arrow-down
+        - generic [ref=e676]:
+          - generic "banknote-arrow-up" [ref=e678] [cursor=pointer]:
+            - img
+          - generic: banknote-arrow-up
+        - generic [ref=e679]:
+          - generic "banknote-x" [ref=e681] [cursor=pointer]:
+            - img
+          - generic: banknote-x
+        - generic [ref=e682]:
+          - generic "barcode" [ref=e684] [cursor=pointer]:
+            - img
+          - generic: barcode
+        - generic [ref=e685]:
+          - generic "barrel" [ref=e687] [cursor=pointer]:
+            - img
+          - generic: barrel
+        - generic [ref=e688]:
+          - generic "baseline" [ref=e690] [cursor=pointer]:
+            - img
+          - generic: baseline
+        - generic [ref=e691]:
+          - generic "bath" [ref=e693] [cursor=pointer]:
+            - img
+          - generic: bath
+        - generic [ref=e694]:
+          - generic "battery" [ref=e696] [cursor=pointer]:
+            - img
+          - generic: battery
+        - generic [ref=e697]:
+          - generic "battery-charging" [ref=e699] [cursor=pointer]:
+            - img
+          - generic: battery-charging
+        - generic [ref=e700]:
+          - generic "battery-full" [ref=e702] [cursor=pointer]:
+            - img
+          - generic: battery-full
+      - generic [ref=e703]:
+        - generic [ref=e704]:
+          - generic "battery-low" [ref=e706] [cursor=pointer]:
+            - img
+          - generic: battery-low
+        - generic [ref=e707]:
+          - generic "battery-medium" [ref=e709] [cursor=pointer]:
+            - img
+          - generic: battery-medium
+        - generic [ref=e710]:
+          - generic "battery-plus" [ref=e712] [cursor=pointer]:
+            - img
+          - generic: battery-plus
+        - generic [ref=e713]:
+          - generic "battery-warning" [ref=e715] [cursor=pointer]:
+            - img
+          - generic: battery-warning
+        - generic [ref=e716]:
+          - generic "beaker" [ref=e718] [cursor=pointer]:
+            - img
+          - generic: beaker
+        - generic [ref=e719]:
+          - generic "bean" [ref=e721] [cursor=pointer]:
+            - img
+          - generic: bean
+        - generic [ref=e722]:
+          - generic "bean-off" [ref=e724] [cursor=pointer]:
+            - img
+          - generic: bean-off
+        - generic [ref=e725]:
+          - generic "bed" [ref=e727] [cursor=pointer]:
+            - img
+          - generic: bed
+        - generic [ref=e728]:
+          - generic "bed-double" [ref=e730] [cursor=pointer]:
+            - img
+          - generic: bed-double
+        - generic [ref=e731]:
+          - generic "bed-single" [ref=e733] [cursor=pointer]:
+            - img
+          - generic: bed-single
+      - generic [ref=e734]:
+        - generic [ref=e735]:
+          - generic "beef" [ref=e737] [cursor=pointer]:
+            - img
+          - generic: beef
+        - generic [ref=e738]:
+          - generic "beef-off" [ref=e740] [cursor=pointer]:
+            - img
+          - generic: beef-off
+        - generic [ref=e741]:
+          - generic "beer" [ref=e743] [cursor=pointer]:
+            - img
+          - generic: beer
+        - generic [ref=e744]:
+          - generic "beer-off" [ref=e746] [cursor=pointer]:
+            - img
+          - generic: beer-off
+        - generic [ref=e747]:
+          - generic "bell" [ref=e749] [cursor=pointer]:
+            - img
+          - generic: bell
+        - generic [ref=e750]:
+          - generic "bell-dot" [ref=e752] [cursor=pointer]:
+            - img
+          - generic: bell-dot
+        - generic [ref=e753]:
+          - generic "bell-electric" [ref=e755] [cursor=pointer]:
+            - img
+          - generic: bell-electric
+        - generic [ref=e756]:
+          - generic "bell-minus" [ref=e758] [cursor=pointer]:
+            - img
+          - generic: bell-minus
+        - generic [ref=e759]:
+          - generic "bell-off" [ref=e761] [cursor=pointer]:
+            - img
+          - generic: bell-off
+        - generic [ref=e762]:
+          - generic "bell-plus" [ref=e764] [cursor=pointer]:
+            - img
+          - generic: bell-plus
+      - generic [ref=e765]:
+        - generic [ref=e766]:
+          - generic "bell-ring" [ref=e768] [cursor=pointer]:
+            - img
+          - generic: bell-ring
+        - generic [ref=e769]:
+          - generic "between-horizontal-end" [ref=e771] [cursor=pointer]:
+            - img
+          - generic: between-horizontal-end
+        - generic [ref=e772]:
+          - generic "between-horizontal-start" [ref=e774] [cursor=pointer]:
+            - img
+          - generic: between-horizontal-start
+        - generic [ref=e775]:
+          - generic "between-vertical-end" [ref=e777] [cursor=pointer]:
+            - img
+          - generic: between-vertical-end
+        - generic [ref=e778]:
+          - generic "between-vertical-start" [ref=e780] [cursor=pointer]:
+            - img
+          - generic: between-vertical-start
+        - generic [ref=e781]:
+          - generic "biceps-flexed" [ref=e783] [cursor=pointer]:
+            - img
+          - generic: biceps-flexed
+        - generic [ref=e784]:
+          - generic "bike" [ref=e786] [cursor=pointer]:
+            - img
+          - generic: bike
+        - generic [ref=e787]:
+          - generic "binary" [ref=e789] [cursor=pointer]:
+            - img
+          - generic: binary
+        - generic [ref=e790]:
+          - generic "binoculars" [ref=e792] [cursor=pointer]:
+            - img
+          - generic: binoculars
+        - generic [ref=e793]:
+          - generic "biohazard" [ref=e795] [cursor=pointer]:
+            - img
+          - generic: biohazard
+      - generic [ref=e796]:
+        - generic [ref=e797]:
+          - generic "bird" [ref=e799] [cursor=pointer]:
+            - img
+          - generic: bird
+        - generic [ref=e800]:
+          - generic "birdhouse" [ref=e802] [cursor=pointer]:
+            - img
+          - generic: birdhouse
+        - generic [ref=e803]:
+          - generic "bitcoin" [ref=e805] [cursor=pointer]:
+            - img
+          - generic: bitcoin
+        - generic [ref=e806]:
+          - generic "blend" [ref=e808] [cursor=pointer]:
+            - img
+          - generic: blend
+        - generic [ref=e809]:
+          - generic "blinds" [ref=e811] [cursor=pointer]:
+            - img
+          - generic: blinds
+        - generic [ref=e812]:
+          - generic "blocks" [ref=e814] [cursor=pointer]:
+            - img
+          - generic: blocks
+        - generic [ref=e815]:
+          - generic "bluetooth" [ref=e817] [cursor=pointer]:
+            - img
+          - generic: bluetooth
+        - generic [ref=e818]:
+          - generic "bluetooth-connected" [ref=e820] [cursor=pointer]:
+            - img
+          - generic: bluetooth-connected
+        - generic [ref=e821]:
+          - generic "bluetooth-off" [ref=e823] [cursor=pointer]:
+            - img
+          - generic: bluetooth-off
+        - generic [ref=e824]:
+          - generic "bluetooth-searching" [ref=e826] [cursor=pointer]:
+            - img
+          - generic: bluetooth-searching
+      - generic [ref=e827]:
+        - generic [ref=e828]:
+          - generic "bold" [ref=e830] [cursor=pointer]:
+            - img
+          - generic: bold
+        - generic [ref=e831]:
+          - generic "bolt" [ref=e833] [cursor=pointer]:
+            - img
+          - generic: bolt
+        - generic [ref=e834]:
+          - generic "bomb" [ref=e836] [cursor=pointer]:
+            - img
+          - generic: bomb
+        - generic [ref=e837]:
+          - generic "bone" [ref=e839] [cursor=pointer]:
+            - img
+          - generic: bone
+        - generic [ref=e840]:
+          - generic "book" [ref=e842] [cursor=pointer]:
+            - img
+          - generic: book
+        - generic [ref=e843]:
+          - generic "book-a" [ref=e845] [cursor=pointer]:
+            - img
+          - generic: book-a
+        - generic [ref=e846]:
+          - generic "book-alert" [ref=e848] [cursor=pointer]:
+            - img
+          - generic: book-alert
+        - generic [ref=e849]:
+          - generic "book-audio" [ref=e851] [cursor=pointer]:
+            - img
+          - generic: book-audio
+        - generic [ref=e852]:
+          - generic "book-check" [ref=e854] [cursor=pointer]:
+            - img
+          - generic: book-check
+        - generic [ref=e855]:
+          - generic "book-copy" [ref=e857] [cursor=pointer]:
+            - img
+          - generic: book-copy
+      - generic [ref=e858]:
+        - generic [ref=e859]:
+          - generic "book-dashed" [ref=e861] [cursor=pointer]:
+            - img
+          - generic: book-dashed
+        - generic [ref=e862]:
+          - generic "book-down" [ref=e864] [cursor=pointer]:
+            - img
+          - generic: book-down
+        - generic [ref=e865]:
+          - generic "book-headphones" [ref=e867] [cursor=pointer]:
+            - img
+          - generic: book-headphones
+        - generic [ref=e868]:
+          - generic "book-heart" [ref=e870] [cursor=pointer]:
+            - img
+          - generic: book-heart
+        - generic [ref=e871]:
+          - generic "book-image" [ref=e873] [cursor=pointer]:
+            - img
+          - generic: book-image
+        - generic [ref=e874]:
+          - generic "book-key" [ref=e876] [cursor=pointer]:
+            - img
+          - generic: book-key
+        - generic [ref=e877]:
+          - generic "book-lock" [ref=e879] [cursor=pointer]:
+            - img
+          - generic: book-lock
+        - generic [ref=e880]:
+          - generic "book-marked" [ref=e882] [cursor=pointer]:
+            - img
+          - generic: book-marked
+        - generic [ref=e883]:
+          - generic "book-minus" [ref=e885] [cursor=pointer]:
+            - img
+          - generic: book-minus
+        - generic [ref=e886]:
+          - generic "book-open" [ref=e888] [cursor=pointer]:
+            - img
+          - generic: book-open
+      - generic [ref=e889]:
+        - generic [ref=e890]:
+          - generic "book-open-check" [ref=e892] [cursor=pointer]:
+            - img
+          - generic: book-open-check
+        - generic [ref=e893]:
+          - generic "book-open-text" [ref=e895] [cursor=pointer]:
+            - img
+          - generic: book-open-text
+        - generic [ref=e896]:
+          - generic "book-plus" [ref=e898] [cursor=pointer]:
+            - img
+          - generic: book-plus
+        - generic [ref=e899]:
+          - generic "book-search" [ref=e901] [cursor=pointer]:
+            - img
+          - generic: book-search
+        - generic [ref=e902]:
+          - generic "book-text" [ref=e904] [cursor=pointer]:
+            - img
+          - generic: book-text
+        - generic [ref=e905]:
+          - generic "book-type" [ref=e907] [cursor=pointer]:
+            - img
+          - generic: book-type
+        - generic [ref=e908]:
+          - generic "book-up" [ref=e910] [cursor=pointer]:
+            - img
+          - generic: book-up
+        - generic [ref=e911]:
+          - generic "book-up-2" [ref=e913] [cursor=pointer]:
+            - img
+          - generic: book-up-2
+        - generic [ref=e914]:
+          - generic "book-user" [ref=e916] [cursor=pointer]:
+            - img
+          - generic: book-user
+        - generic [ref=e917]:
+          - generic "book-x" [ref=e919] [cursor=pointer]:
+            - img
+          - generic: book-x
+      - generic [ref=e920]:
+        - generic [ref=e921]:
+          - generic "bookmark" [ref=e923] [cursor=pointer]:
+            - img
+          - generic: bookmark
+        - generic [ref=e924]:
+          - generic "bookmark-check" [ref=e926] [cursor=pointer]:
+            - img
+          - generic: bookmark-check
+        - generic [ref=e927]:
+          - generic "bookmark-minus" [ref=e929] [cursor=pointer]:
+            - img
+          - generic: bookmark-minus
+        - generic [ref=e930]:
+          - generic "bookmark-off" [ref=e932] [cursor=pointer]:
+            - img
+          - generic: bookmark-off
+        - generic [ref=e933]:
+          - generic "bookmark-plus" [ref=e935] [cursor=pointer]:
+            - img
+          - generic: bookmark-plus
+        - generic [ref=e936]:
+          - generic "bookmark-x" [ref=e938] [cursor=pointer]:
+            - img
+          - generic: bookmark-x
+        - generic [ref=e939]:
+          - generic "boom-box" [ref=e941] [cursor=pointer]:
+            - img
+          - generic: boom-box
+        - generic [ref=e942]:
+          - generic "bot" [ref=e944] [cursor=pointer]:
+            - img
+          - generic: bot
+        - generic [ref=e945]:
+          - generic "bot-message-square" [ref=e947] [cursor=pointer]:
+            - img
+          - generic: bot-message-square
+        - generic [ref=e948]:
+          - generic "bot-off" [ref=e950] [cursor=pointer]:
+            - img
+          - generic: bot-off
+      - generic [ref=e951]:
+        - generic [ref=e952]:
+          - generic "bottle-wine" [ref=e954] [cursor=pointer]:
+            - img
+          - generic: bottle-wine
+        - generic [ref=e955]:
+          - generic "bow-arrow" [ref=e957] [cursor=pointer]:
+            - img
+          - generic: bow-arrow
+        - generic [ref=e958]:
+          - generic "box" [ref=e960] [cursor=pointer]:
+            - img
+          - generic: box
+        - generic [ref=e961]:
+          - generic "boxes" [ref=e963] [cursor=pointer]:
+            - img
+          - generic: boxes
+        - generic [ref=e964]:
+          - generic "braces" [ref=e966] [cursor=pointer]:
+            - img
+          - generic: braces
+        - generic [ref=e967]:
+          - generic "brackets" [ref=e969] [cursor=pointer]:
+            - img
+          - generic: brackets
+        - generic [ref=e970]:
+          - generic "brain" [ref=e972] [cursor=pointer]:
+            - img
+          - generic: brain
+        - generic [ref=e973]:
+          - generic "brain-circuit" [ref=e975] [cursor=pointer]:
+            - img
+          - generic: brain-circuit
+        - generic [ref=e976]:
+          - generic "brain-cog" [ref=e978] [cursor=pointer]:
+            - img
+          - generic: brain-cog
+        - generic [ref=e979]:
+          - generic "brick-wall" [ref=e981] [cursor=pointer]:
+            - img
+          - generic: brick-wall
+      - generic [ref=e982]:
+        - generic [ref=e983]:
+          - generic "brick-wall-fire" [ref=e985] [cursor=pointer]:
+            - img
+          - generic: brick-wall-fire
+        - generic [ref=e986]:
+          - generic "brick-wall-shield" [ref=e988] [cursor=pointer]:
+            - img
+          - generic: brick-wall-shield
+        - generic [ref=e989]:
+          - generic "briefcase" [ref=e991] [cursor=pointer]:
+            - img
+          - generic: briefcase
+        - generic [ref=e992]:
+          - generic "briefcase-business" [ref=e994] [cursor=pointer]:
+            - img
+          - generic: briefcase-business
+        - generic [ref=e995]:
+          - generic "briefcase-conveyor-belt" [ref=e997] [cursor=pointer]:
+            - img
+          - generic: briefcase-conveyor-belt
+        - generic [ref=e998]:
+          - generic "briefcase-medical" [ref=e1000] [cursor=pointer]:
+            - img
+          - generic: briefcase-medical
+        - generic [ref=e1001]:
+          - generic "bring-to-front" [ref=e1003] [cursor=pointer]:
+            - img
+          - generic: bring-to-front
+        - generic [ref=e1004]:
+          - generic "brush" [ref=e1006] [cursor=pointer]:
+            - img
+          - generic: brush
+        - generic [ref=e1007]:
+          - generic "brush-cleaning" [ref=e1009] [cursor=pointer]:
+            - img
+          - generic: brush-cleaning
+        - generic [ref=e1010]:
+          - generic "bubbles" [ref=e1012] [cursor=pointer]:
+            - img
+          - generic: bubbles
+      - generic [ref=e1013]:
+        - generic [ref=e1014]:
+          - generic "bug" [ref=e1016] [cursor=pointer]:
+            - img
+          - generic: bug
+        - generic [ref=e1017]:
+          - generic "bug-off" [ref=e1019] [cursor=pointer]:
+            - img
+          - generic: bug-off
+        - generic [ref=e1020]:
+          - generic "bug-play" [ref=e1022] [cursor=pointer]:
+            - img
+          - generic: bug-play
+        - generic [ref=e1023]:
+          - generic "building" [ref=e1025] [cursor=pointer]:
+            - img
+          - generic: building
+        - generic [ref=e1026]:
+          - generic "building-2" [ref=e1028] [cursor=pointer]:
+            - img
+          - generic: building-2
+        - generic [ref=e1029]:
+          - generic "bus" [ref=e1031] [cursor=pointer]:
+            - img
+          - generic: bus
+        - generic [ref=e1032]:
+          - generic "bus-front" [ref=e1034] [cursor=pointer]:
+            - img
+          - generic: bus-front
+        - generic [ref=e1035]:
+          - generic "cable" [ref=e1037] [cursor=pointer]:
+            - img
+          - generic: cable
+        - generic [ref=e1038]:
+          - generic "cable-car" [ref=e1040] [cursor=pointer]:
+            - img
+          - generic: cable-car
+        - generic [ref=e1041]:
+          - generic "cake" [ref=e1043] [cursor=pointer]:
+            - img
+          - generic: cake

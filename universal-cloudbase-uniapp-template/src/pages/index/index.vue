@@ -1,49 +1,56 @@
 <template>
   <view class="page-container">
-    <!-- 滚动内容区域 -->
+    <!-- 自定义顶栏（与商学院等 tab 页一致），下方再接轮播 -->
+    <TdPageHeader title="首页" :show-back="false" />
+
+    <!-- 滚动内容区域：顶栏占位后占满剩余视口高度 -->
     <scroll-view
       class="scroll-content"
       :scroll-y="true"
+      :style="scrollViewHeightPx > 0 ? { height: scrollViewHeightPx + 'px' } : {}"
     >
-      <!-- 轮播 Banner：设计稿 750×720，小程序通栏宽 750rpx、高 720rpx，与后台「轮播图」建议尺寸一致 -->
-      <swiper
-        class="banner-swiper"
-        :indicator-dots="false"
-        :autoplay="true"
-        :interval="4000"
-        :duration="300"
-        :circular="true"
-        @change="onSwiperChange"
-      >
-        <swiper-item v-for="(banner, index) in bannerList" :key="index">
-          <view
-            class="banner-slide"
-            :class="banner.cover_image ? '' : banner.theme"
-            @click="onBannerClick(banner)"
-          >
-            <image
-              v-if="banner.cover_image"
-              :src="banner.cover_image"
-              class="banner-cover-img"
-              mode="aspectFill"
-            />
-            <template v-else>
-              <text class="banner-emoji">{{ banner.emoji }}</text>
-              <text class="banner-title">{{ banner.title }}</text>
-              <text class="banner-subtitle">{{ banner.subtitle }}</text>
-            </template>
-          </view>
-        </swiper-item>
-      </swiper>
+      <!-- 轮播区域：相对定位容器，指示点锚定在 Banner 底部 -->
+      <view class="banner-section">
+        <!-- 轮播 Banner：设计稿 750×720，小程序通栏宽 750rpx、高 720rpx，与后台「轮播图」建议尺寸一致 -->
+        <swiper
+          class="banner-swiper"
+          :indicator-dots="false"
+          :autoplay="true"
+          :interval="4000"
+          :duration="300"
+          :circular="true"
+          @change="onSwiperChange"
+        >
+          <swiper-item v-for="(banner, index) in bannerList" :key="index">
+            <view
+              class="banner-slide"
+              :class="banner.cover_image ? '' : banner.theme"
+              @click="onBannerClick(banner)"
+            >
+              <image
+                v-if="banner.cover_image"
+                :src="banner.cover_image"
+                class="banner-cover-img"
+                mode="aspectFill"
+              />
+              <template v-else>
+                <text class="banner-emoji">{{ banner.emoji }}</text>
+                <text class="banner-title">{{ banner.title }}</text>
+                <text class="banner-subtitle">{{ banner.subtitle }}</text>
+              </template>
+            </view>
+          </swiper-item>
+        </swiper>
 
-      <!-- 轮播指示器 -->
-      <view class="banner-pagination">
-        <view
-          v-for="(item, index) in bannerList"
-          :key="index"
-          class="banner-pagination-bullet"
-          :class="{ 'banner-pagination-bullet-active': currentBannerIndex === index }"
-        ></view>
+        <!-- 轮播指示器 -->
+        <view class="banner-pagination">
+          <view
+            v-for="(item, index) in bannerList"
+            :key="index"
+            class="banner-pagination-bullet"
+            :class="{ 'banner-pagination-bullet-active': currentBannerIndex === index }"
+          ></view>
+        </view>
       </view>
 
       <!-- 页面内容 -->
@@ -79,50 +86,37 @@
           />
         </view>
 
-        <!-- 课程列表 -->
-        <view class="course-list">
-          <view
+        <!-- 课程列表（按 Tab 筛选后为空时展示占位，避免大片留白） -->
+        <view v-if="filteredCourseList.length" class="course-list">
+          <CourseHomeCard
             v-for="(course, index) in filteredCourseList"
-            :key="index"
-            class="t-card t-card--bordered t-card--hoverable course-card"
+            :key="course.id ?? index"
+            :cover-src="course.coverImage"
+            :placeholder-emoji="course.emoji"
+            :placeholder-tone="course.mediaTone"
+            :type-label="course.typeLabel"
+            :price-text="course.priceText"
+            :cta-text="course.badgeText"
+            :owned="course.purchased && course.type !== 4"
             @click="goToCourseDetail(course)"
-          >
-            <view class="course-image" :class="course.coverImage ? '' : course.imageTheme">
-              <image
-                v-if="course.coverImage"
-                :src="course.coverImage"
-                class="course-cover-img"
-                mode="aspectFill"
-              />
-              <text v-else class="course-emoji">{{ course.emoji }}</text>
-            </view>
-            <view class="t-card__body">
-              <view class="course-header">
-                <text class="course-title">{{ course.title }}</text>
-                <view v-if="course.purchased && course.type !== 4" class="t-badge--standalone t-badge--theme-success">
-                  <text>已购买</text>
-                </view>
-              </view>
-              <text class="course-price">{{ course.type === 4 ? '免费' : '¥' + formatPrice(course.price) }}</text>
-              <button class="t-button t-button--theme-warning t-button--variant-base t-button--block">
-                <text class="t-button__text">查看详情</text>
-              </button>
-            </view>
-          </view>
+            @cta-click="goToCourseDetail(course)"
+          />
+        </view>
+        <view v-else-if="!courseListLoading" class="empty-state">
+          <view class="empty-icon"><icon type="info" size="60" color="#ccc"/></view>
+          <text class="empty-text">暂无课程</text>
         </view>
       </view>
     </scroll-view>
 
-    <!-- 日历弹窗 -->
+    <!-- 日历弹窗（农历风格，与 code.txt 一致） -->
     <view v-if="calendarVisible" class="calendar-popup-mask" @click.stop="hideCalendarPopup" catchtouchmove>
       <view class="calendar-popup" @click.stop>
-        <view class="calendar-popup-header">
-          <text class="calendar-popup-title">选择日期</text>
-          <text class="calendar-popup-close" @click="hideCalendarPopup">✕</text>
-        </view>
-        <Calendar 
+        <Calendar
           :priceData="calendarPriceData"
           @select="onDateSelect"
+          @close="hideCalendarPopup"
+          @month-change="onCalendarMonthChange"
         />
       </view>
     </view>
@@ -134,7 +128,10 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import Calendar from '@/components/Calendar.vue';
+import CourseHomeCard from '@/components/CourseHomeCard.vue';
+import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { CourseApi, SystemApi } from '@/api';
+import type { CalendarData } from '@/api/types/course';
 import { formatPrice } from '@/utils';
 import { ensureLoggedIn, isBusinessLoggedIn, navigateToLogin } from '@/utils/auth-state';
 
@@ -162,32 +159,60 @@ const allTabList = ref([
 
 // 课程列表数据
 const courseList = ref<any[]>([]);
+/** 首页课程列表请求中：为 true 时不展示「暂无课程」，避免首屏误闪 */
+const courseListLoading = ref(true);
+
+const COURSE_TYPE_LABELS: Record<number, string> = {
+  1: '初探班',
+  2: '密训班',
+  3: '咨询服务',
+  4: '沙龙'
+};
+
+const getCourseTypeLabel = (type: number): string => COURSE_TYPE_LABELS[type] || '课程';
+
+/** 与 TdPageHeader 占位高度算法一致（状态栏 + 44px 导航条），scroll-view 在微信端需明确高度 */
+const NAVBAR_HEIGHT_PX = 44;
+/** 顶栏占位之下的滚动区高度（windowHeight − 顶栏），避免 flex:1 失效时轮播仍顶到屏顶被遮挡 */
+const scrollViewHeightPx = ref(0);
+
+const syncScrollViewHeight = () => {
+  const si = uni.getSystemInfoSync();
+  const statusBar = si.statusBarHeight ?? 20;
+  const headerBlockPx = statusBar + NAVBAR_HEIGHT_PX;
+  scrollViewHeightPx.value = Math.max(0, si.windowHeight - headerBlockPx);
+};
 
 // 加载课程列表
 const loadCourseList = async () => {
+  courseListLoading.value = true;
   try {
     uni.showLoading({ title: '加载中...' })
     const result = await CourseApi.getList({ page: 1, page_size: 20 });
 
-    // 转换课程数据格式
-    courseList.value = result.list.map((course: any) => ({
-      id: course.id,
-      title: course.name,
-      price: course.current_price || 0,
-      emoji: getCourseEmoji(course.type),
-      imageTheme: getCourseTheme(course.type),
-      coverImage: course.cover_image || '',
-      type: course.type,
-      purchased: false
-    }));
-    uni.hideLoading()
+    courseList.value = result.list.map((course: any) => {
+      const priceNum = course.current_price || 0;
+      return {
+        id: course.id,
+        emoji: getCourseEmoji(course.type),
+        mediaTone: getCourseMediaTone(course.type),
+        coverImage: course.cover_image || '',
+        type: course.type,
+        purchased: !!course.is_purchased,
+        typeLabel: getCourseTypeLabel(course.type),
+        priceText: course.type === 4 ? '免费' : `¥${formatPrice(priceNum)}`,
+        badgeText: '查看详情'
+      };
+    });
   } catch (error) {
     console.error('加载课程列表失败:', error);
-    uni.hideLoading()
     uni.showToast({
       title: '加载失败，请重试',
       icon: 'none'
     })
+  } finally {
+    uni.hideLoading()
+    courseListLoading.value = false;
   }
 };
 
@@ -202,19 +227,18 @@ const getCourseEmoji = (type: number): string => {
   return emojiMap[type] || '📚';
 };
 
-// 获取课程主题
-const getCourseTheme = (type: number): string => {
-  const themeMap: Record<number, string> = {
-    1: 'course-image--pink',
-    2: 'course-image--blue',
-    3: 'course-image--purple',
-    4: 'course-image--orange'
+const getCourseMediaTone = (type: number): 'pink' | 'blue' | 'purple' | 'orange' => {
+  const toneMap: Record<number, 'pink' | 'blue' | 'purple' | 'orange'> = {
+    1: 'pink',
+    2: 'blue',
+    3: 'purple',
+    4: 'orange'
   };
-  return themeMap[type] || 'course-image--pink';
+  return toneMap[type] || 'pink';
 };
 
-// 日历价格数据（从后台获取）
-const calendarPriceData = ref<Record<string, any>>({});
+// 日历排期数据（日期键 → 课程信息，含多日课展开后的 nicknames）
+const calendarPriceData = ref<CalendarData>({});
 
 // 根据标签筛选课程（currentTab 为数字时按课程类型过滤）
 const filteredCourseList = computed(() => {
@@ -305,36 +329,46 @@ const onDateSelect = (date: Date) => {
   // 日历只是展示，不需要提示和关闭弹窗
 };
 
-const loadCalendarPriceData = async () => {
+/**
+ * 拉取指定公历月的课程排期昵称（用于日历格第二行）
+ * @param merge 为 true 时合并进已有 priceData（切换月份时用）
+ */
+const loadCalendarPriceDataForMonth = async (
+  year: number,
+  month: number,
+  merge = false
+) => {
   try {
-    uni.showLoading({ title: '加载中...' })
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1;
-
-    // 计算当月第一天和最后一天
+    uni.showLoading({ title: '加载中...' });
     const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const lastDayStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-    // 调用后台接口获取日历数据
     const result = await CourseApi.getCalendarSchedule({
       startDate: firstDay,
       endDate: lastDayStr
     });
 
-    // 转换数据格式，只保留 nickname 的值
-    const transformedData: Record<string, string> = {};
+    const transformedData: CalendarData = merge ? { ...calendarPriceData.value } : {};
     for (const date in result) {
-      transformedData[date] = result[date].nickname;
+      transformedData[date] = result[date];
     }
     calendarPriceData.value = transformedData;
-    uni.hideLoading()
+    uni.hideLoading();
   } catch (error) {
     console.error('加载日历数据失败:', error);
-    uni.hideLoading()
-    calendarPriceData.value = {};
+    uni.hideLoading();
+    if (!merge) calendarPriceData.value = {};
   }
+};
+
+const loadCalendarPriceData = async () => {
+  const today = new Date();
+  await loadCalendarPriceDataForMonth(today.getFullYear(), today.getMonth() + 1, false);
+};
+
+const onCalendarMonthChange = (payload: { year: number; month: number }) => {
+  loadCalendarPriceDataForMonth(payload.year, payload.month, true);
 };
 
 // 跳转到公告页面
@@ -369,6 +403,7 @@ const loadAnnouncements = async () => {
 };
 
 onMounted(() => {
+  syncScrollViewHeight();
   loadBannerList();
   loadCalendarPriceData();
   loadCourseList();
@@ -376,6 +411,7 @@ onMounted(() => {
 });
 
 onShow(() => {
+  syncScrollViewHeight();
   loadBannerList();
   loadCalendarPriceData();
   loadCourseList();
@@ -389,8 +425,18 @@ onShow(() => {
 .page-container {
   width: 100%;
   min-height: 100vh;
+  height: 100vh;
   background-color: $td-bg-color-page;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+// 轮播外层：指示点相对 Banner 底部定位（避免顶栏加入后错位到整页坐标）
+.banner-section {
+  position: relative;
+  width: 100%;
 }
 
 // 轮播（与素材规范 750×720 一致：全宽 = 750rpx 设计宽，高度 720rpx）
@@ -464,11 +510,11 @@ swiper-item {
   white-space: pre-line;
 }
 
-// 轮播指示器
+// 轮播指示器（720rpx 高 Banner 内，与原 top:664rpx 等效：距底约 56rpx）
 .banner-pagination {
   position: absolute;
   left: 40rpx;
-  top: 664rpx;
+  bottom: 56rpx;
   display: flex;
   gap: 16rpx;
   z-index: 10;
@@ -488,9 +534,10 @@ swiper-item {
   }
 }
 
-// 滚动内容区域
+// 滚动内容区域（顶栏占位后填满剩余高度，避免 100vh+占位超出视口）
 .scroll-content {
-  height: 100vh; // 全屏高度，Banner 也在里面可以滚动
+  flex: 1;
+  min-height: 0;
   box-sizing: border-box;
 }
 
@@ -566,115 +613,33 @@ swiper-item {
   gap: 32rpx; // 卡片之间的间距，与原型图保持一致
 }
 
-.course-card {
-  background-color: $td-bg-color-container;
-  border-radius: $td-radius-large;
-  overflow: hidden;
-  border: 2rpx solid $td-border-level-1;
-}
-
-.course-image {
-  width: 100%;
-  height: 320rpx;
+// 空状态（与我的课程等页一致）
+.empty-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  
-  &--pink {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  }
-  
-  &--blue {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  }
-  
-  &--purple {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  }
-
-  &--orange {
-    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-  }
+  padding: 120rpx 0;
 }
 
-.course-cover-img {
-  width: 100%;
-  height: 100%;
-  display: block;
+.empty-icon {
+  margin-bottom: 32rpx;
+  opacity: 0.5;
 }
 
-.course-emoji {
-  font-size: 96rpx;
+.empty-text {
+  font-size: 28rpx;
+  color: $td-text-color-placeholder;
 }
 
-.t-card__body {
-  padding: 32rpx;
-}
-
-.course-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16rpx;
-}
-
-.course-title {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: $td-text-color-primary;
-}
-
-.t-badge--standalone {
-  padding: 8rpx 16rpx;
-  border-radius: 8rpx;
-  font-size: 24rpx;
-  
-  &.t-badge--theme-success {
-    background-color: rgba($td-success-color, 0.1);
-    color: $td-success-color;
-  }
-}
-
-.course-price {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 600;
-  color: $td-warning-color;
-  margin-bottom: 24rpx;
-}
-
-// 按钮
-.t-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 88rpx;
-  border-radius: $td-radius-default;
-  border: none;
-  
-  &--theme-warning {
-    background-color: $td-warning-color;
-    
-    .t-button__text {
-      color: #FFFFFF;
-      font-size: $td-font-size-base;
-      font-weight: 500;
-    }
-  }
-  
-  &--block {
-    width: 100%;
-  }
-}
-
-// 日历弹窗
+// 日历弹窗（遮罩与圆角对齐 code.txt）
 .calendar-popup-mask {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: $calendar-modal-mask;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -684,10 +649,10 @@ swiper-item {
 
 .calendar-popup {
   width: 100%;
-  max-width: 640rpx;
-  background: #fff;
-  border-radius: 24rpx;
+  max-width: 720rpx;
+  border-radius: 64rpx;
   overflow: hidden;
+  box-shadow: $td-shadow-3;
   animation: popup-show 0.3s ease-out;
 }
 
@@ -702,27 +667,4 @@ swiper-item {
   }
 }
 
-.calendar-popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 32rpx;
-  border-bottom: 1rpx solid #eee;
-  
-  .calendar-popup-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .calendar-popup-close {
-    font-size: 40rpx;
-    color: #999;
-    width: 48rpx;
-    height: 48rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
 </style>

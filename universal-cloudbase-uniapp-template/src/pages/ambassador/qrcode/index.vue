@@ -22,38 +22,6 @@
             <view v-else class="qrcode-placeholder">📱</view>
           </view>
           <view class="qrcode-title">我的推广二维码</view>
-          <view class="qrcode-code">邀请码: {{ qrcodeInfo.referee_code || '加载中...' }}</view>
-          <view class="qrcode-hint">长按二维码可保存图片</view>
-        </view>
-
-        <!-- 推广统计 -->
-        <view class="stats-card">
-          <view class="stats-item">
-            <view class="stats-label">✅ 已推荐</view>
-            <view class="stats-value">{{ stats.referralCount }}人</view>
-          </view>
-          <view class="divider-vertical"></view>
-          <view class="stats-item">
-            <view class="stats-label">💰 累计收益</view>
-            <view class="stats-value">¥{{ stats.totalEarnings }}</view>
-          </view>
-        </view>
-
-        <!-- 使用说明 -->
-        <view class="t-section-title t-section-title--simple">📖 使用说明</view>
-        <view class="info-card">
-          <view class="info-item">
-            <view class="info-icon">1️⃣</view>
-            <view class="info-text">长按上方二维码，选择「保存图片」</view>
-          </view>
-          <view class="info-item">
-            <view class="info-icon">2️⃣</view>
-            <view class="info-text">将图片分享给好友扫码注册</view>
-          </view>
-          <view class="info-item">
-            <view class="info-icon">3️⃣</view>
-            <view class="info-text">好友购买课程后获得奖励</view>
-          </view>
         </view>
 
         <!-- 底部留白 -->
@@ -67,7 +35,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue'
-import { AmbassadorApi, UserApi } from '@/api'
+import { AmbassadorApi } from '@/api'
 
 const scrollHeight = computed(() => {
   return 'calc(100vh - var(--status-bar-height) - var(--td-page-header-height))'
@@ -78,12 +46,6 @@ const qrcodeInfo = ref({
   qrcode_url: '',
   referee_code: '',
   share_text: ''
-})
-
-// 推广统计
-const stats = ref({
-  referralCount: 0,
-  totalEarnings: 0
 })
 
 // 加载二维码
@@ -101,24 +63,6 @@ const loadQRCode = async () => {
     uni.hideLoading()
   }
 }
-
-// 加载推广统计
-const loadStats = async () => {
-  try {
-    uni.showLoading({ title: '加载中...' })
-    const referees = await UserApi.getMyReferees({ page: 1, pageSize: 1 })
-    stats.value.referralCount = referees.total || 0
-
-    // 累计收益需要从其他接口获取
-    const profile = await UserApi.getProfile()
-    stats.value.totalEarnings = profile.cash_points_available || 0
-    uni.hideLoading()
-  } catch (error) {
-    console.error('加载统计失败:', error)
-    uni.hideLoading()
-  }
-}
-
 
 // 长按二维码 → 弹出自定义菜单，只保留"保存图片"
 const handleLongPressQrcode = () => {
@@ -162,12 +106,10 @@ const saveQrcode = () => {
 
 onMounted(() => {
   loadQRCode()
-  loadStats()
 })
 
 onShow(() => {
   loadQRCode()
-  loadStats()
 })
 </script>
 
@@ -212,78 +154,6 @@ onShow(() => {
   font-weight: 600;
   color: #333;
   margin-bottom: 16rpx;
-}
-
-.qrcode-code {
-  font-size: 26rpx;
-  color: #999;
-}
-
-.qrcode-hint {
-  font-size: 24rpx;
-  color: #bbb;
-  margin-top: 16rpx;
-}
-
-.stats-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 32rpx;
-  margin-bottom: 48rpx;
-  display: flex;
-  align-items: center;
-}
-
-.stats-item {
-  flex: 1;
-  text-align: center;
-}
-
-.stats-label {
-  font-size: 26rpx;
-  color: #999;
-  margin-bottom: 12rpx;
-}
-
-.stats-value {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #0052D9;
-}
-
-.divider-vertical {
-  width: 2rpx;
-  height: 80rpx;
-  background: #E5E5E5;
-}
-
-.info-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 32rpx;
-  margin-bottom: 48rpx;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-bottom: 24rpx;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.info-icon {
-  font-size: 40rpx;
-  flex-shrink: 0;
-}
-
-.info-text {
-  font-size: 28rpx;
-  color: #666;
-  flex: 1;
 }
 
 

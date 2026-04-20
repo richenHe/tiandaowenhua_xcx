@@ -1,37 +1,44 @@
 <template>
-  <view class="td-page-header" :class="headerClass" :style="headerStyle">
-    <!-- 状态栏占位 -->
-    <view v-if="statusBar" class="td-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-    
-    <!-- 导航栏 -->
-    <view class="td-page-header__navbar">
-      <!-- 左侧区域 -->
-      <view class="td-page-header__left" @click="handleLeftClick">
-        <slot name="left">
-          <view v-if="showBack" class="td-page-header__back">
-            <view class="td-page-header__back-icon"></view>
-            <text v-if="backText" class="td-page-header__back-text">{{ backText }}</text>
-          </view>
-        </slot>
-      </view>
-      
-      <!-- 标题区域 -->
-      <view class="td-page-header__title" :class="{ 'td-page-header__title--center': titleCenter }">
-        <slot name="title">
-          <text class="td-page-header__title-text">{{ title }}</text>
-          <text v-if="subtitle" class="td-page-header__subtitle-text">{{ subtitle }}</text>
-        </slot>
-      </view>
-      
-      <!-- 右侧区域 -->
-      <view class="td-page-header__right">
-        <slot name="right"></slot>
+  <!-- 单根包裹：微信小程序下多根节点组件可能只挂载第一节点，导致占位丢失、正文顶到屏顶被 fixed 顶栏遮挡 -->
+  <view class="td-page-header-host">
+    <view class="td-page-header" :class="headerClass" :style="headerStyle">
+      <!-- 状态栏占位 -->
+      <view v-if="statusBar" class="td-page-header__status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+
+      <!-- 导航栏 -->
+      <view class="td-page-header__navbar">
+        <!-- 左侧区域 -->
+        <view class="td-page-header__left" @click="handleLeftClick">
+          <slot name="left">
+            <view v-if="showBack" class="td-page-header__back">
+              <view class="td-page-header__back-icon"></view>
+              <text v-if="backText" class="td-page-header__back-text">{{ backText }}</text>
+            </view>
+          </slot>
+        </view>
+
+        <!-- 标题区域 -->
+        <view class="td-page-header__title" :class="{ 'td-page-header__title--center': titleCenter }">
+          <slot name="title">
+            <text class="td-page-header__title-text">{{ title }}</text>
+            <text v-if="subtitle" class="td-page-header__subtitle-text">{{ subtitle }}</text>
+          </slot>
+        </view>
+
+        <!-- 右侧区域 -->
+        <view class="td-page-header__right">
+          <slot name="right"></slot>
+        </view>
       </view>
     </view>
+
+    <!-- 占位元素，防止内容被遮挡（与 fixed 顶栏同高，撑开下方 scroll-view / 正文） -->
+    <view
+      v-if="fixed && placeholder"
+      class="td-page-header__placeholder"
+      :style="placeholderStyle"
+    />
   </view>
-  
-  <!-- 占位元素，防止内容被遮挡 -->
-  <view v-if="fixed && placeholder" class="td-page-header__placeholder" :style="placeholderStyle"></view>
 </template>
 
 <script setup lang="ts">
@@ -128,6 +135,11 @@ const handleLeftClick = () => {
 
 <style lang="scss" scoped>
 @import '@/styles/tdesign-vars.scss';
+
+.td-page-header-host {
+  width: 100%;
+  flex-shrink: 0;
+}
 
 .td-page-header {
   background-color: #FFFFFF;

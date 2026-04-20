@@ -14,7 +14,7 @@
           <view class="t-card__body">
             <view style="font-size: 48rpx; font-weight: 700; margin-bottom: 16rpx;">{{ getLevelIcon(userInfo.ambassador_level) }} {{ userInfo.level_name }}</view>
             <view style="opacity: 0.95; font-size: 28rpx; margin-bottom: 32rpx;">当前等级 · 已推荐{{ referralStats.total_referrals }}人</view>
-            <view style="padding: 24rpx; background: rgba(255,255,255,0.2); border-radius: 12rpx;">
+            <view class="level-page-inner-panel">
               <view style="font-size: 24rpx; opacity: 0.9; margin-bottom: 8rpx;">成为大使时间</view>
               <view style="font-size: 28rpx; font-weight: 500;">{{ referralStats.ambassador_start_date || '暂无' }}</view>
             </view>
@@ -375,6 +375,13 @@ const goToApply = () => {
 </script>
 
 <style scoped lang="scss">
+@import '@/styles/tdesign-vars.scss';
+
+// 本页所有块状容器统一圆角，避免 12/24 混用导致视觉不统一
+$level-page-radius: 36rpx;
+// 比主体大 6rpx，与光晕层 inset: -6rpx 对齐
+$level-page-glow-radius: 42rpx;
+
 .page {
   width: 100%;
   height: 100vh;
@@ -387,6 +394,18 @@ const goToApply = () => {
 
 .page-content {
   padding: 32rpx;
+}
+
+// 顶部等级卡、我的奖励双卡、等级体系列表卡（覆盖全局 $td-radius-default）
+.page-content .t-card {
+  border-radius: $level-page-radius;
+}
+
+// 渐变卡内「成为大使时间」浅底块，圆角与外层卡片体系一致
+.level-page-inner-panel {
+  padding: 24rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: $level-page-radius;
 }
 
 .mb-l {
@@ -416,7 +435,7 @@ const goToApply = () => {
   margin-bottom: 16rpx;
   padding: 16rpx 20rpx;
   background: #F8F9FF;
-  border-radius: 12rpx;
+  border-radius: $level-page-radius;
 
   .upgrade-benefit-title {
     font-size: 26rpx;
@@ -475,14 +494,14 @@ const goToApply = () => {
 
 .activity-signup-wrapper {
   position: relative;
-  border-radius: 24rpx;
+  border-radius: $level-page-radius;
 }
 
 // 外层光晕环
 .activity-glow-ring {
   position: absolute;
   inset: -6rpx;
-  border-radius: 30rpx;
+  border-radius: $level-page-glow-radius;
   background: linear-gradient(135deg, #DC2626, #EA580C, #D97706, #F59E0B, #EA580C, #DC2626);
   background-size: 300% 300%;
   animation: ring-pulse 2.5s ease-in-out infinite;
@@ -494,7 +513,7 @@ const goToApply = () => {
   position: relative;
   z-index: 1;
   overflow: hidden;
-  border-radius: 24rpx;
+  border-radius: $level-page-radius;
   background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 15%, #B91C1C 30%, #C2410C 50%, #B45309 70%, #D97706 85%, #B45309 100%);
   background-size: 200% auto;
   animation: glow-breathe 2.5s ease-in-out infinite;
@@ -596,7 +615,7 @@ const goToApply = () => {
   font-size: 20rpx;
   font-weight: 900;
   padding: 4rpx 12rpx;
-  border-radius: 20rpx;
+  border-radius: $td-radius-round;
   letter-spacing: 2rpx;
   animation: hot-badge-pulse 1.8s ease-in-out infinite;
   box-shadow: 0 2rpx 8rpx rgba(255, 215, 0, 0.5);
@@ -644,13 +663,13 @@ const goToApply = () => {
 
 .upgrade-guide-wrapper {
   position: relative;
-  border-radius: 24rpx;
+  border-radius: $level-page-radius;
 }
 
 .upgrade-glow-ring {
   position: absolute;
   inset: -6rpx;
-  border-radius: 30rpx;
+  border-radius: $level-page-glow-radius;
   background: linear-gradient(135deg, #4F46E5, #7C3AED, #0891B2, #06B6D4, #7C3AED, #4F46E5);
   background-size: 300% 300%;
   animation: upgrade-ring-pulse 2.5s ease-in-out infinite;
@@ -662,7 +681,7 @@ const goToApply = () => {
   position: relative;
   z-index: 1;
   overflow: hidden;
-  border-radius: 24rpx;
+  border-radius: $level-page-radius;
   background: linear-gradient(135deg, #1E1B4B 0%, #312E81 20%, #3730A3 40%, #1D4ED8 60%, #0369A1 80%, #0891B2 100%);
   background-size: 200% auto;
   animation: upgrade-glow-breathe 2.5s ease-in-out infinite;
@@ -755,7 +774,7 @@ const goToApply = () => {
   font-size: 20rpx;
   font-weight: 900;
   padding: 4rpx 12rpx;
-  border-radius: 20rpx;
+  border-radius: $td-radius-round;
   letter-spacing: 2rpx;
   animation: upgrade-badge-pulse 2s ease-in-out infinite;
   box-shadow: 0 2rpx 8rpx rgba(6, 182, 212, 0.45);

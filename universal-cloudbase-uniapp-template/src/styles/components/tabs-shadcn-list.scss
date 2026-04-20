@@ -1,0 +1,67 @@
+/**
+ * 商城主分段：整体描边容器 + 内嵌选中块（与商城横幅/商品卡/CourseHomeCard 统一圆角）
+ * - 外层一条连续 border 包住「商城 | 兑换课程」整块，圆角与 $td-index-course-card-radius 一致
+ * - 槽内浅底；选中项为白底圆角块 + 轻阴影；未选中无单独边框，仅占槽内区域
+ */
+@import '../tdesign-vars.scss';
+
+$td-tabs-capsule-inner-shadow:
+  0 1rpx 4rpx rgba(0, 0, 0, 0.06),
+  0 1rpx 2rpx rgba(0, 0, 0, 0.04);
+
+.t-tabs--shadcn {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/** 外层：整体边框 + 胶囊外形（用户要求「边框整体包起来」） */
+.t-tabs--shadcn .t-tabs__nav--shadcn {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6rpx;
+  gap: 6rpx;
+  border: 2rpx solid $td-border-level-1;
+  border-radius: $td-index-course-card-radius;
+  background-color: $td-bg-color-container-active;
+}
+
+/** 分段项：均分，自身为圆角胶囊，嵌入槽内 */
+.t-tabs__trigger {
+  position: relative;
+  z-index: $td-z-index-base;
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-height: 68rpx;
+  padding: 12rpx 16rpx;
+  border-radius: $td-index-course-card-radius;
+  background-color: transparent;
+  border: none;
+  transition:
+    background-color $td-transition-duration-base $td-transition-timing-function,
+    color $td-transition-duration-base $td-transition-timing-function,
+    box-shadow $td-transition-duration-base $td-transition-timing-function;
+}
+
+.t-tabs__trigger-text {
+  font-size: $td-font-size-base;
+  font-weight: $td-font-weight-medium;
+  line-height: $td-line-height-small;
+  color: $td-text-color-secondary;
+  transition: color $td-transition-duration-base $td-transition-timing-function;
+}
+
+/** 选中：白底胶囊块 + 轻阴影（在整体边框内「浮起」） */
+.t-tabs__trigger--active {
+  background-color: $td-bg-color-container;
+  box-shadow: $td-tabs-capsule-inner-shadow;
+}
+
+.t-tabs__trigger--active .t-tabs__trigger-text {
+  color: $td-text-color-brand;
+}

@@ -714,7 +714,7 @@ const handleBuy = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   border: none;
   padding: 0 48rpx;
 

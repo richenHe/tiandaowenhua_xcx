@@ -1,0 +1,204 @@
+<!DOCTYPE html><html class="light" lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#bc2023",
+                        "on-error": "#ffffff",
+                        "surface-container": "#edeef0",
+                        "on-tertiary-container": "#c1dfff",
+                        "inverse-on-surface": "#f0f1f3",
+                        "primary-fixed": "#ffdad6",
+                        "on-primary-fixed-variant": "#93000f",
+                        "on-surface": "#191c1e",
+                        "on-secondary-fixed-variant": "#36485b",
+                        "primary": "#970010",
+                        "outline": "#8f706c",
+                        "on-tertiary-fixed": "#001d33",
+                        "surface": "#f8f9fb",
+                        "on-secondary-fixed": "#091d2e",
+                        "primary-fixed-dim": "#ffb3ac",
+                        "on-primary-container": "#ffd2cd",
+                        "on-background": "#191c1e",
+                        "secondary-fixed-dim": "#b5c8df",
+                        "on-secondary-container": "#526478",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#ffb3ac",
+                        "surface-container-low": "#f2f4f6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#004a76",
+                        "tertiary-fixed": "#cee5ff",
+                        "secondary-fixed": "#d1e4fb",
+                        "surface-container-high": "#e7e8ea",
+                        "tertiary-container": "#00659e",
+                        "on-primary-fixed": "#410003",
+                        "surface-tint": "#b91d21",
+                        "surface-bright": "#f8f9fb",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#cfe2f9",
+                        "outline-variant": "#e3beba",
+                        "on-surface-variant": "#5b403d",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f8f9fb",
+                        "tertiary-fixed-dim": "#96cbff",
+                        "surface-container-highest": "#e1e2e4",
+                        "inverse-surface": "#2e3132",
+                        "error-container": "#ffdad6",
+                        "secondary": "#4e6073",
+                        "surface-dim": "#d9dadc",
+                        "tertiary": "#004c79",
+                        "surface-variant": "#e1e2e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Serif SC", "serif"],
+                        "body": ["Plus Jakarta Sans", "sans-serif"],
+                        "label": ["Plus Jakarta Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .serif-font { font-family: 'Noto Serif SC', serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-black/60 flex items-center justify-center min-h-screen p-4">
+<!-- Centered Modal Container -->
+<div class="relative z-10 w-full max-w-[360px] bg-surface rounded-[2rem] shadow-2xl overflow-hidden">
+<!-- Header: Month Selector -->
+<header class="px-6 pt-8 pb-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<h1 class="serif-font text-xl font-bold text-on-surface" style="">&nbsp;甲辰年 丙寅月</h1>
+<span class="material-symbols-outlined text-primary cursor-pointer text-xl" style="">expand_more</span>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-on-surface/40 hover:text-primary transition-colors cursor-pointer text-xl" style="">chevron_left</span>
+<span class="material-symbols-outlined text-on-surface/40 hover:text-primary transition-colors cursor-pointer text-xl" style="">chevron_right</span>
+</div>
+</header>
+<!-- Calendar Grid Canvas -->
+<section class="px-6 pb-6 bg-surface">
+<!-- Weekdays Label -->
+<div class="grid grid-cols-7 mb-4">
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Sun</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Mon</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Tue</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Wed</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Thu</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Fri</div>
+<div class="text-center text-[10px] uppercase tracking-widest text-on-surface/40 font-semibold" style="">Sat</div>
+</div>
+<!-- Grid Dates -->
+<div class="grid grid-cols-7 gap-y-3">
+<!-- Row 1 -->
+<div class="flex flex-col items-center py-1 opacity-20"><span class="text-xs" style="">28</span></div>
+<div class="flex flex-col items-center py-1 opacity-20"><span class="text-xs" style="">29</span></div>
+<div class="flex flex-col items-center py-1 opacity-20"><span class="text-xs" style="">30</span></div>
+<div class="flex flex-col items-center py-1 opacity-20"><span class="text-xs" style="">31</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">1</span><span class="text-[8px] text-primary/60 serif-font" style="">立春</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">2</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿三</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">3</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿四</span></div>
+<!-- Row 2 -->
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">4</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿五</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">5</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿六</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">6</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿七</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">7</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿八</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">8</span><span class="text-[8px] text-on-surface/30 serif-font" style="">廿九</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">9</span><span class="text-[8px] text-on-surface/30 serif-font" style="">三十</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">10</span><span class="text-[8px] text-primary/60 serif-font" style="">春节</span></div>
+<!-- Row 3: Current Selection Focus -->
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">11</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初二</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">12</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初三</span></div>
+<div class="flex flex-col items-center py-1 relative">
+<div class="absolute inset-0 mx-auto w-7 h-7 bg-primary rounded-full -z-10 mt-0.5"></div>
+<span class="text-xs text-white font-bold" style="">13</span>
+<span class="text-[8px] text-white/80 serif-font" style="">初四</span>
+</div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">14</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初五</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">15</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初六</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">16</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初七</span></div>
+<div class="flex flex-col items-center py-1"><span class="text-xs" style="">17</span><span class="text-[8px] text-on-surface/30 serif-font" style="">初八</span></div>
+</div>
+</section>
+<!-- Divider with subtle tonal shift -->
+<div class="h-px w-full bg-surface-container-high"></div>
+<!-- The "Four Pillars" (四时) Section -->
+<section class="bg-surface-container-low px-6 py-6">
+<div class="flex justify-between items-center mb-4">
+<span class="text-[10px] uppercase tracking-[0.2em] text-primary font-bold" style="">Lunar Chronology</span>
+<span class="text-[10px] text-on-surface/40 italic" style="">Heritage Precision</span>
+</div>
+<!-- Structured Pillars Layout -->
+<div class="grid grid-cols-4 gap-3">
+<!-- Year Pillar -->
+<div class="flex flex-col items-center space-y-2 bg-surface-container-lowest py-3 px-2 rounded-xl shadow-sm border border-outline-variant/10">
+<span class="text-[9px] text-on-surface/40 font-medium uppercase tracking-tight" style="">Year</span>
+<div class="flex flex-col items-center">
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">丙</span>
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">午</span>
+</div>
+</div>
+<!-- Month Pillar -->
+<div class="flex flex-col items-center space-y-2 bg-surface-container-lowest py-3 px-2 rounded-xl shadow-sm border border-outline-variant/10">
+<span class="text-[9px] text-on-surface/40 font-medium uppercase tracking-tight" style="">Month</span>
+<div class="flex flex-col items-center">
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">壬</span>
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">辰</span>
+</div>
+</div>
+<!-- Day Pillar -->
+<div class="flex flex-col items-center space-y-2 bg-surface-container-lowest py-3 px-2 rounded-xl shadow-sm border border-primary/20 bg-primary/5">
+<span class="text-[9px] text-primary/60 font-medium uppercase tracking-tight" style="">Day</span>
+<div class="flex flex-col items-center">
+<span class="serif-font text-xl font-bold text-primary leading-tight" style="">壬</span>
+<span class="serif-font text-xl font-bold text-primary leading-tight" style="">子</span>
+</div>
+</div>
+<!-- Hour Pillar -->
+<div class="flex flex-col items-center space-y-2 bg-surface-container-lowest py-3 px-2 rounded-xl shadow-sm border border-outline-variant/10">
+<span class="text-[9px] text-on-surface/40 font-medium uppercase tracking-tight" style="">Hour</span>
+<div class="flex flex-col items-center">
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">丙</span>
+<span class="serif-font text-xl font-bold text-on-surface leading-tight" style="">午</span>
+</div>
+</div>
+</div>
+<!-- Aesthetic metadata footer -->
+<div class="mt-6 flex justify-center items-center gap-4">
+<div class="flex flex-col items-center">
+<span class="text-[8px] text-on-surface/30 uppercase tracking-tighter" style="">五行 / Element</span>
+<span class="serif-font text-xs text-on-surface/60" style="">天河水</span>
+</div>
+<div class="h-3 w-px bg-on-surface/10"></div>
+<div class="flex flex-col items-center">
+<span class="text-[8px] text-on-surface/30 uppercase tracking-tighter" style="">神位 / Direction</span>
+<span class="serif-font text-xs text-on-surface/60" style="">喜神正南</span>
+</div>
+</div>
+</section>
+<!-- Close Handle (Indicates it's a dismissable modal) -->
+<div class="flex justify-center pb-4 pt-2 bg-surface-container-low">
+<div class="w-12 h-1 bg-on-surface/10 rounded-full"></div>
+</div>
+</div>
+</body></html>

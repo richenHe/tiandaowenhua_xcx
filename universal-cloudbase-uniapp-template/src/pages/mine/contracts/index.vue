@@ -385,7 +385,7 @@ const formatDate = (dateStr: string) => {
 .t-button {
   flex: 1;
   border: none;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   font-size: 26rpx;
   font-weight: 500;
   height: 64rpx;

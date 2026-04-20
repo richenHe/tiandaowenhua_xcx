@@ -365,7 +365,6 @@ onLoad((options: any) => {
   font-size: 48rpx;
   color: #0052D9;
   opacity: 0.3;
-  font-family: Georgia, serif;
   line-height: 1;
 }
 

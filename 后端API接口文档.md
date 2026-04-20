@@ -568,6 +568,7 @@ ELSE:
 2. 未登录用户 is_purchased 默认 false
 3. 已登录用户 LEFT JOIN user_courses 判断是否已购买
 4. 咨询服务(type=3)购买后由客服联系,无需预约排期
+5. **（2026-04-08）** 对本页返回的每个 `course_id`，聚合 `class_records`：`status=1` 且 `class_date` ≥ 当天（**北京时间** `YYYY-MM-DD`）的排期中，取**最小**的 `class_date`，写入列表项字段 **`next_class_date`**；若无未来排期则为 `null`。可供其它端展示最近排期；**小程序首页课程卡 CTA 固定为「查看详情」**，不读取该字段做倒计时。
 
 > **备注（2026-04-03）**：修复前公开列表未过滤 `is_deleted`，后台软删除后仍为上架的课程会与小程列表重复展示；现已与 `is_deleted` 对齐。
 
@@ -588,11 +589,16 @@ ELSE:
       "current_price": 1688.00,
       "original_price": 1688.00,
       "is_purchased": false,
+      "next_class_date": "2026-04-19",
       "status": 1
     }
   ]
 }
 ```
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| next_class_date | string \| null | **（2026-04-08）** 该课程最近一场未开始排期的上课首日 `YYYY-MM-DD`；无未来排期为 `null`（首页列表可不用于 UI） |
 
 **数据库设计注意点**:
 - courses 表的 type 字段需支持值 3(咨询)
@@ -877,6 +883,36 @@ ELSE:
 - 预约确认页（`pages/course/appointment-confirm/index`）在用户点击"确认预约"后调用 `uni.requestSubscribeMessage` 请求授权
 - 模板 ID: `SYdGf0v5jj40k50FjfUB4ROStOWQiSvhVidHIsAsHYc`
 - 授权结果不影响预约流程（无论用户是否允许都继续预约）
+
+### 📅 2.9 小程序日历排期 `getCalendarSchedule`（course 云函数 · 2026-04-08）
+
+- **action**: `getCalendarSchedule`
+- **云函数**: `course`
+- **调用方**: 小程序首页 `pages/index/index`（日历弹窗；游客可读）
+- **描述**: 按请求区间返回「有课」的公历日期键及当日课程昵称；**排期多日课**按 `class_records.class_date`～`class_end_date`（含首尾，结课日为 `NULL` 时视为单日）展开到区间内每一天；仅 `status IN (1,2,3)`（未取消的未开始/进行中/已结束）参与；与请求区间**有交集**的排期均会参与（含跨月跨度在各自月份请求中体现）。
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| startDate | String | 是 | 开始日期 `YYYY-MM-DD` |
+| endDate | String | 是 | 结束日期 `YYYY-MM-DD` |
+
+**返回** `data`：对象，键为 `YYYY-MM-DD`，值为：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| courseId | Number | 当日排序第一的 `course_id`（升序） |
+| nickname | String | 与 `nicknames[0]` 一致（与 `nicknames` 首项同步，兼容旧版） |
+| nicknames | String[] | 当日涉及的全部课程昵称（按 `course_id` 升序、去重） |
+| courseName | String | 同上「首个」排期的课程名称 |
+| classTime | String | 同上「首个」排期的上课时间 |
+| classRecordId | Number | 同上「首个」排期 ID |
+
+**业务规则**
+
+- 同一日多个不同 `course_id` 的排期：`nicknames` 全部列出；小程序弹窗底部「课程：」行以**中文逗号**拼接展示（**日历格第二行仅节气/农历日，不展示昵称**）。
+- 旧客户端仅读 `nickname` 时仍兼容单日首课在「课程：」等场景展示。
 
 ---
 

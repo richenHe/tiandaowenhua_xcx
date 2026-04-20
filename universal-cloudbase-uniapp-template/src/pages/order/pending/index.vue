@@ -355,7 +355,6 @@ onShow(() => {
   font-size: 32rpx;
   font-weight: 600;
   color: $td-warning-color;
-  font-family: monospace;
 }
 
 // 信息行
@@ -381,7 +380,6 @@ onShow(() => {
   color: $td-text-color-primary;
 
   &.order-no {
-    font-family: monospace;
     font-size: 24rpx;
   }
 }
@@ -456,7 +454,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   border: none;
 
   &--size-large {

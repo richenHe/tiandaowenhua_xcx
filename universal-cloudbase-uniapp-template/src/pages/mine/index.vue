@@ -1,9 +1,10 @@
 <template>
   <view class="page-container">
     <!-- 用户信息头部 -->
-    <view 
-      class="profile-header" 
-      :style="{ backgroundImage: userInfo.backgroundImage ? `url(${userInfo.backgroundImage})` : '' }"
+    <view
+      class="profile-header"
+      :class="{ 'profile-header--has-bg': !!userInfo.backgroundImage }"
+      :style="userInfo.backgroundImage ? { backgroundImage: `url(${userInfo.backgroundImage})` } : {}"
       @click="goToProfile"
     >
       <!-- 背景图片遮罩层 -->
@@ -385,7 +386,7 @@ const settingsMenu = computed(() => [
 
 // 帮助与反馈菜单
 const helpMenu = ref([
-  { type: 'ai-service', icon: '🤖', label: '智能客服', badge: undefined },
+  { type: 'ai-service', icon: '🎧', label: '客服', badge: undefined },
   { type: 'feedback', icon: '📝', label: '意见反馈', badge: undefined },
   { type: 'announcement', icon: '📢', label: '平台公告', badge: undefined }
 ]);
@@ -439,21 +440,27 @@ const handleMenuClick = (type: string) => {
   background-color: $td-bg-color-page;
 }
 
-// 用户信息头部
+// 用户信息头部（无自定义背景图时：设计稿米杏底 #FBF7EE，与首页课程卡片 body 同色）
 .profile-header {
   position: relative;
-  background: linear-gradient(135deg, $td-brand-color, $td-brand-color-light);
+  background-color: $td-index-course-card-body-bg;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   // 顶部让出状态栏 + 胶囊按钮，内容紧跟其下
   padding: 0 32rpx 40rpx;
   padding-top: calc(var(--status-bar-height) + 80rpx);
-  color: white;
+  color: $td-text-color-primary;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+
+// 用户设置了个人中心背景图：覆盖底色、白字 + 遮罩（与原先蓝底条一致的可读性）
+.profile-header--has-bg {
+  color: $td-text-color-anti;
+  background-color: rgba(0, 0, 0, 0.25);
 }
 
 // 背景图片遮罩层
@@ -632,10 +639,16 @@ const handleMenuClick = (type: string) => {
 
 .points-item {
   font-size: 24rpx;
-  opacity: 0.9;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.06);
+  color: $td-text-color-secondary;
   padding: 4rpx 12rpx;
   border-radius: 8rpx;
+}
+
+.profile-header--has-bg .points-item {
+  color: inherit;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .user-phone {
@@ -646,7 +659,11 @@ const handleMenuClick = (type: string) => {
 .arrow-icon {
   font-size: 40rpx;
   opacity: 0.8;
-  color: white;
+  color: $td-text-color-placeholder;
+}
+
+.profile-header--has-bg .arrow-icon {
+  color: $td-text-color-anti;
 }
 
 .menu-arrow {

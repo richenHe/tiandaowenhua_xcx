@@ -3,9 +3,9 @@
   路由参数：scene（扫码推广，可选）
 
   【登录页背景】
-  - 底图须 `import` 为本地资源；**禁止**仅用 view 的 `background-image: url(本地)`：模拟器可见、真机常空白（微信限制）。
-  - 使用 **`<image mode="aspectFill">` 全屏垫底** + 内容区叠在其上；单图建议压缩至约 200KB 内。
-  - 操作区（微信登录、协议勾选）直接叠在底图上，无底部白底卡片。
+  - **禁止** view 的 `background-image: url(本地)`：模拟器可见、真机常空白。
+  - 底图文件放在 **`src/static/auth/login-bg.jpg`**，用 **`<image :src="'/static/auth/login-bg.jpg'">` 全屏垫底**（主包固定路径，分包页最稳；勿仅用 import 进 /assets 哈希，易与 lazyCodeLoading/分包优化冲突）。
+  - 单图建议压缩至约 200KB 内；操作区叠在底图上。
 -->
 <template>
   <!-- 全屏背景：image 组件真机可用；view 的本地 background-image 在真机常失效 -->
@@ -62,10 +62,12 @@
 import { ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { UserApi } from '@/api'
-import loginBgAsset from './login-bg.jpg'
 
-/** 同目录 import，背景 URL 供内联 background-image 使用 */
-const loginBgSrc = loginBgAsset as string
+/**
+ * 主包 static 路径：微信真机下分包引用 /assets 哈希图偶发不显示；
+ * `/static/...` 随主包直出，不依赖 common 分包注入顺序。
+ */
+const loginBgSrc = '/static/auth/login-bg.jpg'
 
 /** 小程序 checkbox 的 color 需实色字符串，与 $td-brand-color 一致 */
 const checkboxBrandColor = '#0052D9'
@@ -186,7 +188,8 @@ const goToPrivacy = () => {
 /* 避免 common 里 page-container 灰底在渐变下露出一条 */
 .login-page-root.page-container {
   min-height: 100vh;
-  background: transparent;
+  /* 底图未加载时避免纯白刺眼（与全局页灰底一致） */
+  background-color: $td-bg-color-page;
   position: relative;
 }
 
@@ -309,7 +312,7 @@ const goToPrivacy = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   border: none;
 
   &--size-large {

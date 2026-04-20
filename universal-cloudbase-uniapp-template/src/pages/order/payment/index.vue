@@ -304,7 +304,6 @@ onMounted(() => {
   color: $td-text-color-primary;
 
   &.order-no {
-    font-family: monospace;
     font-size: 24rpx;
   }
 }
@@ -434,7 +433,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   border: none;
 
   &--size-large {

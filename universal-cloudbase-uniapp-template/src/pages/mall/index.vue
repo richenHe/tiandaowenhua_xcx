@@ -1,6 +1,7 @@
 <template>
   <view class="page-container">
-    <TdPageHeader :title="pageTitle" :showBack="false">
+    <!-- 标题固定为「商城」，与 tabBar 一致；分段切换仅影响下方内容 -->
+    <TdPageHeader title="商城" :showBack="false">
       <template #right>
         <text class="icon-text" @click="goToPointsDetail">📋</text>
       </template>
@@ -9,7 +10,6 @@
     <scroll-view
       class="scroll-content"
       :scroll-y="true"
-      @scroll="handleScroll"
     >
       <!-- 积分横幅 -->
       <view class="points-banner">
@@ -31,32 +31,31 @@
       </view>
 
       <view class="page-content">
-        <!-- 主Tab切换：兑换商品 / 兑换课程 -->
-        <view class="tabs-wrapper">
-          <CapsuleTabs
-            v-model="activeMainTab"
-            :options="mainTabOptions"
-            @change="handleMainTabChange"
-          />
+        <!-- 主分段：整体描边槽 + 内嵌选中白块（圆角与横幅/商品卡一致，见 tabs-shadcn-list.scss） -->
+        <view class="t-tabs t-tabs--shadcn" style="margin-bottom: 24rpx;">
+          <view class="t-tabs__nav t-tabs__nav--shadcn">
+            <view
+              class="t-tabs__trigger"
+              :class="{ 't-tabs__trigger--active': activeMainTab === 0 }"
+              @click="activeMainTab = 0"
+            >
+              <text class="t-tabs__trigger-text">商城</text>
+            </view>
+            <view
+              class="t-tabs__trigger"
+              :class="{ 't-tabs__trigger--active': activeMainTab === 1 }"
+              @click="activeMainTab = 1"
+            >
+              <text class="t-tabs__trigger-text">兑换课程</text>
+            </view>
+          </view>
         </view>
 
-        <!-- 兑换商品内容 -->
+        <!-- 商城商品列表（不再按文具/周边等二级分类筛选） -->
         <view v-if="activeMainTab === 0">
-          <!-- 分类标签（吸顶） -->
-          <StickyTabs ref="stickyTabsRef" :offset-top="pageHeaderHeight" :margin-bottom="32">
-            <template #tabs>
-              <CapsuleTabs
-                v-model="activeCategory"
-                :options="categoryOptions"
-                @change="handleCategoryChange"
-              />
-            </template>
-          </StickyTabs>
-
-          <!-- 商品网格 -->
           <view class="product-grid">
             <view 
-              v-for="product in filteredProducts" 
+              v-for="product in products" 
               :key="product.id"
               class="product-card"
             >
@@ -96,45 +95,22 @@
             </view>
           </view>
 
-          <!-- 课程列表 -->
+          <!-- 课程列表：与首页 CourseHomeCard 统一（上图下文 + 描边胶囊按钮） -->
           <view class="course-list">
-            <view 
-              v-for="course in courses" 
+            <CourseHomeCard
+              v-for="course in courses"
               :key="course.id"
-              class="course-card"
+              :cover-src="course.coverImage"
+              :placeholder-emoji="course.icon"
+              :placeholder-tone="course.mediaTone"
+              :type-label="course.name"
+              :price-text="`${Math.round(course.points)}功德分`"
+              :cta-text="canAffordCourse(course.points) ? '立即兑换' : '功德分不足'"
+              :cta-disabled="!canAffordCourse(course.points)"
+              :badge-text="course.badge"
               @click="handleCourseClick(course)"
-            >
-              <view class="course-image" :style="course.coverImage ? {} : { background: course.gradient }">
-                <image
-                  v-if="course.coverImage"
-                  :src="course.coverImage"
-                  class="course-cover-img"
-                  mode="aspectFill"
-                />
-                <text v-else>{{ course.icon }}</text>
-              </view>
-              <view class="course-info">
-                <view class="course-header">
-                  <text class="course-name">{{ course.name }}</text>
-                  <view v-if="course.badge" class="t-badge" :class="`t-badge--${course.badgeType}`">
-                    {{ course.badge }}
-                  </view>
-                </view>
-                <view class="course-footer">
-                  <view class="course-price">
-                    <text class="course-points">{{ Math.round(course.points) }}功德分</text>
-                  </view>
-                  <button 
-                    class="course-btn"
-                    :class="{ 'course-btn--disabled': !canAffordCourse(course.points) }"
-                    :disabled="!canAffordCourse(course.points)"
-                    @click.stop="handleExchangeCourse(course)"
-                  >
-                    <text class="btn-text">{{ canAffordCourse(course.points) ? '立即兑换' : '功德分不足' }}</text>
-                  </button>
-                </view>
-              </view>
-            </view>
+              @cta-click="handleExchangeCourse(course)"
+            />
           </view>
         </view>
       </view>
@@ -146,11 +122,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import CapsuleTabs from '@/components/CapsuleTabs.vue';
-import StickyTabs from '@/components/StickyTabs.vue';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import CourseHomeCard from '@/components/CourseHomeCard.vue';
 import { OrderApi, UserApi, SystemApi } from '@/api';
 import { formatPoints } from '@/utils';
 import { ensureLoggedIn, isBusinessLoggedIn } from '@/utils/auth-state';
@@ -159,29 +134,8 @@ import { ensureLoggedIn, isBusinessLoggedIn } from '@/utils/auth-state';
 const userMeritPoints = ref(0);
 const userCashPoints = ref(0);
 
-// 主Tab
-const mainTabs = ['兑换商品', '兑换课程']
+// 主分段：0 商城商品 / 1 兑换课程（样式：tabs-shadcn-list.scss）
 const activeMainTab = ref(0)
-const mainTabOptions = [
-  { label: '兑换商品', value: 0 },
-  { label: '兑换课程', value: 1 }
-]
-
-// 页面标题
-const pageTitle = computed(() => mainTabs[activeMainTab.value]);
-
-// 页面头部高度（用于吸顶偏移）
-const pageHeaderHeight = ref(64);
-
-// StickyTabs 组件引用
-const stickyTabsRef = ref<InstanceType<typeof StickyTabs>>();
-
-// 处理滚动事件
-const handleScroll = (e: any) => {
-  if (stickyTabsRef.value) {
-    stickyTabsRef.value.updateScrollTop(e.detail.scrollTop);
-  }
-};
 
 // 判断功德分是否足够兑换商品（商品优先用功德分，不足时才用积分）
 const canAfford = (requiredPoints: number) => {
@@ -194,16 +148,6 @@ const canAffordCourse = (requiredPoints: number) => {
   const totalAvailable = userMeritPoints.value + userCashPoints.value;
   return totalAvailable >= requiredPoints;
 };
-
-// 商品分类
-const categories = ['全部', '文具', '生活', '周边']
-const activeCategory = ref(0)
-const categoryOptions = [
-  { label: '全部', value: 0 },
-  { label: '文具', value: 1 },
-  { label: '生活', value: 2 },
-  { label: '周边', value: 3 }
-]
 
 // 商品列表
 const products = ref<any[]>([])
@@ -285,16 +229,6 @@ const loadUserPoints = async () => {
   }
 }
 
-// 过滤商品
-const filteredProducts = computed(() => {
-  if (activeCategory.value === 0) {
-    return products.value
-  }
-  const categoryMap = ['all', 'stationery', 'life', 'peripheral']
-  const category = categoryMap[activeCategory.value]
-  return products.value.filter(p => p.category === category)
-})
-
 // 每次页面显示时刷新积分；游客不请求需登录接口
 onShow(() => {
   if (isBusinessLoggedIn()) {
@@ -306,12 +240,6 @@ onShow(() => {
 });
 
 onMounted(() => {
-  // 获取系统信息计算实际的头部高度
-  const systemInfo = uni.getSystemInfoSync();
-  const statusBarHeight = systemInfo.statusBarHeight || 20;
-  const navbarHeight = 44;
-  pageHeaderHeight.value = statusBarHeight + navbarHeight;
-
   // 加载数据
   loadMallGoods();
   loadMallCourses();
@@ -333,12 +261,10 @@ const loadMallCourses = async () => {
       id: item.id,
       name: item.name,
       icon: getCourseIcon(item.type),
-      gradient: getCourseGradient(item.type),
+      mediaTone: getCourseMediaTone(item.type),
       coverImage: item.coverImage || '',
       points: item.currentPrice,
-      originalPrice: item.originalPrice,
-      badge: item.soldCount > 100 ? '热门' : '',
-      badgeType: item.soldCount > 100 ? 'success' : ''
+      badge: item.soldCount > 100 ? '热门' : ''
     }))
     uni.hideLoading()
   } catch (error) {
@@ -352,29 +278,21 @@ const getCourseIcon = (type: number): string => {
   const iconMap: Record<number, string> = {
     1: '📚',
     2: '🎓',
-    3: '🔄'
+    3: '🔄',
+    4: '🎤'
   }
   return iconMap[type] || '📚'
 }
 
-// 获取课程渐变色
-const getCourseGradient = (type: number): string => {
-  const gradientMap: Record<number, string> = {
-    1: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    2: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    3: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+/** 无封面时与首页课程列表一致的占位渐变 tone */
+const getCourseMediaTone = (type: number): 'pink' | 'blue' | 'purple' | 'orange' => {
+  const toneMap: Record<number, 'pink' | 'blue' | 'purple' | 'orange'> = {
+    1: 'pink',
+    2: 'blue',
+    3: 'purple',
+    4: 'orange'
   }
-  return gradientMap[type] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-}
-
-// 切换主Tab
-const handleMainTabChange = (value: number) => {
-  activeMainTab.value = value
-}
-
-// 切换分类
-const handleCategoryChange = (value: number) => {
-  activeCategory.value = value
+  return toneMap[type] || 'pink'
 }
 
 // 跳转积分明细（功德分管理页面）
@@ -579,12 +497,15 @@ const performExchange = async (
   box-sizing: border-box;
 }
 
+// 与商品卡、分段控件、CourseHomeCard 同一圆角体系（避免 12rpx 与全胶囊混用）
+$mall-surface-radius: $td-index-course-card-radius;
+
 // 积分横幅
 .points-banner {
   background: linear-gradient(135deg, $td-warning-color, #f5a623);
   padding: 32rpx;
   margin: 32rpx; // 恢复四周边距
-  border-radius: $td-radius-default;
+  border-radius: $mall-surface-radius;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -616,12 +537,6 @@ const performExchange = async (
   padding: 0 32rpx 32rpx;
 }
 
-// 标签切换容器
-.tabs-wrapper {
-  margin-bottom: 24rpx;
-  margin-top: 0;
-}
-
 // 商品网格
 .product-grid {
   display: grid;
@@ -631,7 +546,7 @@ const performExchange = async (
 
 .product-card {
   background-color: #FFFFFF;
-  border-radius: $td-radius-default;
+  border-radius: $mall-surface-radius;
   border: 1px solid $td-border-level-1;
   overflow: hidden;
 }
@@ -693,7 +608,7 @@ const performExchange = async (
 .load-more-btn {
   background-color: #FFFFFF;
   border: 1px solid $td-border-level-1;
-  border-radius: $td-radius-default;
+  border-radius: $mall-surface-radius;
   padding: 16rpx 48rpx;
   font-size: 28rpx;
   color: $td-text-color-primary;
@@ -717,7 +632,7 @@ const performExchange = async (
   display: flex;
   gap: 16rpx;
   padding: 24rpx;
-  border-radius: $td-radius-default;
+  border-radius: $mall-surface-radius;
   margin-bottom: 32rpx;
 }
 
@@ -746,126 +661,27 @@ const performExchange = async (
   gap: 4rpx;
 }
 
-// 课程列表
+// 课程列表（与首页 course-list 间距一致）
 .course-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
-}
+  gap: 32rpx;
 
-.course-card {
-  background-color: #FFFFFF;
-  border-radius: $td-radius-default;
-  border: 1px solid $td-border-level-1;
-  overflow: hidden;
-}
-
-.course-image {
-  width: 100%;
-  height: 280rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 96rpx;
-  overflow: hidden;
-}
-
-.course-cover-img {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.course-info {
-  padding: 32rpx;
-}
-
-.course-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 16rpx;
-}
-
-.course-name {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: $td-text-color-primary;
-}
-
-.t-badge {
-  font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  flex-shrink: 0;
-}
-
-.t-badge--success {
-  background-color: $td-success-color-light;
-  color: $td-success-color;
-}
-
-.t-badge--primary {
-  background-color: $td-info-color-light;
-  color: $td-brand-color;
-}
-
-.t-badge--warning {
-  background-color: $td-warning-color-light;
-  color: $td-warning-color;
-}
-
-.course-desc {
-  font-size: 24rpx;
-  color: $td-text-color-secondary;
-  line-height: 1.5;
-  margin-bottom: 24rpx;
-  display: block;
-}
-
-.course-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.course-price {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.course-points {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: $td-warning-color;
-}
-
-.course-original {
-  font-size: 24rpx;
-  color: $td-text-color-placeholder;
-  text-decoration: line-through;
-}
-
-.course-btn {
-  background-color: #E6F4FF;
-  color: $td-brand-color;
-  padding: 12rpx 32rpx;
-  border-radius: $td-radius-default;
-  font-size: 26rpx;
-  border: none;
-
-  &::after {
-    border: none;
+  // 列表内 CTA 与全局按钮一致：胶囊圆角（卡片外框仍用 $mall-surface-radius）
+  :deep(.t-btn-outline-pill) {
+    border-radius: $td-radius-round;
   }
 }
 
-.course-btn--disabled {
-  opacity: 0.6;
+// 横幅「明细」、商品卡「兑换」：与全局 .t-button 胶囊圆角一致
+.points-banner :deep(.t-button),
+.product-card :deep(.t-button) {
+  border-radius: $td-radius-round;
 }
 
-.btn-text {
-  font-size: inherit;
+.points-banner :deep(.t-button)::after,
+.product-card :deep(.t-button)::after {
+  border-radius: $td-radius-round;
 }
 
 // 底部留白

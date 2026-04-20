@@ -217,7 +217,8 @@ const loadMore = () => {
 }
 
 // Tab 切换时重新加载数据
-const onTabChange = (value: string | number) => {
+const onTabChange = (value: string | number | null) => {
+  if (value === null) return
   activeTab.value = String(value)
   loadRecords(true)
 }

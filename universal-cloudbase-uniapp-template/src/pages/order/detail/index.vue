@@ -335,7 +335,6 @@ const goToMyCourses = () => {
   color: $td-text-color-primary;
 
   &.order-no {
-    font-family: monospace;
     font-size: 26rpx;
   }
 }
@@ -508,7 +507,7 @@ const goToMyCourses = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   border: none;
   height: 88rpx;
 

@@ -72,16 +72,18 @@
 
 | 分类 | 组件 |
 |------|------|
-| 基础 | `.t-card`, `.t-button`, `.t-badge`, `.t-avatar` |
+| 基础 | `.t-card`, `.t-button`, `.t-btn-outline-pill`（shadcn outline 风胶囊，见 `button-shadcn-outline.scss`）, `.t-badge`, `.t-avatar` |
 | 表单 | `.t-form`, `.t-input`, `.t-radio-group` |
 | 布局 | `.t-page-header`, `.t-section-title`, `.t-tabs` |
 | 数据 | `.t-list`, `.t-cell` |
 
 ---
 
-## CapsuleTabs 吸顶组件
+## CapsuleTabs（胶囊分段标签栏）
 
-使用 CapsuleTabs 时必须配合 StickyTabs 实现吸顶：
+组件名为 `CapsuleTabs`，视觉对齐 **shadcn/ui `@shadcn/tabs` 的 default 变体**：浅灰轨道、圆角胶囊槽、选中项白底轻阴影 + 品牌色文字。样式在 `src/styles/components/capsule-tabs.scss`（`.t-capsule-tabs*`）。
+
+使用 CapsuleTabs 吸顶场景需配合 StickyTabs：
 
 ```vue
 <template>

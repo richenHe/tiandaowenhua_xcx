@@ -1,0 +1,68 @@
+/**
+ * Shadcn/UI Button「outline」变体风格（SCSS 复刻，供小程序/H5 共用）
+ * 参考：ui.shadcn.com — Button / variant outline（bg-background、border-input、shadow-xs、字重 medium）
+ * 非 Tailwind 环境：用 $td-* 变量对齐项目色板与 rpx 体系。
+ */
+@import '../tdesign-vars.scss';
+
+// 与 shadcn shadow-xs 接近的轻投影（略强于纯 flat，弱于 card）
+$td-btn-outline-pill-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05), 0 1rpx 2rpx rgba(0, 0, 0, 0.06);
+
+/**
+ * 胶囊形 outline 按钮：白底 + 细边框 + 轻阴影，文案 flex 居中
+ * 用法：<view class="t-btn-outline-pill"><text class="t-btn-outline-pill__text">查看详情</text></view>
+ */
+.t-btn-outline-pill {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  box-sizing: border-box;
+  min-width: 152rpx;
+  min-height: 68rpx;
+  padding: 0 30rpx;
+  border-radius: $td-radius-round;
+  border: 2rpx solid $td-border-level-1;
+  background-color: $td-bg-color-container;
+  color: $td-text-color-primary;
+  font-size: $td-font-size-s;
+  font-weight: $td-font-weight-medium;
+  line-height: 1.2;
+  box-shadow: $td-btn-outline-pill-shadow;
+  transition:
+    background-color $td-transition-duration-base $td-transition-timing-function,
+    border-color $td-transition-duration-base $td-transition-timing-function,
+    opacity $td-transition-duration-fast $td-transition-timing-function;
+}
+
+.t-btn-outline-pill__text {
+  display: block;
+  max-width: 220rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/** 按压反馈（小程序无 hover，用 active） */
+.t-btn-outline-pill:active {
+  background-color: $td-bg-color-container-active;
+  border-color: $td-border-level-2;
+  opacity: 0.96;
+}
+
+/** 不可用：与首页课程卡一致，弱化描边胶囊（如「功德分不足」） */
+.t-btn-outline-pill--disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.t-btn-outline-pill--disabled:active {
+  background-color: $td-bg-color-container;
+  border-color: $td-border-level-1;
+  opacity: 0.55;
+}

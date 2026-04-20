@@ -1,6 +1,7 @@
 /**
  * TDesign Button 按钮组件样式
  * 单位: px -> rpx (1px = 2rpx)
+ * 默认外形：胶囊（与 TDesign round / 小程序常见主按钮一致）
  */
 
 @import '../tdesign-vars.scss';
@@ -21,7 +22,7 @@
   white-space: nowrap;
   text-align: center;
   border: 2rpx solid transparent;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   transition: all $td-transition-duration-base $td-transition-timing-function;
   box-sizing: border-box;
 }
@@ -236,12 +237,12 @@
 }
 
 .t-button-group .t-button:first-child {
-  border-top-left-radius: $td-radius-default;
-  border-bottom-left-radius: $td-radius-default;
+  border-top-left-radius: $td-radius-round;
+  border-bottom-left-radius: $td-radius-round;
 }
 
 .t-button-group .t-button:last-child {
-  border-top-right-radius: $td-radius-default;
-  border-bottom-right-radius: $td-radius-default;
+  border-top-right-radius: $td-radius-round;
+  border-bottom-right-radius: $td-radius-round;
 }
 

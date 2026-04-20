@@ -106,7 +106,7 @@ const handleClick = (e: Event) => {
   white-space: nowrap;
   text-align: center;
   border: 2rpx solid transparent;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   transition: all $td-transition-duration-base $td-transition-timing-function;
   box-sizing: border-box;
   

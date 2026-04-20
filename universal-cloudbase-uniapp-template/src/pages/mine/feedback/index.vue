@@ -563,7 +563,7 @@ const handleSubmit = async () => {
 // 按钮样式
 .t-button {
   border: none;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   font-size: 32rpx;
   font-weight: 500;
   display: flex;

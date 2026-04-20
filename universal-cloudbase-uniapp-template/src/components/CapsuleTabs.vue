@@ -1,12 +1,18 @@
 <template>
-  <scroll-view class="capsule-tabs-scroll" scroll-x :show-scrollbar="false" enhanced :bounces="false">
-    <view class="capsule-tabs">
+  <scroll-view
+    class="t-capsule-tabs-scroll"
+    scroll-x
+    :show-scrollbar="false"
+    enhanced
+    :bounces="false"
+  >
+    <view class="t-capsule-tabs" :class="{ 't-capsule-tabs--block': block }">
       <view
         v-for="(item, index) in options"
-        :key="item.value ?? index"
-        class="capsule-tabs__item"
-        :class="{ 'is-active': modelValue === (item.value ?? index) }"
-        @click="handleChange(item.value ?? index)"
+        :key="`${index}-${item.label}`"
+        class="t-capsule-tabs__item"
+        :class="{ 't-capsule-tabs__item--active': isActive(item, index) }"
+        @click="handleChange(item, index)"
       >
         {{ item.label }}
       </view>
@@ -15,72 +21,46 @@
 </template>
 
 <script setup lang="ts">
-interface TabOption {
+/**
+ * 横向胶囊标签栏
+ * 视觉参考 shadcn/ui `@shadcn/tabs` 的 **default** 变体（muted 槽 + 选中浮层），样式见 `capsule-tabs.scss`
+ */
+export interface TabOption {
   label: string
-  value?: string | number
+  /** 未传时按选项在数组中的下标作为值；可显式传 null（如「全部」筛选项） */
+  value?: string | number | null
 }
 
 interface Props {
-  modelValue: string | number
+  modelValue: string | number | null
   options: TabOption[]
+  /** 为 true 时各 tab 均分一行宽度 */
+  block?: boolean
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: string | number): void
-  (e: 'change', value: string | number): void
+  (e: 'update:modelValue', value: string | number | null): void
+  (e: 'change', value: string | number | null): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  block: false,
+})
+
 const emit = defineEmits<Emits>()
 
-const handleChange = (value: string | number) => {
-  emit('update:modelValue', value)
-  emit('change', value)
+/** 与选项对应的实际取值（区分「未定义」与「显式 null」） */
+function tabValue(item: TabOption, index: number): string | number | null {
+  return item.value !== undefined ? item.value : index
+}
+
+function isActive(item: TabOption, index: number): boolean {
+  return props.modelValue === tabValue(item, index)
+}
+
+function handleChange(item: TabOption, index: number) {
+  const v = tabValue(item, index)
+  emit('update:modelValue', v)
+  emit('change', v)
 }
 </script>
-
-<style lang="scss" scoped>
-/**
- * 胶囊标签组件 - 严格按照原型图 tabs.css 胶囊模式实现
- * 参考: prototype-tdesign/components/tabs.css 第168-194行
- */
-.capsule-tabs-scroll {
-  width: 100%;
-  white-space: nowrap;
-  /* 隐藏微信小程序端滚动条 */
-  ::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-}
-
-.capsule-tabs {
-  display: inline-flex;
-  align-items: center;
-  background-color: #FAFAFA;
-  border-radius: 999rpx;
-  padding: 4rpx;
-  border: none;
-
-  &__item {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16rpx 32rpx;
-    border-radius: 999rpx;
-    font-size: 28rpx;
-    color: #808080;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    cursor: pointer;
-
-    &.is-active {
-      background-color: #FFFFFF;
-      color: #0052D9;
-      font-weight: 500;
-      box-shadow: 0 2rpx 20rpx rgba(0, 0, 0, 0.05);
-    }
-  }
-}
-</style>

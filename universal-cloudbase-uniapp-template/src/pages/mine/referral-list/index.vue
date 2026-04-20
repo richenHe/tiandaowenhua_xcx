@@ -459,7 +459,7 @@ const formatDate = (dateStr: string) => {
 // 按钮样式
 .t-button {
   border: none;
-  border-radius: $td-radius-default;
+  border-radius: $td-radius-round;
   font-size: 28rpx;
   font-weight: 500;
   padding: 0 64rpx;

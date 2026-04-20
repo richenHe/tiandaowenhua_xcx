@@ -81,16 +81,19 @@ $td-radius-circle: 50%;
 
 // ==================== 阴影系统 ====================
 
+// 首页课程卡片：底部内容区底色（设计稿 #FBF7EE）
+$td-index-course-card-body-bg: #FBF7EE;
+// 首页课程卡片外圆角（大图圆角更圆滑）
+$td-index-course-card-radius: 40rpx;
+
 $td-shadow-1: 0 2rpx 20rpx rgba(0, 0, 0, 0.05);
 $td-shadow-2: 0 4rpx 40rpx rgba(0, 0, 0, 0.08);
 $td-shadow-3: 0 12rpx 60rpx rgba(0, 0, 0, 0.12);
 $td-shadow-inset: inset 0 4rpx 8rpx rgba(0, 0, 0, 0.06);
 
 // ==================== 字体系统 ====================
-
-$td-font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, 
-                  "Segoe UI", Roboto, "Helvetica Neue", Arial, 
-                  "Noto Sans", sans-serif;
+// 与首页农历日历（Calendar.vue 宋体系）一致：全小程序正文统一衬线风格
+$td-font-family: 'Songti SC', 'Noto Serif SC', 'SimSun', 'STSong', serif;
 
 // 字体大小 (px -> rpx)
 $td-font-size-xs: 20rpx;  // 10px
@@ -143,4 +146,14 @@ $td-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 $breakpoint-sm: 320px;  // iPhone SE
 $breakpoint-md: 375px;  // iPhone 13/14
 $breakpoint-lg: 414px;  // iPhone Pro Max
+
+// ==================== 首页农历日历弹窗（对齐 code.txt / Material 色板）====================
+
+$calendar-modal-primary: #970010;
+$calendar-modal-on-surface: #191c1e;
+$calendar-modal-surface: #f8f9fb;
+$calendar-modal-surface-low: #f2f4f6;
+$calendar-modal-surface-highest: #e1e2e4;
+$calendar-modal-outline-variant: #e3beba;
+$calendar-modal-mask: rgba(0, 0, 0, 0.6);
 

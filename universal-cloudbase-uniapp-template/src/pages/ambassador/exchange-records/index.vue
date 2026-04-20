@@ -19,19 +19,9 @@
           </view>
         </view>
 
-        <!-- Tab切换 -->
+        <!-- Tab 切换：CapsuleTabs + capsule-tabs.scss -->
         <view class="tabs-wrapper">
-          <view class="t-capsule-tabs">
-            <view
-              v-for="tab in tabs"
-              :key="tab.value"
-              class="t-capsule-tabs__item"
-              :class="{ 't-capsule-tabs__item--active': activeTab === tab.value }"
-              @click="activeTab = tab.value"
-            >
-              {{ tab.label }}
-            </view>
-          </view>
+          <CapsuleTabs v-model="activeTab" :options="tabs" />
         </view>
 
         <!-- 兑换记录列表 -->
@@ -87,6 +77,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
+import CapsuleTabs from '@/components/CapsuleTabs.vue';
 import { OrderApi } from '@/api';
 import type { ExchangeRecord } from '@/api/types/order';
 
