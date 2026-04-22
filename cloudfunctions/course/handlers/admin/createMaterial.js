@@ -9,7 +9,8 @@
  * @param {Object} event
  * @param {string} event.title      - 资料名称（必填）
  * @param {string} event.category   - 资料分类（必填），对应 DB 字段 category
- * @param {string} event.imageUrl   - 图片URL，对应 DB 字段 image_url
+ * @param {string[]} event.imageUrls - 海报多图 cloud:// fileID，最多 9 张，对应 DB 字段 images（JSON）
+ * @param {string} event.imageUrl   - 兼容旧版单图，与 imageUrls 二选一或并存（优先 imageUrls）
  * @param {string} event.videoUrl   - 视频URL，对应 DB 字段 video_url
  * @param {string} event.content    - 文字内容，对应 DB 字段 content
  * @param {number} event.sortOrder  - 排序，对应 DB 字段 sort_order（默认 0）
@@ -18,12 +19,14 @@
 const { insert } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
+const { normalizeImageUrlsForSave } = require('../../common/materialImages');
 
 module.exports = async (event, context) => {
   // 接收 camelCase 参数
   const {
     title,
     category,
+    imageUrls,
     imageUrl,
     videoUrl,
     content,
@@ -42,11 +45,16 @@ module.exports = async (event, context) => {
       return response.paramError(validation.message);
     }
 
+    const ids = normalizeImageUrlsForSave(imageUrls, imageUrl);
+    const imagesJson = ids.length ? JSON.stringify(ids) : null;
+    const firstImage = ids[0] || null;
+
     // camelCase → snake_case，写入 DB
     const [result] = await insert('academy_materials', {
       title,
       category,
-      image_url: imageUrl || null,
+      images: imagesJson,
+      image_url: firstImage,
       video_url: videoUrl || null,
       content: content || null,
       tags: tags ? JSON.stringify(tags) : null,

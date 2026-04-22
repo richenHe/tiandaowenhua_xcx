@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>天道文化小程序 · 功能测试手册</title>
+<title>天道文化小程序 · 功能测试手册（用户测试版）</title>
 <style>
   :root {
     --blue: #2563eb;
@@ -25,9 +25,7 @@
     --text-muted: #6b7280;
     --sidebar-w: 260px;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     font-size: 15px;
@@ -35,8 +33,6 @@
     color: var(--text);
     background: #f3f4f6;
   }
-
-  /* ── 侧边栏 ── */
   #sidebar {
     position: fixed;
     top: 0; left: 0;
@@ -48,7 +44,6 @@
     z-index: 100;
     padding-bottom: 40px;
   }
-
   #sidebar .logo {
     padding: 24px 20px 16px;
     border-bottom: 1px solid #334155;
@@ -56,7 +51,6 @@
   }
   #sidebar .logo h1 { font-size: 16px; color: #f1f5f9; font-weight: 700; margin-bottom: 4px; }
   #sidebar .logo p { font-size: 12px; color: #64748b; }
-
   #sidebar .nav-group { padding: 8px 0; }
   #sidebar .nav-label {
     padding: 6px 20px 4px;
@@ -80,16 +74,12 @@
   #sidebar a:hover { color: #f1f5f9; background: #0f172a; }
   #sidebar a.active { color: #60a5fa; border-left-color: #3b82f6; background: rgba(59,130,246,.1); }
   #sidebar a .icon { font-size: 15px; flex-shrink: 0; }
-
-  /* ── 主内容 ── */
   #main {
     margin-left: var(--sidebar-w);
     min-height: 100vh;
     padding: 32px 40px 80px;
     max-width: 960px;
   }
-
-  /* ── 页面顶部 ── */
   .page-header {
     margin-bottom: 32px;
     padding-bottom: 20px;
@@ -105,8 +95,6 @@
   }
   .page-header h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
   .page-header p { color: var(--text-muted); font-size: 15px; }
-
-  /* ── 章节 ── */
   .section { margin-bottom: 48px; scroll-margin-top: 20px; }
   .section-title {
     display: flex;
@@ -119,8 +107,6 @@
     border-radius: 10px;
     border-left: 4px solid;
   }
-
-  /* ── 卡片 ── */
   .card {
     background: white;
     border-radius: 10px;
@@ -135,8 +121,6 @@
     padding: 14px 18px;
     border-bottom: 1px solid var(--border);
     background: var(--gray-light);
-    cursor: pointer;
-    user-select: none;
   }
   .card-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
   .card-header .badge {
@@ -146,43 +130,6 @@
     font-weight: 600;
   }
   .card-body { padding: 18px; }
-
-  /* ── 步骤条 ── */
-  .steps { display: flex; flex-direction: column; gap: 0; }
-  .step {
-    display: flex;
-    gap: 14px;
-    padding: 10px 0;
-    position: relative;
-  }
-  .step:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 36px;
-    width: 2px;
-    height: calc(100% - 16px);
-    background: #e5e7eb;
-  }
-  .step-num {
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: white;
-    position: relative;
-    z-index: 1;
-  }
-  .step-content { flex: 1; padding-top: 4px; }
-  .step-content strong { display: block; font-size: 14px; margin-bottom: 3px; }
-  .step-content p { font-size: 13.5px; color: var(--text-muted); margin: 0; }
-
-  /* ── 检查清单 ── */
   .checklist { list-style: none; display: flex; flex-direction: column; gap: 6px; }
   .checklist li {
     display: flex;
@@ -198,8 +145,6 @@
   .checklist li.done { background: var(--green-light); border-color: #bbf7d0; }
   .checklist li.done .check { background: var(--green); border-color: var(--green); }
   .checklist li.done .check::after { content: '✓'; color: white; font-size: 12px; display: flex; justify-content: center; }
-
-  /* ── 提示框 ── */
   .tip, .warn, .info, .example, .important {
     padding: 12px 14px;
     border-radius: 8px;
@@ -217,8 +162,6 @@
   .info::before { content: 'ℹ️ '; }
   .important::before { content: '🔴 '; }
   .example::before { content: '📖 '; }
-
-  /* ── 结果预期 ── */
   .expect {
     background: #f8fafc;
     border: 1px dashed #cbd5e1;
@@ -229,8 +172,6 @@
     margin-top: 8px;
   }
   .expect::before { content: '👁 预期结果：'; font-weight: 600; color: #334155; }
-
-  /* ── 对比表格 ── */
   .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .compare-table th {
     padding: 10px 14px;
@@ -245,90 +186,22 @@
     vertical-align: top;
   }
   .compare-table tr:hover td { background: #f9fafb; }
-
-  /* ── 角色标签 ── */
-  .role-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  /* ── 场景卡片 ── */
-  .scenario {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .scenario-title {
-    padding: 12px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .scenario-body { padding: 14px 16px; border-top: 1px solid #f0f4f8; }
-
-  /* ── 标签颜色 ── */
+  .role-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .tag-blue { background: var(--blue-light); color: var(--blue); border: 1px solid #bfdbfe; }
   .tag-green { background: var(--green-light); color: var(--green); border: 1px solid #bbf7d0; }
   .tag-orange { background: var(--orange-light); color: var(--orange); border: 1px solid #fed7aa; }
   .tag-purple { background: var(--purple-light); color: var(--purple); border: 1px solid #ddd6fe; }
   .tag-gold { background: var(--gold-light); color: var(--gold); border: 1px solid #fde68a; }
   .tag-red { background: var(--red-light); color: var(--red); border: 1px solid #fecaca; }
-
-  /* ── 等级徽章 ── */
-  .level-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-  }
+  .level-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
   .level-0 { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
   .level-1 { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
   .level-2 { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
   .level-3 { background: #fdf4ff; color: #7e22ce; border: 1px solid #d8b4fe; }
   .level-4 { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
-
-  /* ── 金额突出 ── */
   .money { font-weight: 700; color: var(--orange); }
   .points { font-weight: 700; color: var(--purple); }
   .merit { font-weight: 700; color: var(--green); }
-
-  /* ── 流程图 ── */
-  .flow {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 14px;
-    background: var(--gray-light);
-    border-radius: 8px;
-    margin: 10px 0;
-    font-size: 13px;
-  }
-  .flow-box {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 12px;
-    font-size: 13px;
-    text-align: center;
-  }
-  .flow-arrow { color: #9ca3af; font-size: 16px; }
-
-  /* ── 列布局 ── */
-  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-
-  /* ── 内嵌面板 ── */
   .panel {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -337,3012 +210,638 @@
     font-size: 14px;
   }
   .panel h4 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
-
-  /* ── 响应式 ── */
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step { display: flex; gap: 14px; padding: 10px 0; position: relative; }
+  .step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px; top: 36px;
+    width: 2px;
+    height: calc(100% - 16px);
+    background: #e5e7eb;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    background: var(--blue);
+    position: relative;
+    z-index: 1;
+  }
+  .step-content { flex: 1; padding-top: 4px; }
+  .step-content strong { display: block; font-size: 14px; margin-bottom: 3px; }
+  .step-content p { font-size: 13.5px; color: var(--text-muted); margin: 0; }
+  .sub { margin: 12px 0 8px; font-size: 14px; font-weight: 700; color: #374151; }
+  .sub::before { content: '▸ '; color: #9ca3af; }
   @media (max-width: 768px) {
     #sidebar { display: none; }
     #main { margin-left: 0; padding: 16px; }
     .cols-2, .cols-3 { grid-template-columns: 1fr; }
   }
-
-  /* ── 打印样式 ── */
   @media print {
     #sidebar { display: none; }
     #main { margin-left: 0; }
   }
-
-  /* ── 滚动条 ── */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: #0f172a; }
   ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-
-  /* ── 返回顶部 ── */
   .back-top {
     position: fixed;
-    bottom: 32px;
-    right: 32px;
+    bottom: 32px; right: 32px;
     background: var(--blue);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 42px;
-    height: 42px;
+    width: 42px; height: 42px;
     font-size: 18px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,.2);
-    transition: transform .2s;
     z-index: 200;
   }
-  .back-top:hover { transform: translateY(-3px); }
-
-  /* ── 进度条 ── */
   #progress {
     position: fixed;
     top: 0; left: var(--sidebar-w);
     height: 3px;
     background: var(--blue);
     z-index: 300;
+    width: 0;
     transition: width .1s;
   }
-
   hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-
-  /* 折叠 */
-  .collapsible { display: none; }
-  .collapsible.open { display: block; }
-
-  /* sub-section */
-  .sub { margin: 12px 0 8px; font-size: 14px; font-weight: 700; color: #374151; }
-  .sub::before { content: '▸ '; color: #9ca3af; }
+  code { font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
 </style>
 </head>
 <body>
 
 <div id="progress"></div>
 
-<!-- 侧边栏 -->
 <nav id="sidebar">
   <div class="logo">
     <h1>天道文化小程序</h1>
-    <p>功能测试手册 · 用户视角</p>
+    <p>用户测试手册 · 对齐《需求文档-V2》</p>
   </div>
-
   <div class="nav-group">
     <div class="nav-label">概览</div>
-    <a href="#overview" class="icon">🗺</a><a href="#overview">如何使用本手册</a>
-    <a href="#roles"><span class="icon">👥</span>用户角色说明</a>
+    <a href="#overview"><span class="icon">🗺</span>如何使用本手册</a>
+    <a href="#roles"><span class="icon">👥</span>用户角色与等级</a>
     <a href="#glossary"><span class="icon">📖</span>常用词解释</a>
   </div>
-
   <div class="nav-group">
-    <div class="nav-label">🙋 普通学员</div>
-    <a href="#login"><span class="icon">🔑</span>注册与登录</a>
-    <a href="#home"><span class="icon">🏠</span>首页</a>
-    <a href="#buy"><span class="icon">🛒</span>购买课程</a>
-    <a href="#appointment"><span class="icon">📅</span>预约上课</a>
+    <div class="nav-label">普通学员</div>
+    <a href="#login"><span class="icon">🔑</span>登录与游客</a>
+    <a href="#home"><span class="icon">🏠</span>首页与日历</a>
+    <a href="#buy"><span class="icon">🛒</span>购课与订单</a>
+    <a href="#contract-view"><span class="icon">📄</span>课程合同（查看）</a>
     <a href="#my-courses"><span class="icon">📚</span>我的课程</a>
-    <a href="#orders"><span class="icon">📋</span>购买记录</a>
-    <a href="#profile"><span class="icon">👤</span>个人信息</a>
+    <a href="#appointment"><span class="icon">📅</span>预约与签到</a>
+    <a href="#orders"><span class="icon">📋</span>购买记录与退款</a>
+    <a href="#profile"><span class="icon">👤</span>个人资料</a>
+    <a href="#customer-service"><span class="icon">🎧</span>客服</a>
     <a href="#feedback"><span class="icon">💬</span>意见反馈</a>
   </div>
-
   <div class="nav-group">
-    <div class="nav-label">🦅 传播大使</div>
-    <a href="#ambassador-apply"><span class="icon">📝</span>申请成为大使</a>
-    <a href="#ambassador-qingkuan"><span class="icon">🌱</span>准青鸾大使</a>
-    <a href="#ambassador-upgrade"><span class="icon">⬆️</span>升级青鸾大使</a>
+    <div class="nav-label">传播大使</div>
+    <a href="#referee-rules"><span class="icon">🔗</span>推荐关系与奖励</a>
+    <a href="#ambassador-apply"><span class="icon">📝</span>申请与升级</a>
     <a href="#merit-points"><span class="icon">⭐</span>功德分</a>
-    <a href="#mall-exchange"><span class="icon">🛍</span>商城兑换</a>
     <a href="#cash-points"><span class="icon">💰</span>积分与提现</a>
-    <a href="#honghu"><span class="icon">🦢</span>鸿鹄大使</a>
-    <a href="#my-contracts"><span class="icon">📄</span>我的协议</a>
+    <a href="#mall-exchange"><span class="icon">🛍</span>商城兑换</a>
+    <a href="#qrcode"><span class="icon">📱</span>推荐二维码</a>
+    <a href="#referees"><span class="icon">👥</span>我推荐的</a>
+    <a href="#my-contracts"><span class="icon">📜</span>我的协议</a>
     <a href="#volunteer-activity"><span class="icon">🙌</span>志愿活动</a>
   </div>
-
   <div class="nav-group">
-    <div class="nav-label">🎓 商学院</div>
+    <div class="nav-label">商学院</div>
     <a href="#academy-intro"><span class="icon">🏛</span>商学院介绍</a>
     <a href="#academy-materials"><span class="icon">🖼</span>朋友圈素材</a>
     <a href="#academy-cases"><span class="icon">👩‍🎓</span>学员案例</a>
   </div>
-
   <div class="nav-group">
-    <div class="nav-label">🖥 管理后台</div>
-    <a href="#admin-course"><span class="icon">📚</span>课程管理</a>
-    <a href="#admin-student"><span class="icon">👥</span>学员管理</a>
-    <a href="#admin-user-courses"><span class="icon">📖</span>用户课程管理</a>
-    <a href="#admin-schedule"><span class="icon">📅</span>上课记录管理</a>
-    <a href="#admin-order"><span class="icon">📦</span>订单管理</a>
-    <a href="#admin-exchange"><span class="icon">🛍</span>兑换管理</a>
-    <a href="#admin-ambassador"><span class="icon">🦅</span>大使管理</a>
-    <a href="#admin-level-config"><span class="icon">⚙️</span>等级配置</a>
-    <a href="#admin-activity"><span class="icon">🙌</span>志愿活动管理</a>
-    <a href="#admin-message"><span class="icon">🔔</span>消息提醒</a>
-    <a href="#admin-contract"><span class="icon">📄</span>合约管理</a>
-    <a href="#admin-evaluation"><span class="icon">⭐</span>表现分评估</a>
-    <a href="#admin-feedback"><span class="icon">💬</span>反馈管理</a>
-    <a href="#admin-system"><span class="icon">📋</span>系统管理</a>
+    <div class="nav-label">管理后台（抽检）</div>
+    <a href="#admin-brief"><span class="icon">🖥</span>后台要点清单</a>
   </div>
-
   <div class="nav-group">
-    <div class="nav-label">🧪 关键场景</div>
-    <a href="#scenario-referee"><span class="icon">🔗</span>推荐人场景</a>
-    <a href="#scenario-reward"><span class="icon">🎁</span>奖励发放场景</a>
-    <a href="#scenario-retrain"><span class="icon">🔄</span>复训场景</a>
-    <a href="#scenario-exchange"><span class="icon">🛍</span>兑换与撤销场景</a>
-    <a href="#scenario-withdraw"><span class="icon">💸</span>提现审核场景</a>
-    <a href="#scenario-activity"><span class="icon">🙌</span>志愿活动全链路</a>
+    <div class="nav-label">关键场景</div>
+    <a href="#scenario-referee"><span class="icon">🔗</span>推荐人绑定</a>
+    <a href="#scenario-reward"><span class="icon">🎁</span>奖励发放时机</a>
+    <a href="#scenario-retrain"><span class="icon">🔄</span>复训与取消</a>
+    <a href="#scenario-blacklist"><span class="icon">🚫</span>拉黑拦截</a>
   </div>
 </nav>
 
-<!-- 主内容 -->
 <main id="main">
 
-<!-- ══════════════════════════════════════
-     概览
-══════════════════════════════════════ -->
 <section class="section" id="overview">
   <div class="page-header">
-    <span class="tag tag-blue">📋 功能测试手册</span>
-    <h1>天道文化小程序 · 用户体验测试</h1>
-    <p>本手册写给不懂技术的测试人员。按照每个模块的步骤操作，看看结果是否和"预期结果"描述的一样。</p>
+    <span class="tag tag-blue">用户测试版</span>
+    <h1>天道文化小程序 · 功能测试手册</h1>
+    <p>本手册依据仓库内《需求文档-V2.md》整理，面向<strong>不懂代码的测试与运营</strong>：按模块操作，对照「预期结果」记录是否符合。与《需求文档-V2》不一致时，以需求文档为准并反馈产品。</p>
   </div>
-
   <div class="card">
-    <div class="card-header">
-      <span>🗺</span>
-      <h3>怎么用这本手册</h3>
-    </div>
+    <div class="card-header"><span>🗺</span><h3>怎么用这本手册</h3></div>
     <div class="card-body">
       <div class="cols-3">
-        <div class="panel">
-          <h4>第一步</h4>
-          <p>根据你的角色（学员、大使、管理员）选左边对应的章节</p>
-        </div>
-        <div class="panel">
-          <h4>第二步</h4>
-          <p>按照"操作步骤"一步一步操作</p>
-        </div>
-        <div class="panel">
-          <h4>第三步</h4>
-          <p>对比"预期结果"看是否正确，记录问题</p>
-        </div>
+        <div class="panel"><h4>第一步</h4><p>在左侧选与你角色匹配的章节（学员 / 大使 / 后台抽检）。</p></div>
+        <div class="panel"><h4>第二步</h4><p>按步骤操作小程序或管理后台，可勾选清单项跟踪进度。</p></div>
+        <div class="panel"><h4>第三步</h4><p>核对「预期结果」；不符则截图、记复现步骤、记账号与时间。</p></div>
       </div>
-      <div class="info" style="margin-top:14px">遇到与预期结果不符的情况，截图保存并记录操作步骤，反馈给开发同学。</div>
+      <div class="info" style="margin-top:14px">需求文档中部分历史段落可能与「变更说明」冲突；测试以文档内<strong>带日期的更新说明</strong>及本章「关键场景」为准。</div>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     用户角色
-══════════════════════════════════════ -->
 <section class="section" id="roles">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>👥</span> 用户角色说明
-  </div>
-
+  <div class="section-title" style="background:#eff6ff;border-color:var(--blue);color:var(--blue)"><span>👥</span> 用户角色与大使等级</div>
   <div class="cols-2">
     <div class="card">
-      <div class="card-header">
-        <span>🙋</span><h3>普通学员</h3>
-        <span class="badge tag-blue">小程序用户</span>
-      </div>
+      <div class="card-header"><span>🙋</span><h3>普通学员</h3><span class="badge tag-blue">默认</span></div>
       <div class="card-body">
-        <p>注册了小程序账号的用户。可以浏览课程、购买课程、预约上课。</p>
-        <div class="tip" style="margin-top:10px">如果你买了密训班，还可以申请成为"准青鸾大使"</div>
+        <p>可浏览课程、购课、预约、反馈等。<strong>普通学员不能作为订单推荐人</strong>（推荐人须为准青鸾及以上大使）。</p>
       </div>
     </div>
     <div class="card">
-      <div class="card-header">
-        <span>🦅</span><h3>传播大使</h3>
-        <span class="badge tag-green">推广员</span>
-      </div>
+      <div class="card-header"><span>🦅</span><h3>传播大使</h3><span class="badge tag-green">推广</span></div>
       <div class="card-body">
-        <p>通过申请成为大使，可以推荐好友购买课程，获得<span class="merit">功德分</span>或<span class="points">积分</span>奖励。</p>
-        <div class="tip" style="margin-top:10px">积分可以提现，功德分可以在商城兑换课程/商品</div>
+        <p>可生成推荐码、查看功德分/积分、商城兑换、志愿活动等。<strong>功德分与积分在推荐奖励上互斥</strong>，由后台等级配置决定发哪一种。</p>
       </div>
     </div>
   </div>
-
   <div class="card">
-    <div class="card-header"><span>🦅</span><h3>传播大使等级体系</h3></div>
+    <div class="card-header"><h3>大使等级与能力（摘要）</h3></div>
     <div class="card-body">
       <table class="compare-table">
-        <tr>
-          <th>等级</th>
-          <th>怎么升级</th>
-          <th>能推荐什么</th>
-          <th>奖励类型</th>
-        </tr>
+        <tr><th>等级</th><th>如何获得</th><th>推荐范围</th><th>推荐奖励</th></tr>
         <tr>
           <td><span class="level-0">普通学员</span></td>
-          <td>默认身份</td>
-          <td>❌ 不能作为推荐人</td>
-          <td>无</td>
+          <td>默认</td>
+          <td>不可作为推荐人</td>
+          <td>—</td>
         </tr>
         <tr>
-          <td><span class="level-1">准青鸾大使</span></td>
-          <td>购买密训班 + 申请 + 面试通过</td>
-          <td>只能推荐初探班（1688元）</td>
-          <td>暂无奖励</td>
+          <td><span class="level-1">准青鸾</span></td>
+          <td>已购密训班并<strong>提交大使申请后立即</strong>成为准青鸾（无需面试）</td>
+          <td>仅可推荐<strong>初探班</strong></td>
+          <td>无推荐奖励；可担任部分志愿岗位</td>
         </tr>
         <tr>
-          <td><span class="level-2">青鸾大使</span></td>
-          <td>准青鸾审核通过 + 签《青鸾大使补充协议》（2026-03起无需支付升级费）</td>
-          <td>✅ 可推荐所有课程</td>
-          <td>功德分（可兑换）+ 冻结积分（可分批解冻提现）</td>
+          <td><span class="level-2">青鸾</span></td>
+          <td>后台审核通过（管理员设置冻结积分）+ 签署《青鸾大使补充协议》</td>
+          <td>可推荐全部课程类型</td>
+          <td>以<strong>功德分</strong>为主；第 1 次推荐初探班为<strong>积分解冻</strong>逻辑（见需求文档举例）</td>
         </tr>
         <tr>
-          <td><span class="level-3">鸿鹄大使</span></td>
-          <td>青鸾审核通过 + 签《鸿鹄大使补充协议》（2026-03起无需支付升级费）</td>
-          <td>✅ 可推荐所有课程</td>
-          <td>积分（可提现，含冻结解冻机制）</td>
+          <td><span class="level-3">鸿鹄</span></td>
+          <td>青鸾申请 + 后台审核 + 签署《鸿鹄大使补充协议》</td>
+          <td>可推荐全部课程类型</td>
+          <td>推荐仅<strong>积分</strong>（初探班优先解冻冻结积分）；辅导员/义工等仍可功德分</td>
         </tr>
         <tr>
-          <td><span class="level-4">金凤大使</span></td>
-          <td>感召一定名额（条件待定）</td>
-          <td>✅ 可推荐所有课程</td>
-          <td>积分（可提现，比例更高）</td>
+          <td><span class="level-4">金凤</span></td>
+          <td>感召名额等（需求文档中为待定条件）</td>
+          <td>可推荐全部课程类型</td>
+          <td>积分为主（比例见后台配置）</td>
         </tr>
       </table>
+      <div class="important" style="margin-top:12px">已取消：准青鸾→青鸾、青鸾→鸿鹄的<strong>线上支付升级费</strong>环节；冻结积分由<strong>后台审核时人工填写</strong>（须为单次解冻额度整数倍，可为 0）。</div>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     常用词
-══════════════════════════════════════ -->
 <section class="section" id="glossary">
-  <div class="section-title" style="background:#faf5ff; border-color:var(--purple); color:var(--purple)">
-    <span>📖</span> 常用词解释
-  </div>
-  <div class="cols-2">
-    <div class="card">
-      <div class="card-header"><span>💰</span><h3>两种奖励的区别</h3></div>
-      <div class="card-body">
-        <table class="compare-table">
-          <tr>
-            <th></th>
-            <th><span class="merit">功德分</span></th>
-            <th><span class="points">积分</span></th>
-          </tr>
-          <tr>
-            <td>谁能获得</td>
-            <td>青鸾大使</td>
-            <td>鸿鹄、金凤大使</td>
-          </tr>
-          <tr>
-            <td>能提现吗</td>
-            <td>❌ 不能</td>
-            <td>✅ 可以</td>
-          </tr>
-          <tr>
-            <td>怎么用</td>
-            <td>兑换课程/商品</td>
-            <td>提现到账户</td>
-          </tr>
-          <tr>
-            <td>同时发放</td>
-            <td colspan="2" style="text-align:center">❌ 两者不会同时发放，只发一种</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span>❄️</span><h3>冻结积分是什么</h3></div>
-      <div class="card-body">
-        <p style="margin-bottom:10px">可以把冻结积分理解为"押金"：</p>
-        <div class="example">青鸾大使升级时支付1688元 → 这笔钱变成1688冻结积分（暂时锁着）→ 第1次成功推荐初探班 → 1688解冻，可以提现（相当于退还了升级费）</div>
-        <div class="info" style="margin-top:10px">鸿鹄大使升级时（2026-03起无需支付）→ 管理员设置冻结积分（如16880），每推荐1个初探班解冻1688</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span>🔗</span><h3>推荐人是什么</h3></div>
-      <div class="card-body">
-        <div class="steps">
-          <div class="step">
-            <div class="step-num" style="background:var(--blue)">1</div>
-            <div class="step-content">
-              <strong>注册时</strong>
-              <p>扫大使的二维码进入小程序，系统临时记录这位大使为你的"推荐人"</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--orange)">2</div>
-            <div class="step-content">
-              <strong>首次付款前</strong>
-              <p>你可以在个人信息页面更换推荐人（7天只能改1次）</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--green)">3</div>
-            <div class="step-content">
-              <strong>首次付款成功后</strong>
-              <p>推荐人被永久锁定，之后不能再改了</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span>🔄</span><h3>复训是什么</h3></div>
-      <div class="card-body">
-        <p>只要是<strong>第二次及以后</strong>来参加同一门课程，就叫复训。</p>
-        <div class="warn" style="margin-top:10px">复训需要额外支付复训费，比正价便宜很多</div>
-        <div class="tip">复训没有次数限制，想来多少次都可以（在报名截止时间内）</div>
-      </div>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--gold-light);border-color:var(--gold);color:var(--gold)"><span>📖</span> 常用词解释</div>
+  <div class="card"><div class="card-body">
+    <table class="compare-table">
+      <tr><th>术语</th><th>含义</th></tr>
+      <tr><td>初探班 / 密训班</td><td>课程类型；密训班可含赠送初探班名额，<strong>推荐奖励按密训班价格计算一次</strong>。</td></tr>
+      <tr><td>功德分</td><td>虚拟分，用于商城兑换等，<strong>不可提现</strong>。</td></tr>
+      <tr><td>积分</td><td>可提现的现金分；含冻结与可提现余额，规则见需求文档「积分管理」。</td></tr>
+      <tr><td><code>contract_signed=1</code></td><td>课程侧合同已生效：管理员录入线下合同并生效，或<strong>无需合同</strong>的课程在首次上课签到后自动触发（见 <code>need_contract</code>）。</td></tr>
+      <tr><td>推荐人锁定</td><td>学员首次达到合同生效/首次上课等条件后，推荐人关系确认；<strong>再扫不同推荐码不改变推荐人</strong>（管理员仍可改）。</td></tr>
+      <tr><td>已结课次数 <code>attend_count</code></td><td>表示<strong>已结课次数</strong>；新购课初始为 0；排期结束且有过签到时按规则 +1（沙龙另规则）。「可复训」等与是否上过课相关展示以需求文档为准。</td></tr>
+      <tr><td>复训资格</td><td>已付复训费后若取消预约，费用可能保留为<strong>同课程</strong>下次复训抵扣资格（见需求文档复训费机制）。</td></tr>
+    </table>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     登录注册
-══════════════════════════════════════ -->
 <section class="section" id="login">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>🔑</span> 注册与登录
-  </div>
-
+  <div class="section-title" style="background:#ecfdf5;border-color:var(--green);color:var(--green)"><span>🔑</span> 登录、协议与游客浏览</div>
   <div class="card">
-    <div class="card-header"><h3>场景1：第一次打开小程序</h3><span class="badge tag-blue">首次使用</span></div>
+    <div class="card-header"><h3>冷启动与游客（微信合规）</h3><span class="badge tag-blue">2026-04 需求</span></div>
     <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content">
-            <strong>打开小程序</strong>
-            <p>在微信中搜索或扫码打开</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content">
-            <strong>点击"微信授权登录"按钮</strong>
-            <p>允许获取微信头像和昵称</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">3</div>
-          <div class="step-content">
-            <strong>弹出"完善个人资料"页面</strong>
-            <p>必填：真实姓名、手机号；其他可以先不填</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">4</div>
-          <div class="step-content">
-            <strong>点击"提交"</strong>
-            <p>填写完后提交</p>
-          </div>
-        </div>
-      </div>
-      <div class="expect">填写完毕后进入首页，可以正常使用所有功能</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景2：选择"先预览"不填资料</h3><span class="badge tag-orange">预览模式</span></div>
-    <div class="card-body">
-      <p>登录后出现资料填写页面，点击"暂不填写，先预览"按钮。</p>
-      <div class="expect">进入首页，但处于预览模式。以下功能会被限制：</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>✅ 可以浏览课程列表和详情（只能看，不能买）</span></li>
-        <li><span class="check"></span><span>✅ 可以查看公告</span></li>
-        <li><span class="check"></span><span>✅ 可以看商学院介绍、朋友圈素材、学员案例</span></li>
-        <li><span class="check"></span><span>❌ 点击"购买"会提示"请先完善个人资料"</span></li>
-        <li><span class="check"></span><span>❌ 点击"预约报名"会提示"请先完善个人资料"</span></li>
-        <li><span class="check"></span><span>❌ 点击"申请成为大使"会提示"请先完善个人资料"</span></li>
-        <li><span class="check"></span><span>右下角有"完善资料"悬浮按钮</span></li>
+      <ul class="checklist">
+        <li><span class="check"></span><span>未写入业务登录态前，可游客进入<strong>首页 / 商城 / 商学院</strong>等 Tab 做只读浏览（具体拦截以小程序为准）。</span></li>
+        <li><span class="check"></span><span>点击底部「我的」：进入「我的」后应引导/重定向到登录（底栏仍为微信原生 TabBar）。</span></li>
+        <li><span class="check"></span><span>进入课程购买、商城兑换、积分明细等需登录能力时，应跳转登录而非静默失败。</span></li>
+        <li><span class="check"></span><span>本地无业务登录态时，接口 401 <strong>不应</strong>强制整页打断游客浏览（有登录态失效时仍应提示重新登录）。</span></li>
       </ul>
     </div>
   </div>
-
   <div class="card">
-    <div class="card-header"><h3>场景3：通过大使二维码注册</h3><span class="badge tag-green">带推荐人</span></div>
+    <div class="card-header"><h3>登录页协议勾选</h3></div>
     <div class="card-body">
-      <p>扫描某位传播大使分享的小程序二维码进入。</p>
-      <div class="expect">注册后，在"个人信息"页面的"我的传播大使"字段，显示那位大使的名字和等级</div>
-      <div class="info">这个推荐人在你首次付款前都可以修改</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-content"><strong>打开登录页</strong><p>「已阅读并同意《用户服务协议》与《隐私政策》」默认<strong>不勾选</strong>。</p></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><strong>不勾选直接点登录</strong><p>应无法发起一键登录或明确提示须先同意协议。</p></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><strong>勾选后登录</strong><p>可正常完成微信一键登录流程。</p></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content"><strong>协议正文页</strong><p>可从登录页进入《用户服务协议》《隐私政策》独立页阅读。</p></div></div>
+      </div>
+      <div class="expect">合规：无默认同意；协议可访问；登录链路可完成。</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>首次登录与个人资料</h3></div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><span class="check"></span><span>首次登录可要求完善资料：<strong>真实姓名、手机号为必填</strong>；可不填进入预览模式（仅浏览，不能购课/预约/申请大使等）。</span></li>
+        <li><span class="check"></span><span>个人资料可维护<strong>银行收款信息</strong>（用于积分提现、退款、复训费退款等场景校验）。</span></li>
+      </ul>
+      <div class="tip">预览模式下受限入口应有「请先完善个人资料」类提示，并提供去完善入口。</div>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     首页
-══════════════════════════════════════ -->
 <section class="section" id="home">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>🏠</span> 首页
-  </div>
-
-  <div class="cols-2">
-    <div class="card">
-      <div class="card-header"><h3>通知公告</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>看到公告列表，有标题和时间</span></li>
-          <li><span class="check"></span><span>重要公告排在最前面（有特殊标识）</span></li>
-          <li><span class="check"></span><span>点击公告可以看到完整内容</span></li>
-          <li><span class="check"></span><span>支持图片展示</span></li>
-        </ul>
-      </div>
+  <div class="section-title" style="background:var(--purple-light);border-color:var(--purple);color:var(--purple)"><span>🏠</span> 首页、课程列表与日历</div>
+  <div class="card">
+    <div class="card-header"><h3>公告与轮播</h3></div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><span class="check"></span><span>公告列表：重要公告置顶，支持富文本与多媒体详情。</span></li>
+        <li><span class="check"></span><span>轮播图区域素材建议尺寸与需求文档一致（如 750×720），避免主体被裁切。</span></li>
+      </ul>
     </div>
-    <div class="card">
-      <div class="card-header"><h3>课程列表</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>看到课程卡片：封面图、名称、价格</span></li>
-          <li><span class="check"></span><span>有"初探班/密训班"等标签</span></li>
-          <li><span class="check"></span><span>已购买的课程显示"已购买"标识</span></li>
-          <li><span class="check"></span><span>下架的课程不显示</span></li>
-        </ul>
-      </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>首页课程卡片（2026-04 修订）</h3><span class="badge tag-orange">UI 规则</span></div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><span class="check"></span><span>卡片底部信息区：左侧为<strong>课程类型名 + 价格</strong>（沙龙显示「免费」）；右侧为固定文案<strong>「查看详情」</strong>胶囊按钮。</span></li>
+        <li><span class="check"></span><span>整卡点击进入详情；已购非沙龙可显示「已购买」小标签。</span></li>
+        <li><span class="check"></span><span>不在首页卡片用「N 天后开课」等倒计时文案。</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>日历 Tab（农历弹窗）</h3></div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><span class="check"></span><span>日历格第二行仅展示节气或农历日，<strong>不在格内展示课程昵称</strong>。</span></li>
+        <li><span class="check"></span><span>底部「课程：」行展示当日涉及课程昵称；无排期为「无」；多课中文逗号拼接。</span></li>
+        <li><span class="check"></span><span>排期跨日时按 <code>class_date</code>～<code>class_end_date</code>（含）展开到每一天。</span></li>
+      </ul>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     购买课程
-══════════════════════════════════════ -->
 <section class="section" id="buy">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>🛒</span> 购买课程
-  </div>
-
+  <div class="section-title" style="background:var(--orange-light);border-color:var(--orange);color:var(--orange)"><span>🛒</span> 购课、密训赠课与支付</div>
   <div class="card">
-    <div class="card-header"><h3>普通购买流程（初探班 1688元）</h3></div>
+    <div class="card-header"><h3>课程详情与购买</h3></div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><span class="check"></span><span>课程介绍/大纲支持<strong>图文混排</strong>（文字块 + 图片块），图片可预览。</span></li>
+        <li><span class="check"></span><span>密训班若配置赠送初探班：详情有「赠送课程」类 Tab，仅展示赠送课摘要，不重复主课大纲。</span></li>
+        <li><span class="check"></span><span>沙龙课（免费）：价格展示为免费，走预约链路而非购课支付（见需求文档沙龙规则）。</span></li>
+        <li><span class="check"></span><span>购课<strong>不强制</strong>先有推荐人；推荐人绑定规则见「推荐人场景」。</span></li>
+      </ul>
+      <div class="warn">非沙龙课程：支付成功后<strong>不一定立即发推荐奖励</strong>——若课程需要合同，须等管理员在后台录入线下合同并生效后才触发（无合同模板的课程可能支付后即发放，以需求文档表格为准）。</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>订单与支付</h3></div>
     <div class="card-body">
       <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content">
-            <strong>点击课程进入详情</strong>
-            <p>看到课程介绍、价格 <span class="money">¥1688</span>、购买按钮</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content">
-            <strong>点击"立即购买"</strong>
-            <p>进入订单确认页面</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">3</div>
-          <div class="step-content">
-            <strong>确认推荐人</strong>
-            <p>页面显示当前推荐人的名字和等级，可以点击"修改"换人（首次购买前可改）</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">4</div>
-          <div class="step-content">
-            <strong>点击"支付"</strong>
-            <p>调起微信支付</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content">
-            <strong>支付成功</strong>
-            <p>显示支付成功页面</p>
-          </div>
-        </div>
+        <div class="step"><div class="step-num">1</div><div class="step-content"><strong>创建订单</strong><p>核对金额、课程名称；订单推荐人来自服务端根据用户当前绑定关系解析，<strong>订单确认页不展示推荐人信息</strong>（对齐 2026-03-09 需求）。</p></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><strong>微信支付</strong><p>支付成功订单进入已支付；待支付超时/取消规则以实际配置为准。</p></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><strong>密训含初探</strong><p>购买密训后「我的课程」中应出现密训与赠送初探（或叠加有效期策略按需求文档「赠送课程规则」）。</p></div></div>
       </div>
-      <div class="expect">支付成功后：① 课程出现在"我的课程"里 ② 在"购买记录"里有这笔订单 ③ 推荐人被锁定（不能再改了）</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>购买密训班（38888元）</h3><span class="badge tag-orange">套餐+赠课</span></div>
-    <div class="card-body">
-      <div class="info">密训班是套餐课程，买了密训班后，初探班（赠送课程）也会自动加入你的课程，不需要另外购买。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>选择密训班，点击购买</strong><p>订单金额为 <span class="money">¥38888</span>；课程详情页有"赠送+[课程名]" Tab 展示赠送课程信息</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>支付成功后</strong><p>检查"我的课程"</p></div>
-        </div>
-      </div>
-      <div class="expect">我的课程里同时出现"密训班"和"初探班"（赠送）两门课程</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>若用户已有初探班：有效期在原来基础上叠加（不新建记录）</span></li>
-        <li><span class="check"></span><span>若用户没有初探班：新建记录，标记为赠送课程（is_gift=1）</span></li>
-        <li><span class="check"></span><span>退款时：赠送的初探班同步失效</span></li>
-      </ul>
-      <div class="warn">注意：不需要先买初探班再买密训班，可以直接买密训班</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>推荐人资格验证（重要）</h3><span class="badge tag-red">规则校验</span></div>
-    <div class="card-body">
-      <div class="important">系统会自动检查推荐人等级是否符合要求，不符合会阻止下单！</div>
-      <div style="margin-top:14px">
-        <div class="sub">测试场景 A：准青鸾大使只能推荐初探班</div>
-        <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px">当你的推荐人是<span class="level-1">准青鸾大使</span>，你想买密训班时：</p>
-        <div class="expect">弹出提示："您的推荐人暂时只能推荐初探班课程，请选择青鸾及以上等级的推荐人，或先购买初探班"，无法下单</div>
-
-        <div class="sub" style="margin-top:16px">测试场景 B：成功推荐（正常流程）</div>
-        <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px">推荐人是<span class="level-2">青鸾大使</span>，购买密训班：</p>
-        <div class="expect">可以正常下单支付</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>修改推荐人（购买前）</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">1</div>
-          <div class="step-content"><strong>在订单确认页，点击推荐人旁边的"修改"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">2</div>
-          <div class="step-content"><strong>从列表中选择新的传播大使</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">3</div>
-          <div class="step-content"><strong>确认选择后，订单上的推荐人已更新</strong></div>
-        </div>
-      </div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>修改后支付成功，奖励发给新推荐人（不是旧的）</span></li>
-        <li><span class="check"></span><span>首次购买支付成功后，个人信息里的推荐人也同步更新</span></li>
-        <li><span class="check"></span><span>支付成功后推荐人显示"已确认"，不能再改了</span></li>
-      </ul>
+      <div class="expect">支付成功后可预约（不再因「未签电子学习合同」拦截预约）；已签合同则不可按规则退款。</div>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     预约上课
-══════════════════════════════════════ -->
-<section class="section" id="appointment">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>📅</span> 预约上课
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景1：首次上课（免费）</h3></div>
-    <div class="card-body">
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px">你已经购买了课程，想要预约第一次上课：</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>进入"课程计划"页面</strong><p>看到即将开课的计划列表：课程名、时间、地点、剩余名额</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content"><strong>找到想参加的那期，点击"预约"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">3</div>
-          <div class="step-content"><strong>确认预约</strong></div>
-        </div>
-      </div>
-      <div class="expect">预约成功，课程出现在"我的预约"里，系统会在上课前发消息提醒你</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景2：复训（需要付费）</h3><span class="badge tag-orange">复训</span></div>
-    <div class="card-body">
-      <div class="info">已经参加过1次课程，再次预约就是复训，需要支付复训费</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>选择课程计划，点击预约</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>提示"这是您的复训，需要支付复训费"</strong><p>显示复训费用金额</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>确认支付复训费</strong></div>
-        </div>
-      </div>
-      <div class="expect">支付成功后预约完成，出现在"我的预约"列表</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>截止时间规则测试</h3><span class="badge tag-red">时间规则</span></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr>
-          <th>情况</th>
-          <th>结果</th>
-        </tr>
-        <tr>
-          <td>报名截止时间已过</td>
-          <td>❌ 无法预约，显示"报名已截止"</td>
-        </tr>
-        <tr>
-          <td>超过"取消预约截止天数"后尝试取消</td>
-          <td>❌ 取消按钮置灰，提示"无法取消预约"</td>
-        </tr>
-        <tr>
-          <td>取消预约截止天数内（如：开课前3天）取消</td>
-          <td>✅ 可以取消预约（复训费不退但保留为复训资格）</td>
-        </tr>
-        <tr>
-          <td>未购买该课程就预约</td>
-          <td>❌ 提示"请先购买课程"</td>
-        </tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>复训费保留机制</h3><span class="badge tag-orange">2026-03 新增</span></div>
-    <div class="card-body">
-      <div class="info">复训用户支付复训费后取消预约，复训费不退款，但会保留为"复训资格"，下次同课程预约时可免付。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th>场景</th><th>结果</th></tr>
-        <tr><td>复训用户取消预约（截止期内）</td><td>✅ 复训费保留为资格，不退款；下次预约同课程时可免费</td></tr>
-        <tr><td>管理员取消排期</td><td>✅ 该排期所有复训用户的复训费同样自动保留为资格</td></tr>
-        <tr><td>用复训资格预约后被标记缺席</td><td>❌ 资格消耗不退回</td></tr>
-        <tr><td>复训资格有效期</td><td>永久有效，可反复保留使用</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>微信上课提醒（订阅消息）</h3><span class="badge tag-blue">2026-03 新增</span></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>预约确认后，弹出微信订阅消息授权</strong><p>点击"允许"以接收上课提醒（仅微信小程序环境）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content"><strong>授权后，开课前一天早上 9:00</strong><p>自动收到微信消息提醒：课程名称、时间、地点、讲师</p></div>
-        </div>
-      </div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>拒绝授权不影响预约操作本身</span></li>
-        <li><span class="check"></span><span>点击微信消息可跳转到"我的预约"页面</span></li>
-        <li><span class="check"></span><span>H5/App 环境无此授权弹窗，不受影响</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <h3>沙龙课程预约（免费）</h3>
-      <span class="badge tag-green">特殊课程类型</span>
-    </div>
-    <div class="card-body">
-      <div class="info">沙龙课程（type=4）是免费课程，无需支付，预约流程更简单。每门沙龙课程只有一个排期，结束后自动清理。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content"><strong>首页看到沙龙课程，显示"免费"标签</strong><p>点击进入课程详情，显示"立即预约"按钮（不是"立即购买"）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>进入课程计划页面，点击"预约"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>确认预约成功</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 无需支付任何费用<br>
-        ② 预约成功后在"我的预约"可查看<br>
-        ③ 系统自动为用户创建课程记录（buy_price=0）
-      </div>
-      <div class="warn">沙龙课程排期结束后，系统自动删除课程和排期数据，历史预约记录保留。</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>合同流程说明（2026-03-06 变更）</h3><span class="badge tag-orange">重要变更</span></div>
-    <div class="card-body">
-      <div class="important">⚠️ 购买即可预约，不再需要先签署电子合同。合同由管理员后台录入线下合同照片。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th></th><th>变更前</th><th>变更后（2026-03-06起）</th></tr>
-        <tr><td>首次预约</td><td>需线上签署电子合同 → 等待管理员审核通过</td><td>购买即可直接预约，无需签合同</td></tr>
-        <tr><td>合同录入</td><td>用户线上电子签署</td><td>管理员后台手动录入线下合同照片</td></tr>
-        <tr><td>合同生效</td><td>管理员审核通过后</td><td>管理员录入后立即生效</td></tr>
-        <tr><td>课程有效期激活</td><td>审核通过后激活</td><td>管理员录入合同后激活</td></tr>
-        <tr><td>推荐人奖励</td><td>审核通过后触发</td><td>管理员录入合同后触发</td></tr>
-      </table>
-      <div class="tip" style="margin-top:10px">大使合同（《青鸾大使补充协议》等）保留线上电子签署，但取消了审核环节，签署后直接生效。</div>
-    </div>
-  </div>
+<section class="section" id="contract-view">
+  <div class="section-title" style="background:#f1f5f9;border-color:#64748b;color:#475569"><span>📄</span> 课程合同（学员侧）</div>
+  <div class="card"><div class="card-body">
+    <div class="info">课程合同改为<strong>管理员后台录入线下合同照片</strong>为主流程；学员端可查看合同照片。若照片缺失应提示联系管理员补充（见需求文档 2026-03-13）。</div>
+    <ul class="checklist" style="margin-top:10px">
+      <li><span class="check"></span><span>「我的协议」或课程合同入口：能查看已录入照片（URL 无效时不应无限加载）。</span></li>
+      <li><span class="check"></span><span><code>need_contract=0</code> 的课程：可不产生合同签署记录，首次上课签到后触发与「合同生效」等价的业务（测试须准备对应课程配置）。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     我的课程
-══════════════════════════════════════ -->
 <section class="section" id="my-courses">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>📚</span> 我的课程
-  </div>
+  <div class="section-title" style="background:#fef3c7;border-color:#d97706;color:#92400e"><span>📚</span> 我的课程</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>列表展示已购课程、状态、有效期、上课次数等字段与需求一致。</span></li>
+      <li><span class="check"></span><span>「可复训」等标签展示条件与 <code>attend_count</code> 等业务规则一致（新购课 <code>attend_count</code> 初始为 0）。</span></li>
+      <li><span class="check"></span><span>进入预约入口应能选择对应课程的排期（同课仅能一个进行中预约等规则见需求文档）。</span></li>
+    </ul>
+  </div></div>
+</section>
+
+<section class="section" id="appointment">
+  <div class="section-title" style="background:#e0e7ff;border-color:#6366f1;color:#4338ca"><span>📅</span> 预约、复训费、取消与提醒</div>
   <div class="card">
-    <div class="card-header"><h3>我的课程页面</h3></div>
+    <div class="card-header"><h3>预约流程要点</h3></div>
     <div class="card-body">
       <ul class="checklist">
-        <li><span class="check"></span><span>看到已购买的所有课程</span></li>
-        <li><span class="check"></span><span>每门课程显示：购买时间、已上几次课（attend_count）、有效期</span></li>
-        <li><span class="check"></span><span>有"预约上课"按钮</span></li>
-        <li><span class="check"></span><span>买了密训班后，初探班也在这里（两门课都能看到）</span></li>
-        <li><span class="check"></span><span>attend_count = 0（从未上过课）时：不显示"可复训"标签</span></li>
-        <li><span class="check"></span><span>attend_count ≥ 1（上过课）后：显示"可复训"标签，再次预约需付复训费</span></li>
-        <li><span class="check"></span><span>管理员录入线下合同后，课程有效期才开始计算</span></li>
+        <li><span class="check"></span><span>已购课即可预约；<strong>不再</strong>因学员端电子签署课程合同而拦截首次预约。</span></li>
+        <li><span class="check"></span><span>课程计划/确认页展示开课～结课日期区间；展示当日上课时段起止（由排期解析）。</span></li>
+        <li><span class="check"></span><span>非沙龙复训：当 <code>attend_count ≥ 1</code> 且该排期 <code>retrain_price &gt; 0</code> 时，应先走复训费支付再生成预约。</span></li>
+        <li><span class="check"></span><span>取消预约：须在排期配置的「上课前 X 天」截止前；逾期按钮不可用并有文案提示。</span></li>
+        <li><span class="check"></span><span>若该排期已报名志愿活动：取消预约前应提示先取消活动报名。</span></li>
+        <li><span class="check"></span><span>预约确认后弹出<strong>微信订阅消息</strong>授权；拒绝授权仍可预约成功。</span></li>
       </ul>
     </div>
   </div>
-
   <div class="card">
-    <div class="card-header"><h3>查看合同照片</h3></div>
+    <div class="card-header"><h3>签到（学员视角）</h3></div>
     <div class="card-body">
-      <div class="info">管理员录入线下合同后，学员可在小程序端查看合同照片。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>在"我的课程"或"我的协议"中有"查看合同照片"入口</span></li>
-        <li><span class="check"></span><span>若管理员未录入照片，点击时提示"暂无合同照片，请联系管理员补充"</span></li>
-      </ul>
+      <p>非沙龙课程为<strong>按日扫码签到</strong>：上课日扫描教务提供的当日签到码，成功后有已签提示；重复扫同天应防重。</p>
+      <p class="warn">沙龙课为全自动状态流转，不按非沙龙手动签到规则测试。</p>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════
-     购买记录
-══════════════════════════════════════ -->
 <section class="section" id="orders">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>📋</span> 购买记录
-  </div>
-  <div class="card">
-    <div class="card-header"><h3>订单列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>看到所有购买记录：订单号、课程名、金额、状态</span></li>
-        <li><span class="check"></span><span>状态分为：待支付 / 已支付 / 已取消 / 已退款</span></li>
-        <li><span class="check"></span><span>点击订单可以看到推荐人信息</span></li>
-        <li><span class="check"></span><span>已支付订单的推荐人显示"已确认"，不能修改</span></li>
-        <li><span class="check"></span><span>可以申请退款（已支付的订单）</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:#fce7f3;border-color:#db2777;color:#9d174d"><span>📋</span> 购买记录与退款</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>订单列表分页与「99+」展示规则与需求「我的模块」说明一致。</span></li>
+      <li><span class="check"></span><span>退款入口在「客服」等指定入口进入；已签学习合同（<code>contract_signed=1</code>）应不可申请退款。</span></li>
+      <li><span class="check"></span><span>退款页 Tab：<strong>未退款 / 已退款</strong> 分栏展示逻辑与需求文档一致（含申请中、已驳回、可重新申请等状态）。</span></li>
+      <li><span class="check"></span><span>财务标记已转账后学员可查看凭证/发票类信息（若有）。</span></li>
+    </ul>
+    <div class="info">退款为人工线下转账 + 后台标记驱动数据回滚，非微信自动原路退回。</div>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     个人信息
-══════════════════════════════════════ -->
 <section class="section" id="profile">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>👤</span> 个人信息
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>可以修改的内容</h3></div>
-    <div class="card-body">
-      <div class="cols-2">
-        <div>
-          <p class="sub">基本信息</p>
-          <ul class="checklist">
-            <li><span class="check"></span><span>头像</span></li>
-            <li><span class="check"></span><span>昵称</span></li>
-            <li><span class="check"></span><span>真实姓名</span></li>
-            <li><span class="check"></span><span>手机号</span></li>
-            <li><span class="check"></span><span>性别、出生八字、行业、地区、简介</span></li>
-          </ul>
-        </div>
-        <div>
-          <p class="sub">推荐人设置</p>
-          <ul class="checklist">
-            <li><span class="check"></span><span>显示当前推荐人的名字和等级</span></li>
-            <li><span class="check"></span><span>首次购买前显示"可修改"提示</span></li>
-            <li><span class="check"></span><span>首次购买后显示"已确认"，不能改了</span></li>
-            <li><span class="check"></span><span>7天内只能改1次</span></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>修改推荐人的限制测试</h3><span class="badge tag-red">规则验证</span></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>操作</th><th>是否允许</th><th>提示信息</th></tr>
-        <tr><td>选自己为推荐人</td><td>❌</td><td>"不能选择自己"</td></tr>
-        <tr><td>7天内第二次修改</td><td>❌</td><td>提示剩余等待时间</td></tr>
-        <tr><td>首次购买后修改</td><td>❌</td><td>"推荐人已确认，不可修改"</td></tr>
-        <tr><td>选普通学员为推荐人</td><td>❌</td><td>"推荐人必须是准青鸾及以上等级的传播大使"</td></tr>
-        <tr><td>选准青鸾大使（正常）</td><td>✅</td><td>修改成功</td></tr>
-      </table>
-    </div>
-  </div>
+  <div class="section-title" style="background:#ccfbf1;border-color:#0d9488;color:#115e59"><span>👤</span> 个人资料与其他</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>头像、昵称、联系方式、简介等可编辑项保存成功并在再次进入时回显。</span></li>
+      <li><span class="check"></span><span>银行收款信息：填写/校验/二次确认流程可用；提现时从未填写应有引导去补充。</span></li>
+    </ul>
+    <div class="example">若小程序仍保留「我的传播大使」修改入口：应校验不可选自己、不可选下级、7 天频率限制、锁定后不可改——与《需求文档-V2》个人中心章节及「推荐人绑定（2026-03-09）」是否同时生效需产品确认，冲突提缺陷。</div>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     意见反馈
-══════════════════════════════════════ -->
+<section class="section" id="customer-service">
+  <div class="section-title" style="background:#f3e8ff;border-color:#9333ea;color:#6b21a8"><span>🎧</span> 客服页</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>页面标题与入口为「客服」，不出现「智能 / AI / 人工智能」等字样。</span></li>
+      <li><span class="check"></span><span>展示意见反馈、退款入口；展示常用/备用<strong>微信二维码</strong>，可长按识别或预览大图。</span></li>
+      <li><span class="check"></span><span>底部输入条为引导占位，点击提示使用反馈或快捷入口（非自动对话）。</span></li>
+    </ul>
+  </div></div>
+</section>
+
 <section class="section" id="feedback">
-  <div class="section-title" style="background:#eff6ff; border-color:var(--blue); color:var(--blue)">
-    <span>💬</span> 意见反馈
-  </div>
-  <div class="card">
-    <div class="card-header"><h3>提交反馈</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>进入"意见反馈"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content">
-            <strong>选择要反馈的课程（可选）</strong>
-            <p>不选课程 = 通用反馈；选了课程 = 针对该课程的反馈</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">3</div>
-          <div class="step-content">
-            <strong>选择反馈类型</strong>
-            <p>选了课程：课程内容/服务/讲师/场地；未选课程：功能建议/问题反馈/投诉</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">4</div>
-          <div class="step-content"><strong>填写反馈内容（必填），可上传最多3张图片</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>提交</strong></div>
-        </div>
-      </div>
-      <div class="expect">提交成功提示，在"我的反馈"里能看到刚刚提交的记录</div>
-    </div>
-  </div>
+  <div class="section-title" style="background:#ecfccb;border-color:#65a30d;color:#3f6212"><span>💬</span> 意见反馈</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>可选择已购课程或提交通用反馈；类型选项随是否选课变化。</span></li>
+      <li><span class="check"></span><span>必填内容、图片张数上限、提交成功提示符合需求。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     申请成为大使
-══════════════════════════════════════ -->
+<section class="section" id="referee-rules">
+  <div class="section-title" style="background:#dbeafe;border-color:var(--blue);color:#1e40af"><span>🔗</span> 推荐关系与奖励（大使必读）</div>
+  <div class="card"><div class="card-body">
+    <table class="compare-table">
+      <tr><th>项目</th><th>规则摘要（对齐需求文档 V2）</th></tr>
+      <tr><td>绑定方式</td><td><strong>扫描大使推荐二维码</strong>进入小程序为主路径；未购课用户多次扫码以最后一次为准；已锁定后不变。</td></tr>
+      <tr><td>奖励归属</td><td>发给<strong>订单上的推荐人</strong>，不是用户资料里曾经填过的其他人。</td></tr>
+      <tr><td>准青鸾限制</td><td>准青鸾仅能做初探班场景的推荐人；学员买密训/咨询等需青鸾及以上推荐人，否则下单失败并有提示文案。</td></tr>
+      <tr><td>统计「我推荐的」</td><td>列表与人数统计仅计 <code>contract_signed=1</code> 的学员（需求文档 3.1.7.5）。</td></tr>
+    </table>
+  </div></div>
+</section>
+
 <section class="section" id="ambassador-apply">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>📝</span> 申请成为传播大使
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>前提条件</h3></div>
-    <div class="card-body">
-      <div class="important">必须先购买密训班才能申请</div>
-      <div class="info" style="margin-top:10px">如果没有买密训班，申请按钮不会显示，或点击后会提示"请先购买密训班"</div>
+  <div class="section-title" style="background:#fef9c3;border-color:#ca8a04;color:#854d0e"><span>📝</span> 申请大使与升级</div>
+  <div class="card"><div class="card-body">
+    <div class="steps">
+      <div class="step"><div class="step-num">A</div><div class="step-content"><strong>普通 → 准青鸾</strong><p>购买密训班 → 提交申请表 → <strong>立即</strong>变为准青鸾；申请记录待后台审核升青鸾。</p></div></div>
+      <div class="step"><div class="step-num">B</div><div class="step-content"><strong>准青鸾 → 青鸾</strong><p>后台审核通过并设置冻结积分 → 小程序签署《青鸾大使补充协议》→ 升级青鸾并发放冻结积分。</p></div></div>
+      <div class="step"><div class="step-num">C</div><div class="step-content"><strong>青鸾 → 鸿鹄</strong><p>提交升级申请 → 后台审核通过并设置冻结积分 → 签署《鸿鹄大使补充协议》→ 升级鸿鹄。</p></div></div>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>申请流程（整体）</h3></div>
-    <div class="card-body">
-      <div class="flow">
-        <div class="flow-box">买密训班</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">提交申请表</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">后台初审</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">安排面试</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">面试通过</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box" style="background:#ecfdf5;border-color:#6ee7b7;font-weight:700">升级准青鸾 🌱</div>
-      </div>
-      <div class="sub">申请表需要填写</div>
-      <div class="cols-2">
-        <ul style="font-size:14px;padding-left:18px;line-height:2">
-          <li>真实姓名、手机号、微信号</li>
-          <li>所在城市、职业</li>
-        </ul>
-        <ul style="font-size:14px;padding-left:18px;line-height:2">
-          <li>为什么想成为传播大使</li>
-          <li>如何理解天道文化</li>
-          <li>预期推广计划</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>申请状态查看</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>状态</th><th>小程序里显示的内容</th></tr>
-        <tr><td>还没提交</td><td>显示"申请成为大使"按钮</td></tr>
-        <tr><td>审核中</td><td>显示"申请审核中，请耐心等待"</td></tr>
-        <tr><td>已通过初审</td><td>显示"已通过初审，等待面试安排"</td></tr>
-        <tr><td>面试时间已定</td><td>显示面试时间和联系人</td></tr>
-        <tr><td>通过面试</td><td>自动升级为准青鸾大使，等级徽章变绿</td></tr>
-        <tr><td>被拒绝</td><td>显示拒绝原因，可以重新申请</td></tr>
-      </table>
-    </div>
-  </div>
+    <div class="expect">全程无「支付升级费」步骤；驳回申请不回退准青鸾身份（准青鸾场景）。</div>
+    <div class="warn">大使电子协议：签署后直接生效升级（无管理员「审核电子签名」环节）。</div>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     准青鸾大使
-══════════════════════════════════════ -->
-<section class="section" id="ambassador-qingkuan">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>🌱</span> 准青鸾大使的功能
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>成为准青鸾大使后能做什么</h3></div>
-    <div class="card-body">
-      <div class="cols-2">
-        <div>
-          <p class="sub">✅ 可以做</p>
-          <ul style="font-size:14px;line-height:2.2;padding-left:18px">
-            <li>生成专属推荐二维码</li>
-            <li>把二维码保存/分享给好友</li>
-            <li>查看推荐了哪些人</li>
-          </ul>
-        </div>
-        <div>
-          <p class="sub">⚠️ 注意限制</p>
-          <ul style="font-size:14px;line-height:2.2;padding-left:18px">
-            <li>只能推荐<strong>初探班</strong>学员</li>
-            <li>推荐成功暂时<strong>没有奖励</strong></li>
-            <li>推荐1人买初探班后自动升级为青鸾</li>
-          </ul>
-        </div>
-      </div>
-      <div class="warn" style="margin-top:12px">如果你的推荐人是准青鸾大使，对方想买密训班时系统会报错！只有青鸾及以上大使才能推荐密训班</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>推荐二维码功能</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>进入大使中心，看到"推荐二维码"按钮</span></li>
-        <li><span class="check"></span><span>点击生成专属二维码（二维码上有你的名字）</span></li>
-        <li><span class="check"></span><span>能"保存到相册"</span></li>
-        <li><span class="check"></span><span>能"分享给微信好友"</span></li>
-        <li><span class="check"></span><span>二维码页面有提示："您当前是准青鸾大使，暂时只能推荐初探班学员"</span></li>
-        <li><span class="check"></span><span>好友扫码进入小程序后，你的名字会出现在好友的"推荐人"字段</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     升级青鸾大使
-══════════════════════════════════════ -->
-<section class="section" id="ambassador-upgrade">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>⬆️</span> 准青鸾 → 升级青鸾大使
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>升级流程（2026-03 更新：无需支付）</h3><span class="badge tag-orange">重要变更</span></div>
-    <div class="card-body">
-      <div class="important">⚠️ 2026-03 起，升级为青鸾大使不再需要支付升级费。流程改为：申请 → 管理员审核通过（并设置冻结积分）→ 用户签署《青鸾大使补充协议》→ 正式升级。</div>
-      <div class="steps" style="margin-top:14px">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content"><strong>提交大使申请（购买密训班后可申请）</strong><p>提交后即时升为准青鸾大使</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>管理员审核申请</strong><p>审核通过时管理员设置冻结积分（可为0，须为单次解冻额的整数倍）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>系统通知用户签署《青鸾大使补充协议》</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>用户阅读协议，输入手机号后4位确认，完成签署</strong><p>签署后直接生效（无需等待审核）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>正式升级为青鸾大使，冻结积分到账</strong></div>
-        </div>
-      </div>
-      <div class="expect">升级后：① 等级标识变为"青鸾大使" ② 积分页面出现冻结积分（如1688） ③ "我的协议"里有已签署的协议</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>申请状态流转</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>状态</th><th>小程序显示内容</th></tr>
-        <tr><td>提交申请后（即时）</td><td>等级变为"准青鸾大使"，申请状态"审核中"</td></tr>
-        <tr><td>管理员审核通过</td><td>显示"审核通过，请签署《青鸾大使补充协议》"</td></tr>
-        <tr><td>管理员驳回</td><td>显示驳回原因，可重新申请（保持准青鸾）</td></tr>
-        <tr><td>签署协议后</td><td>正式升级为"青鸾大使"，获得冻结积分</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     功德分
-══════════════════════════════════════ -->
 <section class="section" id="merit-points">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>⭐</span> 功德分（青鸾大使专属）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>功德分怎么来</h3></div>
-    <div class="card-body">
-      <div class="example">
-        <strong>例子：</strong>你是青鸾大使，已经成功推荐了1次（1688冻结积分已解冻）。<br>
-        第2次推荐好友买初探班（1688元）→ 获得 <span class="merit">506.4 功德分</span>（1688 × 30%）<br>
-        第3次推荐好友买密训班（38888元）→ 获得 <span class="merit">7777.6 功德分</span>（38888 × 20%）
-      </div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th>推荐课程</th><th>功德分比例</th><th>例子</th></tr>
-        <tr><td>初探班（1688元）</td><td>30%</td><td class="merit">506.4分</td></tr>
-        <tr><td>密训班（38888元）</td><td>20%</td><td class="merit">7777.6分</td></tr>
-        <tr><td>咨询</td><td>20%</td><td>-</td></tr>
-        <tr><td>担任辅导员/义工</td><td>后台设定</td><td>参与才有</td></tr>
-      </table>
-      <div class="warn" style="margin-top:10px">第1次推荐初探班只解冻积分，不给功德分！从第2次开始才给功德分</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>功德分页面检查</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>显示功德分余额、累计获得、累计消耗</span></li>
-        <li><span class="check"></span><span>明细记录：时间、来源（推荐某人/担任辅导员）、获得多少分</span></li>
-        <li><span class="check"></span><span>有功德分兑换入口</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--green-light);border-color:var(--green);color:#166534"><span>⭐</span> 功德分</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>余额、累计获得/消耗与明细列表展示正确。</span></li>
+      <li><span class="check"></span><span>明细 Tab：<strong>全部 / 推荐 / 活动 / 兑换</strong> 筛选与需求文档来源枚举一致。</span></li>
+      <li><span class="check"></span><span>鸿鹄大使推荐订单不产生功德分（仍可有活动类功德分）。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     积分与提现
-══════════════════════════════════════ -->
 <section class="section" id="cash-points">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>💰</span> 积分与提现
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>积分状态说明</h3></div>
-    <div class="card-body">
-      <div class="cols-2">
-        <div class="panel" style="background:#fef9c3;border-color:#fde047">
-          <h4>❄️ 冻结积分</h4>
-          <p>暂时锁着，不能提现。每次推荐初探班成功，解冻1688积分转为可提现积分。</p>
-        </div>
-        <div class="panel" style="background:var(--green-light);border-color:#86efac">
-          <h4>✅ 可提现积分</h4>
-          <p>可以申请提现的积分。来源：①冻结积分解冻 ②鸿鹄大使推荐其他课程直接获得</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>青鸾大使积分场景（第1次推荐初探班）</h3><span class="badge tag-green">解冻</span></div>
-    <div class="card-body">
-      <div class="example">
-        升级时获得 <span class="points">1688 冻结积分</span>（相当于升级费押金）<br>
-        → 推荐第1位好友成功购买初探班（1688元）<br>
-        → 1688冻结积分解冻变为 <span class="points">1688 可提现积分</span>（升级费"退还"了）<br>
-        → 同时不发功德分（这次解冻顶替了功德分）
-      </div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>积分页面：冻结积分 0，可提现积分 1688</span></li>
-        <li><span class="check"></span><span>积分明细里有一条"解冻记录"</span></li>
-        <li><span class="check"></span><span>功德分没有增加</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>积分三种状态</h3></div>
-    <div class="card-body">
-      <div class="cols-2" style="gap:10px">
-        <div class="panel" style="background:#fef9c3;border-color:#fde047">
-          <h4>❄️ 冻结积分</h4>
-          <p>暂时锁着，不能提现。推荐初探班后每次解冻1688。</p>
-        </div>
-        <div class="panel" style="background:var(--green-light);border-color:#86efac">
-          <h4>✅ 可提现积分</h4>
-          <p>可以申请提现的积分。申请后临时变为"提现中"。</p>
-        </div>
-      </div>
-      <div class="panel" style="margin-top:8px;background:#eff6ff;border-color:#93c5fd">
-        <h4>⏳ 提现中积分</h4>
-        <p>申请提现后锁定，等待管理员处理。转账成功则清零；被驳回则退回可提现积分。</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>提现申请流程</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content"><strong>积分页面，点击"申请提现"</strong><p>填写提现金额（不超过可提现余额），选择收款方式（微信/支付宝/银行卡）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>提交申请</strong><p>可提现积分立即减少，变为"提现中"状态</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>管理员审核，线下完成转账</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>管理员在后台点击"标记已转账"，上传转账凭证</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>收到"提现到账"微信通知</strong></div>
-        </div>
-      </div>
-      <div class="expect">提现记录状态变为"已转账"，提现中积分归零，可查看转账凭证</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>申请后"可提现积分"正确减少，"提现中积分"增加相同金额</span></li>
-        <li><span class="check"></span><span>转账完成后，"提现中积分"归零，提现记录显示"已转账"</span></li>
-        <li><span class="check"></span><span>有未处理提现时，不能重复申请（提示"有待处理的提现申请"）</span></li>
-        <li><span class="check"></span><span>申请金额超过可提现余额时，提示"积分余额不足"</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>提现被驳回的情况</h3><span class="badge tag-red">驳回退回</span></div>
-    <div class="card-body">
-      <div class="info">管理员可以直接驳回提现申请，无需先"审核通过"再驳回。被驳回后积分退回。</div>
-      <div class="expect">驳回后：① 积分从"提现中"全额退回"可提现积分" ② 提现记录显示"已驳回"和驳回原因 ③ 收到驳回通知</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>可提现积分恢复到申请前的数值</span></li>
-        <li><span class="check"></span><span>积分明细中有一条"+XXX 提现驳回退回"记录</span></li>
-        <li><span class="check"></span><span>驳回后可以重新申请提现</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--purple-light);border-color:var(--purple);color:#5b21b6"><span>💰</span> 积分与提现</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>展示冻结积分、可提现积分、累计提现等字段。</span></li>
+      <li><span class="check"></span><span>提现：使用个人资料中的收款账户信息；仅一笔待审核提现等约束符合需求。</span></li>
+      <li><span class="check"></span><span>初探班推荐：有冻结时优先解冻固定额度；无冻结时鸿鹄等走比例积分规则（与功德分互斥）。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     鸿鹄大使
-══════════════════════════════════════ -->
-<section class="section" id="honghu">
-  <div class="section-title" style="background:var(--purple-light); border-color:var(--purple); color:var(--purple)">
-    <span>🦢</span> 鸿鹄大使
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>升级鸿鹄大使（2026-03起无需支付）</h3><span class="badge tag-orange">重要变更</span></div>
-    <div class="card-body">
-      <div class="important">⚠️ 2026-03 起，升级为鸿鹄大使不再需要支付9800元升级费。流程：青鸾申请升级 → 管理员审核通过（设置冻结积分）→ 用户签署《鸿鹄大使补充协议》→ 正式升级。</div>
-      <div class="steps" style="margin-top:14px">
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">1</div>
-          <div class="step-content"><strong>青鸾大使提交升级鸿鹄申请</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">2</div>
-          <div class="step-content"><strong>管理员审核通过并设置冻结积分</strong><p>冻结积分须为单次解冻额的整数倍，可填0</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">3</div>
-          <div class="step-content"><strong>用户签署《鸿鹄大使补充协议》</strong><p>签署后直接生效，无需再次审核</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">4</div>
-          <div class="step-content"><strong>正式升级为鸿鹄大使，冻结积分到账</strong></div>
-        </div>
-      </div>
-      <div class="expect">升级后获得 <span class="points">冻结积分（由管理员设定）</span>，每推荐1个初探班解冻固定额度（如1688）</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>鸿鹄大使奖励规则</h3></div>
-    <div class="card-body">
-      <div class="important">鸿鹄大使推荐不获得功德分，只获得积分</div>
-      <div class="example" style="margin-top:10px">
-        <strong>例子：升级后的状态</strong><br>
-        冻结积分：16880，可提现积分：0<br><br>
-        <strong>推荐第1个初探班（1688元）：</strong><br>
-        冻结积分：16880 - 1688 = 15192，可提现积分：0 + 1688 = 1688<br><br>
-        <strong>推荐密训班（38888元）：</strong><br>
-        冻结积分不变，可提现积分 +7777.6（38888 × 20%，直接加）<br><br>
-        <strong>推荐完10次初探班后（冻结积分归零）：</strong><br>
-        之后推荐初探班 → 直接获得30%可提现积分
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     我的协议
-══════════════════════════════════════ -->
-<section class="section" id="my-contracts">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>📄</span> 我的协议（青鸾及以上）
-  </div>
-  <div class="card">
-    <div class="card-header"><h3>协议列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>只有青鸾及以上大使才能看到这个菜单</span></li>
-        <li><span class="check"></span><span>显示已签署的协议名称、签署时间、有效期</span></li>
-        <li><span class="check"></span><span>协议状态：有效（绿色）/ 已到期（红色）</span></li>
-        <li><span class="check"></span><span>点击可查看协议全文</span></li>
-        <li><span class="check"></span><span>可以下载PDF格式的协议</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 课程管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-course">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>📚</span> 后台 · 课程管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>添加新课程</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>进入"课程管理"→ 点击"新增课程"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content">
-            <strong>填写课程信息</strong>
-            <p>课程名称、类型（初探班/密训班）、价格、复训价格、封面图、详细介绍等</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content">
-            <strong>密训班需要勾选"包含初探班"</strong>
-            <p>这样购买密训班后，初探班也自动加入学员的课程列表</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">4</div>
-          <div class="step-content"><strong>设置上架状态，点击保存</strong></div>
-        </div>
-      </div>
-      <div class="expect">保存后，课程出现在小程序首页的课程列表（若已上架）</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>课程管理操作</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>课程列表显示所有课程，有上架/下架状态</span></li>
-        <li><span class="check"></span><span>点击"上下架"可以控制前台是否显示该课程</span></li>
-        <li><span class="check"></span><span>点击"编辑"可以修改课程信息</span></li>
-        <li><span class="check"></span><span>消息提醒配置：设置开课前几天发提醒、几点发送</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>上课记录管理（排期）</h3></div>
-    <div class="card-body">
-      <div class="info">详见下方"后台 · 上课记录管理"独立章节。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>课程列表中点击"上课记录"进入排期管理</span></li>
-        <li><span class="check"></span><span>可创建新排期（填写取消预约截止天数）</span></li>
-        <li><span class="check"></span><span>排期创建后不可编辑，如需修改需取消后重新创建</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 上课记录管理（排期）
-══════════════════════════════════════ -->
-<section class="section" id="admin-schedule">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>📅</span> 后台 · 上课记录管理（排期）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>创建排期</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>在课程列表点击"上课记录" → "新建排期"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content">
-            <strong>填写排期信息</strong>
-            <p>课程名称、上课日期、时间、地点、讲师、期数、<strong>取消预约截止天数（必填正整数）</strong></p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content">
-            <strong>保存后系统自动生成消息发送计划</strong>
-            <p>根据课程消息提醒配置，到时间自动发提醒给已预约学员</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">4</div>
-          <div class="step-content">
-            <strong>上课当天：签到管理</strong>
-            <p>扫码签到 或 手动签到；签到后 attend_count +1，首次上课（0→1）触发课程激活后续逻辑</p>
-          </div>
-        </div>
-      </div>
-      <div class="warn">⚠️ 排期创建后不可编辑。如需修改请先取消排期（取消时该排期所有待上课预约自动取消）再重新创建。</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>签到管理</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>签到方式</th><th>说明</th></tr>
-        <tr><td>扫码签到</td><td>学员出示小程序签到码，管理员扫描</td></tr>
-        <tr><td>手动签到（单人）</td><td>后台搜索学员，单条确认签到</td></tr>
-        <tr><td>批量签到</td><td>对已预约的学员批量标记签到</td></tr>
-        <tr><td>标记缺席</td><td>对未签到的学员标记缺席（不算attend_count）</td></tr>
-      </table>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>签到后该学员 attend_count +1</span></li>
-        <li><span class="check"></span><span>缺席不影响 attend_count</span></li>
-        <li><span class="check"></span><span>非沙龙课程首次上课（0→1）且 need_contract=0 时，自动触发有效期激活和推荐人奖励</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>座位管理</h3><span class="badge tag-blue">可选功能</span></div>
-    <div class="card-body">
-      <div class="info">管理员可为排期配置座位图并分配学员座位。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>设置座位图（行列布局）和特殊区域</span></li>
-        <li><span class="check"></span><span>可手动分配或随机分配座位给已预约学员</span></li>
-        <li><span class="check"></span><span>学员签到时可查看自己的座位号</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 用户课程管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-user-courses">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>📖</span> 后台 · 用户课程管理（2026-03-09 新增）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>功能背景</h3></div>
-    <div class="card-body">
-      <div class="info">大量学员在小程序上线前已经购买和上过课，需要后台手动将他们的课程信息录入系统。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>查看所有用户的课程记录（含手动录入的历史记录）</span></li>
-        <li><span class="check"></span><span>可按用户姓名/手机号、课程名称、状态筛选</span></li>
-        <li><span class="check"></span><span>显示：用户、课程、状态、有效期、上课次数、合同签署状态、创建时间</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>手动录入历史学员课程</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>点击"手动新增"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>搜索用户（手机号搜索）并选择</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>选择课程，设置剩余有效期（天数）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">4</div>
-          <div class="step-content"><strong>可选：上传合同照片</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>确认录入</strong></div>
-        </div>
-      </div>
-      <div class="expect">录入成功后：学员在小程序可查看课程；attend_count 默认为 1（视为已上过课的老学员）</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>同一用户同一课程不允许重复新增</span></li>
-        <li><span class="check"></span><span>不触发推荐人奖励（因为是历史数据）</span></li>
-        <li><span class="check"></span><span>不关联订单，因此不可退款</span></li>
-        <li><span class="check"></span><span>已录入的记录不支持编辑和删除</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 学员管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-student">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>👥</span> 后台 · 学员管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>学员列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>显示所有注册学员：头像、名字、手机号、注册时间</span></li>
-        <li><span class="check"></span><span>显示大使等级、推荐人、累计消费</span></li>
-        <li><span class="check"></span><span>可按手机号/姓名搜索</span></li>
-        <li><span class="check"></span><span>点击"查看详情"看完整信息</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>学员详情页面</h3></div>
-    <div class="card-body">
-      <div class="cols-2">
-        <ul class="checklist">
-          <li><span class="check"></span><span>基本信息（姓名、手机等）</span></li>
-          <li><span class="check"></span><span>购买记录</span></li>
-          <li><span class="check"></span><span>上课记录和复训次数</span></li>
-        </ul>
-        <ul class="checklist">
-          <li><span class="check"></span><span>功德分明细</span></li>
-          <li><span class="check"></span><span>积分明细</span></li>
-          <li><span class="check"></span><span>推荐人信息和变更历史</span></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>推荐人变更历史</h3></div>
-    <div class="card-body">
-      <p style="font-size:14px;margin-bottom:10px">点击学员详情 → 查看"推荐人变更记录"：</p>
-      <ul class="checklist">
-        <li><span class="check"></span><span>每次更换推荐人都有记录：时间、原推荐人→新推荐人</span></li>
-        <li><span class="check"></span><span>记录来源：注册时 / 用户自己改 / 订单页改 / 管理员改</span></li>
-        <li><span class="check"></span><span>管理员可以修改推荐人（需填写原因，所有修改都有记录）</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 订单管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-order">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>📦</span> 后台 · 订单管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>订单列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>显示订单号、购买人、课程、金额、支付状态</span></li>
-        <li><span class="check"></span><span>显示推荐人，以及奖励是否已发放</span></li>
-        <li><span class="check"></span><span>可按时间、课程类型、支付状态筛选</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>退款处理</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>找到需要退款的订单，点击"退款"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>确认退款</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content">
-            <strong>系统自动回退奖励</strong>
-            <p>推荐人的功德分被扣回，积分解冻也被撤销</p>
-          </div>
-        </div>
-      </div>
-      <div class="expect">订单状态变为"已退款"，学员收到退款通知，推荐人的功德分/积分被扣减</div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 大使管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-ambassador">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>🦅</span> 后台 · 大使管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>申请审核流程</h3></div>
-    <div class="card-body">
-      <div class="flow">
-        <div class="flow-box">收到申请</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">查看申请详情</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box" style="cursor:pointer">初审通过</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">安排面试<br><small>（填写时间/地点）</small></div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box">面试通过</div>
-        <span class="flow-arrow">→</span>
-        <div class="flow-box" style="background:#ecfdf5;border-color:#6ee7b7;font-weight:700">升为准青鸾</div>
-      </div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>点击"通过初审"后，可以填写面试时间和联系方式发给申请人</span></li>
-        <li><span class="check"></span><span>点击"面试通过"后，系统自动将学员升级为准青鸾大使</span></li>
-        <li><span class="check"></span><span>点击"拒绝"时需填写拒绝原因，系统发通知给申请人</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>大使列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>显示所有大使：姓名、等级、功德分、积分、推荐人数</span></li>
-        <li><span class="check"></span><span>准青鸾大使有特殊标识，显示已推荐几人（距升级还差几人）</span></li>
-        <li><span class="check"></span><span>点击进入大使详情，可以看奖励明细、推荐学员列表</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>积分提现审核</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>查看待审核的提现申请</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>确认账户信息无误</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>点击"通过"，财务处理转账</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>标记为"已转账"，系统通知大使到账</strong></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>活动记录（辅导员/义工）</h3></div>
-    <div class="card-body">
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px">大使参与了辅导员、义工、沙龙活动后，管理员在后台手动录入记录：</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>选择大使，选择活动类型（辅导员/义工/沙龙）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>填写活动信息，设置奖励功德分</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>提交后，功德分自动发放给该大使</strong></div>
-        </div>
-      </div>
-      <div class="tip">所有等级的大使（准青鸾/青鸾/鸿鹄/金凤）都可以参与活动获得功德分</div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 消息提醒
-══════════════════════════════════════ -->
-<section class="section" id="admin-message">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>🔔</span> 后台 · 消息提醒管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>消息提醒怎么工作</h3></div>
-    <div class="card-body">
-      <div class="example">
-        <strong>例子：</strong>课程"初探班第10期"上课时间是12月25日。<br>
-        消息配置：提前3天，每天上午10:00发送。<br><br>
-        → 系统会自动在 12月22日/23日/24日 上午10:00 给已预约的学员发消息提醒
-      </div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>每门课程可以独立配置提醒规则</span></li>
-        <li><span class="check"></span><span>创建上课记录后，提醒计划自动生成</span></li>
-        <li><span class="check"></span><span>可以查看消息发送记录（发送了多少人、成功多少、失败多少）</span></li>
-        <li><span class="check"></span><span>可以手动立即发消息</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 合约管理（2026-03-06 重要变更）
-══════════════════════════════════════ -->
-<section class="section" id="admin-contract">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>📄</span> 后台 · 合约管理（2026-03-06 重要变更）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>合约管理说明</h3><span class="badge tag-orange">已变更</span></div>
-    <div class="card-body">
-      <div class="important">⚠️ 2026-03-06起，课程合同流程已变更为管理员后台手动录入线下合同，不再由用户线上签署。</div>
-      <div class="cols-2" style="margin-top:12px">
-        <div class="panel">
-          <h4>「录入合约」Tab（新流程）</h4>
-          <ul style="font-size:14px;line-height:2;padding-left:16px">
-            <li>选择用户（手机号搜索）</li>
-            <li>选择课程（需有购买记录）</li>
-            <li>上传线下合同照片（支持多张）</li>
-            <li>录入后自动激活课程有效期</li>
-            <li>自动触发推荐人奖励</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h4>「签署记录」Tab</h4>
-          <ul style="font-size:14px;line-height:2;padding-left:16px">
-            <li>查看所有合约签署记录</li>
-            <li>包含线上大使协议 + 线下课程合同</li>
-            <li>点击记录查看详情、合同照片</li>
-            <li>可补充上传合同照片（2026-03-13新增）</li>
-            <li>大使协议可续签、导出PDF</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>录入线下合同操作步骤</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>进入"合约管理" → 切换到"录入合约" Tab</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>搜索并选择学员（手机号搜索）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>选择课程（下拉列表显示该学员已购且需合同的课程）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">4</div>
-          <div class="step-content"><strong>上传线下合同照片</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>确认录入</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        录入成功后：<br>
-        ① 课程有效期激活（从录入日起计算）<br>
-        ② 推荐人奖励自动发放<br>
-        ③ 学员小程序端可查看合同照片<br>
-        ④ 合约签署记录中出现该记录（sign_type=3 管理员录入）
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>补充合同照片（2026-03-13 新增）</h3></div>
-    <div class="card-body">
-      <div class="info">已录入合同后，若需补充更多照片，可在签署记录详情中操作。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>打开合约签署记录详情</span></li>
-        <li><span class="check"></span><span>在"合同照片"区域点击"补充照片"</span></li>
-        <li><span class="check"></span><span>上传新照片，追加到已有照片列表</span></li>
-        <li><span class="check"></span><span>学员在小程序端查看时可看到全部照片</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>大使协议（青鸾/鸿鹄补充协议）管理</h3></div>
-    <div class="card-body">
-      <div class="info">大使协议保留用户线上签署方式，签署后直接生效无需审核。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>查看所有大使的签署记录（按类型筛选）</span></li>
-        <li><span class="check"></span><span>即将到期（30天内）的协议有预警提示</span></li>
-        <li><span class="check"></span><span>可手动续签（延期1年）</span></li>
-        <li><span class="check"></span><span>可导出PDF</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 表现分与评估名单（新增）
-══════════════════════════════════════ -->
-<section class="section" id="admin-evaluation">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>⭐</span> 后台 · 表现分与评估名单
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>功能概述</h3></div>
-    <div class="card-body">
-      <div class="info">表现分是独立于功德分的评估体系，用于记录学员在活动中的加分，以及缺席的扣分。扣分累积超阈值可限制学员预约/报名。</div>
-      <div class="cols-2" style="margin-top:12px">
-        <div class="panel" style="background:var(--green-light)">
-          <h4>➕ 加分</h4>
-          <ul style="font-size:13px;line-height:2;padding-left:14px">
-            <li>管理员手动加分</li>
-            <li>需选择岗位类型（辅导员/义工等）</li>
-            <li>自由设定分值和备注</li>
-          </ul>
-        </div>
-        <div class="panel" style="background:var(--red-light)">
-          <h4>➖ 扣分</h4>
-          <ul style="font-size:13px;line-height:2;padding-left:14px">
-            <li>管理员手动扣分</li>
-            <li>类型：学员扣分 / 活动扣分</li>
-            <li>以负数存储，自动累计</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>拉黑规则</h3><span class="badge tag-red">重要</span></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>触发条件</th><th>拉黑类型</th><th>小程序拦截提示</th></tr>
-        <tr>
-          <td>学员扣分累计低于阈值（默认-30）</td>
-          <td>拉黑课程（默认3个月）</td>
-          <td>「因为你多次缺席，X月内无法报名复训，请和客服联系」</td>
-        </tr>
-        <tr>
-          <td>活动扣分累计低于阈值（默认-20）</td>
-          <td>拉黑活动（默认2个月）</td>
-          <td>「因为你多次缺席活动参与，X月内无法报名活动，请和客服联系」</td>
-        </tr>
-      </table>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>管理员可随时解除拉黑</span></li>
-        <li><span class="check"></span><span>阈值可在评估名单页面配置（扣分阈值和拉黑月数）</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>评估名单页面</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>展示所有用户在每个岗位的加分总和及总计</span></li>
-        <li><span class="check"></span><span>展示学员扣分和活动扣分累计</span></li>
-        <li><span class="check"></span><span>课程/活动状态列：正常 / 可拉黑 / 已拉黑</span></li>
-        <li><span class="check"></span><span>操作列：加分、扣分、拉黑课程/解除、拉黑活动/解除</span></li>
-        <li><span class="check"></span><span>点击"阈值设置"可配置拉黑阈值和月数</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>验证场景</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">1</div>
-          <div class="step-content"><strong>对学员A添加扣分（学员扣分）超过阈值（如-30）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">2</div>
-          <div class="step-content"><strong>点击"拉黑课程"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">3</div>
-          <div class="step-content"><strong>学员A在小程序预约课程时被拦截，显示提示信息</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>管理员点击"解除拉黑"，学员A恢复正常</strong></div>
-        </div>
-      </div>
-      <div class="expect">① 拉黑期间预约被拦截，提示包含具体月数 ② 解除后可正常预约</div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 反馈管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-feedback">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>💬</span> 后台 · 反馈管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>反馈列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>查看所有学员提交的反馈：类型、内容摘要、图片数量、状态、时间</span></li>
-        <li><span class="check"></span><span>反馈类型：功能建议 / 课程内容 / 课程服务 / 讲师 / 场地 / 问题反馈 / 投诉</span></li>
-        <li><span class="check"></span><span>状态：待处理 / 处理中 / 已处理 / 已关闭</span></li>
-        <li><span class="check"></span><span>可按类型、状态、课程、时间范围筛选</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>处理反馈</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>点击反馈查看详情（含用户图片）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>点击"回复"填写处理内容</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>修改状态：待处理 → 处理中 → 已处理 → 关闭</strong></div>
-        </div>
-      </div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>显示统计数据：待处理数量、今日新增、各类型占比</span></li>
-        <li><span class="check"></span><span>可查看课程维度的反馈统计（哪门课问题最多）</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 系统管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-system">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>⚙️</span> 后台 · 系统管理
-  </div>
-
-  <div class="cols-2">
-    <div class="card">
-      <div class="card-header"><h3>通知公告管理</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>发布新公告（填写标题、内容）</span></li>
-          <li><span class="check"></span><span>设置为"重要公告"后在小程序置顶显示</span></li>
-          <li><span class="check"></span><span>可以编辑和删除已发布的公告</span></li>
-          <li><span class="check"></span><span>小程序首页能看到刚发布的公告</span></li>
-        </ul>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>协议模板管理</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>管理《传播大使合作协议》模板内容</span></li>
-          <li><span class="check"></span><span>管理《鸿鹄大使补充协议》模板内容</span></li>
-          <li><span class="check"></span><span>每次修改自动生成新版本号（不影响已签署的）</span></li>
-          <li><span class="check"></span><span>可查看历史版本</span></li>
-        </ul>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>协议签署记录</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>查看所有大使的签署记录</span></li>
-          <li><span class="check"></span><span>即将到期（30天内）的协议有预警提示</span></li>
-          <li><span class="check"></span><span>可以手动续签（延期1年）</span></li>
-          <li><span class="check"></span><span>可以导出PDF</span></li>
-        </ul>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>推荐人变更审计</h3></div>
-      <div class="card-body">
-        <ul class="checklist">
-          <li><span class="check"></span><span>查看所有推荐人更换记录</span></li>
-          <li><span class="check"></span><span>异常行为自动标红：7天内改超1次、频繁切换</span></li>
-          <li><span class="check"></span><span>可冻结可疑账号</span></li>
-          <li><span class="check"></span><span>统计高频变更用户</span></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>角色权限管理</h3><span class="badge tag-blue">新功能</span></div>
-    <div class="card-body">
-      <div class="info">管理员账号支持基于角色的权限控制，可以精细配置每个管理员能访问哪些页面。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th>内置角色</th><th>说明</th></tr>
-        <tr><td>超级管理员（super_admin）</td><td>拥有全部权限，不可删除，权限不可修改</td></tr>
-        <tr><td>管理员（admin）</td><td>默认管理权限</td></tr>
-        <tr><td>操作员（operator）</td><td>基础操作权限</td></tr>
-        <tr><td>自定义角色</td><td>管理员可创建（如"财务"、"课程编辑"）</td></tr>
-      </table>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>在"管理员管理" → "角色管理" Tab 配置权限</span></li>
-        <li><span class="check"></span><span>权限以页面为粒度，可精确控制哪些页面可访问</span></li>
-        <li><span class="check"></span><span>无权限页面访问时自动跳转到 Dashboard</span></li>
-        <li><span class="check"></span><span>侧边栏仅显示有权限的菜单项</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>意见反馈处理</h3></div>
-    <div class="card-body">
-      <div class="info">详见上方"后台 · 反馈管理"章节（id="admin-feedback"）。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>查看反馈列表，按状态筛选</span></li>
-        <li><span class="check"></span><span>回复反馈，修改处理状态</span></li>
-        <li><span class="check"></span><span>用户在小程序"我的反馈"里看到处理结果</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 推荐人
-══════════════════════════════════════ -->
-<section class="section" id="scenario-referee">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🔗</span> 关键场景：推荐人机制
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#fefce8">
-      <span>📌</span> 场景A：全程正常推荐（从扫码到支付）
-    </div>
-    <div class="scenario-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--gold)">1</div>
-          <div class="step-content"><strong>用户A 扫青鸾大使B的二维码</strong><p>用户A打开小程序，注册，系统记录推荐人=大使B</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--gold)">2</div>
-          <div class="step-content"><strong>用户A在个人信息页把推荐人换成青鸾大使C</strong><p>记录了一条变更日志</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--gold)">3</div>
-          <div class="step-content"><strong>用户A去买初探班，在订单确认页改推荐人为准青鸾大使D</strong><p>系统验证：准青鸾可以推荐初探班 ✅</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--gold)">4</div>
-          <div class="step-content"><strong>支付成功</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 奖励发给大使D（订单上的推荐人，不是大使B或C）<br>
-        ② 用户A的个人信息推荐人更新为大使D，显示"已确认"<br>
-        ③ 用户A此后不能再修改推荐人了
-      </div>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#fff7ed">
-      <span>📌</span> 场景B：推荐人资格不够（被系统拦截）
-    </div>
-    <div class="scenario-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>用户B的推荐人是准青鸾大使E</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>用户B想直接买密训班（38888元）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">3</div>
-          <div class="step-content"><strong>系统拦截</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        弹出提示："您的推荐人暂时只能推荐初探班课程，请选择青鸾及以上等级的推荐人，或先购买初探班"<br>
-        无法下单，必须换推荐人才行
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 奖励发放
-══════════════════════════════════════ -->
-<section class="section" id="scenario-reward">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🎁</span> 关键场景：奖励发放
-  </div>
-
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header"><h3>⚠️ 奖励发放时机（重要变更，2026-03-06）</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>课程类型</th><th>奖励发放时机</th></tr>
-        <tr><td>沙龙课程（type=4，免费）</td><td>无推荐奖励</td></tr>
-        <tr><td>非沙龙课程（含合同模板，need_contract=1）</td><td>管理员在后台录入线下合同后触发</td></tr>
-        <tr><td>非沙龙课程（无合同模板，need_contract=0）</td><td>学员首次上课签到（attend_count 0→1）后自动触发</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#eff6ff">
-      <span>📌</span> 场景C：青鸾大使的积分解冻（升级后第一次推荐）
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使F刚升级为青鸾大使，有1688冻结积分，功德分为0</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>大使F推荐好友G，好友G购买初探班（1688元），支付成功</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>管理员在后台为好友G录入线下合同（上传合同照片）</strong><p>录入后系统自动触发推荐人奖励</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>系统处理奖励</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        大使F的积分页面：冻结积分从1688变为0，可提现积分从0变为1688<br>
-        <strong>功德分不变（第1次推荐不发功德分，只解冻积分）</strong>
-      </div>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#f0fdf4">
-      <span>📌</span> 场景D：青鸾大使第2次推荐开始发功德分
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使F的冻结积分已为0（已解冻过了）</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content"><strong>大使F推荐好友H，好友H购买初探班（1688元）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>系统计算功德分</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        大使F获得 <span class="merit">506.4 功德分</span>（1688 × 30%）<br>
-        积分不变
-      </div>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#faf5ff">
-      <span>📌</span> 场景E：买了密训班，推荐奖励怎么算
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">好友I购买密训班（38888元），推荐人是青鸾大使J</p>
-      <div class="expect">
-        密训班包含初探班，但奖励只按密训班价格38888元计算，不会再额外算初探班的奖励<br>
-        大使J获得：<span class="merit">7777.6 功德分</span>（38888 × 20%）
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 复训
-══════════════════════════════════════ -->
-<section class="section" id="scenario-retrain">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🔄</span> 关键场景：复训
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#eff6ff">
-      <span>📌</span> 复训完整流程
-    </div>
-    <div class="scenario-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>学员已经参加过1次初探班</strong><p>我的课程里显示"已上课1次"</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content"><strong>进入课程计划，选择下一期预约</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>系统提示"这是复训，需支付复训费"</strong><p>显示复训价格（比正价便宜）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">4</div>
-          <div class="step-content"><strong>支付复训费</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">5</div>
-          <div class="step-content"><strong>预约成功</strong></div>
-        </div>
-      </div>
-      <div class="expect">我的课程里，这门课的上课次数更新；后台签到时，该学员显示为"复训"</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>复训相关规则验证</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>规则</th><th>预期结果</th></tr>
-        <tr><td>第1次上课（首次）</td><td>不需要支付，直接预约</td></tr>
-        <tr><td>第2次以后上课（attend_count≥1）</td><td>需要支付复训费（沙龙课程除外）</td></tr>
-        <tr><td>报名截止后尝试预约</td><td>❌ "报名已截止"</td></tr>
-        <tr><td>在取消预约截止天数内取消复训预约</td><td>✅ 可取消，<strong>复训费不退款但保留为复训资格</strong></td></tr>
-        <tr><td>超过取消预约截止天数后取消</td><td>❌ 无法取消预约</td></tr>
-        <tr><td>使用复训资格（上次保留的）预约</td><td>✅ 免付复训费</td></tr>
-        <tr><td>复训次数</td><td>无限制</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     商城兑换（传播大使专区）
-══════════════════════════════════════ -->
 <section class="section" id="mall-exchange">
-  <div class="section-title" style="background:var(--purple-light); border-color:var(--purple); color:var(--purple)">
-    <span>🛍</span> 商城兑换（青鸾大使专属）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>商城两种兑换方式</h3></div>
-    <div class="card-body">
-      <div class="cols-2">
-        <div class="panel" style="background:var(--purple-light);border-color:#ddd6fe">
-          <h4>兑换实物商品</h4>
-          <p>用功德分换取书籍、周边等实物，兑换后需到现场领取或邮寄，管理员在后台确认发货/领取</p>
-        </div>
-        <div class="panel" style="background:var(--blue-light);border-color:#bfdbfe">
-          <h4>兑换课程（续期）</h4>
-          <p>用功德分给自己已购课程延长有效期（+1年），重复兑换可继续顺延</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>兑换实物商品流程</h3><span class="badge tag-purple">消耗功德分</span></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">1</div>
-          <div class="step-content"><strong>进入"商城"，浏览商品列表</strong><p>每件商品显示：名称、功德分价格、库存数量</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">2</div>
-          <div class="step-content"><strong>点击"兑换"，确认消耗功德分</strong><p>功德分不足时提示"功德分不足"，无法兑换</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">3</div>
-          <div class="step-content"><strong>兑换成功</strong><p>生成兑换单号（如 EX2026XXXXXXXXXX），状态为"待领取"</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>到现场或联系管理员领取</strong><p>管理员在后台确认领取后，状态变为"已领取"</p></div>
-        </div>
-      </div>
-      <div class="expect">兑换成功后：① 功德分余额减少（减少的功德分 = 商品功德分价格）② 商品"已兑换数量"+1 ③ 在"兑换记录"里能看到此记录</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>功德分余额正确减少</span></li>
-        <li><span class="check"></span><span>商品库存数量正确减少（库存=-1 表示无限库存，不减少）</span></li>
-        <li><span class="check"></span><span>兑换记录里有这条记录，状态显示"待领取"</span></li>
-        <li><span class="check"></span><span>兑换记录的"功德分消耗 + 积分消耗 = 商品总价"</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>撤销兑换（未领取前可撤销）</h3><span class="badge tag-orange">撤销退还</span></div>
-    <div class="card-body">
-      <div class="info">只有状态为"待领取（status=1）"的兑换记录才能撤销。已领取或已取消的不能撤销。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>进入"兑换记录"，找到"待领取"状态的记录</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>点击"撤销兑换"，确认操作</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>撤销成功</strong></div>
-        </div>
-      </div>
-      <div class="expect">撤销后：① 记录状态变为"已取消" ② 消耗的功德分全额退回 ③ 商品库存数量恢复</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>功德分余额恢复（退回扣除的功德分）</span></li>
-        <li><span class="check"></span><span>记录状态显示"已取消"，不再可撤销</span></li>
-        <li><span class="check"></span><span>对"已领取"状态的记录点击撤销，提示"不可撤销"</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>兑换课程（延长有效期）</h3><span class="badge tag-blue">续期</span></div>
-    <div class="card-body">
-      <div class="info">用功德分为自己已购买的课程续期 +1年。可重复续期，每次续期在当前有效期基础上顺延1年。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">1</div>
-          <div class="step-content"><strong>进入"商城"→"课程续期"标签，选择要续期的课程</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--blue)">2</div>
-          <div class="step-content"><strong>确认消耗功德分，点击"兑换续期"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>续期成功，有效期顺延+1年</strong></div>
-        </div>
-      </div>
-      <div class="expect">在"我的课程"中，该课程的有效期从原来的日期+1年</div>
-    </div>
-  </div>
+  <div class="section-title" style="background:#ffedd5;border-color:#ea580c;color:#9a3412"><span>🛍</span> 商城兑换</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>商品列表点击卡片无跳转；仅「兑换」按钮可发起兑换。</span></li>
+      <li><span class="check"></span><span>功德分足够仅扣功德分；不足但可提现积分足够时弹窗确认改扣积分；两者都不足直接前端提示。</span></li>
+      <li><span class="check"></span><span>兑换记录支持撤销（仅待领取状态）；撤销后余额与库存回滚。</span></li>
+      <li><span class="check"></span><span>课程类兑换走积分，详情页兑换模式按钮与文案正确。</span></li>
+      <li><span class="check"></span><span>游客可浏览商城上架商品列表；兑换仍须登录（对齐需求）。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     志愿活动（传播大使专区）
-══════════════════════════════════════ -->
+<section class="section" id="qrcode">
+  <div class="section-title" style="background:#e0f2fe;border-color:#0284c7;color:#075985"><span>📱</span> 推荐二维码</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>准青鸾及以上可生成二维码；普通学员无入口。</span></li>
+      <li><span class="check"></span><span>准青鸾展示「仅可推荐初探班」等提示文案。</span></li>
+      <li><span class="check"></span><span>保存、分享流程可用。</span></li>
+    </ul>
+  </div></div>
+</section>
+
+<section class="section" id="referees">
+  <div class="section-title" style="background:#fdf2f8;border-color:#db2777;color:#831843"><span>👥</span> 我推荐的</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>仅统计与展示已满足 <code>contract_signed=1</code> 的学员。</span></li>
+      <li><span class="check"></span><span>列表字段（头像、昵称、课程、消费、是否大使等）与排序符合需求。</span></li>
+    </ul>
+  </div></div>
+</section>
+
+<section class="section" id="my-contracts">
+  <div class="section-title" style="background:#f5f5f4;border-color:#78716c;color:#44403c"><span>📜</span> 我的协议（大使）</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>青鸾及以上可查看已签署补充协议列表、状态、期限。</span></li>
+      <li><span class="check"></span><span>可查看详情、下载/打开 PDF（若产品提供）。</span></li>
+    </ul>
+  </div></div>
+</section>
+
 <section class="section" id="volunteer-activity">
-  <div class="section-title" style="background:var(--green-light); border-color:var(--green); color:var(--green)">
-    <span>🙌</span> 志愿活动（大使参与获功德分）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>什么是志愿活动</h3></div>
-    <div class="card-body">
-      <p style="margin-bottom:12px">传播大使可以在小程序报名参与志愿岗位，活动结束后由管理员发放功德分奖励。</p>
-      <div class="important">⚠️ 报名前置条件：用户必须先预约该课程排期（appointments.status=0 进行中），才能看到并报名该排期关联的志愿活动。未预约的活动不显示在列表中。</div>
-      <div class="cols-2" style="margin-top:12px">
-        <div>
-          <p class="sub">活动岗位类型（共6种）</p>
-          <table class="compare-table">
-            <tr><th>岗位</th><th>等级要求</th><th>默认功德分</th></tr>
-            <tr><td>辅导员</td><td>青鸾及以上</td><td>100分/次</td></tr>
-            <tr><td>会务义工</td><td>准青鸾及以上</td><td>80分/次</td></tr>
-            <tr><td>沙龙组织</td><td>青鸾及以上</td><td>150分/次</td></tr>
-            <tr><td>统筹</td><td>待配置</td><td>待配置</td></tr>
-            <tr><td>主持</td><td>待配置</td><td>待配置</td></tr>
-            <tr><td>其他活动</td><td>无限制</td><td>50分/次</td></tr>
-          </table>
-        </div>
-        <div>
-          <p class="sub">参与流程</p>
-          <div class="flow" style="flex-direction:column; align-items:flex-start; gap:4px">
-            <div class="flow-box">先预约对应课程排期</div>
-            <div style="color:#9ca3af;font-size:12px;padding-left:6px">↓</div>
-            <div class="flow-box">查看可报名活动（仅显示已预约排期的）</div>
-            <div style="color:#9ca3af;font-size:12px;padding-left:6px">↓</div>
-            <div class="flow-box">选择岗位报名</div>
-            <div style="color:#9ca3af;font-size:12px;padding-left:6px">↓</div>
-            <div class="flow-box">活动当天参与</div>
-            <div style="color:#9ca3af;font-size:12px;padding-left:6px">↓</div>
-            <div class="flow-box" style="background:#ecfdf5;border-color:#6ee7b7">管理员发放功德分</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景1：浏览并报名活动</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content"><strong>已预约课程排期后，进入"大使中心" → "志愿活动"</strong><p>仅显示已预约排期关联的活动；未预约的排期活动不可见</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>选择一个活动，查看岗位列表</strong><p>每个岗位显示：岗位名称、等级要求、剩余名额、功德分奖励</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>点击"立即报名"选择岗位</strong><p>等级不够的岗位显示灰色"不满足等级要求"</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>确认报名</strong></div>
-        </div>
-      </div>
-      <div class="expect">报名成功后：① 该岗位剩余名额-1 ② 活动列表中显示"已报名"标识 ③ 同一活动内只能报名一个岗位（跨活动可同时报多个）</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>岗位剩余名额正确减少</span></li>
-        <li><span class="check"></span><span>报名后同一活动同一岗位不能再次报名（提示"已报名"）</span></li>
-        <li><span class="check"></span><span>等级不够时无法报名（提示"不满足等级要求"）</span></li>
-        <li><span class="check"></span><span>名额为0时无法报名（提示"名额已满"）</span></li>
-        <li><span class="check"></span><span>未预约该排期时：该排期的活动不显示在列表中</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>取消预约联动（重要）</h3><span class="badge tag-red">新增规则</span></div>
-    <div class="card-body">
-      <div class="warn">若用户想取消课程预约，但已报名了该排期的志愿活动，系统会拦截并提示！</div>
-      <div class="expect" style="margin-top:10px">提示内容：「您有该排期的活动报名，请先取消活动报名后再取消预约」</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>用户需先去"我的报名"取消活动报名</span></li>
-        <li><span class="check"></span><span>取消活动报名后，才可以取消课程预约</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>活动记录（历史查看）</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>支持按活动类型 Tab 筛选：全部 / 统筹 / 主持 / 辅导员 / 义工 / 沙龙 / 其他</span></li>
-        <li><span class="check"></span><span>每条记录显示：活动名称、日期、担任岗位、获得功德分</span></li>
-        <li><span class="check"></span><span>活动结束后的记录不显示在"我的报名"中（仅在活动记录历史里可查）</span></li>
-        <li><span class="check"></span><span>「我的报名」按钮入口：在活动记录页面横幅右侧</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景2：取消报名</h3><span class="badge tag-orange">限制条件</span></div>
-    <div class="card-body">
-      <div class="warn">活动 status=2（报名截止）或已结束后不能取消报名；管理员已发放功德分后也不可取消。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>在"我的报名"中找到报名记录，点击"取消报名"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>确认取消</strong></div>
-        </div>
-      </div>
-      <div class="expect">取消成功后，该岗位名额+1，可以重新报名</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>取消后，岗位名额恢复</span></li>
-        <li><span class="check"></span><span>对已结束活动的报名点击取消，提示"活动已结束，不可取消"</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>场景3：活动结束后查看记录和功德分</h3></div>
-    <div class="card-body">
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px">活动结束后，管理员在后台发放功德分，你的账户会自动到账。</p>
-      <ul class="checklist">
-        <li><span class="check"></span><span>在"活动记录"中看到参加的活动历史</span></li>
-        <li><span class="check"></span><span>每条活动记录显示：活动名称、日期、岗位、获得功德分</span></li>
-        <li><span class="check"></span><span>功德分页面的"明细"中有来自"志愿活动"的入账记录</span></li>
-        <li><span class="check"></span><span>"活动统计"显示累计参与次数和累计获得功德分</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:#ecfdf5;border-color:#16a34a;color:#14532d"><span>🙌</span> 志愿活动</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>必须先预约该排期且预约为进行中，才可在列表看到对应活动。</span></li>
+      <li><span class="check"></span><span>同一活动仅能报一个岗位；可跨多个活动分别报名。</span></li>
+      <li><span class="check"></span><span>「我的报名」展示有效报名，活动结束或截止后规则符合需求。</span></li>
+      <li><span class="check"></span><span>活动记录支持按类型筛选（统筹/主持/辅导员等）。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     管理后台 - 兑换记录管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-exchange">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>🛍</span> 后台 · 兑换记录管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>兑换记录列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>看到所有学员的兑换记录：兑换单号、姓名、手机号、商品名、功德分、状态、时间</span></li>
-        <li><span class="check"></span><span>可按状态筛选：待领取 / 已领取 / 已取消</span></li>
-        <li><span class="check"></span><span>可按用户手机号搜索</span></li>
-        <li><span class="check"></span><span>兑换记录详情：用户姓名和手机号完整显示（不脱敏）</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>确认领取操作</h3><span class="badge tag-green">现场确认</span></div>
-    <div class="card-body">
-      <div class="info">用户到现场领取商品后，管理员在后台确认，记录到账状态。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>找到"待领取"状态的兑换记录</strong><p>现场核对用户姓名与兑换单号</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>点击"确认领取"，填写备注（可选）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>确认完成</strong></div>
-        </div>
-      </div>
-      <div class="expect">确认后：记录状态变为"已领取"，记录领取时间和管理员账号</div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>状态从"待领取"变为"已领取"</span></li>
-        <li><span class="check"></span><span>领取时间有值（显示确认时的时间）</span></li>
-        <li><span class="check"></span><span>对同一记录再次点击"确认领取"，提示"已领取，勿重复操作"</span></li>
-        <li><span class="check"></span><span>对"已取消"的记录点击确认，提示不可操作</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 等级配置管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-level-config">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>⚙️</span> 后台 · 大使等级配置管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>等级配置说明</h3></div>
-    <div class="card-body">
-      <div class="info">等级配置决定了每个大使等级的奖励比例和冻结积分规则，修改后立即生效，影响后续所有推荐奖励计算。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr>
-          <th>等级</th>
-          <th>功德分奖励率</th>
-          <th>积分奖励率</th>
-          <th>升级冻结积分</th>
-          <th>每次解冻</th>
-        </tr>
-        <tr><td>准青鸾(1)</td><td>0%（无奖励）</td><td>0%</td><td>0</td><td>—</td></tr>
-        <tr><td>青鸾(2)</td><td>初探班30% / 密训班20%</td><td>0%</td><td>1688</td><td>1688/次</td></tr>
-        <tr><td>鸿鹄(3)</td><td>0%</td><td>初探班30% / 密训班20%</td><td>16880</td><td>1688/次</td></tr>
-        <tr><td>金凤(4)</td><td>待定</td><td>待定</td><td>0</td><td>—</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>等级配置编辑规则验证</h3><span class="badge tag-red">重要规则</span></div>
-    <div class="card-body">
-      <div class="important">等级配置中功德分奖励率和积分奖励率不能同时大于0，否则系统会报错阻止保存。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th>测试操作</th><th>预期结果</th></tr>
-        <tr><td>功德分率=30%，积分率=0%（青鸾配置）</td><td>✅ 可以保存</td></tr>
-        <tr><td>功德分率=0%，积分率=30%（鸿鹄配置）</td><td>✅ 可以保存</td></tr>
-        <tr><td>功德分率=30%，积分率=30%（同时设置）</td><td>❌ 提示"功德分奖励率和积分奖励率不能同时大于0"</td></tr>
-        <tr><td>冻结积分=1688，每次解冻=500（不是整数倍）</td><td>❌ 提示"冻结积分必须是每次解冻量的整数倍"</td></tr>
-        <tr><td>冻结积分=16880，每次解冻=1688（整数倍）</td><td>✅ 可以保存</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     管理后台 - 志愿活动管理
-══════════════════════════════════════ -->
-<section class="section" id="admin-activity">
-  <div class="section-title" style="background:var(--orange-light); border-color:var(--orange); color:var(--orange)">
-    <span>🙌</span> 后台 · 志愿活动管理
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>创建活动</h3></div>
-    <div class="card-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>点击"新建活动"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content">
-            <strong>填写活动信息</strong>
-            <p>活动名称、日期时间、地点、活动说明</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content">
-            <strong>添加岗位</strong>
-            <p>岗位类型（辅导员/会务义工/沙龙组织）、名额数量、功德分奖励（默认或自定义）、等级要求</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>保存发布，活动对大使可见</strong></div>
-        </div>
-      </div>
-      <div class="expect">创建成功后，小程序大使中心"志愿活动"列表中能看到这个活动</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>查看报名人员</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>点击活动详情，可以看到各岗位的报名人员列表</span></li>
-        <li><span class="check"></span><span>每个人员显示：姓名、手机号、大使等级、报名时间</span></li>
-        <li><span class="check"></span><span>每个岗位显示：已报名/总名额</span></li>
-        <li><span class="check"></span><span>可以导出报名名单</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>发放活动功德分</h3><span class="badge tag-green">活动结束后操作</span></div>
-    <div class="card-body">
-      <div class="warn">活动功德分只能发放一次！发放后不可撤销，请在确认所有报名人员实际参与后再发放。</div>
-      <div class="steps" style="margin-top:12px">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>确认所有参与人员</strong><p>检查报名名单，核对实际参与情况</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>点击"发放活动功德分"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>确认发放（不可撤销）</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>系统自动将功德分发到每位参与大使账户</strong></div>
-        </div>
-      </div>
-      <ul class="checklist" style="margin-top:12px">
-        <li><span class="check"></span><span>发放后，活动详情页显示"已发放"标识，不能再次发放</span></li>
-        <li><span class="check"></span><span>大使的功德分账户余额正确增加</span></li>
-        <li><span class="check"></span><span>大使的功德分明细中有来源为"志愿活动"的入账记录</span></li>
-        <li><span class="check"></span><span>暂无报名记录时点击发放，提示"该活动暂无报名记录，无法发放"</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>岗位类型管理</h3></div>
-    <div class="card-body">
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px">系统预置了辅导员、会务义工、沙龙组织、其他4种岗位类型，管理员可以添加新类型或修改默认功德分。</p>
-      <ul class="checklist">
-        <li><span class="check"></span><span>岗位类型列表：显示名称、默认功德分、等级要求</span></li>
-        <li><span class="check"></span><span>可以新增自定义岗位类型</span></li>
-        <li><span class="check"></span><span>可以修改默认功德分（影响后续新建活动，不影响已有活动）</span></li>
-        <li><span class="check"></span><span>可以禁用/启用岗位类型</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 兑换与撤销
-══════════════════════════════════════ -->
-<section class="section" id="scenario-exchange">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🛍</span> 关键场景：商城兑换全链路
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#faf5ff">
-      <span>📌</span> 场景F：兑换商品 → 撤销 → 功德分退还
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使K有 200 功德分，商品价格 80 功德分</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--purple)">1</div>
-          <div class="step-content"><strong>大使K兑换商品（消耗80功德分）</strong><p>功德分 200 → 120，商品库存 -1</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>大使K撤销这条兑换记录</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>验证数据</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 功德分从120恢复到200（退还了80）<br>
-        ② 商品库存数量恢复（+1）<br>
-        ③ 兑换记录状态变为"已取消"<br>
-        ④ 功德分明细中有一条"+80退还"的记录
-      </div>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#f0fdf4">
-      <span>📌</span> 场景G：后台确认领取 → 不可再次确认
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使L有一条"待领取"的兑换记录</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>大使L到现场领取商品</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">2</div>
-          <div class="step-content"><strong>管理员在后台找到该兑换记录，点击"确认领取"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>状态变为"已领取"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">4</div>
-          <div class="step-content"><strong>管理员再次点击"确认领取"（测试幂等性）</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 第一次确认成功，状态变"已领取"，记录领取时间<br>
-        ② 第二次点击，系统提示"该订单已确认领取，请勿重复操作"<br>
-        ③ 大使撤销时，系统提示"已领取，无法撤销"
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 提现审核
-══════════════════════════════════════ -->
-<section class="section" id="scenario-withdraw">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>💸</span> 关键场景：提现审核全链路
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>提现申请规则</h3></div>
-    <div class="card-body">
-      <table class="compare-table">
-        <tr><th>条件</th><th>结果</th></tr>
-        <tr><td>可提现积分 ≥ 申请金额</td><td>✅ 可以申请</td></tr>
-        <tr><td>可提现积分 &lt; 申请金额</td><td>❌ 提示"积分余额不足"</td></tr>
-        <tr><td>有未处理的提现申请时再申请</td><td>❌ 提示"有待处理的提现申请，请等待处理后再申请"</td></tr>
-        <tr><td>资料未完善</td><td>❌ 提示"请先完善个人资料"</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#f0fdf4">
-      <span>📌</span> 场景H：申请提现 → 管理员转账 → 上传发票
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使M有 1688 可提现积分</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">1</div>
-          <div class="step-content">
-            <strong>大使M在小程序申请提现 500 积分</strong>
-            <p>填写收款账号（微信/支付宝/银行卡）</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>申请提交后，积分状态变化</strong><p>可提现积分：1688 → 1188（扣除500），提现中积分：0 → 500</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">3</div>
-          <div class="step-content"><strong>管理员在后台查看提现申请，完成转账后点击"标记已转账"</strong><p>上传转账凭证/发票（PDF或图片）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>完成</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 提现状态变为"已转账"<br>
-        ② 提现中积分归零（500 → 0）<br>
-        ③ 发票/凭证已上传，可在提现记录中查看<br>
-        ④ 大使收到"提现到账通知"
-      </div>
-    </div>
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#fff7ed">
-      <span>📌</span> 场景I：申请提现 → 管理员驳回 → 积分退回
-    </div>
-    <div class="scenario-body">
-      <p style="font-size:14px;margin-bottom:10px">大使N申请提现，但账号信息有误</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>大使N申请提现 300 积分</strong><p>可提现：300 → 0，提现中：0 → 300</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--red)">2</div>
-          <div class="step-content"><strong>管理员发现账号有误，点击"驳回"，填写驳回原因</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>验证数据</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 提现状态变为"已驳回"<br>
-        ② 积分恢复：可提现积分从0变回300，提现中积分归零<br>
-        ③ 积分明细中有一条"+300 提现驳回退回"的记录<br>
-        ④ 大使收到"提现驳回通知"，显示驳回原因
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     关键场景测试 - 志愿活动全链路
-══════════════════════════════════════ -->
-<section class="section" id="scenario-activity">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🙌</span> 关键场景：志愿活动完整链路
-  </div>
-
-  <div class="scenario">
-    <div class="scenario-title" style="background:#f0fdf4">
-      <span>📌</span> 场景J：从创建活动到大使获得功德分
-    </div>
-    <div class="scenario-body">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">1</div>
-          <div class="step-content"><strong>管理员在后台创建"初探班11期 志愿活动"</strong><p>添加岗位：辅导员（青鸾+，2名额，100功德分），会务义工（无限制，5名额，80功德分）</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">2</div>
-          <div class="step-content"><strong>大使P（青鸾）报名辅导员岗位</strong><p>辅导员名额：2 → 1</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">3</div>
-          <div class="step-content"><strong>大使Q（准青鸾）报名辅导员岗位</strong><p>等级不满足，系统拦截</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">4</div>
-          <div class="step-content"><strong>大使Q改为报名会务义工岗位</strong><p>会务义工名额：5 → 4</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--orange)">5</div>
-          <div class="step-content"><strong>活动结束后，管理员点击"发放活动功德分"</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num" style="background:var(--green)">6</div>
-          <div class="step-content"><strong>验证功德分到账</strong></div>
-        </div>
-      </div>
-      <div class="expect">
-        ① 大使P（辅导员）：功德分 +100<br>
-        ② 大使Q（会务义工）：功德分 +80<br>
-        ③ 两人的功德分明细中均有"志愿活动"来源的入账记录<br>
-        ④ 活动详情页显示"已发放功德分"，不可再次发放<br>
-        ⑤ 大使Q尝试报名辅导员岗位时，系统提示"不满足等级要求（需青鸾+）"
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>奖励互斥验证（重要）</h3><span class="badge tag-red">规则验证</span></div>
-    <div class="card-body">
-      <div class="important">同一笔订单，系统不会同时发放功德分和积分，两者互斥。必须确保以下规则正确执行。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr>
-          <th>推荐人等级</th>
-          <th>被推荐购买</th>
-          <th>应发奖励类型</th>
-          <th>不应发的</th>
-        </tr>
-        <tr><td>准青鸾(1)</td><td>初探班</td><td>❌ 无奖励（只能推荐，无奖励）</td><td>—</td></tr>
-        <tr><td>青鸾(2)，冻结积分>0</td><td>初探班</td><td>✅ 解冻1688积分</td><td>不发功德分、不发其他积分</td></tr>
-        <tr><td>青鸾(2)，冻结积分=0</td><td>初探班</td><td>✅ 功德分（30%）</td><td>不发积分</td></tr>
-        <tr><td>青鸾(2)</td><td>密训班</td><td>✅ 功德分（20%）</td><td>不发积分，不消耗冻结</td></tr>
-        <tr><td>鸿鹄(3)，冻结积分>0</td><td>初探班</td><td>✅ 解冻1688积分</td><td>不发功德分</td></tr>
-        <tr><td>鸿鹄(3)，冻结积分=0</td><td>初探班</td><td>✅ 积分（30%）</td><td>不发功德分</td></tr>
-        <tr><td>鸿鹄(3)</td><td>密训班</td><td>✅ 积分（20%，直接加可提现）</td><td>不发功德分，不消耗冻结</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     商学院 - 商学院介绍
-══════════════════════════════════════ -->
 <section class="section" id="academy-intro">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🏛</span> 商学院介绍
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>商学院首页展示</h3></div>
-    <div class="card-body">
-      <div class="info">商学院首页的所有展示板块均由后台动态配置，管理员可自由管理板块内容和排序。</div>
-      <table class="compare-table" style="margin-top:12px">
-        <tr><th>板块类型</th><th>内容说明</th></tr>
-        <tr><td>Hero Banner</td><td>页面顶部横幅图片</td></tr>
-        <tr><td>快捷入口</td><td>快捷导航卡片（图片+跳转链接）</td></tr>
-        <tr><td>商学院简介</td><td>文字简介，支持多段落</td></tr>
-        <tr><td>核心理念</td><td>理念卡片列表（图标+颜色+名称+描述）</td></tr>
-        <tr><td>讲师团队</td><td>讲师信息（姓名、角色、简介、头像）</td></tr>
-        <tr><td>发展历程</td><td>时间线展示（年份+描述）</td></tr>
-        <tr><td>荣誉资质</td><td>荣誉展示网格（图标+名称）</td></tr>
-      </table>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>各板块按管理员配置的顺序展示</span></li>
-        <li><span class="check"></span><span>隐藏的板块不展示</span></li>
-        <li><span class="check"></span><span>同类型板块可有多个实例（如多个讲师团队板块）</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>后台配置商学院板块</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>管理员进入"商学院板块管理"</span></li>
-        <li><span class="check"></span><span>可新增、编辑、删除各类板块</span></li>
-        <li><span class="check"></span><span>可调整板块排序（上下移动）</span></li>
-        <li><span class="check"></span><span>可切换板块显示/隐藏状态</span></li>
-        <li><span class="check"></span><span>Hero Banner、快捷入口支持图片上传（云存储）</span></tr>
-        <li><span class="check"></span><span>颜色字段使用颜色选择器，不需要手动输入颜色值</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--gold-light);border-color:var(--gold);color:var(--gold)"><span>🏛</span> 商学院介绍</div>
+  <div class="card"><div class="card-body">
+    <p>板块类型与后台配置项与需求文档「商学院板块动态配置」一致：Hero、快捷入口、简介、理念、讲师、历程、荣誉等；支持排序与显隐。</p>
+    <ul class="checklist" style="margin-top:10px">
+      <li><span class="check"></span><span>隐藏板块不出现；排序与后台一致。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     商学院 - 朋友圈素材
-══════════════════════════════════════ -->
 <section class="section" id="academy-materials">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>🖼</span> 朋友圈素材（传播大使使用）
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>素材库功能</h3></div>
-    <div class="card-body">
-      <div class="info">为传播大使提供精美海报、宣传文案等推广素材，方便在朋友圈分享。</div>
-      <ul class="checklist" style="margin-top:10px">
-        <li><span class="check"></span><span>按类型浏览：海报 / 宣传文案 / 课程介绍 / 学员反馈 / 活动通知</span></li>
-        <li><span class="check"></span><span>点击海报图片 → 一键保存到相册</span></li>
-        <li><span class="check"></span><span>点击文案 → 一键复制文字</span></li>
-        <li><span class="check"></span><span>后台可上传新素材、分类管理</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--gold-light);border-color:var(--gold);color:var(--gold)"><span>🖼</span> 朋友圈素材</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>海报保存、文案复制可用。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- ══════════════════════════════════════
-     商学院 - 学员案例
-══════════════════════════════════════ -->
 <section class="section" id="academy-cases">
-  <div class="section-title" style="background:var(--gold-light); border-color:var(--gold); color:var(--gold)">
-    <span>👩‍🎓</span> 学员案例
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>学员案例列表</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>顶部分类 Tab：全部 / 企业家 / 创业者 / 职场人</span></li>
-        <li><span class="check"></span><span>每个案例卡片显示：学员头像、姓名、头衔、分类徽章、案例标题、摘要（2行截断）、封面图</span></li>
-        <li><span class="check"></span><span>精选案例（is_featured=1）有特殊标记</span></li>
-        <li><span class="check"></span><span>点击卡片进入案例详情页</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>学员案例详情</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>学员信息区：头像、姓名、头衔、简介、分类徽章</span></li>
-        <li><span class="check"></span><span>案例标题、摘要（大字展示）</span></li>
-        <li><span class="check"></span><span>视频见证区（如有视频）</span></li>
-        <li><span class="check"></span><span>图片画廊（如有图片，支持点击预览大图）</span></li>
-        <li><span class="check"></span><span>学习感悟引用（如有）</span></li>
-        <li><span class="check"></span><span>成长成果列表（如有）</span></li>
-        <li><span class="check"></span><span>底部：浏览次数、关联课程、发布时间</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>后台管理学员案例</h3></div>
-    <div class="card-body">
-      <ul class="checklist">
-        <li><span class="check"></span><span>新增/编辑/删除案例</span></li>
-        <li><span class="check"></span><span>填写：标题、学员姓名/头衔/描述、分类、头像（支持上传）、主题色、视频、图片（多张）</span></li>
-        <li><span class="check"></span><span>填写：关联课程、摘要、内容、学习感悟、成果列表</span></li>
-        <li><span class="check"></span><span>设置是否精选、排序、显示状态</span></li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title" style="background:var(--gold-light);border-color:var(--gold);color:var(--gold)"><span>👩‍🎓</span> 学员案例</div>
+  <div class="card"><div class="card-body">
+    <ul class="checklist">
+      <li><span class="check"></span><span>列表 Tab、卡片字段、精选标记、跳转详情正常。</span></li>
+      <li><span class="check"></span><span>详情页视频、图集、富文本内容、浏览次数等展示正常。</span></li>
+    </ul>
+  </div></div>
 </section>
 
-<!-- 底部 -->
+<section class="section" id="admin-brief">
+  <div class="section-title" style="background:#e2e8f0;border-color:#475569;color:#334155"><span>🖥</span> 管理后台抽检清单</div>
+  <div class="card"><div class="card-body">
+    <p>以下供联调与验收抽检，细节以《需求文档-V2》后台章节为准。</p>
+    <ul class="checklist" style="margin-top:10px">
+      <li><span class="check"></span><span>课程：上下架、上架锁定、密训赠送初探班下拉选择、图文混排配置、沙龙课特殊字段。</span></li>
+      <li><span class="check"></span><span>排期：取消截止天数必填、复训费按排期、排期不可编辑只可取消重建。</span></li>
+      <li><span class="check"></span><span>合约：<strong>录入线下合同</strong>触发有效期与推荐奖励；大使协议模板维护。</span></li>
+      <li><span class="check"></span><span>签到码：每排期单码覆盖；学员按日签到记录可查。</span></li>
+      <li><span class="check"></span><span>订单退款：人工转账标记、发票、数据回滚。</span></li>
+      <li><span class="check"></span><span>大使：申请审核、冻结积分填写、志愿活动发布与发功德分、兑换记录确认领取。</span></li>
+      <li><span class="check"></span><span>表现分：加减分、阈值、拉黑课程/活动与解除。</span></li>
+      <li><span class="check"></span><span>排座：选排期、拖拽排座、导出 Word（若已开通）。</span></li>
+    </ul>
+  </div></div>
+</section>
+
+<section class="section" id="scenario-referee">
+  <div class="section-title" style="background:#dbeafe;border-color:#2563eb;color:#1d4ed8"><span>🔗</span> 场景：推荐人绑定</div>
+  <div class="card"><div class="card-body">
+    <ol style="padding-left:1.2rem;color:var(--text-muted);font-size:14px;line-height:1.8">
+      <li>用户 A 未购课，先后扫大使 B、大使 C 的推广码进入小程序 → 有效推荐人应为<strong>最后一次</strong>扫码对应的大使。</li>
+      <li>用户 A 已购课且推荐关系已锁定后，再扫大使 D 的码 → 推荐人<strong>不变</strong>（仍为锁定结果）。</li>
+      <li>学员购买初探班时订单使用当前绑定大使；若绑定为准青鸾且购买密训班 → 应失败并提示更换青鸾及以上（测准青鸾限制）。</li>
+    </ol>
+  </div></div>
+</section>
+
+<section class="section" id="scenario-reward">
+  <div class="section-title" style="background:#fce7f3;border-color:#db2777;color:#9d174d"><span>🎁</span> 场景：推荐奖励发放时机</div>
+  <div class="card"><div class="card-body">
+    <ol style="padding-left:1.2rem;color:var(--text-muted);font-size:14px;line-height:1.8">
+      <li>学员购买<strong>需要合同</strong>的非沙龙课 → 支付完成后大使侧<strong>不应</strong>立即出现推荐奖励（待后台录入合同并生效）。</li>
+      <li>管理员录入合同并生效后 → 订单推荐大使收到对应奖励（功德分或积分按等级与课程类型）。</li>
+      <li>无合同模板或配置为无需合同的课程 → 奖励触发时机以需求文档表格为准（可能支付后即发放或签到触发）。</li>
+    </ol>
+  </div></div>
+</section>
+
+<section class="section" id="scenario-retrain">
+  <div class="section-title" style="background:#ffedd5;border-color:#ea580c;color:#9a3412"><span>🔄</span> 场景：复训费与取消预约</div>
+  <div class="card"><div class="card-body">
+    <ol style="padding-left:1.2rem;color:var(--text-muted);font-size:14px;line-height:1.8">
+      <li>第二次及以后上课：当排期复训费 &gt; 0 时，应先支付复训费再预约成功。</li>
+      <li>在截止日前取消复训预约 → 复训费不退回但保留资格；再次预约同课程同规则可抵扣（测一条正向即可）。</li>
+      <li>超过取消截止日 → 客户端不可取消。</li>
+    </ol>
+  </div></div>
+</section>
+
+<section class="section" id="scenario-blacklist">
+  <div class="section-title" style="background:#fee2e2;border-color:#dc2626;color:#991b1b"><span>🚫</span> 场景：拉黑拦截（学员）</div>
+  <div class="card"><div class="card-body">
+    <p>当管理员因表现分规则将用户拉黑「课程」或「活动」后：</p>
+    <ul class="checklist">
+      <li><span class="check"></span><span>预约确认页提交预约被拦截时，弹窗文案含限制原因与期限说明。</span></li>
+      <li><span class="check"></span><span>志愿活动报名被拦截时同理。</span></li>
+    </ul>
+  </div></div>
+</section>
+
 <div style="text-align:center;padding:40px 0 20px;color:var(--text-muted);font-size:13px;border-top:1px solid var(--border);margin-top:40px">
-  天道文化小程序 · 功能测试手册 · 如有疑问联系开发团队
+  本页内容对齐《需求文档-V2.md》整理 · 文档版本以需求文档页脚为准 · 发现问题请附截图与账号
 </div>
 
 </main>
 
-<!-- 返回顶部 -->
-<button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button type="button" class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="返回顶部">↑</button>
 
 <script>
-// 侧边栏高亮
 const sections = document.querySelectorAll('.section[id]');
 const navLinks = document.querySelectorAll('#sidebar a[href^="#"]');
-
 function updateNav() {
   let current = '';
   sections.forEach(s => {
-    const top = s.getBoundingClientRect().top;
-    if (top <= 80) current = s.id;
+    if (s.getBoundingClientRect().top <= 80) current = s.id;
   });
   navLinks.forEach(a => {
-    a.classList.remove('active');
-    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
   });
 }
-
-// 进度条
 function updateProgress() {
   const total = document.body.scrollHeight - window.innerHeight;
-  const progress = (window.scrollY / total) * 100;
-  document.getElementById('progress').style.width = progress + '%';
+  document.getElementById('progress').style.width =
+    total <= 0 ? '100%' : Math.min(100, (window.scrollY / total) * 100) + '%';
 }
-
 window.addEventListener('scroll', () => { updateNav(); updateProgress(); });
 updateNav();
-
-// 平滑滚动
+updateProgress();
 navLinks.forEach(a => {
   a.addEventListener('click', e => {
     e.preventDefault();
@@ -3351,12 +850,9 @@ navLinks.forEach(a => {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
-
-// 复选框交互
 document.querySelectorAll('.check').forEach(c => {
   c.addEventListener('click', () => {
-    const li = c.closest('li');
-    li.classList.toggle('done');
+    c.closest('li').classList.toggle('done');
   });
 });
 </script>

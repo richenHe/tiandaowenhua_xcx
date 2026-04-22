@@ -1,5 +1,6 @@
 <!--
-  页面说明：微信授权登录；须明示勾选协议后方可登录（合规）。
+  页面说明：小程序快捷登录（uni.login）；须明示勾选协议后方可登录（合规）。
+  登录按钮等可见文案避免出现「微信」字样及易与官方页面混淆的「授权登录」表述（平台审核要求）。
   路由参数：scene（扫码推广，可选）
 
   【登录页背景】
@@ -35,7 +36,7 @@
           @click="handleWechatLogin"
         >
           <text class="t-button__icon">🔐</text>
-          <text class="t-button__text">微信一键登录</text>
+          <text class="t-button__text">一键快捷登录</text>
         </button>
 
         <!-- 明示同意：默认不勾选，禁止「登录即代表同意」文案 -->
@@ -101,7 +102,7 @@ const toggleAgree = () => {
 }
 
 /**
- * 扫推广码进入时，微信会将 scene 参数注入 onLoad query（URL 编码）。
+ * 扫推广码进入时，宿主环境会将 scene 参数注入 onLoad query（URL 编码）。
  * 格式示例：query.scene = "ref%3DTEST01" → 解码后 "ref=TEST01"
  * 该值传入 login 云函数后，由 login.js 在新用户注册时自动绑定推荐人。
  */
@@ -138,7 +139,7 @@ const handleWechatLogin = async () => {
     })
 
     if (!wxLoginResult.code) {
-      throw new Error('获取微信登录凭证失败')
+      throw new Error('获取登录凭证失败')
     }
 
     const userInfo = await UserApi.login({

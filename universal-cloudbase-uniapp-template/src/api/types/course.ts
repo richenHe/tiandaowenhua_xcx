@@ -218,7 +218,9 @@ export interface Material {
   title: string
   /** 资料分类（poster-海报/copywriting-文案/video-视频） */
   category: string
-  /** 图片URL */
+  /** 海报多图 CDN URL 列表（公开接口已转换，最多 9 张） */
+  images?: string[]
+  /** 首张图 URL（与 images[0] 一致，兼容旧逻辑） */
   image_url?: string
   /** 视频URL */
   video_url?: string

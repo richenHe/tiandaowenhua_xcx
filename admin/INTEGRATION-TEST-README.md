@@ -147,9 +147,10 @@
   | F21 历史学员数据自动导入 | ⏳ 待测（2026-03-30 新增：legacy_students 表导入644条历史数据；updateProfile 触发 processLegacyImport；需验证课程导入、推荐人绑定、大使升级、防重机制、别名匹配） | 2026-03-30 |
   | F20 用户课程管理 · 手动新增 · 调整积分修复 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S20.1 课程列表20条✓；S20.2 关键词搜索8条✓；S20.3 状态筛选均为有效✓；S20.4 手动新增 uc_id=60 expire_at✓；S20.5 重复新增"已拥有此课程"拦截✓；S20.6 含合同新增 uc_id=61 sig_id=30✓；S20.7 调整功德分+10✓；S20.8 扣现金积分-5✓；修复测试脚本：beforeRun 改用公开接口 getList 替代管理端 getCourseList，解决鉴权失败导致找不到可用课程的问题） | 2026-03-09 |
   | F18 角色权限管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S18.1 创建角色✓；S18.2 角色列表4条含新建✓；S18.3 更新权限✓；S18.4 super_admin权限修改拦截✓；S18.5 内置角色删除拦截✓；S18.6 使用中角色删除拦截✓；S18.7 自定义角色删除并清理✓；S18.8 缺参拦截✓） | 2026-03-09 |
-  | F19 商学院板块管理 | ✅ 已完成（**8/8 全通过，0 失败，0 warn**；S19.1 小程序7条板块✓；S19.2 后台列表✓；S19.3 新增板块id=9✓（修复：insert未链式.select()导致id为null）；S19.4 修改标题✓；S19.5 切换隐藏status=0✓；S19.6 排序更新✓；S19.7 删除清理✓；S19.8 验证隐藏不出现✓） | 2026-03-09 |
+  | F19 商学院板块管理 | ⏳ 重测（2026-04-20：`getAcademySections` 顶层 `icon` 转 CDN；`icon` 列扩容；后台 `academy-sections.html` 标题图标/荣誉/核心理念改为图片上传与尺寸提示；小程序 `academy/index` 标题区与荣誉/理念展示调整；须部署 `course` + 重上传 admin 静态站） | 2026-04-20 |
+  | F19a 朋友圈素材（多图·长按保存） | ⏳ 重测（2026-04-21：`academy_materials.images` JSON 多图；`createMaterial`/`updateMaterial`/`getMaterialList`；后台 `material.html` 多图上传、移除下载；小程序 `pages/academy/materials/index` 三列宫格+**页内全屏 swiper 预览**+长按存图/视频；**须先执行** `docs/database/migrations/20260421_academy_materials_images.sql` **再部署** `course` **并重传 admin**） | 2026-04-21 |
   | F21 排座管理 · 配置 · 分配 · 随机 · 导出 | ✅ 已完成（**9/9 全通过，0 失败，0 warn**；S21.1 getSeatingData结构✓；S21.2 保存5桌×6座配置✓；S21.3 assign学员A→桌1座1✓；S21.4 assign学员B→桌1座2✓；S21.5 swap互换座位✓；S21.6 remove移回备选✓；S21.7 randomAssignSeats assigned=1✓；S21.8 缩减1桌×4座超范围清理✓；S21.9 最终状态验证✓；修复2项Bug：getSeatingData用findOne查ambassador_activities返回3行报错→改用query；class_records.course_name字段为NULL→补全数据+加固断言） | 2026-03-09 |
-  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（2026-04-08：`course.getList` 增加 `next_class_date` + 首页课程卡 UI 变更；**2026-04-08**：`getCalendarSchedule` 按 `class_date`～`class_end_date` 展开每日 + 返回 `nicknames`，日历弹窗「课程：」行；**须部署 course 云函数**；2026-04-03：`course.getList`/`getDetail`、`order.getMallCourses`、`system.getFeedbackCourses` 均过滤 `is_deleted=0`；2026-04-02：`getMallGoods`/`getMallCourses` 游客可读；冷启动首页；原生 tabBar；我的→登录；协议；课程详情/兑换/明细引导；401 不整页踢） | 2026-04-08 |
+  | MP-合规 小程序游客浏览与登录协议 | ⏳ 重测（**2026-04-22**：登录页主按钮文案改为「一键快捷登录」，去除「微信」及易混淆官方表述；**2026-04-08**：`course.getList` 增加 `next_class_date` + 首页课程卡 UI 变更；**2026-04-08**：`getCalendarSchedule` 按 `class_date`～`class_end_date` 展开每日 + 返回 `nicknames`，日历弹窗「课程：」行；**须部署 course 云函数**；2026-04-03：`course.getList`/`getDetail`、`order.getMallCourses`、`system.getFeedbackCourses` 均过滤 `is_deleted=0`；2026-04-02：`getMallGoods`/`getMallCourses` 游客可读；冷启动首页；原生 tabBar；我的→登录；协议；课程详情/兑换/明细引导；401 不整页踢） | 2026-04-22 |
 
   > AI 助手在每次完成一个流程验证后，**必须立即更新上表的状态和日期**，不可遗漏。
 
@@ -162,7 +163,7 @@
   | MP.2b | 商城 Tab（未登录 / 清除存储） | 「兑换商品」网格有数据；切到「兑换课程」列表有数据；控制台无 `用户未注册`（依赖 `order` 云函数已部署游客可读） |
   | MP.3 | 点击「我的」（未登录） | 短暂进入「我的」后重定向登录页；**底部原生 tabBar 始终可见** |
   | MP.3a | 登录页顶部品牌区 | 可见 **Logo**（圆形容器内、非空白/仅阴影）；资源须为不透明主体 PNG（由 `static/logo.png` 生成 `static/login/logo.png`） |
-  | MP.4 | 登录页不勾选协议点一键登录 | Toast 提示须同意协议 |
+  | MP.4 | 登录页不勾选协议点「一键快捷登录」 | Toast 提示须同意协议 |
   | MP.5 | 打开《用户服务协议》《隐私政策》 | 独立页有正文，顶栏可返回 |
   | MP.6 | 首页点击某一课程卡片 | 未登录时跳转登录；登录后可进详情 |
   | MP.6b | 后台对某门**已上架**课程执行删除（软删除）后，小程序下拉刷新首页 | 该课程不再出现在列表；密训班等与后台「未删除」条数一致 |
@@ -176,6 +177,8 @@
 
   | 变更日期 | 变更模块 | 变更内容 | 影响测试项 |
   |---|---|---|---|
+  | 2026-04-22 | `pages/auth/login/index.vue`；《用户服务协议》《隐私政策》静态正文 | **登录页审核合规**：主按钮「一键快捷登录」；去除用户可见「微信一键/授权登录」等易被判混淆官方的文案；协议/隐私中相关表述同步为「快捷登录」等中性用语。 | MP-合规 MP.4 手测 |
+  | 2026-04-21 | `academy_materials`；`course` 云函数；`admin/pages/course/material.html`；`pages/academy/materials/index` | **朋友圈素材多图**：新增 `images` JSON；公开 `getMaterialList` 返回 `images` CDN 数组；后台多图上传（≤9）、移除列表「下载」；小程序三列宫格、**页内全屏预览（swiper+image 长按菜单）**、长按保存图/视频，移除保存按钮。 | F2 `getMaterialList` 断言；新增 **F19a** 手测 |
   | 2026-04-04 | `admin/pages/course/list.html`；`vue-editable-html-directive.js` | **富文本可编辑与输入顺序**：`contenteditable` 若被 Vue 每次重绘写 `innerHTML` 会清空或打乱中文 IME；用 `v-editable-html`（仅当 `activeElement !== el` 时同步 DOM）、`input`+`compositionend` 写回 `b.text`；上架只读仍用 `v-html` 静态 div。上移/下移 disabled 用 `descBlocksLen`/`outlineBlocksLen` 计算属性，避免末块「下移」仍可选。 | 弹窗内可点选输入；末块下移灰显；中文连打顺序正常 |
   | 2026-04-04 | `admin/assets/js/admin-rich-text-inline.js`；`list.html`；`courseRichBlocks.js`；小程序 `course/detail` | **图文文字块富文本**：`AdminRichTextInline`（execCommand）；`text` 存 HTML；`htmlToPlainText` 写 `description`/legacy `outline`；小程序 `rich-text`。 | 后台加粗→保存→详情页样式；F2 |
   | 2026-04-04 | `admin/pages/course/list.html`；`cloud-storage-helper.js`（CloudImageUpload） | **图文块无上传入口（根因）**：`t-textarea` 非 void，原 `/>` 导致浏览器把后面的 `cloud-image-upload` 吃进 `t-textarea` 子树；`type=image` 时不渲染 textarea，上传组件一并消失。修复：`template v-if` 分包 + `</t-textarea>`；`cloud-image-upload` 显式闭合；上传区用 `showUploadZone`/`previewSrc` 计算属性。 | 后台课程编辑→简介/大纲图片块须出现虚线「点击上传图片」 |
@@ -1418,6 +1421,9 @@
   | S2.X4 | 📖 读操作 | `getMyCourses` | 验证返回数据包含 `expire_at` 字段 |
   | | 期望 | `expire_at` | 字段存在（datetime 或 NULL），NULL 表示永久有效 |
   | | 验证 SQL | `SELECT id, course_id, expire_at, buy_time FROM tiandao_culture.user_courses WHERE user_id=30 AND status=1` | expire_at 与接口返回一致 |
+  | S2.X5 | 📖 读操作 | `getMaterialList`（公开） | 海报类记录含 `images` 为非空 **Array**（CDN HTTPS）；`image_url` 与 `images[0]` 一致；**`video_url`**：有视频时为 **`cloud://`**（小程序 `<video>` 播放）或空；非 cloud 旧数据可为 HTTPS |
+  | | 验证 SQL | `SELECT id, category, image_url, images FROM tiandao_culture.academy_materials WHERE category='poster' AND status=1 LIMIT 3` | 新数据 `images` 为 JSON 数组；旧数据可仅 `image_url`（接口仍将 `images` 退化为单元素） |
+  | | ✏️ 手测 | 后台 `material.html` + 小程序 `pages/academy/materials/index` | 后台可上传≤9 张、保存后 DB `images` 有值；小程序三列宫格、点图进入**页内全屏**、全屏内**单击任意处**退出、大图**长按**出系统菜单保存、长按缩略图保存、长按视频保存；无「保存图片/保存视频/下载」按钮 |
 
   > ⚠️ **跨流程追踪提示（验证此流程后必须更新规则4清单）**  
   > - S2.3 `is_gift` 统计为 0 → 说明尚无密训班购买场景，**密训班赠课 is_gift=1 完整性验证已延至 F10 S10.3**  
@@ -3549,6 +3555,8 @@
 |---|---|---|---|
 | S1 | 📖 读操作 | `getAcademySections` | 小程序端获取板块列表，验证返回 7 条初始数据 |
 | | 期望 | list.length | >= 7 |
+| | 期望 | `list[].icon` | 若库内为云存储 fileID，返回值为 **https** CDN，不得仍为 `cloud://` 前缀 |
+| S9 | ✏️ 手测 | 后台 `academy-sections.html` | 标题图标、荣誉项、核心理念均为图片上传区，无 Emoji 输入；上传后保存，小程序商学院页对应标题/网格展示正常 |
 | S2 | ✏️ 写操作 | `manageAcademySections` operation=list | 后台获取全部板块列表（含隐藏） |
 | | 期望 | list.length | >= 7 |
 | S3 | ✏️ 写操作 | `manageAcademySections` operation=create | 新增一个 intro 类型板块 |

@@ -67,15 +67,20 @@
       </view>
       <view class="lunar-cal__pillars">
         <view
-          v-for="p in pillarBlocks"
-          :key="p.label"
-          class="lunar-cal__pillar"
-          :class="{ 'lunar-cal__pillar--day': p.highlight }"
+          class="lunar-cal__pillars-inner"
+          :class="{ 'lunar-cal__pillars-inner--triple': pillarBlocks.length === 3 }"
         >
-          <text class="lunar-cal__pillar-label">{{ p.label }}</text>
-          <view class="lunar-cal__pillar-gz">
-            <text class="lunar-cal__serif lunar-cal__pillar-ch">{{ p.gan }}</text>
-            <text class="lunar-cal__serif lunar-cal__pillar-ch">{{ p.zhi }}</text>
+          <view
+            v-for="p in pillarBlocks"
+            :key="p.label"
+            class="lunar-cal__pillar"
+            :class="{ 'lunar-cal__pillar--day': p.highlight }"
+          >
+            <text class="lunar-cal__pillar-label">{{ p.label }}</text>
+            <view class="lunar-cal__pillar-gz">
+              <text class="lunar-cal__serif lunar-cal__pillar-ch">{{ p.gan }}</text>
+              <text class="lunar-cal__serif lunar-cal__pillar-ch">{{ p.zhi }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -94,9 +99,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Solar } from 'lunar-javascript';
 import type { CalendarCourseInfo } from '@/api/types/course';
+
+/** 中国标准时间相对 UTC 固定 +8h（无夏令时） */
+const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * 将任意时刻格式化为北京时间的年月日时分秒（公历数字）。
+ * 用于：与选中格子的公历年月日比较是否「北京今天」；今天则把此时刻传入八字。
+ *
+ * 真机部分微信小程序无 `Intl`（会报 `Intl is not defined`），故不用 Intl；对固定东八区用
+ * 时刻平移 + `getUTC*` 等效于 Asia/Shanghai。
+ */
+function getBeijingYmdHms(at: Date = new Date()) {
+  const bj = new Date(at.getTime() + BEIJING_OFFSET_MS);
+  return {
+    y: bj.getUTCFullYear(),
+    m: bj.getUTCMonth() + 1,
+    d: bj.getUTCDate(),
+    h: bj.getUTCHours(),
+    mi: bj.getUTCMinutes(),
+    s: bj.getUTCSeconds()
+  };
+}
 
 const props = defineProps<{
   /** 日历排期：日期键 → 课程信息（多日课已由接口按日展开） */
@@ -115,6 +142,24 @@ const today = new Date();
 const displayYear = ref(today.getFullYear());
 const displayMonth = ref(today.getMonth() + 1);
 const selectedDate = ref(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+
+/**
+ * 选中「北京今天」时，时柱应随真实时间变化；依赖本 ref 触发 computed 周期性重算。
+ * 非今天选中日不读该值，避免无意义刷新。
+ */
+const beijingNowTick = ref(0);
+let beijingClockTimer: ReturnType<typeof setInterval> | undefined;
+
+onMounted(() => {
+  beijingNowTick.value = Date.now();
+  beijingClockTimer = setInterval(() => {
+    beijingNowTick.value = Date.now();
+  }, 30_000);
+});
+
+onUnmounted(() => {
+  if (beijingClockTimer) clearInterval(beijingClockTimer);
+});
 
 /** 防止滑动换月后误触日期格 */
 const swipeLock = ref(false);
@@ -271,18 +316,24 @@ const pillarBlocks = computed(() => {
   const y = selectedDate.value.getFullYear();
   const m = selectedDate.value.getMonth() + 1;
   const d = selectedDate.value.getDate();
-  const solar = Solar.fromYmdHms(y, m, d, 12, 0, 0);
+  const bj = getBeijingYmdHms(new Date(beijingNowTick.value || Date.now()));
+  const isBeijingToday = y === bj.y && m === bj.m && d === bj.d;
+  const hour = isBeijingToday ? bj.h : 12;
+  const minute = isBeijingToday ? bj.mi : 0;
+  const second = isBeijingToday ? bj.s : 0;
+  const solar = Solar.fromYmdHms(y, m, d, hour, minute, second);
   const ec = solar.getLunar().getEightChar();
   const [yG, yZ] = splitGanZhi(ec.getYear());
   const [mG, mZ] = splitGanZhi(ec.getMonth());
   const [dG, dZ] = splitGanZhi(ec.getDay());
   const [tG, tZ] = splitGanZhi(ec.getTime());
-  return [
+  const base = [
     { label: '年', gan: yG, zhi: yZ, highlight: false },
     { label: '月', gan: mG, zhi: mZ, highlight: false },
-    { label: '日', gan: dG, zhi: dZ, highlight: true },
-    { label: '时', gan: tG, zhi: tZ, highlight: false }
+    { label: '日', gan: dG, zhi: dZ, highlight: true }
   ];
+  if (!isBeijingToday) return base;
+  return [...base, { label: '时', gan: tG, zhi: tZ, highlight: false }];
 });
 
 /** 选中日课程展示：与格子逻辑一致，无排期则「无」 */
@@ -628,11 +679,30 @@ function emitClose() {
   letter-spacing: 0.16em;
 }
 
+/* 外层仅负责水平居中；等宽由 inner 的 grid + 与四柱同宽的 inner 宽度保证 */
 .lunar-cal__pillars {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 20rpx;
+  justify-content: center;
   margin-bottom: 24rpx;
+}
+
+$pillar-gap: 20rpx;
+/* 四柱时与父同宽，四列等分（minmax(0,1fr) 避免内容把某一格撑宽） */
+.lunar-cal__pillars-inner {
+  display: grid;
+  gap: $pillar-gap;
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/*
+ * 三柱：inner 总宽 = 四柱布局下「三格 + 两缝」，与单格宽 W=(100%-3*gap)/4 代数一致；
+ * repeat(3,1fr) 三等分该宽度，避免 flex-basis 与 flex:1 在真机上的亚像素差。
+ */
+.lunar-cal__pillars-inner--triple {
+  width: calc((100% - 3 * #{$pillar-gap}) * 3 / 4 + 2 * #{$pillar-gap});
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* getDayJiShen：单列居中，上微灰标题、下衬线正文（顿号串联、可多行） */
@@ -666,7 +736,8 @@ function emitClose() {
 }
 
 .lunar-cal__pillar {
-  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;

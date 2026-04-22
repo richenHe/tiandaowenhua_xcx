@@ -1,7 +1,7 @@
 /**
  * 获取资料列表（管理端接口）
  */
-const { db, response, executePaginatedQuery, cloudFileIDToURL } = require('../../common');
+const { db, response, executePaginatedQuery } = require('../../common');
 
 module.exports = async (event, context) => {
   const { category, status, keyword, page = 1, page_size = 10, pageSize } = event;
@@ -18,6 +18,7 @@ module.exports = async (event, context) => {
         title,
         category,
         image_url,
+        images,
         video_url,
         content,
         tags,
@@ -49,12 +50,8 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
-    // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL（无需 API 调用，避免认证问题）
+    // 管理端保留 cloud:// fileID，便于编辑回写；前台展示由后台页用 cloudFileIDToURL 自行转换
     const list = result.list || [];
-    list.forEach(item => {
-      if (item.image_url) item.image_url = cloudFileIDToURL(item.image_url);
-      if (item.video_url) item.video_url = cloudFileIDToURL(item.video_url);
-    });
 
     return response.success({
       ...result,

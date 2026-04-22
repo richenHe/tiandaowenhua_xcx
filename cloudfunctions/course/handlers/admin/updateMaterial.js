@@ -10,7 +10,8 @@
  * @param {number} event.id         - 资料 ID（必填）
  * @param {string} event.title      - 资料名称
  * @param {string} event.category   - 资料分类，对应 DB 字段 category
- * @param {string} event.imageUrl   - 图片URL，对应 DB 字段 image_url
+ * @param {string[]} event.imageUrls - 海报多图 fileID 数组（最多 9），对应 DB images（JSON）
+ * @param {string} event.imageUrl   - 兼容旧版单图
  * @param {string} event.videoUrl   - 视频URL，对应 DB 字段 video_url
  * @param {string} event.content    - 文字内容，对应 DB 字段 content
  * @param {Array}  event.tags       - 标签数组，对应 DB 字段 tags（JSON）
@@ -20,6 +21,7 @@
 const { findOne, update } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
+const { normalizeImageUrlsForSave } = require('../../common/materialImages');
 
 module.exports = async (event, context) => {
   // 接收 camelCase 参数
@@ -27,6 +29,7 @@ module.exports = async (event, context) => {
     id,
     title,
     category,
+    imageUrls,
     imageUrl,
     videoUrl,
     content,
@@ -53,7 +56,14 @@ module.exports = async (event, context) => {
     const fieldsToUpdate = {};
     if (title !== undefined) fieldsToUpdate.title = title;
     if (category !== undefined) fieldsToUpdate.category = category;
-    if (imageUrl !== undefined) fieldsToUpdate.image_url = imageUrl;
+    if (imageUrls !== undefined || imageUrl !== undefined) {
+      const ids = normalizeImageUrlsForSave(
+        imageUrls !== undefined ? imageUrls : null,
+        imageUrl
+      );
+      fieldsToUpdate.images = ids.length ? JSON.stringify(ids) : null;
+      fieldsToUpdate.image_url = ids[0] || null;
+    }
     if (videoUrl !== undefined) fieldsToUpdate.video_url = videoUrl;
     if (content !== undefined) fieldsToUpdate.content = content;
     if (tags !== undefined) fieldsToUpdate.tags = tags ? JSON.stringify(tags) : null;

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>小程序端 · 端到端集成测试</title>
   <link rel="stylesheet" href="./assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260406">
+  <link rel="stylesheet" href="./assets/css/tokens.css?v=20260421">
   <style>
     *{box-sizing:border-box}
     /* 覆盖 tokens.css 为 admin 布局设置的 overflow:hidden，此页面是独立测试页，不用 t-layout 骨架 */
@@ -217,7 +217,7 @@
 
 <script src="./assets/libs/vue.global.js"></script>
 <script src="./assets/libs/tdesign.min.js"></script>
-<script src="./assets/js/config.js?v=20260406"></script>
+<script src="./assets/js/config.js?v=20260421"></script>
 <script>
 const {createApp,ref,reactive,computed,nextTick,onMounted}=Vue;
 
@@ -4133,7 +4133,8 @@ ORDER BY id`
         biz:[
           (d,raw)=>({r:'板块列表接口应成功',p:raw.success===true,a:raw.success?'OK':raw.message}),
           (d)=>{const list=d?.list||[];return{r:'应返回≥7条板块',p:list.length>=7,a:`${list.length}条`}},
-          (d)=>{const list=d?.list||[];const ok=list.every(s=>s.title);return{r:'所有板块应有title',p:ok,a:ok?`✓${list.length}条均有title`:'❌存在缺title板块'}}
+          (d)=>{const list=d?.list||[];const ok=list.every(s=>s.title);return{r:'所有板块应有title',p:ok,a:ok?`✓${list.length}条均有title`:'❌存在缺title板块'}},
+          (d)=>{const list=d?.list||[];const bad=(list||[]).filter(s=>s.icon&&String(s.icon).startsWith('cloud://'));return{r:'小程序端icon不应保留cloud://',p:bad.length===0,a:bad.length?`❌${bad.length}条仍为fileID`:'✓无裸cloud前缀'}}
         ],
         save:(d,_,C)=>{C.f19InitCount=(d?.list||[]).length},
         sql:()=>`SELECT id, section_type, title, sort_order, status FROM tiandao_culture.academy_sections WHERE status=1 ORDER BY sort_order`

@@ -6,8 +6,8 @@ const { db } = require('../../common/db');
 const { response, cloudFileIDToURL } = require('../../common');
 
 /**
- * 将 content 中的云存储 fileID 转换为 CDN URL
- * 支持 hero / quick_access / teachers / honors 类型
+ * 将 content 中的云存储 fileID 转换为 CDN URL；顶层 icon 若为 fileID 同样转换
+ * 支持 hero / quick_access / concepts / teachers / honors 类型
  */
 function convertContentStorageURLs(sectionType, content) {
   if (!content) return content;
@@ -60,8 +60,15 @@ module.exports = async (event, context) => {
       }
       content = convertContentStorageURLs(item.section_type, content);
 
+      /** 板块标题旁图标：存库为 cloud:// fileID，小程序只展示 HTTPS */
+      let icon = item.icon || '';
+      if (icon && String(icon).startsWith('cloud://')) {
+        icon = cloudFileIDToURL(icon);
+      }
+
       return {
         ...item,
+        icon,
         content
       };
     });

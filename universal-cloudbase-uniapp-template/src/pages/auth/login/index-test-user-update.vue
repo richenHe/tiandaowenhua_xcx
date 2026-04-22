@@ -16,7 +16,7 @@
             @click="handleWechatLogin"
           >
             <text class="t-button__icon">🔐</text>
-            <text class="t-button__text">微信一键登录（测试 user.update）</text>
+            <text class="t-button__text">一键快捷登录（测试 user.update）</text>
           </button>
           
           <view class="login-tips">

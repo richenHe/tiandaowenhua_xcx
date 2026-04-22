@@ -376,9 +376,8 @@ const goToAnnouncement = () => {
   uni.navigateTo({ url: '/pages/common/announcement/index' });
 };
 
-// 跳转到课程详情（需登录：下单/购买链路）
+// 跳转到课程详情（浏览介绍免登录；下单/预约在详情页或后续页再校验登录）
 const goToCourseDetail = (course: any) => {
-  if (!ensureLoggedIn()) return;
   uni.navigateTo({ url: `/pages/course/detail/index?courseId=${course.id}` });
 };
 

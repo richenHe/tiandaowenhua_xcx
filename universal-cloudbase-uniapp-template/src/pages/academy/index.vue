@@ -1,5 +1,5 @@
 <template>
-  <view class="page-container">
+  <view class="page-container academy-index">
     <!-- 页面头部 -->
     <TdPageHeader title="商学院" :show-back="false" />
 
@@ -51,7 +51,16 @@
           <template v-if="section.section_type === 'intro'">
             <view class="t-card t-card--bordered section-card">
               <view class="t-card__header">
-                <text class="t-card__title">{{ section.icon }} {{ section.title }}</text>
+                <view class="t-card__title-row">
+                  <image
+                    v-if="isAcademyIconImage(section.icon)"
+                    class="section-title-icon-img"
+                    :src="section.icon"
+                    mode="aspectFit"
+                  />
+                  <text v-else-if="section.icon" class="section-title-emoji">{{ section.icon }}</text>
+                  <text class="t-card__title">{{ section.title }}</text>
+                </view>
               </view>
               <view class="t-card__body">
                 <text
@@ -65,7 +74,16 @@
 
           <!-- 核心理念 -->
           <template v-if="section.section_type === 'concepts'">
-            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-section-title t-section-title--simple">
+              <image
+                v-if="isAcademyIconImage(section.icon)"
+                class="section-title-icon-img"
+                :src="section.icon"
+                mode="aspectFit"
+              />
+              <text v-else-if="section.icon" class="section-title-emoji">{{ section.icon }}</text>
+              <text>{{ section.title }}</text>
+            </view>
             <view class="concepts-list">
               <view
                 v-for="(concept, ci) in (section.content?.items || [])"
@@ -76,7 +94,7 @@
                   <view class="concept-content">
                     <image v-if="concept.image" class="concept-icon-img" :src="concept.image" mode="aspectFill" />
                     <view v-else class="concept-icon" :style="{ background: concept.color || '#667eea' }">
-                      <text>{{ concept.icon }}</text>
+                      <text>{{ (concept.name || '').charAt(0) || '·' }}</text>
                     </view>
                     <view class="concept-info">
                       <text class="concept-name">{{ concept.name }}</text>
@@ -90,7 +108,16 @@
 
           <!-- 讲师团队 -->
           <template v-if="section.section_type === 'teachers'">
-            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-section-title t-section-title--simple">
+              <image
+                v-if="isAcademyIconImage(section.icon)"
+                class="section-title-icon-img"
+                :src="section.icon"
+                mode="aspectFit"
+              />
+              <text v-else-if="section.icon" class="section-title-emoji">{{ section.icon }}</text>
+              <text>{{ section.title }}</text>
+            </view>
             <view class="t-card t-card--bordered section-card">
               <view class="t-card__body">
                 <view
@@ -122,7 +149,16 @@
 
           <!-- 发展历程 -->
           <template v-if="section.section_type === 'timeline'">
-            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-section-title t-section-title--simple">
+              <image
+                v-if="isAcademyIconImage(section.icon)"
+                class="section-title-icon-img"
+                :src="section.icon"
+                mode="aspectFit"
+              />
+              <text v-else-if="section.icon" class="section-title-emoji">{{ section.icon }}</text>
+              <text>{{ section.title }}</text>
+            </view>
             <view class="t-card t-card--bordered section-card">
               <view class="t-card__body">
                 <view class="timeline">
@@ -144,7 +180,16 @@
 
           <!-- 荣誉资质 -->
           <template v-if="section.section_type === 'honors'">
-            <view class="t-section-title t-section-title--simple">{{ section.icon }} {{ section.title }}</view>
+            <view class="t-section-title t-section-title--simple">
+              <image
+                v-if="isAcademyIconImage(section.icon)"
+                class="section-title-icon-img"
+                :src="section.icon"
+                mode="aspectFit"
+              />
+              <text v-else-if="section.icon" class="section-title-emoji">{{ section.icon }}</text>
+              <text>{{ section.title }}</text>
+            </view>
             <view class="honors-grid">
               <view
                 v-for="(honor, hi) in (section.content?.items || [])"
@@ -153,7 +198,7 @@
               >
                 <view class="t-card__body honor-card-body">
                   <image v-if="honor.image" class="honor-image" :src="honor.image" mode="aspectFit" />
-                  <text v-else class="honor-icon">{{ honor.icon }}</text>
+                  <view v-else class="honor-icon-placeholder" />
                   <text class="honor-name">{{ honor.name }}</text>
                 </view>
               </view>
@@ -204,6 +249,12 @@ const handleQuickAccess = (link: string) => {
   uni.navigateTo({ url: link });
 };
 
+/** 板块标题 icon：接口已转 CDN 的 https，或历史 cloud://；纯文字/Emoji 走文本展示 */
+function isAcademyIconImage(icon?: string) {
+  if (!icon) return false;
+  return /^https?:\/\//i.test(icon) || icon.startsWith('cloud://');
+}
+
 const loadSections = async () => {
   try {
     loading.value = true;
@@ -227,6 +278,18 @@ onShow(() => {
 
 <style lang="scss" scoped>
 @import '@/styles/tdesign-vars.scss';
+
+// ---------------------------------------------------------------------------
+// 商学院首页 · 全板块统一字号级别（仅本页，与全局 section-title 解耦）
+// L0 区块标题：模块标题（.t-section-title）、简介卡片标题（.t-card__title）
+// L1 卡片主名：理念名称、讲师姓名、时间轴年份、荣誉名称（同级同字号）
+// L2 副标题  ：单行辅助（如讲师职务）
+// L3 正文    ：简介段落、理念说明、讲师简介、时间轴说明等
+// ---------------------------------------------------------------------------
+$academy-l0: $td-font-size-l; // 36rpx
+$academy-l1: $td-font-size-m; // 32rpx
+$academy-l2: $td-font-size-base; // 28rpx
+$academy-l3: $td-font-size-s; // 24rpx
 
 .page-container {
   width: 100%;
@@ -338,8 +401,8 @@ onShow(() => {
   }
 
   &__title {
-    font-size: $td-font-size-m;
-    font-weight: $td-font-weight-semibold;
+    font-size: $academy-l0;
+    font-weight: $td-font-weight-bold;
     color: $td-text-color-primary;
   }
 
@@ -348,16 +411,35 @@ onShow(() => {
   }
 }
 
+.t-card__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.section-title-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+
+.section-title-emoji {
+  font-size: $td-font-size-m;
+  line-height: 1;
+}
+
 .section-card {
   margin-bottom: 32rpx;
 }
 
-// 简介文本
+// 简介文本（L3）
 .intro-text {
   display: block;
-  line-height: 1.8;
+  line-height: $td-line-height-large;
   color: $td-text-color-secondary;
-  font-size: $td-font-size-base;
+  font-size: $academy-l3;
+  font-weight: $td-font-weight-regular;
   margin-bottom: 32rpx;
 
   &:last-child {
@@ -412,16 +494,19 @@ onShow(() => {
 }
 
 .concept-name {
-  font-weight: 500;
-  font-size: $td-font-size-base;
+  display: block;
+  font-weight: $td-font-weight-semibold;
+  font-size: $academy-l1;
   color: $td-text-color-primary;
   margin-bottom: 12rpx;
 }
 
 .concept-desc {
-  font-size: 24rpx;
+  display: block;
+  font-size: $academy-l3;
+  font-weight: $td-font-weight-regular;
   color: $td-text-color-secondary;
-  line-height: 1.6;
+  line-height: $td-line-height-large;
 }
 
 // 讲师团队
@@ -473,22 +558,27 @@ onShow(() => {
 }
 
 .teacher-name {
-  font-weight: 600;
-  font-size: 32rpx;
+  display: block;
+  font-weight: $td-font-weight-semibold;
+  font-size: $academy-l1;
   color: $td-text-color-primary;
-  margin-bottom: 12rpx;
+  margin-bottom: 8rpx;
 }
 
 .teacher-role {
-  font-size: 24rpx;
+  display: block;
+  font-size: $academy-l2;
+  font-weight: $td-font-weight-medium;
   color: $td-text-color-secondary;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
 }
 
 .teacher-desc {
-  font-size: 24rpx;
+  display: block;
+  font-size: $academy-l3;
+  font-weight: $td-font-weight-regular;
   color: $td-text-color-secondary;
-  line-height: 1.6;
+  line-height: $td-line-height-large;
 }
 
 // 时间轴
@@ -539,16 +629,19 @@ onShow(() => {
 }
 
 .timeline-year {
-  font-weight: 500;
-  font-size: $td-font-size-base;
+  display: block;
+  font-weight: $td-font-weight-semibold;
+  font-size: $academy-l1;
   color: $td-text-color-primary;
   margin-bottom: 8rpx;
 }
 
 .timeline-desc {
-  font-size: 24rpx;
+  display: block;
+  font-size: $academy-l3;
+  font-weight: $td-font-weight-regular;
   color: $td-text-color-secondary;
-  line-height: 1.6;
+  line-height: $td-line-height-large;
 }
 
 // 荣誉资质网格
@@ -564,21 +657,50 @@ onShow(() => {
   padding: 40rpx 24rpx !important;
 }
 
-.honor-icon {
+// 荣誉图标：与后台建议源图比例一致，展示约 144rpx 边长（原 72rpx 过小难辨认）
+.honor-icon-placeholder {
   display: block;
-  font-size: 72rpx;
-  margin-bottom: 16rpx;
+  width: 144rpx;
+  height: 144rpx;
+  margin: 0 auto 16rpx;
+  border-radius: 16rpx;
+  background-color: $td-bg-color-secondarycontainer;
 }
 
 .honor-image {
-  width: 72rpx;
-  height: 72rpx;
-  margin-bottom: 16rpx;
+  display: block;
+  width: 144rpx;
+  height: 144rpx;
+  margin: 0 auto 16rpx;
+  border-radius: 16rpx;
+  background-color: $td-bg-color-secondarycontainer;
 }
 
 .honor-name {
   display: block;
-  font-size: 24rpx;
-  color: $td-text-color-secondary;
+  font-size: $academy-l1;
+  font-weight: $td-font-weight-semibold;
+  color: $td-text-color-primary;
+  line-height: $td-line-height-base;
+}
+
+// 覆盖全局 .t-section-title（28rpx 次要色）：本页模块标题用 L0
+.academy-index {
+  .t-section-title {
+    font-size: $academy-l0;
+    font-weight: $td-font-weight-bold;
+    color: $td-text-color-primary;
+    margin-top: $td-card-spacing;
+    margin-bottom: $td-card-spacing;
+  }
+
+  .section-title-icon-img {
+    width: 40rpx;
+    height: 40rpx;
+  }
+
+  .section-title-emoji {
+    font-size: $td-font-size-m;
+  }
 }
 </style>

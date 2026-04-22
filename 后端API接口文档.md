@@ -2023,13 +2023,27 @@ ELSE:
       "title": "素材标题",
       "category": "poster",
       "category_name": "海报",
-      "image_url": "图片URL",
+      "images": ["https://.../a.jpg", "https://.../b.jpg"],
+      "image_url": "https://.../a.jpg",
+      "video_url": "cloud://...",
       "content": "文案内容",
       "created_at": "2024-01-15"
     }
   ]
 }
 ```
+
+**返回字段（公开 `getMaterialList`）**
+
+| 字段名 | 类型 | 说明 |
+|---|---|---|
+| images | Array | 海报多图 CDN URL 列表（最多 9）；仅 `image_url` 的旧数据会退化为单元素数组 |
+| image_url | String | 首张图 CDN URL，与 `images[0]` 一致 |
+| video_url | String | 库内为 `cloud://` 时**原样返回**（微信小程序 `<video>` 直连云存储鉴权播放）；非 `cloud://` 的旧数据仍经 `cloudFileIDToURL` 转成 HTTPS |
+
+**业务规则（2026-04-21）**
+- 管理端 `getMaterialList` 返回的 `image_url` / `images` / `video_url` 为 **cloud:// fileID**（便于后台编辑回写）。
+- 公开 `getMaterialList`：`image_url` / `images` 转为 **HTTPS CDN**；**`video_url` 若为 `cloud://` 则不转 CDN**（避免小程序 `<video>` 拉 `tcb.qcloud.la` 公网读失败）；H5 等需展示可前端 `cloudFileIDToURL`。
 
 ### 🔵 5.3 学员案例列表
 - **action**: `getCaseList`
@@ -2102,6 +2116,17 @@ ELSE:
 - `PUT /api/admin/material/update`
 - `DELETE /api/admin/material/delete`
 - `GET /api/admin/material/list`
+
+**创建 / 更新（云函数 `createMaterial` / `updateMaterial`）**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| imageUrls | Array | 否 | 海报多图 **cloud:// fileID** 数组，最多 **9** 条；写入 `images`（JSON），并将首张写入 `image_url` |
+| imageUrl | String | 否 | 兼容旧客户端单图；与 `imageUrls` 并存时以 `imageUrls` 为准 |
+| videoUrl | String | 否 | 视频 fileID |
+| （其余字段） | — | — | 同前：`title`、`category`、`content`、`sortOrder`、`status` 等 |
+
+**备注（2026-04-21）**：库表新增 `academy_materials.images`（JSON）；须先执行迁移 SQL 再部署云函数。
 
 ### 🔴 5.5 学员案例管理 - 创建
 - **action**: `createCase`
@@ -2241,16 +2266,20 @@ ELSE:
 | list[].id | Number | 板块ID |
 | list[].section_type | String | 板块类型：hero/quick_access/intro/concepts/teachers/timeline/honors |
 | list[].title | String | 板块标题 |
-| list[].icon | String | 标题图标(Emoji) |
+| list[].icon | String | 标题图标：库内为云存储 `cloud://` fileID 时，本接口返回 **CDN HTTPS URL**；历史数据可能仍为 Emoji 短文本 |
 | list[].content | Object | 板块内容(JSON，结构因类型而异) |
 | list[].sort_order | Number | 排序权重 |
 
 **业务规则**
 - 只返回 status=1 的板块
-- hero（content.image）、quick_access（content.items[].image）、teachers（content.items[].avatar）、honors（content.items[].image）中的云存储字段自动转换为 CDN URL
+- 顶层 **icon** 字段若为云存储 fileID，自动转换为 CDN URL（与小程序 `cloudFileIDToURL` 规则一致）
+- hero（content.image）、quick_access（content.items[].image）、concepts（content.items[].image）、teachers（content.items[].avatar）、honors（content.items[].image）中的云存储字段自动转换为 CDN URL
 - hero 类型 content 结构：`{"image":"CDN URL"}` — 整张 Banner 图片
 - quick_access 类型 content 结构：`{"items":[{"image":"CDN URL","link":"跳转路径"}]}` — 图片卡片
-- concepts 中 color 为 HEX 颜色值，teachers 中 theme 为 HEX 头像底色
+- concepts 中 color 为 HEX 颜色值；理念图标使用 **image** 云存储（不再使用 Emoji `icon` 字段）；teachers 中 theme 为 HEX 头像底色
+- honors 每项图标使用 **image** 云存储（不再依赖 Emoji `icon`）
+
+**备注（2026-04-20）**：`academy_sections.icon` 字段已扩容为 `VARCHAR(512)` 以存储 fileID；管理后台「商学院板块」页标题图标、荣誉项、核心理念均改为图片上传并标注推荐像素尺寸。
 
 ### 管理商学院板块
 
@@ -2267,7 +2296,7 @@ ELSE:
 | id | Number | 否 | 板块ID（detail/update/delete/toggleStatus 时必填） |
 | sectionType | String | 否 | 板块类型（create 时必填）：hero/quick_access/intro/concepts/teachers/timeline/honors |
 | title | String | 否 | 板块标题（create 时必填） |
-| icon | String | 否 | 标题图标 |
+| icon | String | 否 | 标题图标云存储 fileID（`cloud://...`，路径建议 `academy/sections/title-icons/`）；留空表示无图标 |
 | content | Object | 否 | 板块内容JSON |
 | sortOrder | Number | 否 | 排序权重 |
 | status | Number | 否 | 状态：0隐藏/1显示 |
@@ -6377,6 +6406,7 @@ ALTER TABLE user_courses ADD INDEX idx_status (status);
 - CloudBase 自动维护登录态，有效期30天
 - 后端通过 CloudBase 云函数的 `context.user.uid` 获取当前登录用户的唯一标识
 - 所有用户相关数据使用 `uid` 作为唯一标识
+- **登录页 UI 文案（微信小程序审核，2026-04-22）**：自定义登录按钮、弹窗等**用户可见**文案须避免出现「微信」字样、官方标识及易被认定为系统官方页的「授权登录」等表述；宜使用「快捷登录」类中性表述（如「一键快捷登录」）。实际鉴权仍通过 `uni.login` + 业务 `login` 云函数完成，与展示文案解耦。
 
 **管理后台**：
 - JWT token

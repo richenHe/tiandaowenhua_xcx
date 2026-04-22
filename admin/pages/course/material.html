@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8">
-  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>素材管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260406"><style>
+  <link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>素材管理</title><link rel="stylesheet" href="../../assets/libs/tdesign.min.css"><link rel="stylesheet" href="../../assets/css/tokens.css?v=20260421"><style>
     .upload-placeholder{width:200px;height:160px;border:2px dashed #dcdcdc;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;}
     .upload-placeholder:hover{border-color:#0052d9;background:#f3f3f3;}
     .image-preview{position:relative;width:200px;}
@@ -9,6 +9,12 @@
     .image-actions{margin-top:8px;display:flex;gap:8px;}
     .upload-tips{margin-top:6px;font-size:12px;color:#999;}
     .video-preview{width:100%;}
+    .multi-upload-container{width:100%;}
+    .multi-images-preview{display:flex;flex-wrap:wrap;gap:8px;}
+    .thumb-item{position:relative;width:80px;height:80px;}
+    .thumb-item img{width:100%;height:100%;object-fit:cover;border-radius:4px;border:1px solid #dcdcdc;}
+    .thumb-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#f00;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1;}
+    .thumb-add{width:80px;height:80px;}
   </style></head>
 <body>
   <div id="app">
@@ -36,22 +42,27 @@
         <sidebar-menu active-key="material-list"></sidebar-menu>
         
         <!-- 主内容区 -->
-        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">素材管理</h1><p class="page-desc">管理朋友圈推广素材（海报、文案、视频）</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="素材名称" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.category" :options="typeOptions" placeholder="素材分类" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">上传素材</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.category==='poster'" theme="primary">海报</t-tag><t-tag v-else-if="row.category==='copywriting'" theme="success">文案</t-tag><t-tag v-else-if="row.category==='video'" theme="warning">视频</t-tag><t-tag v-else theme="default">{{ row.category }}</t-tag></template><template #fileSize="{ row }"><span>{{ row.file_size != null ? (row.file_size / (1024 * 1024)).toFixed(2) + ' MB' : '-' }}</span></template><template #operation="{ row }"><t-space size="small"><t-button theme="primary" size="small" variant="text" @click="handleDownload(row)">下载</t-button><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传素材':'编辑素材'" width="650px" @confirm="handleSubmit">
+        <t-content class="page-content"><div class="page-container"><div class="page-header"><h1 class="page-title">素材管理</h1><p class="page-desc">管理朋友圈推广素材（海报、文案、视频）</p></div><t-form layout="inline" style="margin-bottom:20px;background:white;padding:16px;border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"><t-form-item><t-input v-model="filters.keyword" placeholder="素材名称" clearable style="width:200px;"/></t-form-item><t-form-item><t-select v-model="filters.category" :options="typeOptions" placeholder="素材分类" clearable style="width:150px;"/></t-form-item><t-form-item><t-space><t-button theme="primary" @click="handleSearch">查询</t-button><t-button theme="default" @click="handleReset">重置</t-button><t-button theme="success" @click="handleAdd">上传素材</t-button></t-space></t-form-item></t-form><t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover><template #type="{ row }"><t-tag v-if="row.category==='poster'" theme="primary">海报</t-tag><t-tag v-else-if="row.category==='copywriting'" theme="success">文案</t-tag><t-tag v-else-if="row.category==='video'" theme="warning">视频</t-tag><t-tag v-else theme="default">{{ row.category }}</t-tag></template><template #fileSize="{ row }"><span>{{ row.file_size != null ? (row.file_size / (1024 * 1024)).toFixed(2) + ' MB' : '-' }}</span></template><template #operation="{ row }"><t-space size="small"><t-button theme="default" size="small" variant="text" @click="handleEdit(row)">编辑</t-button><t-button theme="danger" size="small" variant="text" @click="handleDelete(row)">删除</t-button></t-space></template></t-table></div><t-dialog v-model:visible="formVisible" :header="formMode==='add'?'上传素材':'编辑素材'" width="650px" @confirm="handleSubmit">
   <t-form ref="form" :data="formData" :rules="rules" label-width="100px">
     <t-form-item label="素材名称" name="title"><t-input v-model="formData.title" placeholder="请输入素材名称"/></t-form-item>
     <t-form-item label="素材分类" name="category"><t-select v-model="formData.category" :options="typeOptions" placeholder="选择分类"/></t-form-item>
 
-    <!-- 图片上传 - 云存储 image_url -->
-    <t-form-item label="素材图片" name="imageUrl">
-      <cloud-image-upload
-        v-model="formData.imageUrlDisplay"
-        v-model:file-id="formData.imageUrl"
-        path-prefix="materials/images"
-        :item-id="formData.id || 'new'"
-        tips="支持 JPG/PNG/GIF，不超过 5MB"
-        :width="280"
-        :height="160"
-      />
+    <!-- 海报多图（最多 9 张）→ DB images JSON + image_url 首图 -->
+    <t-form-item label="素材图片" name="imageUrls">
+      <input type="file" ref="imagesFileInput" accept="image/*" multiple @change="handleImagesChange" style="display:none;">
+      <div class="multi-upload-container">
+        <div class="multi-images-preview">
+          <div v-for="(img, idx) in (formData.imagesDisplay || [])" :key="idx" class="thumb-item">
+            <img :src="img.url" alt="图片">
+            <span class="thumb-remove" @click="removeImageItem(idx)">×</span>
+          </div>
+          <div v-if="(formData.imagesDisplay || []).length < 9" class="upload-placeholder thumb-add" @click="triggerImagesUpload">
+            <t-icon name="add" style="font-size:24px;color:#999;"/>
+          </div>
+        </div>
+        <p class="upload-tips" v-if="imagesUploading">上传中...</p>
+        <p class="upload-tips">海报类可多图，最多 9 张，每张 JPG/PNG/GIF 不超过 5MB</p>
+      </div>
     </t-form-item>
 
     <!-- 视频上传 - 云存储 video_url -->
@@ -61,7 +72,7 @@
         <t-icon name="video" style="font-size:32px;color:#999;margin-bottom:8px;"/><p style="margin:0;color:#999;font-size:14px;">点击上传视频</p>
       </div>
       <div v-else class="video-preview">
-        <video :src="formData.videoUrlDisplay || formData.videoUrl" controls style="width:100%;max-height:180px;border-radius:4px;"></video>
+        <video :src="formData.videoUrlDisplay" controls style="width:100%;max-height:180px;border-radius:4px;"></video>
         <div class="image-actions">
           <t-button size="small" variant="outline" @click="triggerVideoUpload" :loading="videoUploading">更换视频</t-button>
           <t-button size="small" theme="danger" variant="outline" @click="removeVideo">删除</t-button>
@@ -84,11 +95,11 @@
   <script src="../../assets/libs/vue.global.js"></script>
   <script src="../../assets/libs/tdesign.min.js"></script>
   <script src="../../assets/libs/cloudbase.full.js"></script>
-  <script src="../../assets/js/config.js?v=20260406"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260406"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260406"></script>
-  <script src="../../assets/js/admin-api.js?v=20260406"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260406"></script>
+  <script src="../../assets/js/config.js?v=20260421"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260421"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260421"></script>
+  <script src="../../assets/js/admin-api.js?v=20260421"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260421"></script>
   
   <script>
     const { createApp, ref, onMounted } = Vue;
@@ -102,12 +113,42 @@
         const tableData = ref([]);
         const formVisible = ref(false);
         const formMode = ref('add');
-        const formData = ref({});
+        // 须含 imagesDisplay/images，避免弹窗模板在首屏读取 undefined.length 导致白屏
+        const formData = ref({
+          title: '',
+          category: null,
+          images: [],
+          imagesDisplay: [],
+          videoUrl: '',
+          videoUrlDisplay: '',
+          content: '',
+          sortOrder: 0,
+          status: 1
+        });
         const filters = ref({ keyword: '', category: null });
+
+        /** 解析行数据中的多图 fileID（含旧版仅 image_url） */
+        const parseMaterialImageFileIds = (row) => {
+          let arr = [];
+          if (row.images != null && row.images !== '') {
+            if (Array.isArray(row.images)) arr = row.images.map(String).filter(Boolean);
+            else {
+              try {
+                const p = JSON.parse(row.images);
+                if (Array.isArray(p)) arr = p.map(String).filter(Boolean);
+              } catch (_) {}
+            }
+          }
+          arr = arr.slice(0, 9);
+          if (!arr.length && row.image_url) arr = [String(row.image_url).trim()].filter(Boolean);
+          return arr;
+        };
 
         // 视频上传
         const videoFileInput = ref(null);
         const videoUploading = ref(false);
+        const imagesFileInput = ref(null);
+        const imagesUploading = ref(false);
         // 素材分类（与小程序端保持一致）
         const typeOptions = [
           { label: '海报', value: 'poster' },
@@ -123,7 +164,7 @@
           { colKey: 'file_size', title: '文件大小', width: 100, cell: 'fileSize' },
           { colKey: 'download_count', title: '下载次数', width: 100 },
           { colKey: 'created_at', title: '上传时间', width: 160 },
-          { colKey: 'operation', title: '操作', width: 180, fixed: 'right', cell: 'operation' }
+          { colKey: 'operation', title: '操作', width: 140, fixed: 'right', cell: 'operation' }
         ];
         
         // 表单验证规则，name 与表单字段 camelCase 保持一致
@@ -200,29 +241,70 @@
         };
         const removeVideo = () => { formData.value.videoUrl = ''; formData.value.videoUrlDisplay = ''; };
 
+        const triggerImagesUpload = () => imagesFileInput.value && imagesFileInput.value.click();
+        const handleImagesChange = async (e) => {
+          const files = Array.from(e.target.files || []);
+          if (!files.length) return;
+          if (!Array.isArray(formData.value.imagesDisplay)) formData.value.imagesDisplay = [];
+          if (!Array.isArray(formData.value.images)) formData.value.images = [];
+          const remaining = 9 - formData.value.imagesDisplay.length;
+          const toUpload = files.slice(0, remaining);
+          imagesUploading.value = true;
+          try {
+            const id = formData.value.id || Date.now();
+            for (const file of toUpload) {
+              const v = CloudStorageHelper.validateFile(file, { acceptTypes: ['image/*'], maxSize: 5 * 1024 * 1024 });
+              if (!v.valid) { TDesign.MessagePlugin.warning(file.name + '：' + v.error); continue; }
+              const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+              const r = await CloudStorageHelper.uploadSingleFile(file, `academy/materials/images/${id}/${Date.now()}.${ext}`);
+              formData.value.imagesDisplay.push({ fileID: r.fileID, url: r.tempFileURL || CloudStorageHelper.cloudFileIDToURL(r.fileID) });
+              formData.value.images.push(r.fileID);
+            }
+            TDesign.MessagePlugin.success('图片上传成功');
+          } catch (err) {
+            TDesign.MessagePlugin.error('上传失败：' + err.message);
+          } finally {
+            imagesUploading.value = false;
+            e.target.value = '';
+          }
+        };
+        const removeImageItem = (idx) => {
+          if (Array.isArray(formData.value.imagesDisplay)) formData.value.imagesDisplay.splice(idx, 1);
+          if (Array.isArray(formData.value.images)) formData.value.images.splice(idx, 1);
+        };
+
         const handleAdd = () => {
           formMode.value = 'add';
-          formData.value = { imageUrl: '', imageUrlDisplay: '', videoUrl: '', videoUrlDisplay: '' };
+          formData.value = {
+            images: [],
+            imagesDisplay: [],
+            videoUrl: '',
+            videoUrlDisplay: '',
+            sortOrder: 0,
+            status: 1,
+            content: ''
+          };
           formVisible.value = true;
         };
         
         const handleEdit = async (row) => {
           formMode.value = 'edit';
+          const fileIds = parseMaterialImageFileIds(row);
           formData.value = {
             id: row.id,
             title: row.title,
             category: row.category,
-            imageUrl: row.image_url || '',
-            imageUrlDisplay: '',
+            images: [...fileIds],
+            imagesDisplay: fileIds.map((fid) => ({
+              fileID: fid,
+              url: CloudStorageHelper.cloudFileIDToURL(fid)
+            })),
             videoUrl: row.video_url || '',
-            videoUrlDisplay: '',
+            videoUrlDisplay: row.video_url ? CloudStorageHelper.cloudFileIDToURL(row.video_url) : '',
             content: row.content,
             sortOrder: row.sort_order,
             status: row.status
           };
-          // getMaterialList 云函数已在服务端转换 URL，直接使用即可
-          formData.value.imageUrlDisplay = row.image_url || '';
-          formData.value.videoUrlDisplay = row.video_url || '';
           formVisible.value = true;
         };
         
@@ -236,20 +318,18 @@
           }
         };
         
-        const handleDownload = (row) => {
-          const url = row.video_url || row.image_url;
-          if (url) {
-            window.open(url, '_blank');
-          } else {
-            TDesign.MessagePlugin.warning('该素材暂无可下载文件');
-          }
-        };
-        
         const handleSubmit = async () => {
           try {
-            const payload = { ...formData.value };
-            delete payload.imageUrlDisplay;
-            delete payload.videoUrlDisplay;
+            const payload = {
+              title: formData.value.title,
+              category: formData.value.category,
+              content: formData.value.content,
+              sortOrder: formData.value.sortOrder,
+              status: formData.value.status,
+              videoUrl: formData.value.videoUrl || '',
+              imageUrls: Array.isArray(formData.value.images) ? [...formData.value.images] : []
+            };
+            if (formMode.value === 'edit') payload.id = formData.value.id;
             if (formMode.value === 'add') {
               await AdminAPI.createMaterial(payload);
             } else {
@@ -289,19 +369,22 @@
           handleAdd,
           handleEdit,
           handleDelete,
-          handleDownload,
           handleSubmit,
           // 视频上传
           videoFileInput,
           videoUploading,
           triggerVideoUpload,
           handleVideoChange,
-          removeVideo
+          removeVideo,
+          imagesFileInput,
+          imagesUploading,
+          triggerImagesUpload,
+          handleImagesChange,
+          removeImageItem
         };
       }
     }).use(TDesign)
       .component('sidebar-menu', SidebarNavigation.SidebarMenu)
-      .component('cloud-image-upload', CloudUploadComponents.CloudImageUpload)
       .mount('#app');
   </script>
 </body>
