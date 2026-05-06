@@ -41,19 +41,19 @@ async function generateUniqueRefereeCode() {
 }
 
 /**
- * 计算课程到期时间和状态
+ * 计算课程到期时间和状态（与 user_courses、getMyCourses、checkExpiredCourses 约定一致）
  * @param {string} startDateStr - 课程开始日期 'YYYY-MM-DD'
  * @param {number} validityDays - 有效天数
- * @returns {{ expireAt: string|null, status: number }} - status: 1=正常 2=已过期
+ * @returns {{ expireAt: string|null, status: number }} - status: 1=有效 3=已过期（勿用 2，2 表示已退款，会被列表接口过滤）
  */
 function calcCourseExpiry(startDateStr, validityDays) {
   if (!startDateStr || !validityDays) {
-    return { expireAt: null, status: 2 };
+    return { expireAt: null, status: 1 };
   }
   const start = new Date(startDateStr);
   const expire = new Date(start.getTime() + validityDays * 24 * 60 * 60 * 1000);
   const now = new Date();
-  const status = expire < now ? 2 : 1;
+  const status = expire < now ? 3 : 1;
   return {
     expireAt: formatDateTime(expire),
     status

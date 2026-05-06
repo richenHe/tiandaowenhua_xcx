@@ -97,7 +97,6 @@
             :type-label="course.typeLabel"
             :price-text="course.priceText"
             :cta-text="course.badgeText"
-            :owned="course.purchased && course.type !== 4"
             @click="goToCourseDetail(course)"
             @cta-click="goToCourseDetail(course)"
           />
@@ -198,7 +197,6 @@ const loadCourseList = async () => {
         mediaTone: getCourseMediaTone(course.type),
         coverImage: course.cover_image || '',
         type: course.type,
-        purchased: !!course.is_purchased,
         typeLabel: getCourseTypeLabel(course.type),
         priceText: course.type === 4 ? '免费' : `¥${formatPrice(priceNum)}`,
         badgeText: '查看详情'

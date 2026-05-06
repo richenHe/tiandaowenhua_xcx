@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 解析大使Excel文件，生成legacy_students表的INSERT SQL
-Excel列顺序：大使 | 大使实名 | 序号 | 初探班学员 | 初探时间 | 密训班学员 | 密训时间 | 属性
+Excel列顺序：大使 | 真实名字 | 序号 | 初探班学员 | 初探时间 | 密训学员 | 密训时间 | 属性
 """
 
 import openpyxl
 import json
 import re
+import unicodedata
 from datetime import datetime, date
 
-EXCEL_PATH = r'd:\xwechat_files\wxid_39e9y59ni7cl12_e33b\msg\file\2026-03\大使(1).xlsx'
+EXCEL_PATH = r'd:\xwechat_files\wxid_39e9y59ni7cl12_e33b\msg\file\2026-04\大使(4).xlsx'
 
 # 属性 → ambassador_level 映射（实际Excel中的值）
 LEVEL_MAP = {
@@ -38,6 +39,29 @@ CORRECT_AMBASSADOR = {
     '黄斌': '明利',
     '余斌': '黄慧岚',
 }
+
+
+def excel_text(val):
+    """
+    从单元格读出与 Excel 展示一致的 Unicode 文本，避免 str(float) 等隐式转换。
+    使用 NFC 规范化，减少因组合字符顺序导致的「同字不同码」。
+    """
+    if val is None:
+        return ''
+    if isinstance(val, str):
+        s = val.strip()
+    elif isinstance(val, (int,)):
+        s = str(val)
+    elif isinstance(val, float):
+        if val == int(val):
+            s = str(int(val))
+        else:
+            s = str(val).strip()
+    else:
+        s = str(val).strip()
+    if s in ('', 'None'):
+        return ''
+    return unicodedata.normalize('NFC', s)
 
 
 def clean_name(name):
@@ -89,7 +113,27 @@ def escape_sql(val):
     return f"'{s}'"
 
 
+def _merge_ambassador(ambassadors, amb_alias, amb_real, attr_str):
+    """同一大使多行时合并：实名优先非空且非 None；等级取较大值（避免首行属性空导致 level=0）。"""
+    if not amb_alias:
+        return
+    real = amb_real.strip() if amb_real else ''
+    lv = LEVEL_MAP.get(attr_str, 0)
+    if amb_alias not in ambassadors:
+        ambassadors[amb_alias] = {
+            'real_name': real if real else amb_alias,
+            'level': lv,
+        }
+        return
+    o = ambassadors[amb_alias]
+    if lv > o['level']:
+        o['level'] = lv
+    if real:
+        o['real_name'] = real
+
+
 def main():
+    # data_only=True 读取缓存值（与 xlsx 展示的公式结果/常量一致），姓名列均为常量，Unicode 保持原样
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
     ws = wb.active
 
@@ -101,16 +145,13 @@ def main():
     current_amb = None
 
     for row in data_rows:
-        amb_alias = str(row[0]).strip() if row[0] and str(row[0]).strip() != 'None' else ''
-        amb_real = str(row[1]).strip() if row[1] and str(row[1]).strip() != 'None' else ''
-        attr = str(row[7]).strip() if len(row) > 7 and row[7] and str(row[7]).strip() != 'None' else ''
+        row = list(row) + [None] * max(0, 8 - len(row))
+        amb_alias = excel_text(row[0])
+        amb_real = excel_text(row[1])
+        attr = excel_text(row[7]) if len(row) > 7 else ''
 
         if amb_alias:
-            if amb_alias not in ambassadors:
-                ambassadors[amb_alias] = {
-                    'real_name': amb_real,
-                    'level': LEVEL_MAP.get(attr, 0),
-                }
+            _merge_ambassador(ambassadors, amb_alias, amb_real, attr)
 
     print(f"[INFO] 发现大使 {len(ambassadors)} 位")
     levels = {}
@@ -125,7 +166,8 @@ def main():
     current_amb = None
 
     for row in data_rows:
-        amb_alias = str(row[0]).strip() if row[0] and str(row[0]).strip() != 'None' else ''
+        row = list(row) + [None] * max(0, 8 - len(row))
+        amb_alias = excel_text(row[0])
         if amb_alias:
             current_amb = amb_alias
 
@@ -134,8 +176,8 @@ def main():
         mixin_raw = row[5]
         mixin_date_raw = row[6]
 
-        chutan_str = str(chutan_raw).strip() if chutan_raw and str(chutan_raw).strip() not in ('', 'None') else ''
-        mixin_str = str(mixin_raw).strip() if mixin_raw and str(mixin_raw).strip() not in ('', 'None') else ''
+        chutan_str = excel_text(chutan_raw)
+        mixin_str = excel_text(mixin_raw)
 
         chutan_date = parse_date(chutan_date_raw)
         mixin_date = parse_date(mixin_date_raw)
@@ -254,6 +296,9 @@ def main():
         name, amb = key
         amb_info = ambassadors.get(amb, {})
         is_dup = 2 if key in excluded_keys else 0
+        rec_real = amb_info.get('real_name') or ''
+        if not rec_real.strip():
+            rec_real = amb
 
         # 判断该学员是否也是大使
         is_amb = 0
@@ -267,7 +312,7 @@ def main():
             amb_info_self = ambassadors[clean_n]
             amb_level = amb_info_self['level']
             amb_alias_val = clean_n
-            amb_real_val = amb_info_self['real_name']
+            amb_real_val = amb_info_self['real_name'] or clean_n
 
         final_records.append({
             'student_name': name,
@@ -275,7 +320,7 @@ def main():
             'chutan_date': rec['chutan_date'],
             'mixin_date': rec['mixin_date'],
             'recommender_alias': amb,
-            'recommender_real_name': amb_info.get('real_name', ''),
+            'recommender_real_name': rec_real,
             'is_ambassador': is_amb,
             'ambassador_alias': amb_alias_val,
             'ambassador_real_name': amb_real_val,
@@ -291,7 +336,7 @@ def main():
         if clean_a not in all_student_names_clean:
             # 此大使没有作为学员出现（或只出现在自引用中）
             self_data = self_ref_data.get(amb_alias, {})
-            real_name = amb_info['real_name']
+            real_name = amb_info['real_name'] or amb_alias
             aliases = []
             if real_name and real_name != amb_alias:
                 aliases = [real_name]
@@ -362,19 +407,19 @@ def main():
         )
         insert_rows.append(row_sql)
 
-    # 生成SQL文件，分批次（每批50条）
-    batch_size = 50
+    # 单次 INSERT 写入全部行：控制台整文件执行一次即可（无需 MCP/手工分批）
     output_lines = []
-    output_lines.append("-- legacy_students 数据导入")
+    output_lines.append("-- legacy_students 数据导入（整文件一次性执行）")
     output_lines.append("-- 生成时间: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    output_lines.append("-- 使用 utf8mb4；若出现 琛→晨 等别字，多为执行端连接字符集非 UTF-8")
+    output_lines.append("-- 云开发 MySQL：控制台 SQL 窗口粘贴本文件全文执行，或 mysql 客户端: SOURCE 本文件;")
+    output_lines.append("SET NAMES utf8mb4;")
     output_lines.append("")
-
-    for i in range(0, len(insert_rows), batch_size):
-        batch = insert_rows[i:i+batch_size]
-        sql = (f"INSERT INTO tiandao_culture.legacy_students {col_names} VALUES\n"
-               + ",\n".join(batch) + ";")
-        output_lines.append(sql)
-        output_lines.append("")
+    single_sql = (
+        f"INSERT INTO tiandao_culture.legacy_students {col_names} VALUES\n"
+        + ",\n".join(insert_rows) + ";"
+    )
+    output_lines.append(single_sql)
 
     sql_content = "\n".join(output_lines)
     output_path = r'D:\project\cursor\work\xcx\scripts\legacy_students_data.sql'
@@ -382,7 +427,7 @@ def main():
         f.write(sql_content)
 
     print(f"\n[INFO] SQL已写入: {output_path}")
-    print(f"[INFO] 共 {len(insert_rows)} 条INSERT记录，分 {len(range(0, len(insert_rows), batch_size))} 批")
+    print(f"[INFO] 共 {len(insert_rows)} 行，单条 INSERT 全量")
 
     return final_records
 

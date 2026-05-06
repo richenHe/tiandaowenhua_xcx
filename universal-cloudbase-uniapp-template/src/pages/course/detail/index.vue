@@ -23,9 +23,6 @@
               <view class="course-title">{{ courseInfo.name || '课程名称' }}</view>
               <view class="course-meta">
                 <text class="course-price">{{ isExchangeMode ? pointsPrice + '积分' : (courseInfo.type === 4 ? '免费' : '¥' + formatPrice(courseInfo.price)) }}</text>
-                <view v-if="courseInfo.type !== 4" class="t-badge--standalone t-badge--theme-success">
-                  已有{{ courseInfo.soldCount }}人购买
-                </view>
               </view>
             </view>
           </view>
@@ -140,10 +137,10 @@
       <text class="bottom-price">{{ bottomPriceText }}</text>
       <button
         class="t-button t-button--size-large"
-        :class="(isExchangeMode && !canAffordExchange) || isAllExpired
+        :class="(isExchangeMode && !canAffordExchange)
           ? 't-button--theme-default t-button--variant-outline t-button--disabled'
           : 't-button--theme-warning t-button--variant-base'"
-        :disabled="(isExchangeMode && !canAffordExchange) || isAllExpired"
+        :disabled="isExchangeMode && !canAffordExchange"
         @click="handleBuy"
       >
         <span class="t-button__text">{{ buttonText }}</span>
@@ -178,7 +175,6 @@ const courseInfo = ref({
   name: '',
   type: 1,
   price: 0,
-  soldCount: 0,
   coverImage: '',
   description: '',
   /** 图文介绍（优先展示） */
@@ -239,7 +235,6 @@ const loadCourseDetail = async (courseId: number) => {
     courseInfo.value.name = course.name;
     courseInfo.value.type = course.type;
     courseInfo.value.price = course.current_price || 0;
-    courseInfo.value.soldCount = course.sold_count || 0;
     courseInfo.value.coverImage = course.cover_image || '';
     courseInfo.value.description = course.description || '';
     courseInfo.value.instructor = course.teacher || '';
@@ -345,18 +340,13 @@ const bottomPriceText = computed(() => {
   return '¥' + formatPrice(courseInfo.value.price);
 });
 
-// 是否所有课程记录都已过期（status=3），且没有有效记录
-const isAllExpired = computed(() => {
-  return courseInfo.value.is_purchased && courseInfo.value.user_course_status === 3;
-});
-
-// 按钮文本
+// 按钮文本（user_course_status=3 表示已过期，展示「立即购买」进入下单）
 const buttonText = computed(() => {
   if (isExchangeMode.value) {
     return canAffordExchange.value ? '立即兑换' : '积分不足';
   }
   if (courseInfo.value.type === 4) return '立即预约';
-  if (isAllExpired.value) return '课程已过期';
+  if (courseInfo.value.user_course_status === 3) return '立即购买';
   if (courseInfo.value.is_purchased) return '立即预约';
   return '立即购买';
 });
@@ -416,12 +406,10 @@ const handleBuy = () => {
     return;
   }
 
-  // 已购买且全部过期 → 提示重新购买
-  if (isAllExpired.value) {
-    uni.showModal({
-      title: '提示',
-      content: '课程已过期，请重新购买后继续学习',
-      showCancel: false,
+  // 已购买但课权已过期：走重新下单（勿进排期页，否则会与「未过期已购」混淆）
+  if (courseInfo.value.user_course_status === 3 && courseInfo.value.type !== 4) {
+    uni.navigateTo({
+      url: `/pages/order/confirm/index?courseId=${courseInfo.value.id}`,
     });
     return;
   }

@@ -108,10 +108,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import TdPageHeader from '@/components/tdesign/TdPageHeader.vue';
 import { UserApi } from '@/api';
+import { MY_COURSES_PAGE_PATH } from '@/constants/mp-url-link';
+import { isBusinessLoggedIn, navigateToLoginWithRedirect } from '@/utils/auth-state';
 
 // 课程数据
 const courses = ref<any[]>([]);
@@ -252,11 +254,11 @@ const loadMore = () => {
   }
 };
 
-onMounted(() => {
-  loadMyCourses();
-});
-
 onShow(() => {
+  if (!isBusinessLoggedIn()) {
+    navigateToLoginWithRedirect(MY_COURSES_PAGE_PATH);
+    return;
+  }
   loadMyCourses(true);
 });
 

@@ -15,7 +15,6 @@
         <view class="ch-left">
           <view class="ch-type-row">
             <text class="ch-type">{{ typeLabel }}</text>
-            <text v-if="owned" class="ch-owned">已购买</text>
             <view
               v-if="badgeText"
               class="t-badge t-badge--standalone t-badge--size-small"
@@ -60,8 +59,6 @@ const props = withDefaults(
     priceText: string;
     /** 右侧胶囊文案（首页「查看详情」、商城「立即兑换」等） */
     ctaText: string;
-    /** 已购且非沙龙时展示小标签 */
-    owned?: boolean;
     /** 为 true 时胶囊呈禁用视觉；点胶囊会触发与整卡相同的 click（如跳转详情） */
     ctaDisabled?: boolean;
     /** 类型行右侧可选徽标，如「热门」 */
@@ -72,7 +69,6 @@ const props = withDefaults(
     coverSrc: '',
     placeholderEmoji: '📚',
     placeholderTone: 'pink',
-    owned: false,
     ctaDisabled: false,
     badgeText: '',
     badgeTheme: 'success'
@@ -179,14 +175,6 @@ const onCtaTap = () => {
   font-size: 32rpx;
   font-weight: 600;
   color: $td-text-color-primary;
-}
-
-.ch-owned {
-  font-size: 22rpx;
-  color: $td-success-color;
-  padding: 4rpx 12rpx;
-  border-radius: $td-radius-round;
-  background-color: rgba($td-success-color, 0.12);
 }
 
 .ch-price {

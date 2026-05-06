@@ -4,148 +4,149 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**天道文化小程序** - 基于 UniApp + 腾讯云开发的跨平台应用，用于孙膑道天道文化课程的线上销售、学习管理和推广。
+**天道文化小程序** - 基于 UniApp + 腾讯云开发的跨平台应用，用于孙膑道天道文化课程的线上销售、学习管理和推广。主要目标平台为微信小程序。
 
-仓库包含两个子项目：
-- `universal-cloudbase-uniapp-template/` - 实际开发项目（UniApp + 云开发）
-- `prototype-tdesign/` - 原型设计（静态 HTML/CSS）
+仓库包含三个部分：
+- `universal-cloudbase-uniapp-template/` - 前端主项目（UniApp + 云开发）
+- `prototype-tdesign/` - 原型设计（静态 HTML/CSS，TDesign 规范）
+- `zuowei/` - 独立项目（座位管理系统），与本仓库无架构关联
+
+**必读文档**：`docs/database/数据库详细信息.md` — 数据库字段名/类型的唯一真实来源，每次新任务前必须读取。
 
 ## 常用命令
 
-### UniApp 项目（实际开发）
-
 ```bash
-# 进入项目目录
 cd universal-cloudbase-uniapp-template
 
 # 安装依赖
 npm install
 
-# H5 开发（默认）
+# H5 开发
 npm run dev:h5
 
 # 微信小程序开发
 npm run dev:mp-weixin
 
-# 支付宝小程序开发
-npm run dev:mp-alipay
-
-# 抖音小程序开发
-npm run dev:mp-toutiao
-
-# 构建 H5 生产版本
-npm run build:h5
-
-# 构建微信小程序
-npm run build:mp-weixin
+# 构建
+npm run build:h5        # H5 生产版本
+npm run build:mp-weixin # 微信小程序
 
 # 类型检查
 npm run type-check
 ```
 
-### 原型设计项目
-
-```bash
-cd prototype-tdesign
-
-# 启动本地服务器
-python -m http.server 8000
-# 或
-npx serve
-
-# 访问地址
-http://localhost:8000
-```
+原型设计：`cd prototype-tdesign && python -m http.server 8000`
 
 ## 技术栈
 
-### UniApp 项目
-- **框架**: UniApp (Vue 3 Composition API)
-- **构建工具**: Vite
-- **语言**: TypeScript
-- **后端服务**: 腾讯云开发 CloudBase
-- **多端支持**: H5、微信小程序、支付宝小程序、抖音小程序、App
-
-### 原型设计
-- **技术**: HTML5 + CSS3（纯静态）
-- **设计规范**: TDesign
-- **设备模拟**: iPhone 15 Pro 外壳
+- **框架**: UniApp (Vue 3 Composition API) + TypeScript + Vite
+- **后端**: 腾讯云开发 CloudBase — 云函数(Node.js) + MySQL 关系型数据库
+- **双 SDK**: `wx-server-sdk`（微信支付/订阅消息/小程序码）+ `@cloudbase/node-sdk`（Supabase 风格 Query Builder）
+- **管理后台**: 纯静态 HTML + Vue 3 CDN + TDesign，部署在 CloudBase 静态托管
 
 ## 项目架构
 
-### UniApp 项目结构
+### 页面路由（主包 + 5 个分包）
 
-```
-universal-cloudbase-uniapp-template/
-├── src/
-│   ├── components/          # Vue 组件
-│   ├── pages/               # 页面文件
-│   │   ├── index/           # 首页
-│   │   ├── login/           # 登录模块
-│   │   └── profile/         # 个人中心
-│   ├── utils/               # 工具函数
-│   │   ├── cloudbase.ts     # 云开发配置
-│   │   └── index.ts         # 通用工具
-│   ├── static/              # 静态资源
-│   ├── App.vue              # 应用入口
-│   ├── main.ts              # 入口文件
-│   ├── pages.json           # 页面路由
-│   └── manifest.json        # 应用配置
-├── cloudfunctions/          # 云函数
-├── vite.config.ts           # Vite 配置
-├── tsconfig.json            # TypeScript 配置
-└── cloudbaserc.json         # CloudBase CLI 配置
-```
+**TabBar（4 页）**: 首页 `/pages/index`、商城 `/pages/mall`、商学院 `/pages/academy`、我的 `/pages/mine`
 
-### 原型设计结构
+**分包**:
+- `pages/auth` — 登录、完善资料（独立分包，控制主包体积）
+- `pages/course` — 课程详情、我的课程、排课、预约确认、签到
+- `pages/order` — 下单、支付、待付款/已取消/已退款、退款申请/状态
+- `pages/ambassador` — 等级、申请、团队、二维码、功德分/现金积分、提现、合约签署
+- `pages/common` — 公告、用户协议、隐私政策
 
+### 云函数（6 个）
+
+| 函数 | 职责 | 关键能力 |
+|------|------|----------|
+| `user` | 用户管理 | 登录、资料、推荐人、积分、提现 |
+| `order` | 订单支付 | 微信支付、退款、商城兑换 |
+| `course` | 课程排课 | 课程 CRUD、预约、QR 签到、商学院 |
+| `ambassador` | 大使系统 | 等级、合约、二维码、活动记录 |
+| `system` | 系统管理 | Banner、公告、配置、管理员认证 |
+| `callbacks` | 支付回调 | 微信支付回调处理 |
+
+**路由模式**: `index.js` 按 `action` 字段路由到 `handlers/{public|client|admin}/` 下对应模块。
+
+**三层认证**:
+- **Public**: 无需认证（课程列表、支付回调）
+- **Client**: `checkClientAuth(OPENID)` 验证用户存在于 `users` 表
+- **Admin**: JWT token（Web 后台）或 OPENID 查 `admin_users` 表
+
+**共享层**: 每个云函数都有独立的 `common/` 和 `business-logic/` 副本。修改共享代码后**必须重新部署所有云函数**。
+
+### 数据库概览（MySQL，`tiandao_culture`，35 张表）
+
+核心表：`users`（用户）、`courses`/`user_courses`（课程）、`orders`（订单）、`appointments`/`class_records`（排课签到）、`ambassadors`/`ambassador_levels`/`ambassador_contracts`（大使体系）、`merit_points_records`/`cash_points_records`（双积分系统）、`academy_*`（商学院）
+
+**重要**: 任何 INSERT/UPDATE 前必须先 `SHOW COLUMNS` 确认字段名。
+
+## 关键模式
+
+### API 调用链
 ```
-prototype-tdesign/
-├── styles/                  # 样式文件
-│   ├── tdesign-theme.css    # TDesign 主题变量
-│   ├── reset.css            # 样式重置
-│   └── common.css           # 公共样式
-├── components/              # CSS 组件库
-│   ├── button.css           # 按钮
-│   ├── card.css             # 卡片
-│   ├── input.css            # 输入框
-│   ├── tabs.css             # 标签页
-│   ├── badge.css            # 徽章
-│   ├── avatar.css           # 头像
-│   ├── dialog.css           # 对话框
-│   └── device.css           # iPhone 外壳
-├── pages/                   # 页面（按功能模块分组）
-│   ├── auth/                # 授权登录 (2页)
-│   ├── index/               # 首页 (1页)
-│   ├── course/              # 课程模块 (4页)
-│   ├── order/               # 订单模块 (4页)
-│   ├── mine/                # 个人中心 (8页)
-│   ├── ambassador/          # 大使系统 (11页)
-│   ├── academy/             # 商学院 (3页)
-│   ├── mall/                # 商城 (1页)
-│   └── common/              # 公共页面 (1页)
-├── playground/              # 组件展示
-├── index.html               # 主入口
-└── DESIGN_GUIDE.md          # 设计规范文档
+前端 callCloudFunction({name, action, data})
+  → 微信: wx.cloud.callFunction() / H5: app.callFunction()
+  → 云函数 index.js 按 action 路由
+  → handler 认证 + 业务逻辑 + Query Builder
+  → response.success()/error() 标准化返回
+  → 前端 responseInterceptor 全局处理 401/403/404/422
 ```
 
-## 云开发配置
+### 字段命名约定
+- **前端 API 参数**: camelCase（`realName`, `courseId`）
+- **数据库字段**: snake_case（`real_name`, `course_id`）
+- **云函数返回**: snake_case（与数据库一致）
 
-在 `src/utils/cloudbase.ts` 中配置环境 ID：
+### 认证状态管理
+- 无 Vuex/Pinia，使用 `uni.getStorageSync('userInfo')` + 每页 reactive state
+- **渐进式访问**: 浏览 → 登录 → 完善资料 → 全功能（满足微信审核要求，不强制登录）
+- `preview-guard.ts` 路由守卫控制需要登录的页面
+- `EventBus` + `uni.$emit('tabBarSync')` 用于跨组件通信
 
-```typescript
-const ENV_ID = 'your-env-id'; // 替换为实际环境ID
-```
+### 云存储模式
+- 数据库存 `cloud://` fileID
+- **禁止使用 `getTempFileURL`**（鉴权失败），使用 `cloudFileIDToURL()` 直接构造 CDN URL
+- `cloud://{env}.{bucket}/{path}` → `https://{bucket}.tcb.qcloud.la/{path}`
 
-云开发资源使用：
-- **身份认证**: 匿名登录、短信/邮箱验证码、密码登录、微信小程序登录
-- **云数据库**: NoSQL 数据库存储业务数据
-- **云函数**: 处理服务端逻辑
-- **云存储**: 文件上传下载
+### 日期时间格式
+- MySQL 日期字段必须使用 `formatDateTime(new Date())` 返回 `YYYY-MM-DD HH:MM:SS`
+- **禁止** `toISOString()`（T 和 Z 字符导致 MySQL Error 1292）、`toLocaleString()`、原始 `Date` 对象
+
+### 订单状态机
+- 类型: COURSE(1), RETRAIN(2), UPGRADE(4)
+- 状态流: PENDING(0) → PAID(1)，或 → CANCELLED(2)/CLOSED(3)/REFUNDED(4)
+- 混合支付: 功德分优先 → 现金积分补充（`mixed-payment-calculator.ts`）
+
+### 大使等级
+0=普通用户, 1=实习, 2=青鸾, 3=鸿鹄
+
+## 开发规则
+
+### 云函数开发
+- **部署**: 使用 MCP `updateCloudFunction`，禁止使用 tcb CLI
+- **调试**: 使用 MCP `getFunctionLogs`
+- **定时触发器**: `cloudfunction.json` 中定义但不会随代码同步，需单独用 MCP `manageFunctionTriggers` 部署。`create` 操作会覆盖所有触发器，必须一次性传入全部触发器
+- **callbacks 函数的数据库导入**: 必须从 `../common/db` 导入，禁止从其他函数目录导入（避免 `getDb is not a function`）
+
+### 前端开发
+- 使用 `src/styles/components/` 下的 `.t-*` 类名和 `$td-xxx` SCSS 变量，禁止裸写 hex 颜色
+- 管理后台 favicon 防止、侧边栏导航注册、AdminAPI 注册、CDN 缓存刷新（`?v=YYYYMMDD`）
+
+### 文档同步
+- 功能开发或 bug 修复完成后，必须更新 `需求文档-V2.md` 和 `后端API接口文档.md` 才算"完成"
+- 集成测试文档 `admin/INTEGRATION-TEST-README.md` 也需同步更新
+- 数据库 schema 变更后必须更新 `数据库详细信息.md`
+
+### 代码注释
+**新增代码必须添加注释**：文件头注释、JSDoc、业务逻辑注释、Vue 组件标注。
+
+### 文档创建
+创建任何独立文档（.md/.txt/README 等）前须向用户确认。例外：用户明确要求、项目配置文件、代码注释/JSDoc。
 
 ## 设计规范
-
-### TDesign 颜色变量
 
 ```css
 --td-brand-color: #0052D9;          /* 主品牌色 */
@@ -155,95 +156,4 @@ const ENV_ID = 'your-env-id'; // 替换为实际环境ID
 --td-warning-color: #D4AF37;        /* 金色(价格/徽章) */
 ```
 
-### 间距规范
-- 页面边距：16px
-- 卡片间距：12px
-- 区块间距：24px
-
-## 文档创建确认原则
-
-### 强制执行规则
-
-**创建任何文档（.md、.txt、README 等）前必须先向用户确认**
-
-**新增代码时要添加注释**
-
-**必读文档：`docs/database/数据库详细信息.md`，每次对话开始或收到新任务时，立即读取上述文档**
-
-### 确认内容
-
-在创建文档前，必须向用户确认以下信息：
-
-1. **文档名称和路径**
-   - 完整的文件路径
-   - 文件名称和格式
-
-2. **文档用途和必要性**
-   - 为什么需要这个文档
-   - 文档的主要内容是什么
-   - 是否有替代方案
-
-3. **预计内容大小**
-   - 预计页数或字数
-   - 是否会消耗大量 token
-
-### 例外情况
-
-以下情况可以直接创建，无需确认：
-
-1. **用户明确要求创建的文档**
-   - 用户直接说"创建 XXX 文档"
-   - 用户提供了具体的文档需求
-
-2. **项目必需的配置文件**
-   - `package.json`
-   - `.gitignore`
-   - `.env.example`
-   - `tsconfig.json`
-   - `vite.config.ts`
-   - 等标准配置文件
-
-3. **代码注释和 JSDoc**
-   - 函数注释
-   - 类注释
-   - 行内注释
-   - 这些不属于独立文档
-
-### 目的
-
-- **避免创建无关文档**：防止创建用户不需要的文档
-- **节省 token 消耗**：大型文档会消耗大量 token
-- **提高工作效率**：专注于用户真正需要的内容
-- **保持项目整洁**：避免文档泛滥
-
-### 示例
-
-**❌ 错误做法**：
-```
-用户：实现支付功能
-助手：我来创建支付功能文档、测试文档、部署文档...
-（直接创建了10+个文档，消耗大量 token）
-```
-
-**✅ 正确做法**：
-```
-用户：实现支付功能
-助手：我已完成支付功能的代码实现。是否需要我创建以下文档？
-1. 支付功能说明文档（约5页）
-2. 测试指南（约3页）
-3. 部署文档（约2页）
-请告诉我需要哪些文档。
-```
-
-### 特殊说明
-
-- 如果用户说"编写代码"，默认只编写代码，不创建文档
-- 如果用户说"完整实现"，可以询问是否需要文档
-- 如果用户说"生成文档"，则可以直接创建文档
-- 对于已经创建的文档，可以继续更新和完善
-
-## 相关资源
-
-- [UniApp 文档](https://uniapp.dcloud.io/)
-- [云开发文档](https://cloud.tencent.com/document/product/876)
-- [TDesign 官网](https://tdesign.tencent.com/)
+间距：页面边距 16px，卡片间距 12px，区块间距 24px

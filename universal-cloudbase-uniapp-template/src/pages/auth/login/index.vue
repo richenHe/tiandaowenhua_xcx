@@ -107,11 +107,19 @@ const toggleAgree = () => {
  * 该值传入 login 云函数后，由 login.js 在新用户注册时自动绑定推荐人。
  */
 const sceneValue = ref<string | undefined>(undefined)
+/** 登录成功且资料已完善时跳转的站内路径（由 redirect 查询传入） */
+const redirectAfterLogin = ref<string | null>(null)
 
 onLoad((options) => {
   if (options?.scene) {
     sceneValue.value = decodeURIComponent(options.scene)
     console.log('[login] 扫码进入，scene:', sceneValue.value)
+  }
+  if (options?.redirect) {
+    const raw = decodeURIComponent(String(options.redirect))
+    if (raw.startsWith('/pages/') && !raw.includes('//')) {
+      redirectAfterLogin.value = raw
+    }
   }
 })
 
@@ -158,6 +166,8 @@ const handleWechatLogin = async () => {
         uni.navigateTo({
           url: '/pages/auth/complete-profile/index'
         })
+      } else if (redirectAfterLogin.value) {
+        uni.redirectTo({ url: redirectAfterLogin.value })
       } else {
         uni.switchTab({
           url: '/pages/index/index'
