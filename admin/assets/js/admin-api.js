@@ -375,6 +375,27 @@ class AdminAPI {
     return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCourse', { id: courseId });
   }
 
+  // 分类管理
+  static async getCategoryList(params = {}) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'getCategoryList', params);
+  }
+
+  static async createCategory(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'createCategory', data);
+  }
+
+  static async updateCategory(data) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateCategory', data);
+  }
+
+  static async updateCategorySort(items) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'updateCategorySort', { items });
+  }
+
+  static async deleteCategory(id) {
+    return this.call(CONFIG.CLOUD_FUNCTIONS.COURSE, 'deleteCategory', { id });
+  }
+
   // 排期管理
   static async getClassRecordList(params = {}) {
     // 将前端 camelCase 参数转换为云函数期望的 snake_case

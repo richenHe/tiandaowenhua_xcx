@@ -1,0 +1,22 @@
+- generic [ref=e2]:
+  - generic [ref=e7] [cursor=pointer]:
+    - img "微信公众平台 小程序" [ref=e8]
+    - img [ref=e9]
+  - list [ref=e12]:
+    - listitem [ref=e13]:
+      - link "关于腾讯" [ref=e14] [cursor=pointer]:
+        - /url: http://www.tencent.com/zh-cn/index.shtml
+    - listitem [ref=e15]:
+      - link "文档中心" [ref=e16] [cursor=pointer]:
+        - /url: /wxopen/wawiki?action=dir_list&path=introduction/index&token=906871227&lang=zh_CN
+    - listitem [ref=e17]:
+      - link "规则中心" [ref=e18] [cursor=pointer]:
+        - /url: /webpoc/ruleCenter?type=mp
+    - listitem [ref=e19]:
+      - link "客服中心" [ref=e20] [cursor=pointer]:
+        - /url: http://kf.qq.com/product/wx_xcx.html
+    - listitem [ref=e21]:
+      - link "侵权投诉" [ref=e22] [cursor=pointer]:
+        - /url: /acct/infringement?action=getmanual&t=infringement/manual&type=1&token=906871227&lang=zh_CN
+    - listitem [ref=e23]:
+      - paragraph [ref=e24]: Copyright © 2012-2026 Tencent. All Rights Reserved.

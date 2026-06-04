@@ -11,7 +11,8 @@
  * @param {number}  event.id            - 课程 ID（必填）
  * @param {string}  event.name          - 课程名称
  * @param {string}  event.nickname      - 课程昵称，对应 DB 字段 nickname
- * @param {number}  event.type          - 课程类型（整数 1/2/3）
+ * @param {number}  event.categoryId    - 课程分类ID（关联 course_categories.id）
+ * @param {number}  event.type          - 课程类型（整数 1/2/3/4，由后台根据 categoryId 自动确定）
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
  * @param {number}  event.currentPrice  - 现价，对应 DB 字段 current_price
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
@@ -27,7 +28,7 @@
  * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
  * @param {number}  event.needContract  - 是否需要签订合同：0不需要/1需要，对应 DB 字段 need_contract
  */
-const { db, findOne, update } = require('../../common/db');
+const { db, findOne, update, query } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 const {
@@ -43,6 +44,7 @@ module.exports = async (event, context) => {
     id,
     name,
     nickname,
+    categoryId,
     type,
     coverImage,
     currentPrice,
@@ -62,6 +64,19 @@ module.exports = async (event, context) => {
 
   const descriptionBlocksRaw = event.descriptionBlocks !== undefined ? event.descriptionBlocks : event.description_blocks;
   const outlineBlocksRaw = event.outlineBlocks !== undefined ? event.outlineBlocks : event.outline_blocks;
+
+  // 根据 categoryId 确定课程 type
+  // 系统分类(1-4): type = categoryId；自定义分类(>=5): type 强制写入 2（密训班模板）
+  async function resolveType(categoryId, fallbackType) {
+    if (categoryId) {
+      const category = await findOne('course_categories', { id: parseInt(categoryId) });
+      if (!category) {
+        throw new Error('所选课程分类不存在');
+      }
+      return category.is_system === 1 ? category.id : 2;
+    }
+    return fallbackType;
+  }
 
   try {
     // 参数验证
@@ -94,15 +109,26 @@ module.exports = async (event, context) => {
     // 转换 camelCase → snake_case，构建 DB 更新字段
     // 只添加实际传入的字段（undefined 表示未传，跳过）
     const fieldsToUpdate = {};
+
+    // categoryId 处理：根据分类确定 type
+    let effectiveType = course.type; // 默认用数据库已有值
+    if (categoryId !== undefined) {
+      effectiveType = await resolveType(categoryId, effectiveType);
+      fieldsToUpdate.category_id = parseInt(categoryId);
+      fieldsToUpdate.type = effectiveType;
+    } else if (type !== undefined) {
+      effectiveType = parseInt(type);
+      fieldsToUpdate.type = effectiveType;
+    }
+
     if (name !== undefined) fieldsToUpdate.name = name;
     if (nickname !== undefined) fieldsToUpdate.nickname = nickname;
-    if (type !== undefined) fieldsToUpdate.type = type;
+    if (categoryId === undefined && type !== undefined) fieldsToUpdate.type = type;
     if (coverImage !== undefined) fieldsToUpdate.cover_image = coverImage;
     if (currentPrice !== undefined) fieldsToUpdate.current_price = currentPrice;
     if (originalPrice !== undefined) fieldsToUpdate.original_price = originalPrice;
     if (allowRetrain !== undefined) fieldsToUpdate.allow_retrain = allowRetrain ? 1 : 0;
     // 沙龙课程(type=4)跳过有效期校验，其余类型必须为正整数
-    const effectiveType = type !== undefined ? parseInt(type) : course.type;
     const isSalon = effectiveType === 4;
     if (validityDays !== undefined && !isSalon) {
       const vd = parseInt(validityDays);
@@ -135,8 +161,7 @@ module.exports = async (event, context) => {
     if (sortOrder !== undefined) fieldsToUpdate.sort_order = sortOrder;
     // 密训班赠送课程：将单个 ID 转为 JSON 数组；传 null 表示清除；目标须为未删除的初探班
     if (includedCourseIds !== undefined) {
-      const effectiveTypeForGift = type !== undefined ? parseInt(type, 10) : parseInt(course.type, 10);
-      if (effectiveTypeForGift === 2) {
+      if (effectiveType === 2) {
         if (!includedCourseIds) {
           fieldsToUpdate.included_course_ids = null;
         } else {

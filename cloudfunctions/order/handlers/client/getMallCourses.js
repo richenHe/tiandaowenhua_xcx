@@ -39,6 +39,7 @@ module.exports = async (event, context) => {
         name: item.name,
         nickname: item.nickname || '',
         type: item.type,
+        categoryId: item.category_id || item.type,
         coverImage: cloudFileIDToURL(item.cover_image || ''),
         description: item.description || '',
         teacher: item.teacher || '',

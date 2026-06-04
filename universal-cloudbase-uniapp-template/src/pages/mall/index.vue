@@ -257,15 +257,18 @@ const loadMallCourses = async () => {
     uni.showLoading({ title: '加载中...' })
     const result = await OrderApi.getMallCourses({ page: 1, page_size: 100 })
 
-    courses.value = result.list.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      icon: getCourseIcon(item.type),
-      mediaTone: getCourseMediaTone(item.type),
-      coverImage: item.coverImage || '',
-      points: item.currentPrice,
-      badge: item.soldCount > 100 ? '热门' : ''
-    }))
+    courses.value = result.list.map((item: any) => {
+      const catId = item.categoryId || item.type;
+      return {
+        id: item.id,
+        name: item.name,
+        icon: getCourseIcon(catId),
+        mediaTone: getCourseMediaTone(catId),
+        coverImage: item.coverImage || '',
+        points: item.currentPrice,
+        badge: item.soldCount > 100 ? '热门' : ''
+      }
+    })
     uni.hideLoading()
   } catch (error) {
     console.error('加载商城课程失败:', error)
@@ -273,7 +276,7 @@ const loadMallCourses = async () => {
   }
 }
 
-// 获取课程图标
+// 获取课程图标（基于 category_id，兼容旧 type）
 const getCourseIcon = (type: number): string => {
   const iconMap: Record<number, string> = {
     1: '📚',
@@ -281,7 +284,7 @@ const getCourseIcon = (type: number): string => {
     3: '🔄',
     4: '🎤'
   }
-  return iconMap[type] || '📚'
+  return iconMap[type] || '🎓'
 }
 
 /** 无封面时与首页课程列表一致的占位渐变 tone */
@@ -292,7 +295,7 @@ const getCourseMediaTone = (type: number): 'pink' | 'blue' | 'purple' | 'orange'
     3: 'purple',
     4: 'orange'
   }
-  return toneMap[type] || 'pink'
+  return toneMap[type] || 'blue'
 }
 
 // 跳转积分明细（功德分管理页面）

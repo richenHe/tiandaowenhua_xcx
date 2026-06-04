@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260421">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260525">
   
   <style>
     .type-tag {
@@ -155,8 +155,8 @@
     <div class="page-header">
       <h1 class="page-title">课程列表</h1>
       <t-space>
+        <t-button theme="default" @click="showCategoryDialog">分类管理</t-button>
         <t-button theme="primary" @click="showAddDialog">新增课程</t-button>
-        
       </t-space>
     </div>
 
@@ -167,13 +167,10 @@
           <t-input v-model="searchForm.keyword" placeholder="请输入课程名称" />
         </t-form-item>
         
-        <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙 -->
-        <t-form-item label="课程类型" name="type">
-          <t-select v-model="searchForm.type" placeholder="请选择课程类型" clearable>
-            <t-option :value="1" label="初探班"></t-option>
-            <t-option :value="2" label="密训班"></t-option>
-            <t-option :value="3" label="咨询服务"></t-option>
-            <t-option :value="4" label="沙龙"></t-option>
+        <!-- 课程分类（动态从 API 获取） -->
+        <t-form-item label="课程分类" name="categoryId">
+          <t-select v-model="searchForm.categoryId" placeholder="请选择课程分类" clearable>
+            <t-option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id" :label="cat.name"></t-option>
           </t-select>
         </t-form-item>
 
@@ -213,10 +210,10 @@
           <span v-else>-</span>
         </template>
         
-        <!-- 课程类型 -->
+        <!-- 课程分类 -->
         <template #type="{ row }">
-          <span :class="['type-tag', getTypeClass(row.type)]">
-            {{ getTypeText(row.type) }}
+          <span :class="['type-tag', getTypeClass(row.category_id || row.type)]">
+            {{ row.category_name || getTypeText(row.type) }}
           </span>
         </template>
         
@@ -233,10 +230,10 @@
           </span>
         </template>
         
-        <!-- 操作列；咨询服务（type=3）暂停编辑 -->
+        <!-- 操作列；咨询服务（category_id=3）暂停编辑 -->
         <template #operation="{ row }">
           <t-space>
-            <t-link theme="primary" :disabled="row.type === 3" @click="row.type !== 3 && editCourse(row)">编辑</t-link>
+            <t-link theme="primary" :disabled="row.category_id === 3" @click="row.category_id !== 3 && editCourse(row)">编辑</t-link>
             <t-link v-if="row.type !== 4 && row.need_contract === 1" theme="primary" @click="openCourseContract(row)">合同</t-link>
             <t-link 
               :theme="row.status === 1 ? 'warning' : 'success'" 
@@ -271,13 +268,10 @@
           <t-input v-model="editForm.nickname" placeholder="选填，课程简称（如：初探班）" :disabled="isCourseLocked" />
         </t-form-item>
         
-        <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
-        <!-- courses.type: 1初探班/2密训班/3咨询服务/4沙龙；咨询服务暂停新增/编辑 -->
-        <t-form-item label="课程类型" name="type" :rules="[{ required: true, message: '请选择课程类型' }]">
-          <t-select v-model="editForm.type" placeholder="请选择课程类型" :disabled="isCourseLocked">
-            <t-option :value="1" label="初探班"></t-option>
-            <t-option :value="2" label="密训班"></t-option>
-            <t-option :value="4" label="沙龙"></t-option>
+        <!-- 课程分类（动态从 API 获取，选分类后自动确定 type） -->
+        <t-form-item label="课程分类" name="categoryId" :rules="[{ required: true, message: '请选择课程分类' }]">
+          <t-select v-model="editForm.categoryId" placeholder="请选择课程分类" :disabled="isCourseLocked" @change="onCategoryChange">
+            <t-option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id" :label="cat.name" v-show="cat.id !== 3"></t-option>
           </t-select>
         </t-form-item>
         
@@ -498,6 +492,45 @@
       </t-form>
     </t-dialog>
 
+    <!-- 分类管理弹窗 -->
+    <t-dialog
+      v-model:visible="categoryDialogVisible"
+      header="课程分类管理"
+      width="650px"
+      :footer="false"
+      @close="categoryDialogVisible=false"
+    >
+      <div style="margin-bottom:16px;padding:16px;background:#f8f9fa;border:1px solid #e7e7e7;border-radius:8px;">
+        <div style="font-weight:600;margin-bottom:10px;font-size:14px;">+ 新增分类</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input v-model="newCategoryName" placeholder="输入分类名称" style="flex:1;height:32px;padding:0 12px;border:1px solid #dcdcdc;border-radius:3px;font-size:14px;outline:none;" />
+          <button type="button" @click="handleCreateCategory" style="height:32px;padding:0 20px;background:#0052d9;color:#fff;border:none;border-radius:3px;font-size:14px;cursor:pointer;white-space:nowrap;">确认新增</button>
+        </div>
+      </div>
+      <t-table :data="categoryList" :columns="categoryColumns" row-key="id" size="small" :loading="categoryLoading">
+        <template #name="{ row }">
+          <span v-if="row.is_system === 1" style="color:#0052d9;">🔒 {{ row.name }} <t-tag size="small" theme="primary" variant="light">系统</t-tag></span>
+          <span v-else>{{ row.name }}</span>
+        </template>
+        <template #sort_order="{ row, rowIndex }">
+          <t-space size="4">
+            <t-button size="small" variant="text" :disabled="rowIndex === 0" @click="moveCategory(rowIndex, -1)">↑</t-button>
+            <t-button size="small" variant="text" :disabled="rowIndex >= categoryList.length - 1" @click="moveCategory(rowIndex, 1)">↓</t-button>
+          </t-space>
+        </template>
+        <template #status="{ row }">
+          <t-switch v-model="row.status" :true-value="1" :false-value="0" :disabled="row.is_system === 1" @change="(val) => handleToggleCategoryStatus(row, val)" />
+        </template>
+        <template #operation="{ row }">
+          <t-space v-if="row.is_system !== 1">
+            <t-link theme="primary" @click="editCategoryName(row)">编辑</t-link>
+            <t-link theme="danger" @click="handleDeleteCategory(row)">删除</t-link>
+          </t-space>
+          <span v-else style="color:#999;">-</span>
+        </template>
+      </t-table>
+    </t-dialog>
+
     <!-- 课程学习服务协议弹窗 -->
     <t-dialog
       v-model:visible="contractDialogVisible"
@@ -548,14 +581,14 @@
   <!-- CloudBase SDK & 云存储 -->
   <script src="../../assets/libs/cloudbase.full.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260421"></script>
-  <script src="../../assets/js/cloudbase.js?v=20260421"></script>
-  <script src="../../assets/js/cloud-storage-helper.js?v=20260421"></script>
-  <script src="../../assets/js/admin-rich-text-inline.js?v=20260421"></script>
-  <script src="../../assets/js/vue-editable-html-directive.js?v=20260421"></script>
+  <script src="../../assets/js/config.js?v=20260525"></script>
+  <script src="../../assets/js/cloudbase.js?v=20260525"></script>
+  <script src="../../assets/js/cloud-storage-helper.js?v=20260525"></script>
+  <script src="../../assets/js/admin-rich-text-inline.js?v=20260525"></script>
+  <script src="../../assets/js/vue-editable-html-directive.js?v=20260525"></script>
   <!-- API 封装 -->
-  <script src="../../assets/js/admin-api.js?v=20260421"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260421"></script>
+  <script src="../../assets/js/admin-api.js?v=20260525"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260525"></script>
 
   <script>
     const { createApp, ref, reactive, computed, onMounted } = Vue;
@@ -618,7 +651,7 @@
         const courses = ref([]);
         const searchForm = reactive({
           keyword: '',
-          type: '',
+          categoryId: '',
           status: ''
         });
         
@@ -631,12 +664,16 @@
         const editDialogVisible = ref(false);
         const editMode = ref('add');
         const editFormRef = ref(null);
+        // 分类选项（从 API 动态加载）
+        const categoryOptions = ref([]);
+
         // editForm 所有字段使用 camelCase，云函数负责转换为 snake_case
         const editForm = reactive({
           id: null,
           name: '',
           nickname: '',
-          type: null,
+          categoryId: null,  // 课程分类ID（关联 course_categories.id）
+          type: null,        // 课程类型（由 categoryId 自动确定，保留兼容）
           coverImage: '',      // 云存储 fileID，提交给云函数
           coverImageURL: '',   // 临时 URL，仅用于显示预览
           currentPrice: 0,
@@ -653,6 +690,17 @@
           needContract: 1,
           includedCourseId: null    // 密训班赠送的初探班 course id；null=不赠送
         });
+
+        // 分类变更时：系统分类 type=categoryId，自定义分类 type=2（密训班模板）
+        const onCategoryChange = (catId) => {
+          if (!catId) { editForm.type = null; return; }
+          const cat = categoryOptions.value.find(c => c.id === catId);
+          if (cat && cat.is_system === 1) {
+            editForm.type = cat.id; // 系统分类：1初探/2密训/3咨询/4沙龙
+          } else {
+            editForm.type = 2; // 自定义分类：密训班模板
+          }
+        };
         const isCourseLocked = ref(false);        // 课程已上架时锁定编辑
         const publishedCourseOptions = ref([]);   // 管理端课程列表（供赠送初探班下拉）
 
@@ -832,6 +880,136 @@
           arr[j] = t;
         };
 
+        // ── 分类管理 ──
+        const categoryDialogVisible = ref(false);
+        const categoryLoading = ref(false);
+        const categoryList = ref([]);
+        const newCategoryName = ref('');
+        const categoryColumns = [
+          { colKey: 'name', title: '分类名称', width: 180 },
+          { colKey: 'sort_order', title: '排序', width: 100 },
+          { colKey: 'status', title: '状态', width: 80 },
+          { colKey: 'operation', title: '操作', width: 120 }
+        ];
+
+        // 加载分类列表
+        const fetchCategoryOptions = async () => {
+          try {
+            const data = await AdminAPI.getCategoryList();
+            categoryOptions.value = data.list || [];
+          } catch (e) {
+            console.warn('加载分类选项失败', e);
+          }
+        };
+
+        // 加载后台分类列表（含禁用）
+        const fetchCategoryList = async () => {
+          categoryLoading.value = true;
+          try {
+            const data = await AdminAPI.getCategoryList();
+            categoryList.value = data.list || [];
+          } catch (e) {
+            console.error('加载分类列表失败', e);
+            TDesign.MessagePlugin.error('加载分类列表失败');
+          } finally {
+            categoryLoading.value = false;
+          }
+        };
+
+        // 显示分类管理对话框
+        const showCategoryDialog = () => {
+          categoryDialogVisible.value = true;
+          fetchCategoryList();
+        };
+
+        // 新增分类（sort_order 自动跟在最后一个后）
+        const handleCreateCategory = async () => {
+          const name = newCategoryName.value.trim();
+          if (!name) {
+            TDesign.MessagePlugin.warning('请输入分类名称');
+            return;
+          }
+          try {
+            // 自动计算 sort_order = 当前最大排序号 + 1
+            const maxSort = categoryList.value.length > 0
+              ? Math.max(...categoryList.value.map(c => c.sort_order || 0))
+              : 0;
+            await AdminAPI.createCategory({ name, sortOrder: maxSort + 1 });
+            TDesign.MessagePlugin.success('分类创建成功');
+            newCategoryName.value = '';
+            await Promise.all([fetchCategoryList(), fetchCategoryOptions()]);
+          } catch (e) {
+            TDesign.MessagePlugin.error('创建失败: ' + e.message);
+          }
+        };
+
+        // 编辑分类名称
+        const editCategoryName = async (row) => {
+          const newName = prompt('请输入新的分类名称：', row.name);
+          if (newName && newName.trim() && newName.trim() !== row.name) {
+            try {
+              await AdminAPI.updateCategory({ id: row.id, name: newName.trim() });
+              TDesign.MessagePlugin.success('分类更新成功');
+              await Promise.all([fetchCategoryList(), fetchCategoryOptions()]);
+            } catch (e) {
+              TDesign.MessagePlugin.error('更新失败: ' + e.message);
+            }
+          }
+        };
+
+        // 启/禁分类
+        const handleToggleCategoryStatus = async (row, val) => {
+          try {
+            await AdminAPI.updateCategory({ id: row.id, status: val });
+            TDesign.MessagePlugin.success(val === 1 ? '已启用' : '已禁用');
+            await Promise.all([fetchCategoryList(), fetchCategoryOptions()]);
+          } catch (e) {
+            TDesign.MessagePlugin.error('操作失败: ' + e.message);
+            row.status = val === 1 ? 0 : 1; // 回滚
+          }
+        };
+
+        // 删除分类
+        const handleDeleteCategory = async (row) => {
+          const dialog = TDesign.DialogPlugin.confirm({
+            header: '确认删除',
+            body: `确定要删除分类「${row.name}」吗？该操作不可恢复。`,
+            confirmBtn: '确认删除',
+            cancelBtn: '取消',
+            onConfirm: async () => {
+              try {
+                await AdminAPI.deleteCategory(row.id);
+                TDesign.MessagePlugin.success('分类删除成功');
+                await Promise.all([fetchCategoryList(), fetchCategoryOptions()]);
+              } catch (e) {
+                TDesign.MessagePlugin.error('删除失败: ' + e.message);
+              } finally {
+                dialog.hide();
+              }
+            },
+            onCancel: () => dialog.hide(),
+            onClose: () => dialog.hide()
+          });
+        };
+
+        // 上移/下移
+        const moveCategory = async (index, delta) => {
+          const list = [...categoryList.value];
+          const j = index + delta;
+          if (j < 0 || j >= list.length) return;
+          [list[index], list[j]] = [list[j], list[index]];
+          const items = list.map((cat, i) => ({ id: cat.id, sortOrder: i }));
+          categoryList.value = list; // 乐观更新
+          try {
+            await AdminAPI.updateCategorySort(items);
+            TDesign.MessagePlugin.success('排序更新成功');
+            await fetchCategoryOptions();
+          } catch (e) {
+            TDesign.MessagePlugin.error('排序更新失败: ' + e.message);
+            await fetchCategoryList();
+          }
+        };
+
         // 表格列配置
         const columns = [
           { colKey: 'id', title: 'ID', width: 80 },
@@ -881,7 +1059,7 @@
         const handleReset = () => {
           Object.assign(searchForm, {
             keyword: '',
-            type: '',
+            categoryId: '',
             status: ''
           });
           handleSearch();
@@ -912,6 +1090,7 @@
             id: null,
             name: '',
             nickname: '',
+            categoryId: null,
             type: null,
             coverImage: '',
             coverImageURL: '',
@@ -951,6 +1130,7 @@
             id: course.id,
             name: course.name,
             nickname: course.nickname || '',
+            categoryId: course.category_id || course.type, // 优先用 category_id，兼容旧数据
             type: course.type,
             coverImage: course.cover_image || '',
             coverImageURL: '',
@@ -1000,6 +1180,7 @@
             const params = {
               name: editForm.name,
               nickname: editForm.nickname,
+              categoryId: editForm.categoryId,  // 优先使用分类ID
               type: editForm.type,
               coverImage: editForm.coverImage,
               currentPrice: isSalon ? 0 : editForm.currentPrice,
@@ -1236,6 +1417,7 @@
         onMounted(() => {
           if (checkAuth()) {
           fetchCourses();
+          fetchCategoryOptions();
         }
         });
 
@@ -1255,6 +1437,19 @@
           isCourseLocked,
           publishedCourseOptions,
           giftBasicCourseSelectOptions,
+          categoryOptions,
+          categoryDialogVisible,
+          categoryLoading,
+          categoryList,
+          newCategoryName,
+          categoryColumns,
+          onCategoryChange,
+          showCategoryDialog,
+          handleCreateCategory,
+          editCategoryName,
+          handleToggleCategoryStatus,
+          handleDeleteCategory,
+          moveCategory,
           handleSearch,
           handleReset,
           handlePageChange,

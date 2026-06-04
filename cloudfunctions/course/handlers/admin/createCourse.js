@@ -10,7 +10,8 @@
  * @param {Object} event
  * @param {string}  event.name          - 课程名称（必填）
  * @param {string}  event.nickname      - 课程昵称，对应 DB 字段 nickname
- * @param {number}  event.type          - 课程类型（必填，整数 1/2/3）
+ * @param {number}  event.categoryId    - 课程分类ID（必填，关联 course_categories.id）
+ * @param {number}  event.type          - 课程类型（整数 1/2/3/4，由后台根据 categoryId 自动确定）
  * @param {number}  event.currentPrice  - 现价（必填），对应 DB 字段 current_price
  * @param {string}  event.coverImage    - 封面图URL，对应 DB 字段 cover_image
  * @param {number}  event.originalPrice - 原价，对应 DB 字段 original_price
@@ -26,7 +27,7 @@
  * @param {number}  event.includedCourseIds - 赠送课程ID（密训班用，单个ID），对应 DB 字段 included_course_ids JSON
  * @param {number}  event.needContract  - 是否需要签订合同：0不需要/1需要，对应 DB 字段 need_contract
  */
-const { insert, findOne } = require('../../common/db');
+const { db, insert, findOne } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 const {
@@ -41,6 +42,7 @@ module.exports = async (event, context) => {
   // 接收 camelCase 参数，同时兼容 snake_case（防止旧客户端传参）
   const name = event.name;
   const nickname = event.nickname;
+  const categoryId = event.categoryId || event.category_id;
   const type = event.type;
   const coverImage = event.coverImage || event.cover_image;
   const currentPrice = event.currentPrice || event.current_price;
@@ -59,11 +61,29 @@ module.exports = async (event, context) => {
   const needContract = event.needContract !== undefined ? event.needContract : event.need_contract;
 
   try {
-    const isSalon = parseInt(type) === 4;
+    // 根据 categoryId 确定课程 type
+    // 系统分类(1-4): type = categoryId；自定义分类(>=5): type 强制写入 2（密训班模板）
+    let resolvedType = type;
+    if (categoryId) {
+      const category = await findOne('course_categories', { id: parseInt(categoryId) });
+      if (!category) {
+        return response.paramError('所选课程分类不存在');
+      }
+      if (category.is_system === 1) {
+        resolvedType = category.id; // 系统分类：type = categoryId
+      } else {
+        resolvedType = 2; // 自定义分类：type = 2（密训班模板）
+      }
+    }
+    if (!resolvedType) {
+      return response.paramError('缺少课程类型或分类');
+    }
+    const finalType = parseInt(resolvedType);
+    const isSalon = finalType === 4;
 
     // 参数验证：沙龙课程无需价格，其余类型 currentPrice 必填
-    const requiredFields = isSalon ? ['name', 'type'] : ['name', 'type', 'currentPrice'];
-    const requiredObj = isSalon ? { name, type } : { name, type, currentPrice };
+    const requiredFields = isSalon ? ['name'] : ['name', 'currentPrice'];
+    const requiredObj = isSalon ? { name } : { name, currentPrice };
     const validation = validateRequired(requiredObj, requiredFields);
     if (!validation.valid) {
       return response.paramError(validation.message);
@@ -79,8 +99,9 @@ module.exports = async (event, context) => {
     }
 
     // 密训班赠送课程：仅允许绑定未删除的初探班（type=1）
+    // finalType === 2 匹配系统密训班 + 自定义分类（密训班模板）
     let includedCourseIdsJson = null;
-    if (parseInt(type) === 2 && includedCourseIds) {
+    if (finalType === 2 && includedCourseIds) {
       const rawGiftId = Array.isArray(includedCourseIds) ? includedCourseIds[0] : includedCourseIds;
       const gid = parseInt(rawGiftId, 10);
       if (gid) {
@@ -111,7 +132,8 @@ module.exports = async (event, context) => {
     const [result] = await insert('courses', {
       name,
       nickname: nickname || null,
-      type,
+      type: finalType,
+      category_id: categoryId ? parseInt(categoryId) : null,
       cover_image: coverImage || null,
       description: descPlain,
       description_blocks: serializeBlocksForDb(descBlocks),

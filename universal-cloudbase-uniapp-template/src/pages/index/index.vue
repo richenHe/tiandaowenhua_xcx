@@ -147,12 +147,9 @@ const announcementList = ref<{ id: number; title: string }[]>([]);
 // 轮播图数据
 const bannerList = ref<any[]>([]);
 
-// 标签页数据（课程类型与数据库 courses.type 对齐：1初探班/2密训班/4沙龙；'calendar'为日历UI功能）
-const allTabList = ref([
+// 标签页数据（动态从 API 获取，'calendar'为日历UI功能）
+const allTabList = ref<Array<{ label: string; value: number | string }>>([
   { label: '全部', value: 'all' },
-  { label: '初探班', value: 1 },
-  { label: '密训班', value: 2 },
-  { label: '沙龙', value: 4 },
   { label: '日历', value: 'calendar' }
 ]);
 
@@ -160,15 +157,6 @@ const allTabList = ref([
 const courseList = ref<any[]>([]);
 /** 首页课程列表请求中：为 true 时不展示「暂无课程」，避免首屏误闪 */
 const courseListLoading = ref(true);
-
-const COURSE_TYPE_LABELS: Record<number, string> = {
-  1: '初探班',
-  2: '密训班',
-  3: '咨询服务',
-  4: '沙龙'
-};
-
-const getCourseTypeLabel = (type: number): string => COURSE_TYPE_LABELS[type] || '课程';
 
 /** 与 TdPageHeader 占位高度算法一致（状态栏 + 44px 导航条），scroll-view 在微信端需明确高度 */
 const NAVBAR_HEIGHT_PX = 44;
@@ -182,6 +170,24 @@ const syncScrollViewHeight = () => {
   scrollViewHeightPx.value = Math.max(0, si.windowHeight - headerBlockPx);
 };
 
+// 加载分类列表，动态构建 tabs
+const loadTabs = async () => {
+  try {
+    const result = await CourseApi.getCategoryList();
+    const cats = (result.list || []);
+    const tabs: Array<{ label: string; value: number | string }> = [
+      { label: '全部', value: 'all' }
+    ];
+    for (const cat of cats) {
+      tabs.push({ label: cat.name, value: cat.id });
+    }
+    tabs.push({ label: '日历', value: 'calendar' });
+    allTabList.value = tabs;
+  } catch (e) {
+    console.error('加载分类列表失败:', e);
+  }
+};
+
 // 加载课程列表
 const loadCourseList = async () => {
   courseListLoading.value = true;
@@ -191,13 +197,15 @@ const loadCourseList = async () => {
 
     courseList.value = result.list.map((course: any) => {
       const priceNum = course.current_price || 0;
+      const catId = course.category_id || course.type;
       return {
         id: course.id,
-        emoji: getCourseEmoji(course.type),
-        mediaTone: getCourseMediaTone(course.type),
+        emoji: getCourseEmoji(catId, course.type),
+        mediaTone: getCourseMediaTone(catId, course.type),
         coverImage: course.cover_image || '',
         type: course.type,
-        typeLabel: getCourseTypeLabel(course.type),
+        categoryId: catId,
+        categoryName: course.category_name || '',
         priceText: course.type === 4 ? '免费' : `¥${formatPrice(priceNum)}`,
         badgeText: '查看详情'
       };
@@ -214,36 +222,37 @@ const loadCourseList = async () => {
   }
 };
 
-// 获取课程图标
-const getCourseEmoji = (type: number): string => {
+// 获取课程图标（基于 category_id，兼容旧 type）
+const getCourseEmoji = (categoryId: number, fallbackType?: number): string => {
+  // 系统分类使用固定图标，自定义分类默认🎓
   const emojiMap: Record<number, string> = {
     1: '📚',
     2: '🎓',
     3: '🔄',
     4: '🎤'
   };
-  return emojiMap[type] || '📚';
+  return emojiMap[categoryId] || '🎓';
 };
 
-const getCourseMediaTone = (type: number): 'pink' | 'blue' | 'purple' | 'orange' => {
+const getCourseMediaTone = (categoryId: number, fallbackType?: number): 'pink' | 'blue' | 'purple' | 'orange' => {
   const toneMap: Record<number, 'pink' | 'blue' | 'purple' | 'orange'> = {
     1: 'pink',
     2: 'blue',
     3: 'purple',
     4: 'orange'
   };
-  return toneMap[type] || 'pink';
+  return toneMap[categoryId] || 'blue'; // 自定义分类默认蓝色（密训班模板）
 };
 
 // 日历排期数据（日期键 → 课程信息，含多日课展开后的 nicknames）
 const calendarPriceData = ref<CalendarData>({});
 
-// 根据标签筛选课程（currentTab 为数字时按课程类型过滤）
+// 根据标签筛选课程（currentTab 为数字时按 categoryId 过滤，兼容旧 type）
 const filteredCourseList = computed(() => {
   if (currentTab.value === 'all' || currentTab.value === 'calendar') {
     return courseList.value;
   }
-  return courseList.value.filter(course => course.type === currentTab.value);
+  return courseList.value.filter(course => course.categoryId === currentTab.value);
 });
 
 // 轮播切换事件
@@ -403,6 +412,7 @@ onMounted(() => {
   syncScrollViewHeight();
   loadBannerList();
   loadCalendarPriceData();
+  loadTabs();
   loadCourseList();
   loadAnnouncements();
 });
@@ -411,6 +421,7 @@ onShow(() => {
   syncScrollViewHeight();
   loadBannerList();
   loadCalendarPriceData();
+  loadTabs();
   loadCourseList();
   loadAnnouncements();
 });

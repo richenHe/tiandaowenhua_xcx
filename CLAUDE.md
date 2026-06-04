@@ -8,8 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 仓库包含三个部分：
 - `universal-cloudbase-uniapp-template/` - 前端主项目（UniApp + 云开发）
+- `admin/` - 管理后台（纯静态 HTML + Vue 3 CDN + TDesign），部署在 CloudBase 静态托管，通过 AdminAPI 操作云函数
 - `prototype-tdesign/` - 原型设计（静态 HTML/CSS，TDesign 规范）
-- `zuowei/` - 独立项目（座位管理系统），与本仓库无架构关联
+- `zuowei/` - 独立项目（座位管理系统，Vue 3 + Express + PostgreSQL），与本仓库无架构关联
+
+**Cursor 规则文件**: `.cursor/rules/` 目录含 13 个 `.mdc` 规则文件（core、cloudfunction、frontend 等），由 Cursor IDE 自动注入。CLAUDE.md 已同步其中关键规则，但遇到 Cursor 特有行为时需参考该目录。
 
 **必读文档**：`docs/database/数据库详细信息.md` — 数据库字段名/类型的唯一真实来源，每次新任务前必须读取。
 
@@ -42,9 +45,19 @@ npm run type-check
 - **框架**: UniApp (Vue 3 Composition API) + TypeScript + Vite
 - **后端**: 腾讯云开发 CloudBase — 云函数(Node.js) + MySQL 关系型数据库
 - **双 SDK**: `wx-server-sdk`（微信支付/订阅消息/小程序码）+ `@cloudbase/node-sdk`（Supabase 风格 Query Builder）
-- **管理后台**: 纯静态 HTML + Vue 3 CDN + TDesign，部署在 CloudBase 静态托管
-
 ## 项目架构
+
+### 管理后台 (`admin/`)
+
+纯静态 HTML 应用，无需构建，直接部署到 CloudBase 静态托管。架构：
+- **入口**: 多个独立 HTML 页面（`index.html`、`dashboard.html`、`api-test.html`、`integration-test.html`）
+- **技术**: Vue 3 CDN + TDesign CDN（`assets/libs/`），无 npm 依赖
+- **API 层**: `assets/js/admin-api.js` 封装所有 Admin API 调用
+- **导航**: `assets/js/sidebar-navigation.js` 注册所有页面路由
+- **页面**: `pages/` 按模块分目录（`user/`、`course/`、`order/`、`ambassador/`、`system/`）
+
+新页面开发：创建 HTML → 在 `sidebar-navigation.js` 注册 → AdminAPI 注册 → 部署后 CDN 缓存刷新 `?v=YYYYMMDD`
+
 
 ### 页面路由（主包 + 5 个分包）
 
@@ -75,7 +88,7 @@ npm run type-check
 - **Client**: `checkClientAuth(OPENID)` 验证用户存在于 `users` 表
 - **Admin**: JWT token（Web 后台）或 OPENID 查 `admin_users` 表
 
-**共享层**: 每个云函数都有独立的 `common/` 和 `business-logic/` 副本。修改共享代码后**必须重新部署所有云函数**。
+**共享层**: `cloudfunctions/common/` 和 `cloudfunctions/business-logic/` 为模板源，每个云函数子目录内有独立副本。修改共享代码后**必须重新部署所有 6 个云函数**。各函数内 `common/` 模块路径为相对引用（如 `../common/db`），不可跨函数导入。
 
 ### 数据库概览（MySQL，`tiandao_culture`，35 张表）
 
@@ -128,12 +141,15 @@ npm run type-check
 ### 云函数开发
 - **部署**: 使用 MCP `updateCloudFunction`，禁止使用 tcb CLI
 - **调试**: 使用 MCP `getFunctionLogs`
+- **API 文档**: 每个云函数目录内都有 `API文档.md`，记录该函数所有 action 的请求/响应格式
 - **定时触发器**: `cloudfunction.json` 中定义但不会随代码同步，需单独用 MCP `manageFunctionTriggers` 部署。`create` 操作会覆盖所有触发器，必须一次性传入全部触发器
 - **callbacks 函数的数据库导入**: 必须从 `../common/db` 导入，禁止从其他函数目录导入（避免 `getDb is not a function`）
 
 ### 前端开发
 - 使用 `src/styles/components/` 下的 `.t-*` 类名和 `$td-xxx` SCSS 变量，禁止裸写 hex 颜色
-- 管理后台 favicon 防止、侧边栏导航注册、AdminAPI 注册、CDN 缓存刷新（`?v=YYYYMMDD`）
+- 设计令牌源文件在 `src/design-tokens/`（`colors.json`、`spacing.json`、`radius.json`），全局 SCSS 变量定义在 `src/styles/tdesign-vars.scss`
+- 管理后台 favicon 配置、侧边栏导航注册、AdminAPI 注册、CDN 缓存刷新（`?v=YYYYMMDD`）
+- H5 开发时 `vite.config.ts` 配置了 `server.proxy` 代理 CloudBase 认证，`allowedHosts: true` 支持局域网调试
 
 ### 文档同步
 - 功能开发或 bug 修复完成后，必须更新 `需求文档-V2.md` 和 `后端API接口文档.md` 才算"完成"

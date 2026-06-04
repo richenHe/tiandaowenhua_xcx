@@ -1,0 +1,251 @@
+- generic [ref=e2]:
+  - generic [ref=e6]:
+    - link "微信公众平台 小程序 微信公众平台 小程序" [ref=e8] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e9]:
+        - img "微信公众平台 小程序" [ref=e10]
+        - img "微信公众平台 小程序" [ref=e11]
+    - generic [ref=e12]:
+      - term [ref=e14]:
+        - link "首页" [ref=e15] [cursor=pointer]:
+          - /url: /wxamp/index/index?token=906871227&lang=zh_CN
+          - generic [ref=e17]: 首页
+      - generic [ref=e18]:
+        - term [ref=e19]:
+          - link "管理" [ref=e20]:
+            - /url: javascript:;
+            - generic [ref=e22]: 管理
+            - img [ref=e23] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e24]:
+              - link "版本管理" [ref=e25] [cursor=pointer]:
+                - /url: /wxamp/wacodepage/getcodepage?token=906871227&lang=zh_CN
+                - generic [ref=e26]: 版本管理
+            - definition [ref=e27]:
+              - link "成员管理" [ref=e28] [cursor=pointer]:
+                - /url: /wxamp/user/managev2?action=index&use_role=1&token=906871227&lang=zh_CN
+                - generic [ref=e29]: 成员管理
+            - definition [ref=e30]:
+              - link "开发管理" [ref=e31] [cursor=pointer]:
+                - /url: /wxamp/devprofile/get_profile?token=906871227&lang=zh_CN
+                - generic [ref=e32]: 开发管理
+            - definition [ref=e33]:
+              - link "用户反馈" [ref=e34] [cursor=pointer]:
+                - /url: /wxamp/manage/feedback?token=906871227&lang=zh_CN
+                - generic [ref=e35]: 用户反馈
+            - definition [ref=e36]:
+              - link "付费管理" [ref=e37] [cursor=pointer]:
+                - /url: /wxamp/wxacharge?token=906871227&lang=zh_CN
+                - generic [ref=e38]: 付费管理
+            - definition [ref=e39]:
+              - link "微信认证" [ref=e40] [cursor=pointer]:
+                - /url: /wxamp/webpocnew/wxverifyAudit?action=index&isShowSideBar=1&token=906871227&lang=zh_CN
+                - generic [ref=e41]: 微信认证
+      - term [ref=e43]:
+        - link "数据" [ref=e44] [cursor=pointer]:
+          - /url: /wxamp/wedata/login?source=3&token=906871227&lang=zh_CN
+          - generic [ref=e46]: 数据
+      - generic [ref=e47]:
+        - term [ref=e48]:
+          - link "基础功能" [ref=e49]:
+            - /url: javascript:;
+            - generic [ref=e51]: 基础功能
+            - img [ref=e52] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e53]:
+              - link "交易评价" [ref=e54] [cursor=pointer]:
+                - /url: /wxamp/subApp/guarant/comment?token=906871227&lang=zh_CN
+                - generic [ref=e55]: 交易评价
+            - definition [ref=e56]:
+              - link "客服" [ref=e57] [cursor=pointer]:
+                - /url: /wxamp/wakf?token=906871227&lang=zh_CN
+                - generic [ref=e58]: 客服
+            - definition [ref=e59]:
+              - link "小程序插件" [ref=e60] [cursor=pointer]:
+                - /url: /wxamp/plugin/code?token=906871227&lang=zh_CN
+                - generic [ref=e61]: 小程序插件
+            - definition [ref=e62]:
+              - link "订阅消息" [ref=e63] [cursor=pointer]:
+                - /url: /wxamp/newtmpl/mytmpl?start=0&limit=10&token=906871227&lang=zh_CN
+                - generic [ref=e64]: 订阅消息
+            - definition [ref=e65]:
+              - link "实验工具" [ref=e66] [cursor=pointer]:
+                - /url: /wxamp/wedata/login?source=4&path=abtest/board&token=906871227&lang=zh_CN
+                - generic [ref=e67]: 实验工具
+            - definition [ref=e68]:
+              - link "翻译" [ref=e69] [cursor=pointer]:
+                - /url: /wxamp/translate?token=906871227&lang=zh_CN
+                - generic [ref=e70]: 翻译
+      - generic [ref=e71]:
+        - term [ref=e72]:
+          - link "支付与交易" [ref=e73]:
+            - /url: javascript:;
+            - generic [ref=e75]: 支付与交易
+            - img [ref=e76] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e77]:
+              - link "微信小店" [ref=e78] [cursor=pointer]:
+                - /url: /wxamp/frame/pluginRedirect/pluginRedirect?action=plugin_redirect&plugin_uin=1053&token=906871227&lang=zh_CN
+                - generic [ref=e79]: 微信小店
+            - definition [ref=e80]:
+              - link "微信支付" [ref=e81] [cursor=pointer]:
+                - /url: /wxamp/frame/wxpay?t=wxpay/index_frame&iframe=/pay/mp_wxopen&token=906871227&lang=zh_CN
+                - generic [ref=e82]: 微信支付
+            - definition [ref=e84]:
+              - link "交易组件" [ref=e85] [cursor=pointer]:
+                - /url: /wxamp/minishop/index?token=906871227&lang=zh_CN
+                - generic [ref=e86]: 交易组件
+            - definition [ref=e87]:
+              - link "购物订单" [ref=e88] [cursor=pointer]:
+                - /url: /wxamp/frame/pluginRedirect/pluginRedirect?action=plugin_redirect&plugin_uin=1022&token=906871227&lang=zh_CN
+                - generic [ref=e89]: 购物订单
+            - definition [ref=e90]:
+              - link "涉税信息查询" [ref=e91] [cursor=pointer]:
+                - /url: /wxamp/taxInfo?token=906871227&lang=zh_CN
+                - generic [ref=e92]: 涉税信息查询
+            - definition [ref=e93]:
+              - link "交易保障" [ref=e94] [cursor=pointer]:
+                - /url: /wxamp/deal?token=906871227&lang=zh_CN
+                - generic [ref=e95]: 交易保障
+            - definition [ref=e96]:
+              - link "物流服务" [ref=e97] [cursor=pointer]:
+                - /url: /wxamp/logistics/express/home?token=906871227&lang=zh_CN
+                - generic [ref=e98]: 物流服务
+            - definition [ref=e99]:
+              - link "虚拟支付" [ref=e100] [cursor=pointer]:
+                - /url: /wxamp/subApp/skit?token=906871227&lang=zh_CN
+                - generic [ref=e101]: 虚拟支付
+      - generic [ref=e102]:
+        - term [ref=e103]:
+          - link "行业能力" [ref=e104]:
+            - /url: javascript:;
+            - generic [ref=e106]: 行业能力
+            - img [ref=e107] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e108]:
+              - link "用工关系" [ref=e109] [cursor=pointer]:
+                - /url: /wxamp/user/member_relation?token=906871227&lang=zh_CN
+                - generic [ref=e110]: 用工关系
+            - definition [ref=e112]:
+              - link "门店管理" [ref=e113] [cursor=pointer]:
+                - /url: /wxamp/subApp/store/meta-store/?token=906871227&lang=zh_CN
+                - generic [ref=e114]: 门店管理
+            - definition [ref=e116]:
+              - link "附近的小程序" [ref=e117] [cursor=pointer]:
+                - /url: /wxamp/entityshop/info?token=906871227&lang=zh_CN
+                - generic [ref=e118]: 附近的小程序
+            - definition [ref=e119]:
+              - link "硬件设备" [ref=e120] [cursor=pointer]:
+                - /url: /wxamp/device?token=906871227&lang=zh_CN
+                - generic [ref=e121]: 硬件设备
+            - definition [ref=e122]:
+              - link "小程序成长计划" [ref=e123] [cursor=pointer]:
+                - /url: /wxamp/subApp/devplan?token=906871227&lang=zh_CN
+                - generic [ref=e124]: 小程序成长计划
+      - generic [ref=e125]:
+        - term [ref=e126]:
+          - link "推广与搜索" [ref=e127]:
+            - /url: javascript:;
+            - generic [ref=e129]: 推广与搜索
+            - img [ref=e130] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e131]:
+              - link "流量主" [ref=e132] [cursor=pointer]:
+                - /url: /wxopen/weapp_publisher_index?token=906871227&lang=zh_CN
+                - generic [ref=e133]: 流量主
+            - definition [ref=e134]:
+              - link "广告主" [ref=e135] [cursor=pointer]:
+                - /url: /promotion/advertiser_index?token=906871227&lang=zh_CN
+                - generic [ref=e136]: 广告主
+            - definition [ref=e137]:
+              - link "页面内容接入" [ref=e138] [cursor=pointer]:
+                - /url: /wxamp/collect/index?token=906871227&lang=zh_CN
+                - generic [ref=e139]: 页面内容接入
+            - definition [ref=e140]:
+              - link "微信搜一搜" [ref=e141] [cursor=pointer]:
+                - /url: /wxamp/frame/pluginRedirect/pluginRedirect?action=plugin_redirect&plugin_uin=1001&token=906871227&lang=zh_CN
+                - generic [ref=e142]: 微信搜一搜
+      - generic [ref=e143]:
+        - term [ref=e144]:
+          - link "开发与服务" [ref=e145]:
+            - /url: javascript:;
+            - generic [ref=e147]: 开发与服务
+            - img [ref=e148] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e149]:
+              - link "开发管理" [ref=e150] [cursor=pointer]:
+                - /url: /wxamp/devprofile/get_profile?token=906871227&lang=zh_CN
+                - generic [ref=e151]: 开发管理
+            - definition [ref=e152]:
+              - link "开发工具" [ref=e153] [cursor=pointer]:
+                - /url: /wxamp/thirdtools/index?token=906871227&lang=zh_CN
+                - generic [ref=e154]: 开发工具
+            - definition [ref=e155]:
+              - link "云服务" [ref=e156] [cursor=pointer]:
+                - /url: /wxamp/cloudservice/cloudrun?token=906871227&lang=zh_CN
+                - generic [ref=e157]: 云服务
+            - definition [ref=e158]:
+              - link "服务市场" [ref=e159] [cursor=pointer]:
+                - /url: /wxamp/frame/pluginRedirect/pluginRedirect?plugin_uin=1019&token=906871227&lang=zh_CN
+                - generic [ref=e160]: 服务市场
+      - generic [ref=e161]:
+        - term [ref=e162]:
+          - link "成长" [ref=e163]:
+            - /url: javascript:;
+            - generic [ref=e165]: 成长
+            - img [ref=e166] [cursor=pointer]
+        - generic:
+          - generic:
+            - definition [ref=e167]:
+              - link "小程序评测" [ref=e168] [cursor=pointer]:
+                - /url: /wxamp/score/guide?token=906871227&lang=zh_CN
+                - generic [ref=e169]: 小程序评测
+            - definition [ref=e170]:
+              - link "违规记录" [ref=e171] [cursor=pointer]:
+                - /url: https://mp.weixin.qq.com/wxamp/frame/illegalRecord?iframe=%2Fpublicpoc%2Fwxaillegalrecord%3Faction%3Dquery&token=906871227&lang=zh_CN
+                - generic [ref=e172]: 违规记录
+    - generic [ref=e174]:
+      - link "小程序码 小程序码" [ref=e176] [cursor=pointer]:
+        - /url: /wxamp/wxaqrcode/weappcode?token=906871227&lang=zh_CN
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - img "小程序码" [ref=e179]
+            - generic [ref=e180]: 小程序码
+          - img [ref=e181]
+      - link "通知中心 通知中心 51" [ref=e183] [cursor=pointer]:
+        - /url: /wxamp/tools/wasysnotify?token=906871227&lang=zh_CN
+        - generic [ref=e184]:
+          - generic [ref=e185]:
+            - img "通知中心" [ref=e186]
+            - generic [ref=e187]: 通知中心
+            - generic [ref=e188]: "51"
+          - img [ref=e189]
+      - generic [ref=e191]:
+        - generic [ref=e192]:
+          - img "妙道圣智" [ref=e193]
+          - generic [ref=e194]: 妙道圣智
+        - img [ref=e195]
+  - list [ref=e198]:
+    - listitem [ref=e199]:
+      - link "关于腾讯" [ref=e200] [cursor=pointer]:
+        - /url: http://www.tencent.com/zh-cn/index.shtml
+    - listitem [ref=e201]:
+      - link "文档中心" [ref=e202] [cursor=pointer]:
+        - /url: /wxopen/wawiki?action=dir_list&path=introduction/index&token=906871227&lang=zh_CN
+    - listitem [ref=e203]:
+      - link "规则中心" [ref=e204] [cursor=pointer]:
+        - /url: /webpoc/ruleCenter?type=mp
+    - listitem [ref=e205]:
+      - link "客服中心" [ref=e206] [cursor=pointer]:
+        - /url: http://kf.qq.com/product/wx_xcx.html
+    - listitem [ref=e207]:
+      - link "侵权投诉" [ref=e208] [cursor=pointer]:
+        - /url: /acct/infringement?action=getmanual&t=infringement/manual&type=1&token=906871227&lang=zh_CN
+    - listitem [ref=e209]:
+      - paragraph [ref=e210]: Copyright © 2012-2026 Tencent. All Rights Reserved.

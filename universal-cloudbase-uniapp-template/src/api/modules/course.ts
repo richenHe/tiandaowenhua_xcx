@@ -279,6 +279,19 @@ export class CourseApi {
       showLoading: false
     })
   }
+
+  /**
+   * 16. 获取课程分类列表（前端 tabs 用）
+   * @returns 分类列表
+   */
+  static async getCategoryList(): Promise<{ list: Array<{ id: number; name: string; sort_order: number }> }> {
+    return callCloudFunction<{ list: Array<{ id: number; name: string; sort_order: number }> }>({
+      name: 'course',
+      action: 'getCategoryList',
+      data: {},
+      showLoading: false
+    })
+  }
 }
 
 // 导出单个方法（便于按需导入）
@@ -300,7 +313,8 @@ export const {
   scanCheckin,
   recordAcademyProgress,
   getAcademyProgress,
-  checkRetrainCredit
+  checkRetrainCredit,
+  getCategoryList
 } = CourseApi
 
 // 默认导出

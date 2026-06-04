@@ -30,7 +30,8 @@ const publicHandlers = {
   getAcademyList: require('./handlers/public/getAcademyList'),
   getAcademyDetail: require('./handlers/public/getAcademyDetail'),
   getCalendarSchedule: require('./handlers/public/getCalendarSchedule'),
-  getAcademySections: require('./handlers/public/getAcademySections')
+  getAcademySections: require('./handlers/public/getAcademySections'),
+  getCategoryList: require('./handlers/public/getCategoryList')
 };
 
 // 导入处理器 - 客户端接口（9个）
@@ -82,7 +83,12 @@ const adminHandlers = {
   saveSeatingConfig: require('./handlers/admin/saveSeatingConfig'),
   saveSeatingAssignment: require('./handlers/admin/saveSeatingAssignment'),
   randomAssignSeats: require('./handlers/admin/randomAssignSeats'),
-  syncSeatingAssignments: require('./handlers/admin/syncSeatingAssignments')
+  syncSeatingAssignments: require('./handlers/admin/syncSeatingAssignments'),
+  getCategoryList: require('./handlers/admin/getCategoryList'),
+  createCategory: require('./handlers/admin/createCategory'),
+  updateCategory: require('./handlers/admin/updateCategory'),
+  updateCategorySort: require('./handlers/admin/updateCategorySort'),
+  deleteCategory: require('./handlers/admin/deleteCategory')
 };
 
 // 路由配置

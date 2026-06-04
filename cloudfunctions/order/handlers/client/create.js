@@ -159,10 +159,6 @@ async function handleCourseOrder(user, course_id) {
   if (refereeId) {
     const referee = await findOne('users', { id: refereeId });
     if (referee) {
-      if (course.type === 2 && referee.ambassador_level < 2) {
-        throw new Error('密训班需要青鸾及以上等级的推荐人');
-      }
-
       refereeData = {
         referee_id: referee.id,
         referee_uid: referee.uid,

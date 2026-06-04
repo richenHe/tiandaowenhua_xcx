@@ -3,10 +3,10 @@
  * 支持课程类型筛选和关键词搜索
  * 使用 Supabase 风格查询
  */
-const { db, findOne, response, executePaginatedQuery, cloudFileIDToURL, formatBeijingDate } = require('common');
+const { db, findOne, response, executePaginatedQuery, cloudFileIDToURL, formatBeijingDate, query } = require('common');
 
 module.exports = async (event, context) => {
-  const { type, keyword, page = 1, page_size = 10, pageSize } = event;
+  const { type, categoryId, keyword, page = 1, page_size = 10, pageSize } = event;
   const { OPENID } = context;
 
   try {
@@ -22,8 +22,10 @@ module.exports = async (event, context) => {
       .order('sort_order', { ascending: false })
       .order('id', { ascending: false });
 
-    // 添加类型过滤
-    if (type) {
+    // 添加分类ID过滤（优先于 type；向后兼容 type 参数）
+    if (categoryId) {
+      queryBuilder = queryBuilder.eq('category_id', parseInt(categoryId));
+    } else if (type) {
       queryBuilder = queryBuilder.eq('type', type);
     }
 
@@ -79,11 +81,19 @@ module.exports = async (event, context) => {
     }
 
     // 🔥 将 cloud:// fileID 直接转换为 CDN HTTPS URL，添加已购标识与下一排期日
+    // 获取所有分类名称映射
+    const categories = await query('course_categories', { where: { status: 1 }, orderBy: { column: 'sort_order', ascending: true } });
+    const categoryMap = {};
+    for (const cat of categories) {
+      categoryMap[cat.id] = cat.name;
+    }
+
     const list = rawList.map(course => ({
       ...course,
       cover_image: cloudFileIDToURL(course.cover_image || ''),
       is_purchased: userCourseIds.includes(course.id),
-      next_class_date: nextDateByCourseId[course.id] || null
+      next_class_date: nextDateByCourseId[course.id] || null,
+      category_name: categoryMap[course.category_id] || ''
     }));
 
     console.log(`[getList] 查询成功，共 ${result.total} 条`);

@@ -20,7 +20,9 @@ business.init(app);
 // 导入公开接口处理器（无需登录）
 const publicHandlers = {
   getAnnouncementList: require('./handlers/client/getAnnouncementList'),
-  getBannerList: require('./handlers/public/getBannerList')
+  getBannerList: require('./handlers/public/getBannerList'),
+  generateScheme: require('./handlers/public/generateScheme'),
+  generateUrlLink: require('./handlers/public/generateUrlLink')
 };
 
 // 导入客户端处理器
