@@ -160,31 +160,19 @@ async function processLegacyImport(userId, realName, openid) {
  * 导入历史课程记录
  */
 async function importCourses(userId, openid, legacyRecord, result) {
-  // 获取课程模板：初探班(type=1) 和 密训班(type=2)，取最早创建的一条
-  const getCourseTemplate = async (type) => {
-    const { data, error } = await db
-      .from('courses')
-      .select('id, name, validity_days, type')
-      .eq('type', type)
-      .eq('is_deleted', 0)
-      .eq('status', 1)
-      .order('id', { ascending: true })
-      .limit(1);
-    if (error) throw error;
-    return data && data.length > 0 ? data[0] : null;
-  };
-
   const coursesToImport = [];
 
   if (legacyRecord.chutan_date) {
-    const template = await getCourseTemplate(1);
+    // 初探班固定使用课程 ID=8
+    const template = await findOne('courses', { id: 8, is_deleted: 0, status: 1 });
     if (template) {
       coursesToImport.push({ template, startDate: legacyRecord.chutan_date });
     }
   }
 
   if (legacyRecord.mixin_date) {
-    const template = await getCourseTemplate(2);
+    // 密训班固定使用课程 ID=13
+    const template = await findOne('courses', { id: 13, is_deleted: 0, status: 1 });
     if (template) {
       coursesToImport.push({ template, startDate: legacyRecord.mixin_date });
     }

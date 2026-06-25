@@ -1,0 +1,3 @@
+[submodule "zuowei"]
+	path = zuowei
+	url = https://github.com/richenHe/zuowei-seating-system.git
