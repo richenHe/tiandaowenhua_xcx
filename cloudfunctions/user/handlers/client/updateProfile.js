@@ -48,13 +48,21 @@ module.exports = async (event, context) => {
     if (industry) {
       updateData.industry = industry;
     }
-    // 职务（选填，用 != null 允许空字符串清空）
+    // 职务（选填，trim + 长度校验，与前端 maxlength=50 一致）
     if (jobTitle != null) {
-      updateData.job_title = jobTitle;
+      const jobTitleVal = typeof jobTitle === 'string' ? jobTitle.trim() : '';
+      if (jobTitleVal.length > 50) {
+        return response.paramError('职务长度不能超过50字符');
+      }
+      updateData.job_title = jobTitleVal;
     }
-    // 家庭情况（选填）
+    // 家庭情况（选填，trim + 长度校验，与前端 maxlength=200 一致）
     if (familySituation != null) {
-      updateData.family_situation = familySituation;
+      const familySituationVal = typeof familySituation === 'string' ? familySituation.trim() : '';
+      if (familySituationVal.length > 200) {
+        return response.paramError('家庭情况长度不能超过200字符');
+      }
+      updateData.family_situation = familySituationVal;
     }
     // 银行账户信息（选填，用空字符串也允许清空）
     if (bankAccountName != null) {
