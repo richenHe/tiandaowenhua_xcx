@@ -63,6 +63,28 @@ module.exports = async (event, context) => {
     // 执行分页查询
     const result = await executePaginatedQuery(queryBuilder, page, finalPageSize);
 
+    // 批量补关联课程（多课程排期）：中间表 + courses 两步查，避免 JOIN 外键依赖
+    const recordIds = (result.list || []).map(r => r.id).filter(Boolean);
+    const relatedMap = {};
+    if (recordIds.length > 0) {
+      const { data: relRows } = await db
+        .from('class_record_courses')
+        .select('class_record_id, course_id')
+        .in('class_record_id', recordIds);
+      if (relRows && relRows.length) {
+        const allCourseIds = [...new Set(relRows.map(r => r.course_id))];
+        const { data: relCourses } = await db
+          .from('courses')
+          .select('id, name')
+          .in('id', allCourseIds);
+        const courseNameMap = (relCourses || []).reduce((m, c) => { m[c.id] = c.name; return m; }, {});
+        relRows.forEach(row => {
+          if (!relatedMap[row.class_record_id]) relatedMap[row.class_record_id] = [];
+          relatedMap[row.class_record_id].push({ id: row.course_id, name: courseNameMap[row.course_id] || '' });
+        });
+      }
+    }
+
     // 格式化数据（扁平化嵌套字段，计算可用名额）
     const list = (result.list || []).map(record => ({
       id: record.id,
@@ -84,6 +106,7 @@ module.exports = async (event, context) => {
       cancel_deadline_days: record.cancel_deadline_days,
       status: record.status,
       remark: record.remark,
+      related_courses: relatedMap[record.id] || [],
       created_at: record.created_at,
       updated_at: record.updated_at
     }));

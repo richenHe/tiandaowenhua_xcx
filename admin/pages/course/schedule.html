@@ -58,6 +58,10 @@
 
       <div class="table-card">
       <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
+        <template #courseName="{ row }">
+          <span>{{ row.course_name }}</span>
+          <t-tag v-if="row.related_courses && row.related_courses.length" theme="primary" variant="light-outline" size="small" style="margin-left: 6px;">+{{ row.related_courses.length }}</t-tag>
+        </template>
         <template #status="{ row }">
           <t-tag v-if="row.status === 1" theme="success">未开始</t-tag>
           <t-tag v-else-if="row.status === 2" theme="primary">进行中</t-tag>
@@ -80,6 +84,9 @@
         <!-- 所有字段使用 camelCase，云函数负责转换为 snake_case 存入 DB -->
         <t-form-item label="课程" name="courseId">
           <t-select v-model="formData.courseId" :options="courseOptions" placeholder="选择课程" />
+        </t-form-item>
+        <t-form-item label="关联课程" tips="多课程排期：选填，挂载子课程（如课程集包含的单课），共享本排期的日期/地点/名额等配置">
+          <t-select v-model="formData.relatedCourseIds" :options="courseOptions" multiple placeholder="选填，可多选关联子课程" clearable />
         </t-form-item>
         <t-form-item label="课程标题">
           <t-input :value="courseTitle" disabled placeholder="选择课程后自动填入" />
@@ -118,6 +125,7 @@
       <div v-if="detailRow" style="font-size: 14px; line-height: 1.75; color: #333;">
         <p><strong>排期 ID</strong>：{{ detailRow.id }}</p>
         <p><strong>课程</strong>：{{ detailRow.course_name }}（ID {{ detailRow.course_id }}）</p>
+        <p v-if="detailRow.related_courses && detailRow.related_courses.length"><strong>关联课程</strong>：{{ detailRow.related_courses.map(c => c.name).join('、') }}</p>
         <p><strong>上课日期</strong>：{{ detailRow.class_date }}<template v-if="detailRow.class_end_date"> ～ {{ detailRow.class_end_date }}</template></p>
         <p><strong>上课时段</strong>：{{ detailRow.class_time || '—' }}</p>
         <p><strong>地点</strong>：{{ detailRow.class_location || '—' }}</p>
@@ -229,7 +237,7 @@
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         const columns = [
           { colKey: 'id', title: 'ID', width: 80 },
-          { colKey: 'course_name', title: '课程名称', width: 200 },
+          { colKey: 'course_name', title: '课程名称', width: 220, cell: 'courseName' },
           { colKey: 'class_date', title: '上课日期', width: 120 },
           { colKey: 'class_end_date', title: '结课日期', width: 120 },
           { colKey: 'class_time', title: '上课时段', width: 120 },
@@ -301,7 +309,7 @@
           detailVisible.value = true;
         };
 
-        const handleAdd = () => { formData.value = { totalQuota: 30, classTime: '', retrainPrice: 0 }; formVisible.value = true; };
+        const handleAdd = () => { formData.value = { totalQuota: 30, classTime: '', retrainPrice: 0, relatedCourseIds: [] }; formVisible.value = true; };
         const handleCancel = (row) => {
           const dialog = TDesign.DialogPlugin.confirm({
             header: '取消排期',

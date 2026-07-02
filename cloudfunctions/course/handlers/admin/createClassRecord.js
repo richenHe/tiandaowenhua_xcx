@@ -18,7 +18,7 @@
  * @param {number} event.retrainPrice          - 该排期复训费（元），对应 DB retrain_price，默认 0（0=本排期免费复训）
  * @param {string} event.remark                - 备注，对应 DB 字段 remark
  */
-const { db, insert, findOne } = require('../../common/db');
+const { db, insert, findOne, batchInsert } = require('../../common/db');
 const { response } = require('../../common');
 const { validateRequired } = require('../../common/utils');
 
@@ -34,6 +34,10 @@ module.exports = async (event, context) => {
   const cancelDeadlineDays = event.cancelDeadlineDays ?? event.cancel_deadline_days;
   const retrainPriceRaw = event.retrainPrice ?? event.retrain_price;
   const remark = event.remark;
+  // 关联课程（选填，多课程排期）：过滤空值、非正整数、以及与主课程重复的 id，去重
+  const relatedCourseIds = Array.isArray(event.relatedCourseIds)
+    ? Array.from(new Set(event.relatedCourseIds.map(id => Number(id)).filter(id => Number.isInteger(id) && id > 0 && id !== courseId)))
+    : [];
 
   try {
     const validation = validateRequired(
@@ -92,6 +96,21 @@ module.exports = async (event, context) => {
       remark: remark || null,
       status: 1
     });
+
+    // 写入关联课程中间表（主课程已在 class_records.course_id，中间表只存关联课程）
+    if (relatedCourseIds.length > 0) {
+      try {
+        await batchInsert(
+          'class_record_courses',
+          relatedCourseIds.map(cid => ({ class_record_id: result.id, course_id: cid }))
+        );
+      } catch (relErr) {
+        // 关联写入失败：回滚主排期，避免出现"有主无关联"的脏数据
+        console.error('[createClassRecord] 关联课程写入失败，回滚主排期:', relErr);
+        await db.from('class_records').delete().eq('id', result.id);
+        return response.error('创建排期失败（关联课程写入异常），请重试', relErr);
+      }
+    }
 
     return response.success({
       class_record_id: result.id

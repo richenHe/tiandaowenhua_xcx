@@ -16,17 +16,13 @@ CREATE TABLE IF NOT EXISTS class_record_courses (
   INDEX idx_course_id (course_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='排期-课程关联表';
 
--- 2. 迁移现有数据（将 class_records.course_id 写入中间表）
-INSERT INTO class_record_courses (class_record_id, course_id)
-SELECT id, course_id FROM class_records
-WHERE course_id IS NOT NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM class_record_courses crc
-    WHERE crc.class_record_id = class_records.id
-    AND crc.course_id = class_records.course_id
-  );
+-- 2. 数据迁移：已废弃（不执行）
+-- 说明：多课程排期方案里，主课程继续用 class_records.course_id，本中间表只存"关联课程"
+-- （后台排课时手动勾选的子课）。不应把现有主课程迁进中间表，否则主课程会被误当成关联课程。
+-- 中间表初始为空。下方原迁移语句保留注释，仅供追溯。
+-- INSERT INTO class_record_courses (class_record_id, course_id)
+-- SELECT id, course_id FROM class_records
+-- WHERE course_id IS NOT NULL;
 
--- 3. 验证迁移结果
-SELECT
-  (SELECT COUNT(*) FROM class_records WHERE course_id IS NOT NULL) AS total_records,
-  (SELECT COUNT(*) FROM class_record_courses) AS migrated_records;
+-- 3. 验证表已创建（初始行数应为 0，等待后台排期写入关联课程）
+SELECT COUNT(*) AS middle_table_rows FROM class_record_courses;

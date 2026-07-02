@@ -466,12 +466,13 @@
 | location | String | 是 | 上课地点 |
 | max_students | Number | 是 | 最大学员数 |
 | teacher | String | 否 | 授课老师 |
+| relatedCourseIds | Number[] | 否 | 关联课程ID列表（多课程排期：挂载子课程，主课程用 course_id；中间表 class_record_courses） |
 
 ---
 
 #### 6-8. updateClassRecord, deleteClassRecord, getClassRecordList
 
-类似的 CRUD 操作
+类似的 CRUD 操作。**getClassRecordList** 列表项额外返回 `related_courses: [{id, name}, ...]`（关联课程，多课程排期；无关联时为空数组）。
 
 ---
 
