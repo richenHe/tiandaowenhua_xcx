@@ -29,7 +29,7 @@
             />
           </view>
           <view class="amount-tips">
-            <text>最低提现: ¥100</text>
+            <text>无门槛 全额可提</text>
             <text>0手续费</text>
           </view>
           <view class="quick-amounts">
@@ -72,16 +72,15 @@
           <text class="bank-info-edit-arrow">›</text>
         </view>
 
-        <!-- 提现说明 -->
+        <!-- 提现规则（满足微信审核要求：不设起提门槛，用户可随时全额提现） -->
         <view class="alert-box info">
           <view class="alert-icon"><icon type="info" size="16" color="#0052D9"/></view>
           <view class="alert-content">
-            <view class="alert-title">提现说明</view>
+            <view class="alert-title">提现规则</view>
             <view class="alert-message">
-              • 提现方式：银行汇款（公司对私转账）<br/>
-              • 最低提现金额 ¥100，无上限，0手续费<br/>
-              • 提交后由财务审核，打款完成后上传电子发票<br/>
-              • 打款后可在提现记录中查看电子发票
+              <text style="font-weight: 500;">起提金额：</text>无最低限制<br/>
+              <text style="font-weight: 500;">提现次数：</text>不限，随时可申请<br/>
+              <text style="font-weight: 500;">到账时间：</text>审核通过后 1-3 个工作日，银行卡收款
             </view>
           </view>
         </view>
@@ -257,8 +256,8 @@ const handleWithdraw = async () => {
   }
 
   const amount = parseFloat(withdrawAmount.value)
-  if (amount < 100) {
-    uni.showToast({ title: '最低提现金额为100元', icon: 'none' })
+  if (!amount || amount <= 0) {
+    uni.showToast({ title: '请输入有效的提现金额', icon: 'none' })
     return
   }
   if (amount > availablePoints.value) {
@@ -512,7 +511,7 @@ const getStatusClass = (status: number) => {
   line-height: 1.5;
 }
 
-/* 提示框 */
+/* 提示框（提现规则展示） */
 .alert-box {
   border-radius: 16rpx;
   padding: 24rpx;

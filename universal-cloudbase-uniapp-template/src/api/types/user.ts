@@ -50,6 +50,10 @@ export interface UserProfile {
   gender?: number | null
   /** 行业 */
   industry?: string
+  /** 职务 */
+  job_title?: string
+  /** 家庭情况 */
+  family_situation?: string
   /** 出生八字（格式：年-月-日-时） */
   birthday?: string
   /** 收款人姓名（银行卡持有人，持久化保存） */
@@ -100,6 +104,10 @@ export interface UpdateProfileParams {
   gender?: number
   /** 行业 */
   industry?: string
+  /** 职务（选填） */
+  jobTitle?: string
+  /** 家庭情况（选填） */
+  familySituation?: string
   /** 出生八字（格式：年-月-日-时） */
   birthday?: string
   /** 银行收款人姓名（选填，用于退款/提现转账） */

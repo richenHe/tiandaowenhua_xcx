@@ -26,20 +26,6 @@
           </view>
         </view>
 
-        <!-- 积分机制说明 -->
-        <view class="alert-box warning">
-          <view class="alert-icon"><icon type="warn" size="16" color="#E6A23C"/></view>
-          <view class="alert-content">
-            <view class="alert-title">积分解冻机制</view>
-            <view class="alert-message">
-              <text style="font-weight: 500;">鸿鹄大使：</text>升级时获得16880冻结积分<br/>
-              <text style="font-weight: 500;">解冻方式：</text>推荐初探班解冻1688积分<br/>
-              <text style="font-weight: 500;">直接发放：</text>推荐密训班/咨询直接加可提现积分<br/>
-              <text style="font-weight: 500;">解冻完毕后：</text>按比例持续获得可提现积分
-            </view>
-          </view>
-        </view>
-
         <!-- 积分统计卡片 -->
         <view class="stats-grid">
           <view class="stats-card">
@@ -417,40 +403,6 @@ const viewInvoice = (url: string) => {
 .stat-value {
   font-size: 36rpx;
   font-weight: 600;
-}
-
-.alert-box {
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 48rpx;
-  display: flex;
-  gap: 16rpx;
-  
-  &.warning {
-    background: #FFF4E5;
-  }
-}
-
-.alert-icon {
-  font-size: 32rpx;
-  flex-shrink: 0;
-}
-
-.alert-content {
-  flex: 1;
-}
-
-.alert-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 12rpx;
-}
-
-.alert-message {
-  font-size: 24rpx;
-  color: #666;
-  line-height: 1.6;
 }
 
 .stats-grid {

@@ -1,0 +1,6 @@
+{
+  "name": "tiandao-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "天道文化管理后台（纯静态；本文件仅为兼容 CloudBase 远端构建管道的 npm install 检测，无任何依赖）"
+}

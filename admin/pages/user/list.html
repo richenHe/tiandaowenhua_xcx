@@ -8,7 +8,7 @@
   
   <!-- TDesign CSS（本地）-->
   <link rel="stylesheet" href="../../assets/libs/tdesign.min.css">
-  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260421">
+  <link rel="stylesheet" href="../../assets/css/tokens.css?v=20260702">
   
   <style>
   </style>
@@ -110,6 +110,8 @@
           <t-descriptions-item label="手机号">{{ currentUser.phone || '-' }}</t-descriptions-item>
           <t-descriptions-item label="性别">{{ currentUser.gender === 1 ? '男' : currentUser.gender === 0 ? '女' : '-' }}</t-descriptions-item>
           <t-descriptions-item label="城市">{{ currentUser.city || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="职务">{{ currentUser.job_title || '-' }}</t-descriptions-item>
+          <t-descriptions-item label="家庭情况">{{ currentUser.family_situation || '-' }}</t-descriptions-item>
           <t-descriptions-item label="大使等级">
             <t-tag v-if="currentUser.ambassador_level === 0">普通用户</t-tag>
             <t-tag v-else-if="currentUser.ambassador_level === 1" theme="primary">准青鸾大使</t-tag>
@@ -239,10 +241,10 @@
   <!-- CloudBase SDK（本地）-->
   <script src="../../assets/libs/tcb.js"></script>
   <!-- 配置 -->
-  <script src="../../assets/js/config.js?v=20260421"></script>
+  <script src="../../assets/js/config.js?v=20260702"></script>
   <!-- API -->
-  <script src="../../assets/js/admin-api.js?v=20260421"></script>
-  <script src="../../assets/js/sidebar-navigation.js?v=20260421"></script>
+  <script src="../../assets/js/admin-api.js?v=20260702"></script>
+  <script src="../../assets/js/sidebar-navigation.js?v=20260702"></script>
   
   <script>
     const { createApp, ref, reactive, onMounted } = Vue;

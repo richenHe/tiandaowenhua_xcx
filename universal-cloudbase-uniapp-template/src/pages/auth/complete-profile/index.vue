@@ -151,6 +151,34 @@
             </view>
           </view>
 
+          <!-- 职务 -->
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>职务 (选填)</text>
+            </view>
+            <view class="t-form-item__control">
+              <view class="t-input__wrap">
+                <view class="t-input t-align-left">
+                  <input class="t-input__inner" type="text" placeholder="请输入职务" v-model="formData.jobTitle" maxlength="50" />
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 家庭情况 -->
+          <view class="t-form-item">
+            <view class="t-form-item__label">
+              <text>家庭情况 (选填)</text>
+            </view>
+            <view class="t-form-item__control">
+              <view class="t-input__wrap">
+                <view class="t-input t-align-left">
+                  <input class="t-input__inner" type="text" placeholder="请输入家庭情况" v-model="formData.familySituation" maxlength="200" />
+                </view>
+              </view>
+            </view>
+          </view>
+
           <!-- 所在地区 -->
           <view class="t-form-item">
             <view class="t-form-item__label">
@@ -210,6 +238,8 @@ const formData = ref({
     hour: '',
   },
   industry: '',
+  jobTitle: '',
+  familySituation: '',
   region: '',
 });
 
@@ -458,6 +488,8 @@ const handleSubmit = async () => {
       nickname: formData.value.nickName || '',
       gender: formData.value.gender,
       industry: formData.value.industry || '',
+      jobTitle: formData.value.jobTitle || '',
+      familySituation: formData.value.familySituation || '',
       birthday: birthday
     });
 

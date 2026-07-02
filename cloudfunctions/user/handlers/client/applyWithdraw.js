@@ -7,7 +7,7 @@
  * 入参：
  *   amount - 提现金额（元）
  */
-const { findOne, insert, update } = require('../../common/db');
+const { insert, update } = require('../../common/db');
 const { response, utils } = require('../../common');
 
 module.exports = async (event, context) => {
@@ -41,13 +41,8 @@ module.exports = async (event, context) => {
       return response.error('个人资料中的银行卡号格式不正确，请重新填写', null, 400);
     }
 
-    // 查询系统配置的最低提现金额
-    const config = await findOne('system_configs', { config_key: 'min_withdraw_amount' });
-    const minAmount = config ? parseFloat(config.config_value) : 100;
-
-    if (amount < minAmount) {
-      return response.paramError(`最低提现金额为${minAmount}元`);
-    }
+    // 提现不设起提门槛（满足微信小程序审核要求：不得设置门槛阻碍用户提现已获得的资金）
+    // 仅保留上方 amount>0 的有效性校验，任意正数金额均可申请提现
 
     if (user.cash_points_available < amount) {
       return response.error('可用积分不足', null, 400);
