@@ -64,7 +64,32 @@ module.exports = async (event, context) => {
       .single();
     const courseName = courseInfo ? courseInfo.name : null;
 
-    // 构建查询
+    // 多课程排期：收集"含该课程"的排期 ID（主课程匹配 + 关联课程匹配）
+    const matchIdSet = new Set();
+
+    // 1) 主课程为 finalCourseId 的排期
+    const { data: mainRecords } = await db
+      .from('class_records')
+      .select('id')
+      .eq('course_id', finalCourseId)
+      .eq('status', 1);
+    (mainRecords || []).forEach(r => matchIdSet.add(r.id));
+
+    // 2) 关联课程为 finalCourseId 的排期（中间表 class_record_courses）
+    const { data: relRows } = await db
+      .from('class_record_courses')
+      .select('class_record_id')
+      .eq('course_id', finalCourseId);
+    (relRows || []).forEach(r => matchIdSet.add(r.class_record_id));
+
+    const matchIds = [...matchIdSet];
+
+    // 无匹配排期：直接返回空
+    if (matchIds.length === 0) {
+      return response.success({ list: [], total: 0, page: Number(page), page_size: finalPageSize });
+    }
+
+    // 构建查询（在匹配的排期 ID 范围内）
     let queryBuilder = db
       .from('class_records')
       .select(`
@@ -79,7 +104,7 @@ module.exports = async (event, context) => {
         booked_quota,
         retrain_price
       `, { count: 'exact' })
-      .eq('course_id', finalCourseId)
+      .in('id', matchIds)
       .eq('status', 1)
       .order('class_date', { ascending: true });
 

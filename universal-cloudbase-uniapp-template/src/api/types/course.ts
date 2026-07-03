@@ -301,6 +301,8 @@ export interface GetClassRecordsParams {
 export interface CreateAppointmentParams {
   /** 上课排期ID */
   class_record_id: number
+  /** 用户预约的课程ID（多课程排期：排期主课程或关联课程之一） */
+  courseId: number
 }
 
 /**

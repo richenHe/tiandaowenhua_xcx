@@ -59,8 +59,10 @@
       <div class="table-card">
       <t-table :data="tableData" :columns="columns" :loading="loading" :pagination="pagination" @page-change="handlePageChange" row-key="id" bordered stripe hover>
         <template #courseName="{ row }">
-          <span>{{ row.course_name }}</span>
-          <t-tag v-if="row.related_courses && row.related_courses.length" theme="primary" variant="light-outline" size="small" style="margin-left: 6px;">+{{ row.related_courses.length }}</t-tag>
+          <div>{{ row.course_name }}</div>
+          <div v-if="row.related_courses && row.related_courses.length" style="font-size: 12px; color: #888; line-height: 1.4; margin-top: 2px;">
+            关联：{{ row.related_courses.map(c => c.name).join('、') }}
+          </div>
         </template>
         <template #status="{ row }">
           <t-tag v-if="row.status === 1" theme="success">未开始</t-tag>
@@ -237,7 +239,7 @@
         const pagination = ref({ current: 1, pageSize: 20, total: 0 });
         const columns = [
           { colKey: 'id', title: 'ID', width: 80 },
-          { colKey: 'course_name', title: '课程名称', width: 220, cell: 'courseName' },
+          { colKey: 'course_name', title: '课程名称', width: 260, cell: 'courseName' },
           { colKey: 'class_date', title: '上课日期', width: 120 },
           { colKey: 'class_end_date', title: '结课日期', width: 120 },
           { colKey: 'class_time', title: '上课时段', width: 120 },

@@ -82,6 +82,22 @@ module.exports = async (event, context) => {
       }
     }
 
+    // 校验关联课程 ID 真实存在（防止前端传不存在的 course_id，导致中间表写入脏数据）
+    if (relatedCourseIds.length > 0) {
+      const { data: existCourses, error: existErr } = await db
+        .from('courses')
+        .select('id')
+        .in('id', relatedCourseIds);
+      if (existErr) {
+        return response.error('校验关联课程失败', existErr);
+      }
+      const existIds = (existCourses || []).map(c => c.id);
+      const invalidIds = relatedCourseIds.filter(id => !existIds.includes(id));
+      if (invalidIds.length > 0) {
+        return response.paramError('关联课程ID不存在: ' + invalidIds.join(','));
+      }
+    }
+
     const [result] = await insert('class_records', {
       course_id: courseId,
       class_date: classDate,
@@ -106,8 +122,13 @@ module.exports = async (event, context) => {
         );
       } catch (relErr) {
         // 关联写入失败：回滚主排期，避免出现"有主无关联"的脏数据
-        console.error('[createClassRecord] 关联课程写入失败，回滚主排期:', relErr);
-        await db.from('class_records').delete().eq('id', result.id);
+        console.error('[createClassRecord] 关联课程写入失败，开始回滚主排期:', relErr);
+        try {
+          await db.from('class_records').delete().eq('id', result.id);
+        } catch (delErr) {
+          // 回滚也失败：主排期已残留（无关联），无法自动恢复，需人工清理
+          console.error('[createClassRecord] ⚠️ 回滚失败，主排期 id=' + result.id + ' 残留，需人工清理:', delErr);
+        }
         return response.error('创建排期失败（关联课程写入异常），请重试', relErr);
       }
     }

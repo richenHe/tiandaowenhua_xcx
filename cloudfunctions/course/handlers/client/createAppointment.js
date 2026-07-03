@@ -4,14 +4,18 @@ const { db, findOne, insert } = require('../../common/db');
 const { response, formatDateTime } = require('../../common');
 
 module.exports = async (event, context) => {
-  const { classRecordId, class_record_id } = event;
+  const { classRecordId, class_record_id, courseId, course_id } = event;
   const finalClassRecordId = classRecordId || class_record_id; // 支持两种命名
+  const finalCourseId = courseId || course_id; // 用户预约的课程（排期主课程或关联课程之一）
   const { user } = context;
 
   try {
     // 参数验证
     if (!finalClassRecordId) {
       return response.paramError('缺少必填参数: classRecordId');
+    }
+    if (!finalCourseId) {
+      return response.paramError('缺少必填参数: courseId');
     }
 
     // 预览模式限制：资料未完善的用户不允许预约
@@ -58,6 +62,16 @@ module.exports = async (event, context) => {
     const course = await findOne('courses', { id: classRecord.course_id });
     const isSalon = course && course.type === 4;
 
+    // 多课程排期：校验用户预约的 courseId 必须是该排期的主课程或关联课程之一
+    const { data: relRows } = await db
+      .from('class_record_courses')
+      .select('course_id')
+      .eq('class_record_id', finalClassRecordId);
+    const allowedCourseIds = new Set([classRecord.course_id, ...(relRows || []).map(r => r.course_id)]);
+    if (!allowedCourseIds.has(finalCourseId)) {
+      return response.paramError('该排期不包含此课程，无法预约');
+    }
+
     let userCourseId;
     let isRetrainAppointment = false;
     let usedRetrainCredit = false;
@@ -94,7 +108,7 @@ module.exports = async (event, context) => {
         .from('user_courses')
         .select('*')
         .eq('user_id', user.id)
-        .eq('course_id', classRecord.course_id)
+        .eq('course_id', finalCourseId)
         .eq('status', 1)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -156,7 +170,7 @@ module.exports = async (event, context) => {
       .from('appointments')
       .select('id, class_record_id')
       .eq('user_id', user.id)
-      .eq('course_id', classRecord.course_id)
+      .eq('course_id', finalCourseId)
       .eq('status', 0)
       .limit(1);
 
@@ -186,7 +200,7 @@ module.exports = async (event, context) => {
     const appointmentData = {
       user_id: user.id,
       _openid: user._openid || user.openid || '',
-      course_id: classRecord.course_id,
+      course_id: finalCourseId,
       class_record_id: finalClassRecordId,
       user_course_id: userCourseId,
       is_retrain: isRetrainAppointment ? 1 : 0,

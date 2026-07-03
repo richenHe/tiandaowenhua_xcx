@@ -78,7 +78,8 @@ const showConfirmAndBook = () => {
         isSubmitted.value = true;
         try {
           await CourseApi.createAppointment({
-            class_record_id: courseInfo.value.classRecordId
+            class_record_id: courseInfo.value.classRecordId,
+            courseId: courseInfo.value.courseId
           });
           uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 });
           setTimeout(() => { uni.navigateBack(); }, 2000);
